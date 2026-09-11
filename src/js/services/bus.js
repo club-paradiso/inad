@@ -1,7 +1,9 @@
 // Tiny synchronous event bus. Engines emit; the UI layer subscribes.
 // Engines must never touch the DOM — they describe what happened and the UI decides how to show it.
-// i18n is a UI-only side effect: it watches rendered text without changing engine state.
+// i18n and the border-console shell are UI-only side effects: they watch rendered text/state
+// without changing engine state or legal outcomes.
 import './i18n.js';
+import './border-console.js';
 
 const listeners = new Map();
 
