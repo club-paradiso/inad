@@ -317,12 +317,16 @@ function ensureControls() {
 
 function syncControls() {
   const english = locale === 'en';
+  const text = english ? '한국어' : 'English';
+  const label = english ? '한국어 UI로 전환' : 'Switch UI to English';
   for (const id of ['uiLanguageBtn', 'startLanguageBtn']) {
     const button = document.getElementById(id);
     if (!button) continue;
-    button.textContent = english ? '한국어' : 'English';
-    button.setAttribute('aria-label', english ? '한국어 UI로 전환' : 'Switch UI to English');
-    button.title = english ? '한국어 UI로 전환' : 'Switch UI to English';
+    // MutationObserver observes childList/aria-label/title. Avoid writing identical values,
+    // otherwise the observer can schedule itself forever after any UI render.
+    if (button.textContent !== text) button.textContent = text;
+    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+    if (button.title !== label) button.title = label;
   }
 }
 
@@ -344,6 +348,8 @@ export function setLocale(value) {
 
 function mutationHandler(records) {
   for (const record of records) {
+    const target = record.target?.nodeType === Node.ELEMENT_NODE ? record.target : record.target?.parentElement;
+    if (target?.closest?.('[data-i18n-control]')) continue;
     if (record.type === 'characterData') applyTextNode(record.target);
     else if (record.type === 'attributes') applyAttributes(record.target);
     else for (const node of record.addedNodes) walk(node);
