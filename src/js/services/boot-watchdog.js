@@ -35,9 +35,9 @@ function coreBooted() {
 function showBootFailure() {
   if (coreBooted() || document.getElementById('bootFailureNotice')) return;
 
-  const start = document.getElementById('startScreen');
+  const start = document.getElementById('startOverlay');
   if (!start) {
-    console.error('[INAD] Core boot did not complete and #startScreen is missing.', failures);
+    console.error('[INAD] Core boot did not complete and #startOverlay is missing.', failures);
     return;
   }
 
