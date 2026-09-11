@@ -16,10 +16,17 @@ const checks = [
   ['start overlay', /\bid=["']startOverlay["']/],
   ['start button', /\bid=["']startBtn["']/],
   ['optional UI isolation marker', /Optional UI enhancement disabled/],
-  ['boot watchdog marker', /bootFailureNotice/]
+  ['boot watchdog marker', /bootFailureNotice/],
+  ['UI localization bundled', /inad-locale/],
+  ['border-console shell bundled', /border-console-v3/],
+  ['work manual bundled', /work-manual|workManual/]
 ];
 
+const stripped = html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '');
 const missing = checks.filter(([, pattern]) => !pattern.test(html)).map(([label]) => label);
+// A computed `import(path)` survives bundling as a runtime request that 404s on the single-file
+// release page. Every optional module has to be inlined by esbuild.
+if (/\bimport\s*\(/.test(stripped)) missing.push('no unresolved dynamic import() in bundle');
 
 if (missing.length) {
   console.error(`Built-page smoke check failed. Missing: ${missing.join(', ')}`);

@@ -24,8 +24,17 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
   assert.equal((stripped.match(/\b(src|href|action)=["']https?:/g) || []).length, 0, 'no external src/href/action');
   assert.equal((stripped.match(/url\(\s*["']?https?:/g) || []).length, 0, 'no external CSS urls');
   assert.equal((stripped.match(/@import/g) || []).length, 0, 'no CSS imports');
-  assert.equal((stripped.match(/\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|EventSource)\s*\(/g) || []).length, 0, 'no network APIs');
-  assert.ok(!/\bimport\s*\(/.test(html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '')), 'no dynamic imports');
+  // The only permitted browser network call is the same-origin airport-load proxy (see CLAUDE.md).
+  assert.equal((stripped.match(/\b(XMLHttpRequest|sendBeacon|WebSocket|EventSource)\s*\(/g) || []).length, 0, 'no network APIs');
+  const fetches = stripped.match(/\bfetch\s*\([^)]*/g) || [];
+  assert.equal(fetches.length, 1, 'exactly one fetch call site (airport-load proxy client)');
+  assert.ok(/fetch\s*\(\s*`\/api\/airport-load\?/.test(fetches[0]), 'fetch targets only same-origin /api/airport-load');
+  assert.equal((stripped.match(/fetch\s*\(\s*["'`]https?:/g) || []).length, 0, 'no absolute-URL fetch');
+  // Optional UI modules must be bundled, not requested at runtime from a non-existent path.
+  assert.ok(!/\bimport\s*\(/.test(stripped), 'no dynamic imports');
+  for (const marker of ['inad-locale', 'border-console-v3', 'Optional UI enhancement disabled']) {
+    assert.ok(html.includes(marker), `optional UI module bundled: ${marker}`);
+  }
   assert.equal((html.match(/data:image\/webp;base64,/g) || []).length, 105, '105 inline portraits');
   assert.ok(!/assets\/portraits\//.test(html.replace(/\/\*[^]*?\*\//g, '')) || true);
   assert.ok(html.includes('AudioContext'), 'Web Audio present');
