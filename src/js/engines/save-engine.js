@@ -3,6 +3,7 @@
 // existing browser data keeps working; `migrate*` functions are the single place that
 // back-fills older shapes.
 import { RELEASE, SAVE_KEYS } from '../../data/legal-baseline.js';
+import { airportById } from '../../data/airports.js';
 import { jsonGet, jsonSet, storeGetRaw, storeRemove, storeSet, parseJSON } from '../services/storage.js';
 import { fnv1a } from './rng.js';
 import { careerFromSessions, careerTemplate, syncDailyMeta } from './achievement-engine.js';
@@ -40,12 +41,15 @@ export function migrateProgress(p) { if (!p || typeof p !== 'object') return nul
 export function loadProgressSave() { return migrateProgress(jsonGet(PROGRESS_KEY, null)); }
 export function clearProgressSave() { storeRemove(PROGRESS_KEY); bus.emit('persistence'); }
 export function progressSnapshot(nextIndex = state.caseIndex) {
-  return { version: PROGRESS_VERSION, savedAt: Date.now(), seed: session.seed, difficulty: state.difficulty, challengeId: state.challengeId, challengeApplied: state.challengeApplied, scenarioId: state.scenarioId, scenarioApplied: state.scenarioApplied, guidance: state.guidance, nextIndex, score: state.score, efficiency: state.efficiency, proportionality: state.proportionality, strikes: state.strikes, totalCaseSeconds: state.totalCaseSeconds, simSeconds: state.simSeconds, overSecondary: state.overSecondary, repeatedLookups: state.repeatedLookups, repeatedQuestions: state.repeatedQuestions, rushed: state.rushed, pressurePeak: state.pressurePeak, fatigue: state.fatigue, peakFatigue: state.peakFatigue, breaksTaken: state.breaksTaken, eventsSeen: state.eventsSeen, activeEvent: state.activeEvent, eventSchedule: state.eventSchedule, eventHistory: state.eventHistory, backlogOffset: state.backlogOffset, stats: state.stats, reports: state.reports, mistakes: state.mistakes, partyArchive: [...session.partyArchive.entries()],
+  return { version: PROGRESS_VERSION, savedAt: Date.now(), seed: session.seed, airportId: state.airportId, liveOps: state.liveOps, difficulty: state.difficulty, challengeId: state.challengeId, challengeApplied: state.challengeApplied, scenarioId: state.scenarioId, scenarioApplied: state.scenarioApplied, guidance: state.guidance, nextIndex, score: state.score, efficiency: state.efficiency, proportionality: state.proportionality, strikes: state.strikes, totalCaseSeconds: state.totalCaseSeconds, simSeconds: state.simSeconds, overSecondary: state.overSecondary, repeatedLookups: state.repeatedLookups, repeatedQuestions: state.repeatedQuestions, rushed: state.rushed, pressurePeak: state.pressurePeak, fatigue: state.fatigue, peakFatigue: state.peakFatigue, breaksTaken: state.breaksTaken, eventsSeen: state.eventsSeen, activeEvent: state.activeEvent, eventSchedule: state.eventSchedule, eventHistory: state.eventHistory, backlogOffset: state.backlogOffset, stats: state.stats, reports: state.reports, mistakes: state.mistakes, partyArchive: [...session.partyArchive.entries()],
     campaignId: state.campaignId, campaignDay: state.campaignDay, campaignApplied: state.campaignApplied, campaignCarryBacklog: state.campaignCarryBacklog, campaignCarryFatigue: state.campaignCarryFatigue };
 }
 export function saveProgressSnapshot(nextIndex = state.caseIndex) { if (!state.started) return false; const ok = jsonSet(PROGRESS_KEY, progressSnapshot(nextIndex)); bus.emit('persistence'); return ok; }
 // Applies a checkpoint to `state` (the caller regenerates the roster for p.seed first).
 export function applyProgressToState(p) {
+  const savedAirport = p.airportId ? airportById(p.airportId) : null;
+  if (savedAirport && savedAirport.id === p.airportId) { state.airportId = p.airportId; storeSet('inad-airport', p.airportId); }
+  if (p.liveOps && typeof p.liveOps === 'object' && !Array.isArray(p.liveOps)) state.liveOps = { ...state.liveOps, ...p.liveOps };
   state.difficulty = p.difficulty || 'standard'; state.challengeId = p.challengeId || 'none'; state.challengeApplied = !!p.challengeApplied; state.scenarioId = p.scenarioId || 'normal'; state.scenarioApplied = !!p.scenarioApplied; state.guidance = p.guidance || 'expert';
   state.caseIndex = Math.min(Number(p.nextIndex) || 0, session.queue.length);
   for (const k of ['score', 'efficiency', 'proportionality', 'strikes', 'totalCaseSeconds', 'simSeconds', 'overSecondary', 'repeatedLookups', 'repeatedQuestions', 'rushed', 'pressurePeak', 'fatigue', 'peakFatigue', 'breaksTaken', 'eventsSeen', 'backlogOffset']) if (p[k] !== undefined) state[k] = p[k];
