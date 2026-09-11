@@ -1,0 +1,41 @@
+// Campaign start-screen controls, HUD detail, archive, abandon, story dossier, party dossier, system centre.
+import { $$, byId, esc } from '../dom.js';
+import { showModal, closeModal } from '../modals.js';
+import { state, session } from '../../state.js';
+import { CAMPAIGNS, campaignCfg, currentCampaignSave, campaignArc, storyChapterDef, storyIsAnchor, storyChapterSave, storyPrevContext, storyStatusInfo, ensureCampaignStory, abandonCampaign, clearCampaign, scenarioNameFor } from '../../engines/campaign-engine.js';
+import { loadMeta } from '../../engines/save-engine.js';
+import { displayDateKo } from '../../engines/rng.js';
+import { current } from '../../engines/queue-engine.js';
+import { getTraveler } from '../../engines/traveler-engine.js';
+import { travelPartyFor, partyCrossCheck, partyStatusForTraveler } from '../../engines/companion-engine.js';
+import { toast } from '../toast.js';
+
+export function renderCampaignStart() {
+  const active = currentCampaignSave(), id = active?.id || state.campaignId || 'none', cfg = CAMPAIGNS[id] || CAMPAIGNS.none, day = active?.day ?? state.campaignDay ?? 0;
+  $$('.campaign-btn').forEach((b) => { b.classList.toggle('on', b.dataset.campaign === id); b.setAttribute('aria-pressed', String(b.dataset.campaign === id)); b.disabled = !!active && b.dataset.campaign !== id; });
+  const strip = byId('campaignResumeStrip'); if (strip) { if (active) { const d = cfg.days[active.day]; strip.hidden = false; strip.innerHTML = `<b>진행 중 · ${esc(cfg.name)} · DAY ${active.day + 1}/3</b><span>${esc(d?.title || '다음 근무')} · 이월 대기 ${active.carryBacklog >= 0 ? '+' : ''}${active.carryBacklog} · 시작 피로 ${active.carryFatigue}</span>`; } else strip.hidden = true; }
+  const preview = byId('campaignPreview'); if (preview) preview.innerHTML = id === 'none' ? '' : cfg.days.map((d, i) => `<div class="campaign-dayline ${i === day ? 'current' : ''}"><strong>DAY ${i + 1}</strong><span>${esc(d.title.replace(/^DAY \d+ · /, ''))} · ${esc(d.note)}</span><b>${esc(scenarioNameFor(d.scenario))}</b></div>`).join('');
+  const abandon = byId('campaignAbandonBtn'); if (abandon) abandon.hidden = !active;
+  $$('.scenario-btn').forEach((b) => { b.disabled = id !== 'none'; }); document.querySelector('.scenario-box')?.classList.toggle('campaign-locked', id !== 'none');
+}
+export function showCampaignDetail() {
+  const c = currentCampaignSave(), id = c?.id || state.campaignId || 'none', cfg = campaignCfg(id);
+  if (id === 'none') { showModal('시나리오 캠페인', '<p class="modal-note">현재는 단일 근무입니다. 시작화면에서 3일 캠페인을 선택할 수 있습니다.</p>'); return; }
+  const day = c?.day ?? state.campaignDay ?? 0, results = c?.results || [];
+  showModal('시나리오 캠페인', `<div class="campaign-panel"><div class="campaign-hero"><div class="mark">3D</div><div><h3>${esc(cfg.name)}</h3><p>${esc(cfg.desc)}</p></div><div class="day">DAY ${day + 1}/3</div></div><div class="campaign-results">${cfg.days.map((d, i) => { const r = results[i]; return `<div class="campaign-result-day"><span>DAY ${i + 1} · ${esc(scenarioNameFor(d.scenario))}</span><b>${r ? `${esc(r.grade)} · ${r.overall}점` : i === day ? '현재 근무' : '대기'}</b><p>${r ? `운영 ${r.ops} · 최고대기 ${r.pressurePeak} · 피로 ${r.peakFatigue}` : esc(d.note)}</p></div>`; }).join('')}</div>${c ? `<div class="campaign-carry"><b>다음 근무 이월</b><br>대기 ${c.carryBacklog >= 0 ? '+' : ''}${c.carryBacklog}명 · 시작 피로 ${c.carryFatigue}. 이 값은 운영부담만 조정하고 법률상 정답에는 영향을 주지 않습니다.</div>` : ''}${campaignStorySummary()}</div>`);
+}
+export function campaignStorySummary() { const c = currentCampaignSave(), arc = campaignArc(), story = ensureCampaignStory(c); if (!c || !arc || !story) return ''; return `<div class="story-campaign-summary"><h4>연계사건 서사 · ${esc(arc.title)}</h4><div class="story-timeline">${arc.chapters.map((d, i) => { const x = story.chapters[i], status = x?.status || 'pending'; return `<div class="story-day-card ${i === state.campaignDay ? 'current' : ''}"><span>DAY ${i + 1}</span><b>${esc(d.title)}</b><p>${x ? esc(x.summary || status) : i === state.campaignDay ? '현재 근무에서 확인' : '대기'}</p></div>`; }).join('')}</div><p class="modal-note">연계사건 완성도는 서사·복기용이며 법률 정확도·입국판정 점수에는 반영되지 않습니다.</p></div>`; }
+export function showCampaignArchive() { const meta = loadMeta(), hist = meta.campaignHistory || [], active = currentCampaignSave(); showModal('캠페인 기록', `<div class="campaign-panel">${active ? `<div class="campaign-day-banner"><b>진행 중 · ${esc(CAMPAIGNS[active.id].name)}</b> · DAY ${active.day + 1}/3 · ${active.results.length * 36}/108명 완료</div>` : ''}<div class="campaign-archive-list">${hist.length ? hist.map((x) => `<div class="campaign-archive-row"><div><b>${esc(x.name)}</b><span>${displayDateKo(x.startedDate)} · ${x.completed ? '완주' : '종료'} · ${x.results.length}/3일 · 보너스 ${x.bonusXP || 0} XP</span></div><em>${x.avgOverall || 0}점</em></div>`).join('') : '<p class="modal-note">아직 완료한 캠페인이 없습니다.</p>'}</div></div>`); }
+export function requestAbandonCampaign(onDone) { const c = currentCampaignSave(); if (!c) return; showModal('진행 중 캠페인 포기', `<p class="modal-note"><b>${esc(CAMPAIGNS[c.id].name)}</b> DAY ${c.day + 1}/3 진행 중입니다.<br>포기하면 캠페인 연속 진행도와 완주 보너스는 사라지지만 기존 완료 근무기록은 유지됩니다.</p><button type="button" class="act refuse block" id="confirmCampaignAbandon"><strong>캠페인 포기</strong></button>`); byId('confirmCampaignAbandon').onclick = () => { abandonCampaign(); closeModal(); onDone && onDone(); toast('캠페인을 종료했습니다.'); }; }
+export function showStoryDossier(onAction) {
+  const c = current(); if (!storyIsAnchor(c)) { showModal('캠페인 연계사건', '<p class="modal-note">현재 승객은 오늘의 연계사건 대상자가 아닙니다.</p>'); return; }
+  const arc = campaignArc(), d = storyChapterDef(), save = currentCampaignSave(), ch = storyChapterSave(save), st = storyStatusInfo();
+  showModal(`연계사건 · DAY ${state.campaignDay + 1}`, `<div class="story-shell"><div class="story-hero"><div class="mark">LINK</div><div><h3>${esc(d.title)}</h3><p>${esc(arc.theme)}</p></div><div class="story-day">DAY ${state.campaignDay + 1}/3</div></div><div class="story-previous"><b>이전 근무 맥락</b><br>${esc(storyPrevContext())}</div><div class="story-legal-note"><b>현재 연계정보</b><br>${esc(d.link)}<br><br><b>중요</b> · 연계기록은 교차검증을 돕는 맥락정보입니다. 같은 업체·PNR 계열·유사 상호·유사 경보 자체가 입국불허나 범죄혐의의 자동 근거가 되지 않습니다.</div><div class="story-actions">${d.actions.map((a) => `<button type="button" class="story-action ${ch.actions.includes(a[0]) ? 'done' : ''}" data-story-action="${a[0]}"><b>${ch.actions.includes(a[0]) ? '✓ ' : ''}${esc(a[1])}</b><span>${esc(a[2])}</span><em>${ch.actions.includes(a[0]) ? '확인 완료' : '선택 검토 · +8초'}</em></button>`).join('')}</div><div class="story-result ${st[0]}"><b>연계검토 상태 · ${esc(st[1])}</b><br>${esc(d.summary)}</div></div>`);
+  $$('[data-story-action]').forEach((b) => { b.onclick = () => onAction(b.dataset.storyAction); });
+}
+export function showPartyDossier() {
+  const party = travelPartyFor(); if (!party) return; const x = partyCrossCheck(party);
+  const roster = party.members.map((m) => { const t = getTraveler(m.travelerId), st = partyStatusForTraveler(t.id); return `<div class="party-person"><img src="${t.portrait}" alt=""><div><b>${esc(t.name.korean)}</b><small>${esc(t.name.latin)} · ${esc(m.relation)}</small></div><span class="party-state ${st}">${st === 'done' ? '처리완료' : st === 'current' ? '현재심사' : '대기'}</span></div>`; }).join('');
+  const archives = x.archives.length ? x.archives.map((a) => `<div class="party-statement ${x.status === 'review' ? 'warn' : ''}"><strong>${esc(a.name)} · ${esc(a.relation)}</strong>목적 ${esc(a.purpose)} · 체류 ${esc(a.stay)} · 숙소 ${esc(a.hotel)}<br>${esc(a.summary)}</div>`).join('') : '<div class="party-statement">아직 처리된 동행인의 진술 기록이 없습니다.</div>';
+  showModal('동행여행 기록', `<div class="party-dossier"><div class="party-card"><h3>${esc(party.label)} · ${esc(party.id)}</h3><div class="party-meta"><div><span>공동 예약번호</span><b>${esc(party.sharedPNR)}</b></div><div><span>기본 숙소</span><b>${esc(party.hotel)}</b></div><div><span>공통 여행목적</span><b>${esc(party.purpose)}</b></div><div><span>구성원</span><b>${party.members.length}명</b></div></div><div class="party-roster">${roster}</div><div class="party-disclaimer">동행 관계는 편의를 위한 연결정보입니다. 다른 구성원의 진술은 현재 피심사인의 입국요건을 자동으로 결정하지 않으며 별도 확인이 필요합니다.</div></div><div class="party-card"><h3>동행인 진술 교차검증</h3><div class="party-archive">${archives}<div class="party-statement"><strong>현재 시스템 의견</strong>${esc(x.text)}</div></div></div></div>`, { size: 'wide' });
+}
