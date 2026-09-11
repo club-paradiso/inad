@@ -1,10 +1,13 @@
 // INAD: 제12조 — application controller.
 // Wires engines (state + rules) to the UI layer. Flows that open dialogs/screens live here;
 // engines stay DOM-free and UI modules stay logic-free.
+// The boot watchdog is the first module evaluated so a failure anywhere below still surfaces.
+import './services/boot-watchdog.js';
 import { state, session, resetSessionState } from './state.js';
 import { bus, notify } from './services/bus.js';
 import { initAudio, ensureAudio, cues } from './services/audio.js';
 import { installErrorCollectors, runDiagnostics, diagnosticText } from './services/diagnostics.js';
+import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
 import { newSessionSeed, displayDateKo } from './engines/rng.js';
 import { buildSession, current, caseForQueueItem, screeningNo } from './engines/queue-engine.js';
@@ -198,5 +201,6 @@ function boot() {
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
   byId('sessionSeed').textContent = String(session.seed); renderQueue(); renderTop(); renderEventBar(); renderDailyStart(showDailyMissions); renderPersistenceStatus(); syncOptionButtons(); startClock();
+  scheduleUiEnhancements();
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

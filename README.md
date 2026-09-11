@@ -19,7 +19,7 @@ npm install && npm run build && npm test
 DATA_GO_KR_SERVICE_KEY=<data.go.kr general authentication key>
 ```
 
-The credential is read only by the Vercel server function and is never bundled into browser JavaScript. If the key or upstream API is unavailable, the game automatically falls back to its static airport preset.
+The credential is read only by the Vercel server function and is never bundled into browser JavaScript. If the key or upstream API is unavailable, the game automatically falls back to its static airport preset. `npm run dev` serves the same function locally at `/api/airport-load` (set the variable in your shell to test live data; E2E always runs without it).
 
 - KAC airports (GMP/PUS/CJU/CJJ/TAE/MWX/YNY): 한국공항공사 실시간 항공기 운항정보 조회_GW, data.go.kr `15158625`
 - ICN T2: 인천국제공항공사 여객편 운항현황(다국어), data.go.kr `15095093`

@@ -1,6 +1,8 @@
 // Minimal, dependency-free boot watchdog.
 // This is intentionally safe to load before the rest of the application so a client-side
 // exception cannot leave users staring at what looks like an endless loading state.
+// It is imported first by `app.js` (the browser entry) and must never be imported by engines or
+// shared services: those modules also run under node:test, where `window` does not exist.
 
 const failures = [];
 
@@ -19,13 +21,24 @@ function remember(value) {
   if (text && !failures.includes(text)) failures.push(text);
 }
 
-window.addEventListener('error', (event) => {
-  remember(event.error || event.message);
-});
+export function installBootWatchdog({ timeoutMs = 4000 } = {}) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+  if (window.__inadBootWatchdog) return true;
+  window.__inadBootWatchdog = true;
 
-window.addEventListener('unhandledrejection', (event) => {
-  remember(event.reason);
-});
+  window.addEventListener('error', (event) => {
+    remember(event.error || event.message);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    remember(event.reason);
+  });
+
+  // Normal boot is synchronous after DOMContentLoaded; four seconds leaves generous headroom on
+  // slower mobile devices while still turning a silent hang into an actionable failure state.
+  setTimeout(showBootFailure, timeoutMs);
+  return true;
+}
 
 function coreBooted() {
   const seed = document.getElementById('sessionSeed')?.textContent?.trim();
@@ -77,6 +90,4 @@ function showBootFailure() {
   console.error('[INAD] Core boot did not complete.', failures);
 }
 
-// Normal boot is synchronous after DOMContentLoaded; four seconds leaves generous headroom on
-// slower mobile devices while still turning a silent hang into an actionable failure state.
-setTimeout(showBootFailure, 4000);
+installBootWatchdog();
