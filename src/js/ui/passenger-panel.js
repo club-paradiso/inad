@@ -1,5 +1,5 @@
 // LEFT column · the person: portrait, identity, entry basis, stage, interaction state, language, party.
-import { $, byId, esc } from './dom.js';
+import { $, $$, byId, esc } from './dom.js';
 import { state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -14,8 +14,27 @@ export function renderPassenger() {
   byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = c.purpose; byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
   const img = byId('pPortrait'); if (img.getAttribute('src') !== t.portrait) img.src = t.portrait; img.alt = `${t.name.korean} 가상 여행객 초상`;
   renderBehavior(); renderLanguage(); renderParty();
-  byId('stageLabel').textContent = stageText(state.stage);
-  const box = byId('stageBox'); box.className = 'stage ' + (/SECONDARY|REFUGEE/.test(state.stage) ? 'secondary' : /INVESTIGATION|ARREST|ENTRY_REFUSED/.test(state.stage) ? 'critical' : '');
+  renderCaseBar(c, t);
+}
+// Stepper position is derived from the legal stage only (never from behaviour/language/party).
+export function stepperState(stage, ended) {
+  const s = stage || 'PRIMARY';
+  if (s === 'PRIMARY') return { active: 'primary', done: [], tone: '' };
+  if (s === 'SECONDARY') return { active: 'secondary', done: ['primary'], tone: 'secondary' };
+  if (s === 'REFUGEE') return { active: 'followup', done: ['primary', 'secondary', 'decision'], tone: 'refugee' };
+  if (s === 'INVESTIGATION' || s === 'ARREST_REVIEW') return { active: 'followup', done: ['primary', 'secondary', 'decision'], tone: 'critical' };
+  if (s === 'ADMITTED') return { active: 'decision', done: ['primary', 'secondary'], tone: '' };
+  if (s === 'ENTRY_REFUSED' || s === 'ARRESTED') return { active: ended ? 'followup' : 'decision', done: ['primary', 'secondary', 'decision'], tone: 'critical' };
+  return { active: 'decision', done: ['primary', 'secondary'], tone: '' };
+}
+export function renderCaseBar(c, t) {
+  const stageEl = byId('stageLabel'); if (stageEl) stageEl.textContent = stageText(state.stage);
+  const box = byId('stageBox'); if (box) box.className = 'stage ' + (/SECONDARY|REFUGEE/.test(state.stage) ? 'secondary' : /INVESTIGATION|ARREST|ENTRY_REFUSED/.test(state.stage) ? 'critical' : '');
+  const name = byId('caseName'); if (name) name.textContent = `${t.name.korean} · ${t.name.latin}`;
+  const sum = byId('caseSummary'); if (sum) sum.textContent = `${t.nationality.korean} · ${t.nationality.code} · ${c.basis} · ${c.purpose} · ${c.stay}`;
+  const mini = byId('caseMiniPortrait'); if (mini && mini.getAttribute('src') !== t.portrait) mini.src = t.portrait;
+  const st = stepperState(state.stage, state.ended);
+  $$('#stepper li').forEach((li) => { const k = li.dataset.step; li.className = (k === st.active ? 'on ' + st.tone : st.done.includes(k) ? 'done' : '').trim(); li.setAttribute('aria-current', k === st.active ? 'step' : 'false'); });
 }
 export function renderBehavior() {
   const b = state.behavior; if (!b) return; const band = behaviorBand(), a = byId('pAttitude'); if (a) { a.textContent = '태도: ' + band.label; a.className = 'attitude ' + band.cls; }

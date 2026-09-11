@@ -77,9 +77,9 @@
   --ease: cubic-bezier(.2, .7, .2, 1);
 
   /* layout */
-  --h-header: 56px; --h-eventbar: 34px; --h-queue: 84px; --h-footer: 28px;
+  --h-header: 56px; --h-eventbar: 34px; --h-queue: 72px; --h-casebar: 52px; --h-footer: 28px;
   --focus-ring: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
 }
 @media (max-height: 820px) {
-  :root { --h-header: 52px; --h-eventbar: 30px; --h-queue: 72px; --h-footer: 26px; }
+  :root { --h-header: 52px; --h-eventbar: 30px; --h-queue: 64px; --h-casebar: 46px; --h-footer: 26px; }
 }

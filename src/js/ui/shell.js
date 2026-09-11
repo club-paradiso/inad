@@ -18,6 +18,7 @@ export function renderWorkloadOnly() {
   const qb = byId('queuePressureBox'); if (qb) qb.classList.toggle('pressure-high', pi[1] === 'bad');
   const avg = state.stats.processed ? Math.round(state.totalCaseSeconds / state.stats.processed) : state.caseWorkSeconds;
   const ae = byId('avgTime'); if (ae) ae.textContent = fmtClock(avg);
+  const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
   const sc = byId('score'); if (sc) sc.textContent = overallScore();
   const ok = byId('overallKpi'); if (ok) ok.className = 'kpi ' + workloadClass(overallScore());
   renderEventBar();

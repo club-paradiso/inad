@@ -1,5 +1,5 @@
 // RIGHT column · biometrics / entry-basis tools, system lookups terminal; CENTER · requirement matrix and clue board.
-import { $, byId, esc } from './dom.js';
+import { $, byId, esc, fmtClock } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -22,6 +22,18 @@ export function renderEntry() {
 <div class="entry-section"><h3>입국 근거 · 사전여행허가</h3><div class="entry-grid">${row('입국 근거 구분', `${basis.label} · ${basis.basis}`, 'wide')}${row('적용 내용', c.basisDetail, 'wide')}${row('사증', c.visa)}${row('K-ETA(사전여행허가)', keta.text, keta.status === 'PASS' ? '' : 'attention')}${row('전자입국신고', decl.text, 'wide')}</div></div>
 <div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', c.return)}${row('신고 입국목적', c.purpose)}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
 <div class="lawline">국적은 사증면제협정·무사증 입국허가·K-ETA 등 <b>입국 근거 산정</b>에만 사용합니다(제7조). 위험도·범죄 가능성은 국적으로 산정하지 않습니다. K-ETA는 사증이 아니며 사전여행허가서입니다(제7조의3).</div>`;
+  renderDocStatus(c, b, keta, decl);
+}
+// Three at-a-glance tiles under the selected document: biometrics (§12의2), e-Arrival/K-ETA, lookups done.
+export function renderDocStatus(c, b, keta, decl) {
+  const el = byId('docStatus'); if (!el) return;
+  const declOk = decl.status === 'PASS', ketaOk = keta.status === 'PASS';
+  const tile = (cls, label, value) => `<div class="status-tile ${cls}"><span>${esc(label)}</span><b title="${esc(value)}">${esc(value)}</b></div>`;
+  const looked = state.queries.length;
+  el.innerHTML = tile(b.bad ? 'bad' : 'ok', '생체정보 · 제12조의2', `${b.bad ? '불일치' : '일치'} ${b.label}`)
+    + tile(declOk && ketaOk ? 'ok' : 'warn', '전자입국신고 · K-ETA', `${declOk ? '신고 완료' : decl.text}${ketaOk ? '' : ' · ' + keta.text}`)
+    + tile(looked ? 'ok' : '', '전산 조회', looked ? `${looked}건 조회 · ${state.looked.size}종` : '아직 조회 없음');
+  const dc = byId('docCount'); if (dc) dc.textContent = String((c.docs || []).length);
 }
 export function tone(t) { return t === '정상' ? '정상' : t === '주의' ? '주의' : t === '경고' ? '경고' : '치명'; }
 export function renderTerminal() {
@@ -42,6 +54,8 @@ export function renderMatrix() {
   let hint = r.pct >= 95 ? '필요한 확인이 충분히 축적되었습니다. 최종 판단은 전체 사실관계와 법적 근거를 종합하십시오.' : `필수절차 ${r.hit}/${r.needed}${c.clues ? ` · 핵심단서 ${cs.keyGot.length}/${cs.keys.length}` : ''}. 질문·조회로 사실관계를 더 확인하십시오.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
+  const cr = byId('caseReady'); if (cr) { cr.textContent = r.pct + '%'; cr.className = 'mono' + (r.pct >= 95 ? ' good' : ''); }
+  const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
   const done = state.performed.map((x) => ACTION_NAMES[x] || x.replace('QUESTION_', '문답:').replace('LOOKUP_', '조회:'));
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';
   byId('flowCount').textContent = `${done.length}개 완료`;

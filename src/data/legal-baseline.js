@@ -1,6 +1,6 @@
 // Data extracted verbatim from the v6.1 baseline (legacy/v6.1) — release/legal baseline metadata and the statutory refusal reason catalogue
 // Legal/game content: do not edit without a documented review (docs/legal-baseline.md).
-export const RELEASE = {version:'7.1',label:'RELEASE',legalBaseline:'2026-09-07',dataVersion:'6.1',saveSchema:1,build:'2026.09.11',laws:[
+export const RELEASE = {version:'7.2',label:'RELEASE',legalBaseline:'2026-09-07',dataVersion:'6.1',saveSchema:1,build:'2026.09.11',laws:[
  {name:'출입국관리법',lawId:'001707',effective:'2026.01.23',note:'현행'},
  {name:'난민법',lawId:'011546',effective:'2016.12.20',note:'현행'},
  {name:'난민법 시행령',lawId:'011878',effective:'2025.09.19',note:'현행'},

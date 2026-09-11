@@ -26,6 +26,12 @@ start · primary inspection · briefing · tutorial · secondary · refugee · S
 ## 알려진 제한
 - 프리뷰 배포 검증은 Vercel Deployment Protection 해제 또는 bypass 토큰이 필요.
 
+## v7.2 작업대 UX 재설계 검증 (2026-09-11)
+- 레이아웃: 사건 헤더(심사번호·요약·단계 스테퍼·준비도·처리시간) 신설, 중앙 탭 작업대(제출 서류 | 입국 요건 자료) + 상시 전산 조회, 우측 심사 판단 레일(판단 근거 → 준비도 → 사실관계 → 단서판 → 진행기록) + 하단 고정 심사 결정.
+- 1440×1000 · 1024×768: 가로 오버플로 0, `#stepper #terminal #basisBoard #clearBtn #secondaryBtn #refuseBtn #docview #pPortrait #questions` 전부 뷰포트 내, 콘솔 오류 0 (Playwright 캡처 스크립트).
+- 회귀: 사건 헤더 행 추가 시 숨겨진 연계사건 스트립 때문에 그리드 행이 밀려 작업대가 52px로 붕괴 → 모든 chrome 요소에 `grid-row` 명시 배치로 수정.
+- E2E 사양 갱신: visual smoke가 스테퍼 상태(일반심사 → 입국재심)와 작업대 탭 전환을 추가 검증(레거시 대상에서는 자동 생략).
+
 ## v7.1 추가 검증 (2026-09-11)
 - 판단 근거 패널 8개 도메인 노드 렌더링·결과 화면 섹션(E2E 1번 사양에서 검증), 콘솔 오류 0.
 - 390×800(모바일) fallback: 가로 오버플로 0, 시작 화면·근무 시작 버튼 접근 가능, 안내 배너 표시. 심사 작업대는 1024px 이상 권장(모바일 최적화 아님).
