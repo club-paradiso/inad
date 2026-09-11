@@ -17,8 +17,14 @@ start · primary inspection · briefing · tutorial · secondary · refugee · S
 - v6.1 source/dist: 1,514,881 bytes 단일 파일, 105 portraits (956 KB base64), 1 script scope, DOM ≈ 750 nodes.
 - v7.0: dist 1,391,510 bytes, 105 portraits 파일 자산(빌드 시 인라인), DOM ≈ 750 nodes, 큐는 10명만 렌더링(105명 전체 DOM 렌더링 없음), 포트레이트 `loading=lazy` + 프리로드 캐시 유지.
 
+## 프로덕션 배포 검증 (2026-09-11, PR #4 병합 → main c1b5a24)
+- Vercel(Git 연동, `vercel.json` 정적 배포) 프로덕션 `https://inad-gray.vercel.app` 응답 200, `content-length` 1,429,761 bytes, SHA-256 `6e0baf6e…08a4` = 로컬 `dist/index.html` = `main:index.html` (바이트 동일).
+- 페이지 로드 시 네트워크 요청 1건(문서 자체)뿐, 콘솔 오류 0, 내장 진단 전부 PASS, 가로 오버플로 0.
+- `INAD_TARGET=url INAD_BASE_URL=https://inad-gray.vercel.app npm run test:e2e` → 19/19 통과.
+- 프리뷰 배포는 Vercel SSO 보호가 켜져 있어 외부에서 검증 불가(대시보드에서 접근 필요).
+
 ## 알려진 제한
-- Vercel 프로덕션 검증은 이 환경에서 접근 가능한 팀에 `inad` 프로젝트가 없어 수행하지 못함. 루트 `index.html`이 릴리스 미러이므로 정적 배포에는 그대로 사용 가능.
+- 프리뷰 배포 검증은 Vercel Deployment Protection 해제 또는 bypass 토큰이 필요.
 
 ## v7.1 추가 검증 (2026-09-11)
 - 판단 근거 패널 8개 도메인 노드 렌더링·결과 화면 섹션(E2E 1번 사양에서 검증), 콘솔 오류 0.
