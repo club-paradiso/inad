@@ -9,6 +9,9 @@ import { session, state } from '../state.js';
 export const coreCaseMap = new Map(CASES.map((c) => [c.id, c]));
 export const CORE_TRAVELER_IDS = new Set(CASES.map((c) => c.travelerId));
 
+const CLEAR_REVIEW_ANOMALIES = ['companionHotel', 'pnrAgency', 'friendContact'];
+const REFUSAL_VARIANTS = ['purposeMismatch', 'entryBan', 'documentInvalid', 'bioRefusal'];
+
 export function originAirport(code) { return AIRPORT_BY_CODE[code] || 'HUB'; }
 
 export function normalProfile(t, rng) {
@@ -23,34 +26,116 @@ export function normalProfile(t, rng) {
   return { kind: 'touristVisa', purpose: '개인 관광', stay: (3 + Math.floor(rng() * 8)) + '일', basis: '유효 사증 소지 · 단기방문', basisDetail: 'C-3-9 일반관광 사증 유효 · 입국목적 별도 심사', visa: 'C-3-9 유효', eta: '해당 없음', arrivalCard: '전자입국신고 제출' };
 }
 
+// Each shift gets five straightforward admissions, two cases that need secondary examination,
+// and one genuine refusal. The specific anomaly/refusal is seeded, so a roster stays reproducible.
+export function generatedOutcome(index, profile, rng) {
+  const slot = index % 8;
+  if (slot < 5) return { kind: 'routine-clear' };
+  if (slot < 7) return { kind: 'secondary-clear', anomaly: pick(CLEAR_REVIEW_ANOMALIES, rng) };
+  const pool = profile.kind === 'resident' ? REFUSAL_VARIANTS.filter((x) => x !== 'purposeMismatch') : REFUSAL_VARIANTS;
+  return { kind: 'refuse', variant: pick(pool, rng) };
+}
+
+function setDocField(doc, key, value) {
+  if (!doc) return;
+  const row = (doc.fields || []).find((x) => x[0] === key);
+  if (row) row[1] = value;
+  else (doc.fields ||= []).push([key, value]);
+}
+
+function applySecondaryClear({ anomaly, questions, lookups, clues }) {
+  let required = [];
+  if (anomaly === 'companionHotel') {
+    questions.push({ id: 'detail', cat: '추가소명', q: '숙박예약 명의가 본인이 아닌 이유를 설명해 주십시오.', a: '동행인이 두 사람 객실을 함께 예약했습니다. 제 이름도 투숙객 명단에 등록되어 있습니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
+    lookups.contact = ['주의', '예약 대표명의는 동행인이지만 투숙객 명단에서 피심사인 성명과 동일 숙박기간이 확인됩니다.'];
+    clues.push({ id: 'n1', trigger: 'INIT', title: '숙박 명의', text: '숙박예약 대표명의가 피심사인과 다름.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '동행예약 투숙객 명단에서 피심사인 성명이 확인됨.', kind: 'confirm', key: true });
+    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
+  } else if (anomaly === 'pnrAgency') {
+    questions.push({ id: 'detail', cat: '추가소명', q: '귀국편 예약내역을 본인 휴대전화에서 바로 제시하지 못하는 이유가 있습니까?', a: '여행사가 단체 예약으로 발권해 제 앱에는 안 보이지만 예약번호와 전자티켓이 있습니다.', reveal: 'depth', requires: ['QUESTION_return'] });
+    lookups.pnr = ['주의', '여행사 단체예약 PNR에서 피심사인의 귀국편 전자티켓과 좌석상태가 확인됩니다.'];
+    clues.push({ id: 'n1', trigger: 'INIT', title: '귀국편 표시', text: '개인 앱에서 귀국편이 즉시 조회되지 않음.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_pnr', title: '의심 해소', text: '단체 PNR에서 유효 전자티켓과 귀국편이 확인됨.', kind: 'confirm', key: true });
+    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_pnr'];
+  } else {
+    questions.push({ id: 'detail', cat: '국내관계', q: '전자입국신고의 국내 연락처와 어떤 관계입니까?', a: '예전에 알게 된 지인입니다. 숙박이나 취업을 제공받는 관계는 아니고 하루 만날 예정입니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
+    lookups.contact = ['주의', '국내 연락처는 개인 지인이나 숙박·고용주·초청자로 등록된 이력은 확인되지 않습니다.'];
+    clues.push({ id: 'n1', trigger: 'INIT', title: '국내 지인', text: '관광객이 개인 국내 연락처를 신고함.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '고용·숙박 제공 등 목적불일치를 뒷받침할 관계는 확인되지 않음.', kind: 'confirm', key: true });
+    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
+  }
+  return required;
+}
+
+function applyGeneratedRefusal(c, variant) {
+  c.risk = 'HIGH';
+  c.difficulty = '일반 · 불허판단';
+  c.sessionVariant = `generated-refuse-${variant}`;
+
+  if (variant === 'purposeMismatch') {
+    c.questions.push({ id: 'detail', cat: '추가소명', q: '한국에서 실제로 어떤 활동을 할 예정인지 구체적으로 설명해 주십시오.', a: '지인이 운영하는 매장에서 약 2주 동안 일을 도와주고 현금으로 사례비를 받기로 했습니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
+    c.lookups.contact = ['불일치', '국내 연락처가 영업장 운영자로 확인되며 피심사인의 단기 근로 제공 정황과 진술이 일치합니다.'];
+    c.evidence['입국목적'] = ['bad', '불일치', '신고한 단기방문 목적과 국내 유상활동 계획이 양립하지 않음'];
+    c.required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
+    c.resolution = { type: 'REFUSE', reason: 'SIM-A12-PUR' };
+    c.initial = '관광 목적으로 왔다고 진술하지만 국내 지인과의 구체적인 활동 계획은 추가 확인이 필요합니다.';
+    c.note = '입국재심에서 실제 활동 계획을 확인하면 신고 목적과 체류자격의 불일치가 드러나는 사건.';
+    c.clues.push({ id: 'r1', trigger: 'INIT', title: '목적 확인 필요', text: '관광 진술은 있으나 국내 지인과의 활동 내용이 구체적이지 않음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'QUESTION_detail', title: '유상활동 진술', text: '국내 영업장에서 일을 돕고 사례비를 받을 계획을 진술함.', kind: 'risk', key: true }, { id: 'r3', trigger: 'LOOKUP_contact', title: '국내관계 확인', text: '연락처가 해당 영업장 운영자와 일치함.', kind: 'confirm', key: true });
+    return;
+  }
+
+  if (variant === 'entryBan') {
+    c.watch = '규제정보 확인 필요';
+    c.lookups.history = ['규제', '과거 강제퇴거 기록이 있으며 강제퇴거 후 5년이 지나지 않은 것으로 확인됩니다.'];
+    c.required = ['SECONDARY', 'LOOKUP_history'];
+    c.resolution = { type: 'REFUSE', reason: 'SIM-A11-DEPORT' };
+    c.initial = '제출서류 자체에는 큰 이상이 없지만 출입국 규제정보 조회가 필요합니다.';
+    c.note = '일반적인 입국요건과 별개로 개인별 입국금지 사유를 확인해야 하는 사건.';
+    c.clues.push({ id: 'r1', trigger: 'INIT', title: '규제정보', text: '신원 조회 화면에 규제정보 확인 필요 표시가 있음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'LOOKUP_history', title: '입국금지 사유', text: '강제퇴거 후 5년 미경과 사실이 확인됨.', kind: 'risk', key: true });
+    return;
+  }
+
+  if (variant === 'documentInvalid') {
+    c.chip = '검증 오류';
+    const passportDoc = c.docs.find((d) => d.k === 'PASSPORT');
+    setDocField(passportDoc, '만료일', '2025-12-31');
+    setDocField(passportDoc, '전자칩', 'ERROR');
+    c.lookups.visa = ['불일치', '사증 또는 입국기반과 별개로 제시된 여권의 유효성 요건을 충족하지 못합니다.'];
+    c.evidence['신원'] = ['bad', '미충족', '여권 유효기간 경과 및 전자칩 검증 오류'];
+    c.required = ['SECONDARY', 'LOOKUP_visa'];
+    c.resolution = { type: 'REFUSE', reason: 'SIM-A12-DOC' };
+    c.initial = '여권 정보가 자동 판독되었지만 문서 유효성에 이상 표시가 있습니다.';
+    c.note = '여권 유효성 자체가 충족되지 않아 입국허가할 수 없는 사건.';
+    c.clues.push({ id: 'r1', trigger: 'INIT', title: '문서 이상', text: '여권 만료일과 전자칩 검증 상태를 직접 확인해야 함.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'LOOKUP_visa', title: '유효성 미충족', text: '입국자격 조회와 별개로 여권 유효성 요건 미충족 확인.', kind: 'risk', key: true });
+    return;
+  }
+
+  c.bio = '생체정보 제공 거부';
+  c.questions.push({ id: 'detail', cat: '본인확인', q: '지문과 얼굴정보 제공 절차에 협조하시겠습니까?', a: '제공하지 않겠습니다. 이유는 설명하지 않겠습니다.', reveal: 'depth' });
+  c.evidence['신원'] = ['warn', '본인확인 미완료', '생체정보 제공 거부로 본인확인 절차가 완료되지 않음'];
+  c.required = ['SECONDARY', 'QUESTION_detail'];
+  c.resolution = { type: 'REFUSE', reason: 'SIM-BIO-REF' };
+  c.initial = '여권은 제시했지만 생체정보 제공 절차에는 협조하지 않고 있습니다.';
+  c.note = '생체정보 제공·본인확인 절차 불응을 별도로 판단해야 하는 사건.';
+  c.clues.push({ id: 'r1', trigger: 'INIT', title: '본인확인 미완료', text: '생체정보 제공 단계가 완료되지 않음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'QUESTION_detail', title: '제공 거부 확인', text: '생체정보 제공을 명시적으로 거부함.', kind: 'risk', key: true });
+}
+
 export function makeNormalCase(t, index, shift, rng, seed) {
-  const p = normalProfile(t, rng), origin = originAirport(t.nationality.code), flight = 'SIM' + String(300 + index), carrier = pick(FICTIONAL_CARRIERS, rng), hotel = pick(FICTIONAL_HOTELS, rng), review = rng() < .28;
+  const p = normalProfile(t, rng), origin = originAirport(t.nationality.code), flight = 'SIM' + String(300 + index), carrier = pick(FICTIONAL_CARRIERS, rng), hotel = pick(FICTIONAL_HOTELS, rng);
+  const outcome = generatedOutcome(index, p, rng);
+  const review = outcome.kind === 'secondary-clear';
   const passport = t.passport || {}; const dob = passport.birthDate || '1995-01-01'; const sex = passport.sex || 'X'; const passNo = passport.number || ('SIM' + String(index).padStart(7, '0')); const expiry = passport.expiry || '2033-12-31';
-  let anomaly = null; if (review) anomaly = pick(['companionHotel', 'pnrAgency', 'friendContact'], rng);
   const questions = [{ id: 'purpose', cat: '기본사항', q: '이번 방문 목적을 말씀해 주십시오.', a: p.purpose + ' 목적입니다.', reveal: 'purpose' }, { id: 'stay', cat: '여행·체류', q: '한국에는 얼마나 머무를 예정입니까?', a: p.stay + ' 예정입니다.', reveal: 'stay' }, { id: 'return', cat: '여행·체류', q: '귀국 또는 다음 이동 일정이 있습니까?', a: p.kind === 'resident' ? '현재 체류자격에 따라 국내 체류지로 복귀합니다.' : '왕복 또는 후속 이동 예약이 확정되어 있습니다.', reveal: 'travel' }];
   const lookups = { history: ['정상', '과거 출입국 기록상 현재 심사에 영향을 줄 특이사항 없음.'], visa: ['정상', p.basis + ' 요건과 제출자료가 일치합니다.'], pnr: ['정상', '예약자료와 진술한 일정이 일치합니다.'], contact: ['정상', '국내 체류지 또는 연락처 자료가 확인됩니다.'], public: ['정상', '제출자료와 공개 확인정보 사이 특이한 모순이 없습니다.'] };
-  const clues = []; let required = ['QUESTION_purpose'];
-  if (review) {
-    if (anomaly === 'companionHotel') {
-      questions.push({ id: 'detail', cat: '추가소명', q: '숙박예약 명의가 본인이 아닌 이유를 설명해 주십시오.', a: '동행인이 두 사람 객실을 함께 예약했습니다. 제 이름도 투숙객 명단에 등록되어 있습니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
-      lookups.contact = ['주의', '예약 대표명의는 동행인이지만 투숙객 명단에서 피심사인 성명과 동일 숙박기간이 확인됩니다.'];
-      clues.push({ id: 'n1', trigger: 'INIT', title: '숙박 명의', text: '숙박예약 대표명의가 피심사인과 다름.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '동행예약 투숙객 명단에서 피심사인 성명이 확인됨.', kind: 'confirm', key: true }); required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
-    } else if (anomaly === 'pnrAgency') {
-      questions.push({ id: 'detail', cat: '추가소명', q: '귀국편 예약내역을 본인 휴대전화에서 바로 제시하지 못하는 이유가 있습니까?', a: '여행사가 단체 예약으로 발권해 제 앱에는 안 보이지만 예약번호와 전자티켓이 있습니다.', reveal: 'depth', requires: ['QUESTION_return'] });
-      lookups.pnr = ['주의', '여행사 단체예약 PNR에서 피심사인의 귀국편 전자티켓과 좌석상태가 확인됩니다.'];
-      clues.push({ id: 'n1', trigger: 'INIT', title: '귀국편 표시', text: '개인 앱에서 귀국편이 즉시 조회되지 않음.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_pnr', title: '의심 해소', text: '단체 PNR에서 유효 전자티켓과 귀국편이 확인됨.', kind: 'confirm', key: true }); required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_pnr'];
-    } else {
-      questions.push({ id: 'detail', cat: '국내관계', q: '전자입국신고의 국내 연락처와 어떤 관계입니까?', a: '예전에 알게 된 지인입니다. 숙박이나 취업을 제공받는 관계는 아니고 하루 만날 예정입니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
-      lookups.contact = ['주의', '국내 연락처는 개인 지인이나 숙박·고용주·초청자로 등록된 이력은 확인되지 않습니다.'];
-      clues.push({ id: 'n1', trigger: 'INIT', title: '국내 지인', text: '관광객이 개인 국내 연락처를 신고함.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '고용·숙박 제공 등 목적불일치를 뒷받침할 관계는 확인되지 않음.', kind: 'confirm', key: true }); required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
-    }
-  }
+  const clues = [];
+  let required = ['QUESTION_purpose'];
+  if (review) required = applySecondaryClear({ anomaly: outcome.anomaly, questions, lookups, clues });
   if (p.kind === 'resident') questions.push({ id: 'residence', cat: '추가소명', q: '체류카드와 국내 거소 정보를 확인하겠습니다.', a: '유효한 체류카드와 현재 거소 자료를 제시하겠습니다.', reveal: 'depth' });
   const doc2 = p.kind === 'resident' ? { t: '외국인등록증', k: 'RESIDENCE CARD', fields: [['성명', t.name.latin], ['체류자격', 'D-2'], ['상태', 'VALID'], ['재입국', '체류기간 내']] } : { t: '입국자격 자료', k: 'ENTRY BASIS', fields: [['입국기반', p.basis], ['사증', p.visa], ['K-ETA', p.eta], ['전자입국신고', p.arrivalCard]] };
   let docs = [{ t: '여권', k: 'PASSPORT', fields: [['성명', t.name.latin], ['국적', t.nationality.english || t.nationality.korean], ['여권번호', passNo], ['만료일', expiry], ['전자칩', 'VALID'], ['MRZ', 'VALID']] }, doc2, { t: '항공예약', k: 'PNR', fields: [['입국편', flight], ['여정', origin + ' → ICN'], ['귀국/이동', p.kind === 'resident' ? '—' : '왕복 발권 확인'], ['예약상태', 'CONFIRMED']] }, { t: p.kind === 'resident' ? '국내 거소자료' : '숙박예약', k: p.kind === 'resident' ? 'STAY' : 'HOTEL', fields: p.kind === 'resident' ? [['체류목적', '국내 체류지로 복귀'], ['거소', '등록정보와 일치'], ['체류기간', '유효']] : [['숙박', hotel], ['투숙객', t.name.latin], ['상태', 'CONFIRMED']] }];
   docs = [docs[0], ...shuffled(docs.slice(1), rng)];
   const evidence = { '신원': ['ok', '확인', '여권·생체정보 일치'], '입국자격': ['ok', '충족', p.basis], '입국목적': [review ? 'warn' : 'ok', review ? '추가확인' : '일치', p.purpose], '여행계획': ['ok', '확정', '예약자료 확인'], '체재능력': ['ok', '충분', '통상적인 체류자료 확인'], '국내관계': [review ? 'warn' : 'ok', review ? '추가확인' : '확인', '신고·예약자료 검증 가능'] };
-  return { id: `NORMAL-${seed}-${String(index + 1).padStart(2, '0')}`, shift, travelerId: t.id, name: t.name.latin, nat: t.nationality.korean, code: t.nationality.code, sex, dob, passport: passNo, purpose: p.purpose, stay: p.stay, arrival: `${flight} · ${origin} → ICN`, return: p.kind === 'resident' ? '—' : '왕복 발권 확인', carrier, basis: p.basis, basisDetail: p.basisDetail, eta: p.eta, arrivalCard: p.arrivalCard, visa: p.visa, watch: '이상 없음', bio: '일치 ' + (98.7 + rng() * 1.1).toFixed(1) + '%', chip: '정상', risk: 'LOW', initial: review ? '제출자료 일부는 추가 확인이 필요하지만 방문 목적에 맞게 입국하려고 합니다.' : p.purpose + ' 목적으로 입국합니다. 필요한 예약과 증빙은 준비했습니다.', questions: [questions[0], ...shuffled(questions.slice(1), rng)], docs, lookups, evidence, required, resolution: { type: 'CLEAR', reason: null }, difficulty: review ? '일반 · 추가확인' : '일반', note: review ? '초기 의심사항이 재심의 추가 확인으로 해소되는 정상승객.' : '일반 정상승객. 필요한 최소 확인 후 신속하게 입국허가하는 것이 목표.', clues: clues.length ? clues : undefined, sessionVariant: review ? 'secondary-clear' : 'routine-clear' };
+  const c = { id: `NORMAL-${seed}-${String(index + 1).padStart(2, '0')}`, shift, travelerId: t.id, name: t.name.latin, nat: t.nationality.korean, code: t.nationality.code, sex, dob, passport: passNo, purpose: p.purpose, stay: p.stay, arrival: `${flight} · ${origin} → ICN`, return: p.kind === 'resident' ? '—' : '왕복 발권 확인', carrier, basis: p.basis, basisDetail: p.basisDetail, eta: p.eta, arrivalCard: p.arrivalCard, visa: p.visa, watch: '이상 없음', bio: '일치 ' + (98.7 + rng() * 1.1).toFixed(1) + '%', chip: '정상', risk: review ? 'MEDIUM' : 'LOW', initial: review ? '제출자료 일부는 추가 확인이 필요하지만 방문 목적에 맞게 입국하려고 합니다.' : p.purpose + ' 목적으로 입국합니다. 필요한 예약과 증빙은 준비했습니다.', questions: [questions[0], ...shuffled(questions.slice(1), rng)], docs, lookups, evidence, required, resolution: { type: 'CLEAR', reason: null }, difficulty: review ? '일반 · 추가확인' : '일반', note: review ? '초기 의심사항이 재심의 추가 확인으로 해소되는 정상승객.' : '일반 정상승객. 필요한 최소 확인 후 신속하게 입국허가하는 것이 목표.', clues: clues.length ? clues : [], sessionVariant: review ? 'secondary-clear' : 'routine-clear' };
+  if (outcome.kind === 'refuse') applyGeneratedRefusal(c, outcome.variant);
+  if (!c.clues.length) delete c.clues;
+  return c;
 }
 
 export function generateNormalCases(seed, pool = [...travelerMap.values()]) {
@@ -83,7 +168,8 @@ export function buildTravelParties(seed, queue) {
   const partyByTraveler = new Map(); const parties = [];
   const rng = makeRng(hashSeed(seed + '|PARTIES'));
   const byShift = new Map([[1, []], [2, []], [3, []]]);
-  queue.forEach((q, idx) => { const c = caseForQueueItem(q); if (c && !q.caseId) byShift.get(c.shift).push({ q, idx, c }); });
+  // Generated refusal cases are deliberately excluded. Party flavour must never erase a legal outcome.
+  queue.forEach((q, idx) => { const c = caseForQueueItem(q); if (c && !q.caseId && c.resolution?.type === 'CLEAR') byShift.get(c.shift).push({ q, idx, c }); });
   const specs = [[1, PARTY_TYPES[0]], [1, PARTY_TYPES[1]], [2, PARTY_TYPES[2]], [2, PARTY_TYPES[3]], [3, PARTY_TYPES[4]]];
   let seq = 1;
   for (const [sh, tpl] of specs) {
@@ -109,7 +195,7 @@ export function buildTravelParties(seed, queue) {
       target.sessionVariant = 'party-secondary-clear';
       target.evidence = target.evidence || {}; target.evidence['동행일정'] = ['warn', '교차확인', '동행인과 일부 일정 진술 차이 · 단순 차이만으로 결론 불가'];
       target.required = [...new Set([...(target.required || []), 'SECONDARY', 'QUESTION_partyRelation', 'QUESTION_partyPlan', 'LOOKUP_party'])];
-      target.resolution = { type: 'CLEAR' };
+      // target is guaranteed CLEAR by candidate filtering above; do not rewrite resolution here.
     }
     parties.push(party);
   }

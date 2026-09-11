@@ -4,6 +4,9 @@
 import { storeGet } from './services/storage.js';
 
 export function emptyStats() { return { processed: 0, admitted: 0, secondary: 0, refused: 0, refugee: 0, investigation: 0, interpreter: 0 }; }
+export function emptyLiveOps(status = 'idle') {
+  return { status, live: false, available: false, stale: false, factor: 1, pressure: 'baseline', arrivals: null, delayed: 0, cancelled: 0, windowMinutes: 120, checkedAt: null, source: 'baseline', sourceLabel: '공항 기본 게임 프리셋', reason: null };
+}
 
 export const session = {
   seed: 0,
@@ -18,7 +21,8 @@ export const session = {
 export const state = {
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
   audio: true, soundCues: 0, announcements: 0,
-  difficulty: 'standard', challengeId: 'none', challengeApplied: false,
+  airportId: storeGet('inad-airport', 'icn-t2'), airportApplied: false, liveOps: emptyLiveOps(),
+  difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
   guidance: storeGet('inad-guidance', 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false,
@@ -32,12 +36,14 @@ export const state = {
 };
 
 // Reset the per-session counters (v6.1 regenerateSession semantics; campaign fields are preserved by the caller).
+// liveOps intentionally survives a roster regeneration: it is a setup-time airport snapshot,
+// not a per-case counter. setAirport() resets it when the selected airport actually changes.
 export function resetSessionState() {
   Object.assign(state, {
     caseIndex: 0, reports: [], mistakes: [], sessionSaved: false, soundCues: 0, announcements: 0, stats: emptyStats(),
     score: 100, efficiency: 100, proportionality: 100, strikes: 0, totalCaseSeconds: 0, simSeconds: 0, caseWorkSeconds: 0,
     overSecondary: 0, repeatedLookups: 0, repeatedQuestions: 0, rushed: 0, pressurePeak: 37, fatigue: 0, peakFatigue: 0,
-    breaksTaken: 0, eventsSeen: 0, activeEvent: null, eventHistory: [], backlogOffset: 0, challengeApplied: false, scenarioApplied: false
+    breaksTaken: 0, eventsSeen: 0, activeEvent: null, eventHistory: [], backlogOffset: 0, airportApplied: false, challengeApplied: false, scenarioApplied: false
   });
 }
 

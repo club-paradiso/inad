@@ -1,7 +1,7 @@
 {
   "framework": null,
-  "installCommand": "echo 'INAD: static single-file release — no dependency install on Vercel'",
-  "buildCommand": "mkdir -p dist && cp index.html dist/index.html",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false

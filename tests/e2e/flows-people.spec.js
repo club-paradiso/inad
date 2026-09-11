@@ -35,16 +35,22 @@ test.describe('동행인·언어', () => {
 
   test('8. 통역 필요 승객 → 이해 실패 → 통역 → 유효 진술 → 입국허가', async ({ page }) => {
     const errors = await H.openGame(page);
-    await H.setSeed(page, SEED);
-    const queue = await H.getQueue(page);
+    // Generated rosters differ between v6.1 and v7 (v7 seeds refusals into the normal queue), so
+    // walk a fixed list of candidate seeds until one contains a routine passenger with no shared
+    // language and no travel party. The list is deterministic, so both targets stay reproducible.
     let idx = -1;
-    for (const q of queue) {
-      if (q.caseId || q.sessionVariant !== 'routine-clear') continue;
-      const lang = await H.hook(page, (T, i) => T.languageFor(i), q.index);
-      const party = await H.hook(page, (T, i) => T.partyFor(i), q.index);
-      if (lang.mode === 'none' && !party) { idx = q.index; break; }
+    for (const seed of [SEED, 271828, 314159, 577215, 141421, 173205]) {
+      await H.setSeed(page, seed);
+      const queue = await H.getQueue(page);
+      for (const q of queue) {
+        if (q.caseId || q.sessionVariant !== 'routine-clear') continue;
+        const lang = await H.hook(page, (T, i) => T.languageFor(i), q.index);
+        const party = await H.hook(page, (T, i) => T.partyFor(i), q.index);
+        if (lang.mode === 'none' && !party) { idx = q.index; break; }
+      }
+      if (idx >= 0) break;
     }
-    expect(idx, 'a routine passenger without direct communication exists in this seed').toBeGreaterThanOrEqual(0);
+    expect(idx, 'a routine passenger without direct communication exists in a candidate seed').toBeGreaterThanOrEqual(0);
     await H.startShift(page);
     await H.jumpTo(page, idx);
     await expect(page.locator('#languageStatus')).toContainText('통역 호출을 권고');

@@ -23,7 +23,9 @@ src/
       campaign-engine.js     3-day campaigns + linked-case narrative
       save-engine.js         localStorage schemas, migration, portable bundle
       rng.js                 FNV-1a + PRNG + date helpers
-    services/                bus (events), storage, audio (Web Audio), diagnostics, portraits
+    services/                bus (events), storage, audio (Web Audio), diagnostics, portraits,
+                             airport-live (same-origin /api/airport-load client), boot-watchdog,
+                             ui-enhancements → i18n, border-console, work-manual (optional, post-boot)
     ui/                      renderers (no state mutation): shell, passenger-panel, interview-panel, document-workbench, system-panel, decision-desk, procedure-screen, start-screen, modals, toast, icons, views/*
 scripts/
   build-single-html.js       src → dist/index.html (+ root index.html mirror), esbuild IIFE, inline CSS/JS/WebP
@@ -40,11 +42,21 @@ legacy/v6.1/                 frozen v6.1 production build (baseline for parity t
 
 Engines never touch the DOM (`npm run lint` enforces). UI never changes state directly.
 
+## Boot order
+1. `app.js` imports `services/boot-watchdog.js` first. It records early `error`/`unhandledrejection` events and, if `#sessionSeed` is still empty after 4 s, renders a reload notice inside `#startOverlay`.
+2. `boot()` runs synchronously on `DOMContentLoaded` (session, UI bindings, start screen).
+3. `services/ui-enhancements.js` then loads the optional UI modules (`i18n`, `border-console`, `work-manual`) sequentially via `import()` on a 0 ms timer. Each specifier is a string literal so esbuild inlines them into the release bundle; a failing module only logs a warning and never blocks the core simulator.
+
+Only `app.js` may import `boot-watchdog.js` / `ui-enhancements.js`: `bus.js`, `state.js` and every engine are also loaded under node:test, where `window`/`document` do not exist.
+
 ## Save compatibility
 Keys and shapes are identical to v6.1 (`inad-meta-v54` v2, `inad-progress-v54` v1, `inad-campaign-v58` v1, bundle schema 1). `save-engine.migrateMeta/migrateProgress` is the single migration point.
 
 ## Build
-`npm run build` bundles `src/js/app.js` with esbuild (IIFE, es2020, minified), swaps `services/portrait-data.js` for a generated data-URI map, inlines all stylesheets in document order, and writes `dist/index.html` + root `index.html` with a GENERATED banner. The artifact runs from `file://` with zero network requests.
+`npm run build` bundles `src/js/app.js` with esbuild (IIFE, es2020, minified), swaps `services/portrait-data.js` for a generated data-URI map, inlines all stylesheets in document order, and writes `dist/index.html` + root `index.html` with a GENERATED banner. The artifact runs from `file://` with zero external requests; the only network call is the same-origin `/api/airport-load` fetch, which fails safe to the static airport preset. `scripts/check-built-page.js` and `tests/integration/dist-integrity.test.js` verify that the optional UI modules are inlined and no unresolved `import()` remains.
+
+## Local server
+`scripts/static-server.js` (used by `npm run dev` and Playwright) routes `/api/airport-load` to the same handler Vercel runs (`api/airport-load.js`). Without `DATA_GO_KR_SERVICE_KEY` the handler answers with its static-preset fallback; `playwright.config.js` blanks the key variables so E2E never reaches the public API.
 
 ## Deployment (Vercel)
 The Vercel project is Git-linked to this repository; pushes to `main` deploy production (`inad-gray.vercel.app`) and pull requests get preview deployments. `vercel.json` deploys the committed root `index.html` as a static single-file site (no install, no build on Vercel); CI's `verify` job fails when that mirror is stale relative to `npm run build`, so production always equals a verified build.

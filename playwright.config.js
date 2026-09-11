@@ -31,6 +31,9 @@ export default defineConfig({
   },
   webServer: remote ? undefined : {
     command: `node scripts/static-server.js ${dirs[target]} ${port}`,
+    // E2E must be deterministic: never let a developer's public-data key reach the local
+    // airport-load proxy, so the game always takes its static-preset fallback path.
+    env: { ...process.env, DATA_GO_KR_SERVICE_KEY: '', AIRPORT_DATA_API_KEY: '', PUBLIC_DATA_API_KEY: '' },
     url: `http://127.0.0.1:${port}${files[target] === 'index.html' ? '/' : '/' + files[target]}`,
     reuseExistingServer: true,
     timeout: 20_000

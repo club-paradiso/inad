@@ -1,5 +1,8 @@
 // Tiny synchronous event bus. Engines emit; the UI layer subscribes.
 // Engines must never touch the DOM — they describe what happened and the UI decides how to show it.
+// This module is shared by engines and runs under node:test, so it must stay free of any
+// browser globals. Optional UI enhancements are scheduled from `services/ui-enhancements.js`.
+
 const listeners = new Map();
 
 export const bus = {

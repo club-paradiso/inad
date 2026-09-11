@@ -28,6 +28,7 @@ export function caseMinimum(c = current()) { return legal.caseMinimum(c, languag
 export function initCase(skipCall = false) {
   const c = current();
   Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
+  if (state.guidance === 'guided' && state.caseIndex < 6) state.guidedGuardUsed = false;
   state.behavior = makeBehavior(c); state.language = languageProfileFor(c); state.party = travelPartyFor(c);
   bus.emit('procedure:close');
   discoverTriggeredClues('INIT');
@@ -77,22 +78,48 @@ export function selectDocument(i) { const c = current(); if (!c.docs[i]) return;
 export function cycleDocument(delta) { const c = current(); if (!c || !c.docs || !c.docs.length) return; state.selectedDoc = (state.selectedDoc + delta + c.docs.length) % c.docs.length; bus.emit('changed'); notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`); }
 
 export function recordMistake(msg, pts) { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, at: Date.now() }); }
-// Returns true when the strike limit was reached (game over).
-export function penalty(msg, pts) { recordMistake(msg, pts); state.strikes++; state.score = clampScore(state.score - pts); state.proportionality = clampScore(state.proportionality - Math.ceil(pts / 4)); addLog('alert', `감찰 경고: ${msg}`); notify.sound('buzzer'); bus.emit('changed'); notify.toast(`감찰 경고 -${pts}점`); return state.strikes >= 3; }
-// One-shot beginner protection on the very first case in guided mode.
-export function guidedGuardApplies() { if (state.guidance !== 'guided' || state.guidedGuardUsed || state.caseIndex !== 0) return false; state.guidedGuardUsed = true; return true; }
+export function penaltyPolicy() {
+  if (state.difficulty === 'training') return { factor: .5, strikeLimit: 6, coached: state.guidance === 'guided' && state.caseIndex < 6 };
+  if (state.difficulty === 'standard') return { factor: .75, strikeLimit: 4, coached: state.guidance === 'guided' && state.caseIndex < 3 };
+  return { factor: 1, strikeLimit: 3, coached: false };
+}
+// Returns true when the active difficulty's strike limit was reached (game over).
+export function penalty(msg, pts) {
+  const policy = penaltyPolicy(); const applied = Math.max(1, Math.round(pts * policy.factor));
+  recordMistake(msg, applied);
+  if (!policy.coached) state.strikes++;
+  state.score = clampScore(state.score - applied); state.proportionality = clampScore(state.proportionality - Math.ceil(applied / 4));
+  const prefix = policy.coached ? '코칭 경고' : '감찰 경고'; addLog('alert', `${prefix}: ${msg}`);
+  notify.sound(policy.coached ? 'beep' : 'buzzer'); bus.emit('changed');
+  notify.toast(policy.coached ? `코칭 경고 -${applied}점 · 스트라이크 없음` : `감찰 경고 -${applied}점 · ${state.strikes}/${policy.strikeLimit}`);
+  return !policy.coached && state.strikes >= policy.strikeLimit;
+}
+// Guided mode gives one procedural guard per case during the opening cases.
+export function guidedGuardApplies() { if (state.guidance !== 'guided' || state.guidedGuardUsed || state.caseIndex >= 6) return false; state.guidedGuardUsed = true; return true; }
 
 export function secondary() {
   const c = current(); const v = legal.validateSecondary(c, state.stage); if (!v.ok) return { ok: false };
   spendWork(24, 'secondary');
-  if (!v.proportionate) { state.overSecondary++; state.efficiency = clampScore(state.efficiency - 5); state.proportionality = clampScore(state.proportionality - 4); addLog('alert', '업무 비례성 주의: 현재까지 확인된 사항만으로는 재심이 필수인 사건이 아닙니다. 추가 확인 필요성과 처리부담을 함께 고려하십시오.'); }
+  if (!v.proportionate) {
+    state.overSecondary++;
+    const effPenalty = state.difficulty === 'training' ? 1 : state.difficulty === 'standard' ? 3 : 5;
+    const propPenalty = state.difficulty === 'training' ? 1 : state.difficulty === 'standard' ? 2 : 4;
+    state.efficiency = clampScore(state.efficiency - effPenalty); state.proportionality = clampScore(state.proportionality - propPenalty);
+    addLog('alert', '업무 비례성 주의: 현재까지 확인된 사항만으로는 재심이 필수인 사건이 아닙니다. 추가 확인 필요성과 처리부담을 함께 고려하십시오.');
+  }
   state.stage = 'SECONDARY'; behaviorAdjust(14 * state.behavior.profile.sensitivity, -3, '입국재심 인계'); actionMark('SECONDARY'); state.stats.secondary++;
   addLog('system', '입국재심으로 인계했습니다. 이는 별도의 제재처분이 아니라 제12조 입국심사의 계속입니다.');
   bus.emit('changed'); notify.announce('입국재심 인계', `${screeningNo()} 승객을 입국재심으로 인계합니다.`, 'SECONDARY', 2100); notify.pulse('#secondaryBtn', 'action-hit', 300);
   return { ok: true, open: 'secondary' };
 }
 
-function evaluateRushed(c) { const min = caseMinimum(c); if (state.caseWorkSeconds >= min) return false; state.rushed++; state.score = clampScore(state.score - 4); state.proportionality = clampScore(state.proportionality - 2); addLog('alert', `성급한 판단 경고: 이 사건의 확인량에 비해 결론이 매우 빠릅니다. 최소 확인권고 ${min}초 / 현재 ${state.caseWorkSeconds}초.`); return true; }
+function evaluateRushed(c) {
+  const min = caseMinimum(c); if (state.caseWorkSeconds >= min || state.difficulty === 'training') return false;
+  state.rushed++;
+  const scorePenalty = state.difficulty === 'standard' ? 2 : 4; const propPenalty = state.difficulty === 'standard' ? 1 : 2;
+  state.score = clampScore(state.score - scorePenalty); state.proportionality = clampScore(state.proportionality - propPenalty);
+  addLog('alert', `성급한 판단 경고: 이 사건의 확인량에 비해 결론이 매우 빠릅니다. 최소 확인권고 ${min}초 / 현재 ${state.caseWorkSeconds}초.`); return true;
+}
 
 export function decideClear() {
   const c = current(); const v = legal.validateClear(c, state.performed);
