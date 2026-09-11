@@ -18,6 +18,7 @@ export const session = {
 export const state = {
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
   audio: true, soundCues: 0, announcements: 0,
+  airportId: storeGet('inad-airport', 'icn-t2'), airportApplied: false,
   difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
@@ -37,7 +38,7 @@ export function resetSessionState() {
     caseIndex: 0, reports: [], mistakes: [], sessionSaved: false, soundCues: 0, announcements: 0, stats: emptyStats(),
     score: 100, efficiency: 100, proportionality: 100, strikes: 0, totalCaseSeconds: 0, simSeconds: 0, caseWorkSeconds: 0,
     overSecondary: 0, repeatedLookups: 0, repeatedQuestions: 0, rushed: 0, pressurePeak: 37, fatigue: 0, peakFatigue: 0,
-    breaksTaken: 0, eventsSeen: 0, activeEvent: null, eventHistory: [], backlogOffset: 0, challengeApplied: false, scenarioApplied: false
+    breaksTaken: 0, eventsSeen: 0, activeEvent: null, eventHistory: [], backlogOffset: 0, airportApplied: false, challengeApplied: false, scenarioApplied: false
   });
 }
 
