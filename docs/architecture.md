@@ -45,3 +45,6 @@ Keys and shapes are identical to v6.1 (`inad-meta-v54` v2, `inad-progress-v54` v
 
 ## Build
 `npm run build` bundles `src/js/app.js` with esbuild (IIFE, es2020, minified), swaps `services/portrait-data.js` for a generated data-URI map, inlines all stylesheets in document order, and writes `dist/index.html` + root `index.html` with a GENERATED banner. The artifact runs from `file://` with zero network requests.
+
+## Deployment (Vercel)
+The Vercel project is Git-linked to this repository; pushes to `main` deploy production (`inad-gray.vercel.app`) and pull requests get preview deployments. `vercel.json` deploys the committed root `index.html` as a static single-file site (no install, no build on Vercel); CI's `verify` job fails when that mirror is stale relative to `npm run build`, so production always equals a verified build.
