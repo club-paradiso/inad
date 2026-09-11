@@ -1,0 +1,25 @@
+{
+  "name": "inad-article12",
+  "version": "7.0.0",
+  "private": true,
+  "description": "INAD: 제12조 — 입국심사관 시뮬레이션 (vanilla HTML/CSS/JS, single-file release build)",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "build": "node scripts/build-single-html.js",
+    "test": "npm run test:unit && npm run build && npm run test:integrity && npm run test:e2e",
+    "test:unit": "node --test tests/unit/ tests/integration/",
+    "test:integrity": "node --test tests/integration/dist-integrity.test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:legacy": "INAD_TARGET=legacy playwright test",
+    "lint": "node scripts/lint.js",
+    "qa": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "esbuild": "^0.28.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
