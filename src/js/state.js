@@ -18,7 +18,7 @@ export const session = {
 export const state = {
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
   audio: true, soundCues: 0, announcements: 0,
-  difficulty: 'standard', challengeId: 'none', challengeApplied: false,
+  difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
   guidance: storeGet('inad-guidance', 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false,
