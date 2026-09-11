@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+    branches: ['**']
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm run test:integrity
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Legacy baseline parity (v6.1 behaviour)
+        run: INAD_TARGET=legacy npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inad-release-html
+          path: dist/index.html
+          if-no-files-found: error
