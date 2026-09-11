@@ -23,14 +23,20 @@
   - dist 무결성 테스트가 모든 `fetch(`를 금지 → CLAUDE.md의 유일 예외(same-origin `/api/airport-load`)만 허용하도록 lint와 정합.
   - E2E 8번(통역 흐름)이 고정 seed에서 조건 승객을 못 찾음(v7 생성 큐에 불허 사건이 섞이며 rng 소비 순서 변경) → 후보 seed 목록을 순차 탐색하도록 수정(legacy·dist 모두 통과).
 
+## 완료 (v7.2 작업대 UX 재설계)
+- Claude Design 캔버스로 A(심사대 콘솔)·B(사건 서류철)·C(분할 심사) 3안 시안 후 A를 채택(게임 루프상 전산 조회 결과가 항상 보여야 하므로 터미널은 탭에 넣지 않음).
+- 사건 헤더 행(스테퍼·준비도·처리시간), 중앙 탭 작업대 + 문서 상태 타일, 우측 심사 판단 레일 + 고정 결정 데스크. 판정 로직·데이터·저장 스키마 변경 없음.
+
 ## 현재 작업
-- 위 수정분을 `fix/handover-boot-bundle-qa` 브랜치로 PR → main 병합 후 Vercel 프로덕션 재검증(`INAD_TARGET=url INAD_BASE_URL=https://inad-gray.vercel.app npm run test:e2e`).
+- main 복구 PR(#7, `fix/handover-boot-bundle-qa`) 병합 → v7.2 작업대 UX PR(#6, `feat/v7.2-workstation-ux`, 복구된 main 병합 반영) 병합 → Vercel 프로덕션 재검증(`INAD_TARGET=url INAD_BASE_URL=https://inad-gray.vercel.app npm run test:e2e`).
 
 ## 발견된 버그 (v6.1 → v7에서 수정)
 - 캠페인 연계사건 스트립이 `.app` 그리드 행을 차지해 메인 작업대가 30px로 붕괴 → auto 행으로 분리.
 - 메인 3열이 `29%+36%+35%+gap`으로 16px 오버플로(클립) → fr 기반.
 - `--navy/--surface/--surface2/--sans` 미정의 토큰 사용 → 토큰 정리.
 - 모달 포커스 트랩 부재, 설정 토글에 `aria-pressed` 없음.
+- (v7.2) 숨겨진 연계사건 스트립이 grid auto-placement에서 빠지면서 새 사건 헤더 행이 밀림 → chrome 요소 `grid-row` 명시.
+- (v7.2) Codex 콘솔 스킨(`border-console.css`)이 `.app` 행 템플릿을 덮어써 사건 헤더·연계사건 스트립이 5행을 공유 → 스킨 템플릿에 사건 헤더 행 추가(8행).
 - 한 글자 단축키가 Ctrl/Cmd 조합(복사·붙여넣기·인쇄)까지 가로챔.
 - `NORMAL_CASES` 정적 배열(68KB)이 정의만 되고 미사용 → 제거.
 

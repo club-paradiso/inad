@@ -29,9 +29,21 @@ for (const vp of [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }]) 
     await shot(page, `primary-${tag}`);
     // decision controls and core documents must be visible without page scrolling
     for (const sel of ['#clearBtn', '#secondaryBtn', '#refuseBtn', '#docview', '#pPortrait', '#questions']) await expect(page.locator(sel)).toBeInViewport();
+    // v7.2 case header: stage stepper + lookup terminal stay visible alongside the decision desk
+    const stepper = page.locator('#stepper');
+    if (await stepper.count()) {
+      for (const sel of ['#stepper', '#terminal', '#basisBoard']) await expect(page.locator(sel)).toBeInViewport();
+      await expect(page.locator('#stepper li.on')).toHaveText('일반심사');
+      await expect(page.locator('#caseId')).toContainText('심사번호');
+      await page.locator('#wbTabEntry').click();
+      await expect(page.locator('#entry')).toBeVisible();
+      await page.locator('#wbTabDocs').click();
+      await expect(page.locator('#docview')).toBeVisible();
+    }
     const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S2-006');
     await H.jumpTo(page, idx);
     await page.locator('#secondaryBtn').click();
+    if (await stepper.count()) await expect(page.locator('#stepper li.on')).toHaveText('입국재심');
     await shot(page, `secondary-${tag}`);
     await noOverflow(page);
     await H.procAct(page, 'back');

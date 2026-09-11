@@ -49,10 +49,15 @@ const procHandlers = {
 function openProc(mode) { openProcedureScreen(mode, procHandlers); }
 function renderAll() {
   if (!current()) return;
-  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk); renderDocs({ onSelect: (i) => { caseEngine.selectDocument(i); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
+  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
   renderMatrix(); renderEntry(); renderTerminal(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp') }); renderStoryStrip();
 }
 function onAsk(q, repeat = false) { caseEngine.ask(q, repeat); }
+function showWorkbenchTab(name) {
+  $$('.wb-tab').forEach((b) => { const on = b.dataset.wb === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  $$('.wb-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+}
+function bindWorkbenchTabs() { $$('.wb-tab').forEach((b) => { b.onclick = () => showWorkbenchTab(b.dataset.wb); }); }
 
 // ---- session ---------------------------------------------------------------------------------
 function regenerate(seed = newSessionSeed()) {
@@ -63,7 +68,7 @@ function regenerate(seed = newSessionSeed()) {
   byId('sessionSeed').textContent = String(seed); renderEventBar(); renderChallengeHud(); renderCampaignHud(); renderDailyStart(showDailyMissions); syncOptionButtons(); renderQueue(); renderTop();
 }
 function beginCase(skipCall = false) {
-  const r = caseEngine.initCase(skipCall); renderAll(); preloadQueueImages();
+  const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); renderAll(); preloadQueueImages();
   if (r.callout) { showCallout(); cues.call(); showAnnouncement('승객 호출', `심사번호 ${screeningNo()}, 12번 심사대로 오십시오.`, 'CALL', 1850); notify.pulse('#queueStrip', 'call-pulse', 600); }
   if (r.tutorial) setTimeout(() => tutorial.start(), 1350);
 }
@@ -159,8 +164,8 @@ function bindKeyboard() {
     if (/^Digit[1-6]$/.test(e.code)) { e.preventDefault(); chooseQuestionCategory(Number(e.code.slice(-1)) - 1, announceA11y); return; }
     const direct = { k: '#langKo', e: '#langEn', i: '#langInterp', h: '[data-lu="history"]', v: '[data-lu="visa"]', p: '[data-lu="pnr"]', c: '[data-lu="contact"]', g: '[data-lu="party"]', o: '[data-lu="public"]' };
     if (direct[k]) { const b = $(direct[k]); if (b && !b.disabled) { e.preventDefault(); b.focus(); b.click(); } return; }
-    if (e.key === '[') { e.preventDefault(); caseEngine.cycleDocument(-1); focusSelectedDoc(); return; }
-    if (e.key === ']') { e.preventDefault(); caseEngine.cycleDocument(1); focusSelectedDoc(); return; }
+    if (e.key === '[') { e.preventDefault(); showWorkbenchTab('docs'); caseEngine.cycleDocument(-1); focusSelectedDoc(); return; }
+    if (e.key === ']') { e.preventDefault(); showWorkbenchTab('docs'); caseEngine.cycleDocument(1); focusSelectedDoc(); return; }
   });
 }
 
@@ -196,7 +201,7 @@ function boot() {
   installErrorCollectors(); initNotices(); initAudio(); bindModalChrome(); tutorial.bind(); ensureImportInput(); applyPreferences();
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
-  subscribe(); bindChrome(); bindKeyboard(); installHooks();
+  subscribe(); bindChrome(); bindWorkbenchTabs(); bindKeyboard(); installHooks();
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
