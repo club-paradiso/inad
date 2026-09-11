@@ -1,7 +1,7 @@
 /* Workspace components. */
 /* ---- subject (person) ---- */
-.subject { display: grid; grid-template-columns: 136px 1fr; gap: 12px; padding: 12px; }
-.portrait { position: relative; width: 136px; height: 168px; border-radius: var(--r-2); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+.subject { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 10px 12px; }
+.portrait { position: relative; width: 120px; height: 148px; border-radius: var(--r-2); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
 .portrait-tag { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 6px; font: 600 9px/1 var(--mono); letter-spacing: .06em; color: #fff; background: rgba(15, 42, 65, .72); }
 .subject-body { min-width: 0; display: grid; align-content: start; gap: 2px; }
@@ -25,12 +25,13 @@
 .stage.secondary .dot { background: var(--warning); }
 .stage.critical { border-color: var(--danger); background: var(--danger-soft); }
 .stage.critical .dot { background: var(--danger); }
-.subject-aux { display: grid; gap: 8px; padding: 0 12px 12px; }
+.subject-aux { display: grid; gap: 6px; padding: 0 12px 10px; overflow: auto; min-height: 0; align-content: start; }
 .behavior-box { padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); }
 .behavior-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .behavior-head strong { font-weight: 700; }
 .behavior-head small { color: var(--text-3); }
-.behavior-row { display: grid; grid-template-columns: 40px 1fr 26px; align-items: center; gap: 8px; margin: 3px 0; color: var(--text-2); }
+.behavior-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.behavior-row { display: grid; grid-template-columns: 40px 1fr 26px; align-items: center; gap: 8px; margin: 2px 0; color: var(--text-2); }
 .behavior-row b { text-align: right; font-family: var(--mono); color: var(--text); }
 .behavior-track { height: 5px; background: var(--neutral-soft); border-radius: 3px; overflow: hidden; }
 .behavior-track i { display: block; height: 100%; width: 0; background: var(--info); transition: width var(--t-slow) var(--ease); }
@@ -152,12 +153,12 @@
 .case-depth-note { margin-top: 3px; color: var(--text-3); }
 
 /* ---- entry basis / biometrics ---- */
-.entry { padding: 10px 12px; display: grid; gap: 10px; }
+.entry { padding: 10px 12px; display: grid; gap: 8px; align-content: start; }
 .bio-compare { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); overflow: hidden; }
 .bio-compare-head { padding: 5px 10px; background: var(--panel-head); font-size: var(--fs-label); font-weight: 700; }
-.bio-pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; padding: 10px; }
+.bio-pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; padding: 8px 10px; }
 .bio-shot { text-align: center; }
-.bio-shot img { width: 72px; height: 86px; object-fit: cover; margin: 0 auto; border-radius: var(--r-1); border: 1px solid var(--border); }
+.bio-shot img { width: 60px; height: 72px; object-fit: cover; margin: 0 auto; border-radius: var(--r-1); border: 1px solid var(--border); }
 .bio-shot small { display: block; margin-top: 4px; font-size: var(--fs-meta); color: var(--text-3); }
 .bio-score { text-align: center; padding: 6px 10px; border-radius: var(--r-1); background: var(--success-soft); color: var(--success-text); font: 700 var(--fs-compact)/1.4 var(--mono); }
 .bio-score.bad { background: var(--danger-soft); color: var(--danger-text); }

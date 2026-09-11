@@ -1,12 +1,12 @@
 /* Three-column inspection workspace: LEFT person & interview · CENTER case workbench · RIGHT systems & decision. */
 .main { display: grid; grid-template-columns: minmax(300px, 29fr) minmax(380px, 38fr) minmax(300px, 33fr); gap: var(--s-2); padding: var(--s-2); min-height: 0; }
 .col { display: grid; gap: var(--s-2); min-height: 0; min-width: 0; }
-.col.left { grid-template-rows: auto minmax(110px, 1fr) minmax(220px, 46%); }
+.col.left { grid-template-rows: minmax(240px, 40%) minmax(110px, 1fr) minmax(210px, 38%); }
 .col.mid { grid-template-rows: minmax(320px, 56%) minmax(160px, 1fr); }
-.col.right { grid-template-rows: auto minmax(120px, 1fr) auto; }
+.col.right { grid-template-rows: minmax(200px, 42%) minmax(150px, 1fr) auto; }
 .panel { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); overflow: hidden; }
-.panel-subject { grid-template-rows: auto auto auto; }
-.panel-decision, .panel-entry { grid-template-rows: auto auto; }
+.panel-subject { grid-template-rows: auto auto minmax(0, 1fr); }
+.panel-decision { grid-template-rows: auto auto; }
 .ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 12px; background: var(--panel-head); border-bottom: 1px solid var(--border); }
 .ph h2 { font-size: var(--fs-section); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 .ph small { font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -14,11 +14,12 @@
 @media (max-width: 1180px) {
   .main { gap: 6px; padding: 6px; grid-template-columns: minmax(280px, 30fr) minmax(340px, 37fr) minmax(280px, 33fr); }
   .col { gap: 6px; }
-  .col.left { grid-template-rows: auto minmax(90px, 1fr) minmax(200px, 44%); }
+  .col.left { grid-template-rows: minmax(210px, 38%) minmax(90px, 1fr) minmax(190px, 38%); }
   .col.mid { grid-template-rows: minmax(300px, 56%) minmax(140px, 1fr); }
+  .col.right { grid-template-rows: minmax(180px, 40%) minmax(130px, 1fr) auto; }
   .ph { padding: 0 10px; min-height: 28px; }
 }
 @media (max-height: 820px) {
-  .col.left { grid-template-rows: auto minmax(90px, 1fr) minmax(190px, 44%); }
+  .col.left { grid-template-rows: minmax(200px, 38%) minmax(90px, 1fr) minmax(180px, 38%); }
   .col.mid { grid-template-rows: minmax(280px, 55%) minmax(130px, 1fr); }
 }
