@@ -1,5 +1,8 @@
 // Tiny synchronous event bus. Engines emit; the UI layer subscribes.
 // Engines must never touch the DOM — they describe what happened and the UI decides how to show it.
+// i18n is a UI-only side effect: it watches rendered text without changing engine state.
+import './i18n.js';
+
 const listeners = new Map();
 
 export const bus = {
