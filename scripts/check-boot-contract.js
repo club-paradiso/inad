@@ -8,7 +8,7 @@ const htmlPath = path.join(root, 'src', 'index.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
 
 const requiredIds = [
-  'startScreen',
+  'startOverlay',
   'startBtn',
   'sessionSeed',
   'helpBtn',
