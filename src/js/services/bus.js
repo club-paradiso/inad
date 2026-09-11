@@ -1,3 +1,5 @@
+import './boot-watchdog.js';
+
 // Tiny synchronous event bus. Engines emit; the UI layer subscribes.
 // Engines must never touch the DOM — they describe what happened and the UI decides how to show it.
 //
