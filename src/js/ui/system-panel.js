@@ -6,12 +6,22 @@ import { getTraveler } from '../engines/traveler-engine.js';
 import { evidenceNow, readiness, ACTION_NAMES } from '../engines/legal-engine.js';
 import { clueStats } from '../engines/clue-engine.js';
 import { lookupName } from '../engines/case-engine.js';
+import { classifyEntryBasis, ketaStatus, arrivalDeclarationStatus } from '../engines/decision-model.js';
+import { renderBasisPanel } from './decision-basis.js';
 
 export function bioInfo(c) { const raw = parseFloat((c.bio.match(/[0-9]+(?:\.[0-9]+)?/) || ['99.0'])[0]); return { raw, bad: raw < 85 || /불일치|오류/.test(c.bio), label: isNaN(raw) ? '—' : raw.toFixed(1) + '%' }; }
 
 export function renderEntry() {
   const c = current(), t = getTraveler(c.travelerId), pp = getTraveler(c.passportPortraitId || c.travelerId); const b = bioInfo(c);
-  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<br>${b.label}</div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div><div class="entry-grid"><div class="ec wide"><label>국적·입국 기반</label><b>${esc(t.nationality.korean)} · ${esc(c.basis)}</b></div><div class="ec wide"><label>적용 내용</label><b>${esc(c.basisDetail)}</b></div><div class="ec"><label>사증</label><b>${esc(c.visa)}</b></div><div class="ec"><label>K-ETA</label><b>${esc(c.eta)}</b></div><div class="ec"><label>전자입국신고</label><b>${esc(c.arrivalCard)}</b></div><div class="ec"><label>전자여권 칩</label><b>${esc(c.chip)}</b></div><div class="ec"><label>규제정보</label><b>${esc(c.watch)}</b></div></div><div class="lawline">국적은 무사증·사증·K-ETA 등 <b>입국자격 산정</b>에만 사용합니다. 위험도·범죄 가능성은 국적으로 산정하지 않습니다.</div>`;
+  const basis = classifyEntryBasis(c), keta = ketaStatus(c), decl = arrivalDeclarationStatus(c);
+  const earr = (c.docs || []).find((d) => d.k === 'E-ARRIVAL'); const fm = {}; (earr?.fields || []).forEach((r) => { fm[r[0]] = r[1]; });
+  const stayPlace = fm['체류지'] || fm['체류예정지'] || fm['숙소'] || null, contact = fm['국내연락처'] || fm['연락처'] || null;
+  const row = (k, v, cls = '') => `<div class="ec ${cls}"><label>${esc(k)}</label><b>${esc(v)}</b></div>`;
+  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<br>${b.label}</div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
+<div class="entry-section"><h3>신원 · 여권</h3><div class="entry-grid">${row('성명(로마자)', t.name.latin)}${row('국적', `${t.nationality.korean} · ${t.nationality.code}`)}${row('생년월일', t.passport.birthDate || c.dob || '—')}${row('여권번호', t.passport.number || c.passport)}${row('여권 만료', t.passport.expiry || '—')}${row('전자여권 칩', c.chip)}</div></div>
+<div class="entry-section"><h3>입국 근거 · 사전여행허가</h3><div class="entry-grid">${row('입국 근거 구분', `${basis.label} · ${basis.basis}`, 'wide')}${row('적용 내용', c.basisDetail, 'wide')}${row('사증', c.visa)}${row('K-ETA(사전여행허가)', keta.text, keta.status === 'PASS' ? '' : 'attention')}${row('전자입국신고', decl.text, 'wide')}</div></div>
+<div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', c.return)}${row('신고 입국목적', c.purpose)}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
+<div class="lawline">국적은 사증면제협정·무사증 입국허가·K-ETA 등 <b>입국 근거 산정</b>에만 사용합니다(제7조). 위험도·범죄 가능성은 국적으로 산정하지 않습니다. K-ETA는 사증이 아니며 사전여행허가서입니다(제7조의3).</div>`;
 }
 export function tone(t) { return t === '정상' ? '정상' : t === '주의' ? '주의' : t === '경고' ? '경고' : '치명'; }
 export function renderTerminal() {
@@ -36,5 +46,5 @@ export function renderMatrix() {
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';
   byId('flowCount').textContent = `${done.length}개 완료`;
   byId('caseNote').innerHTML = '<b>사건 메모</b> · 단서의 존재만으로 불허·체포를 결정하지 마십시오. 서로 독립된 진술·서류·전산정보를 교차검증해야 합니다.' + (c.clues ? '<div class="case-depth-note">사건 심화 모드 · 핵심단서와 주변정보가 섞여 있습니다.</div>' : '');
-  renderClueBoard();
+  renderBasisPanel(); renderClueBoard();
 }

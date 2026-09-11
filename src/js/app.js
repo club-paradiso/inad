@@ -33,6 +33,7 @@ import { applyPreferences, showSettings, openRules, showHelp, showGuidedGuard, t
 import { showRecordsCenter, showPlayerProfile, showDailyMissions, showChallengeBoard, showChallengeDetail, showOperationsLog, renderDailyStart } from './ui/views/records.js';
 import { showCampaignDetail, showCampaignArchive, requestAbandonCampaign, showStoryDossier, showPartyDossier } from './ui/views/campaign.js';
 import { showSystemCenter, ensureImportInput, showDiagnostics } from './ui/views/system-center.js';
+import { showSourceRegistry } from './ui/decision-basis.js';
 import { showDoc, showCaseResult, showShiftTransition, showShiftComplete, showGameOver, showFatalAbuse, showRefusalReasons } from './ui/views/reports.js';
 import { uiIcon } from './ui/icons.js';
 
@@ -116,7 +117,7 @@ function helpFlow() { showHelp({ onTutorial: () => tutorial.start(true), onRecor
 
 // ---- chrome bindings ---------------------------------------------------------------------------
 function bindChrome() {
-  byId('helpBtn').onclick = helpFlow; byId('ruleBtn').onclick = openRules; byId('dailyBtn').onclick = showDailyMissions; byId('recordsBtn').onclick = recordsFlow; byId('profileBtn').onclick = showPlayerProfile; byId('settingsBtn').onclick = showSettings; byId('systemBtn').onclick = showSystemCenter;
+  byId('helpBtn').onclick = helpFlow; byId('ruleBtn').onclick = openRules; byId('dailyBtn').onclick = showDailyMissions; byId('recordsBtn').onclick = recordsFlow; byId('profileBtn').onclick = showPlayerProfile; byId('settingsBtn').onclick = showSettings; byId('systemBtn').onclick = showSystemCenter; byId('sourcesBtn').onclick = showSourceRegistry;
   byId('audioBtn').onclick = () => { state.audio = !state.audio; if (state.audio) { ensureAudio(); cues.toggle(true); showAnnouncement('음향 시스템', '효과음과 안내방송 차임을 사용합니다.', 'AUDIO', 1600); } else showAnnouncement('음향 시스템', '음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'MUTED', 1600); renderAudioButton(); };
   byId('procClose').onclick = closeProcedureScreen;
   byId('clearBtn').onclick = decideClearFlow; byId('secondaryBtn').onclick = () => { const r = caseEngine.secondary(); if (r.ok) openProc('secondary'); }; byId('refuseBtn').onclick = openRefusalFlow; byId('sjpBtn').onclick = sjpFlow;
@@ -173,7 +174,7 @@ function subscribe() {
 
 // ---- test / debug hook (read-mostly; mirrors the v6.1 globals used by the E2E suite) --------------
 function installHooks() {
-  window.INADSystem = { release: RELEASE, makeBundle, validateBundle, applyBundle, runDiagnostics, diagnosticText, showSystemCenter, showDiagnostics };
+  window.INADSystem = { release: RELEASE, makeBundle, validateBundle, applyBundle, runDiagnostics, diagnosticText, showSystemCenter, showDiagnostics, showSourceRegistry };
   window.INADTest = {
     seed: () => session.seed,
     regenerate: (s) => regenerate(s),

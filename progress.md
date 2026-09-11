@@ -9,8 +9,12 @@
 - PHASE 7 accessibility: focus trap, focus restoration, aria-pressed, Ctrl/Cmd 단축키 충돌 제거, 튜토리얼 포커스 이동.
 - PHASE 8 regression: E2E 19개 dist 통과, unit 36개 통과.
 
+## 완료 (v7.1 고증 감사)
+- 공개 법령·공식자료 리서치 → `docs/legal-research.md` (Ground Truth Matrix 포함).
+- 출처 등록부·규칙 노드·설명형 판단 모델·판단 근거 UI·용어 안내·좁은 화면 fallback.
+
 ## 현재 작업
-- PHASE 9 CI/문서/릴리스 산출물, PHASE 10 dead-code 정리.
+- 릴리스 검증(E2E 전체 재실행)과 PR 준비.
 
 ## 발견된 버그 (v6.1 → v7에서 수정)
 - 캠페인 연계사건 스트립이 `.app` 그리드 행을 차지해 메인 작업대가 30px로 붕괴 → auto 행으로 분리.
@@ -21,8 +25,9 @@
 - `NORMAL_CASES` 정적 배열(68KB)이 정의만 되고 미사용 → 제거.
 
 ## 남은 항목
-- 두 번째 미션: 공개 법령 리서치 → Legal Ground Truth Matrix → 근거 추적형 판단 노드/근거 패널/소스 레지스트리.
-- Vercel 프로덕션 배포 검증(현재 Vercel 프로젝트가 연결된 팀에 없음).
+- Vercel 프로덕션 배포 검증(현재 Vercel 프로젝트가 연결된 팀에 없음 — 루트 index.html을 배포하면 됨).
+- 조건부 입국허가(제13조)를 플레이 가능한 조치로 설계할지 검토(사건 데이터 필요).
+- 하이코리아 단기체류 안내(2013년 갱신본) 대신 최신 사증 세부기호 공식자료 확보 시 입국 근거 분류 보강.
 
 ## 중요한 architecture decision
 - 개발은 네이티브 ESM(빌드 없이 실행), 배포는 esbuild 번들 단일 HTML. 포트레이트는 파일로 관리하고 빌드 시에만 인라인.

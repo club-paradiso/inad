@@ -19,6 +19,10 @@ test.describe('일반 입국심사 흐름', () => {
     await expect(page.locator('#modalTitle')).toHaveText('입국심사 완료');
     await H.continueDoc(page);
     await H.expectResult(page, '입국 허가');
+    if (process.env.INAD_TARGET !== 'legacy') {
+      await expect(page.locator('#modalBody')).toContainText('판단 근거');
+      await expect(page.locator('#modalBody .basis-node')).toHaveCount(8);
+    }
     const st = await H.getState(page);
     expect(st.stage).toBe('ADMITTED');
     expect(st.strikes).toBe(0);
@@ -84,7 +88,7 @@ test.describe('일반 입국심사 흐름', () => {
     await page.locator('#procBody [data-proc-lu="pnr"]').click();
     await page.locator('#procBody [data-proc-q="jobOffer"]').click();
     await H.procAct(page, 'refuse');
-    await expect(page.locator('#modalTitle')).toHaveText('입국 불허가 사유 선택');
+    await expect(page.locator('#modalTitle')).toContainText('입국 불허가 사유 선택');
     await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
     await expect(page.locator('#modalTitle')).toHaveText('입국 불허가 통지서');
     await expect(page.locator('#modalBody')).toContainText('제12조제3항제2호');

@@ -21,3 +21,7 @@
 
 ## 열린 검토 사항
 `docs/legal-review.md` 참조. 변경은 공식 법령·정부 공개자료 확인 후에만.
+
+## v7.1 추가 — 설명형 판단 모델
+- 규칙 노드·출처 등록부: `src/data/decision-rules.js`, `src/data/legal-sources.js`. 각 노드는 `status`(CONFIRMED/INFERRED/SIMULATED/NOT_PUBLICLY_VERIFIED)와 인용 출처(확인일 포함)를 갖는다.
+- `decision-model.js`는 설명용이며 판정은 여전히 `legal-engine.js`가 담당한다. 리서치 로그와 Ground Truth Matrix는 `docs/legal-research.md`.

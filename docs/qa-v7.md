@@ -4,8 +4,8 @@
 | 항목 | 결과 |
 |---|---|
 | `npm run lint` | 51 modules OK |
-| `npm run test:unit` | 36/36 |
-| `npm run build` | dist/index.html 1,391,510 bytes (v6.1 1,514,881 · −8.1%), 105 portraits inline |
+| `npm run test:unit` | 40/40 (v7.1: decision-model 4개 추가) |
+| `npm run build` | dist/index.html ≈1,430 KB (v6.1 1,514,881 bytes 대비 −5%), 105 portraits inline |
 | `npm run test:integrity` | pass |
 | `npm run test:e2e` (dist) | 19/19, pageerror 0, console.error 0 |
 | `INAD_TARGET=legacy npm run test:e2e` | 19/19 (v6.1 parity) |
@@ -19,3 +19,8 @@ start · primary inspection · briefing · tutorial · secondary · refugee · S
 
 ## 알려진 제한
 - Vercel 프로덕션 검증은 이 환경에서 접근 가능한 팀에 `inad` 프로젝트가 없어 수행하지 못함. 루트 `index.html`이 릴리스 미러이므로 정적 배포에는 그대로 사용 가능.
+
+## v7.1 추가 검증 (2026-09-11)
+- 판단 근거 패널 8개 도메인 노드 렌더링·결과 화면 섹션(E2E 1번 사양에서 검증), 콘솔 오류 0.
+- 390×800(모바일) fallback: 가로 오버플로 0, 시작 화면·근무 시작 버튼 접근 가능, 안내 배너 표시. 심사 작업대는 1024px 이상 권장(모바일 최적화 아님).
+- 법령·출처 등록부 정합성: `registryIntegrity()` 위반 0 (단위 테스트).
