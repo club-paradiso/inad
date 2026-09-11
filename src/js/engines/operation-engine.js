@@ -4,44 +4,24 @@ import { DIFFICULTY_CONFIG, FIELD_EVENT_TYPES, SCENARIOS, SHIFT_TARGETS } from '
 import { airportById } from '../../data/airports.js';
 import { state, session, emptyLiveOps } from '../state.js';
 import { hashSeed, makeRng, shuffled } from './rng.js';
+import { calculateLiveLoadFactor, capLiveLoadFactor, classifyLiveLoad } from './airport-load-balance.js';
 import { behaviorAfterWork } from './behavior-engine.js';
 import { bus, notify } from '../services/bus.js';
 import { storeSet } from '../services/storage.js';
 import { fetchAirportLiveLoad } from '../services/airport-live.js';
 import { addLog } from './log.js';
 
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
 export function difficultyCfg() { return DIFFICULTY_CONFIG[state?.difficulty || 'standard'] || DIFFICULTY_CONFIG.standard; }
 export function scenarioCfg(id = state?.scenarioId || 'normal') { return SCENARIOS[id] || SCENARIOS.normal; }
 export function airportCfg(id = state?.airportId || 'icn-t2') { return airportById(id); }
 export function difficultyName(k) { return DIFFICULTY_CONFIG?.[k]?.label || ({ training: '훈련', standard: '표준', realistic: '실전' })[k] || k; }
 
-// Converts the next-two-hour international-arrival snapshot into a relative GAMEPLAY load.
-// liveTargetArrivals is a normalization target for game balance, not a real airport capacity.
-export function rawLiveLoadFactor(snapshot, targetArrivals) {
-  const target = Math.max(1, Number(targetArrivals) || 1);
-  const arrivals = Math.max(0, Number(snapshot?.arrivals) || 0);
-  const delayed = Math.max(0, Number(snapshot?.delayed) || 0);
-  const ratio = arrivals / target;
-  const delayRatio = arrivals ? Math.min(1, delayed / arrivals) : 0;
-  return clamp(.82 + ratio * .18 + delayRatio * .05, .80, 1.28);
-}
-
-// A live traffic spike must not silently turn Training back into hard mode. The user-selected
-// difficulty remains the primary control; real-time data is a bounded operational modifier.
-export function boundedLiveLoadFactor(raw = state?.liveOps?.factor, difficulty = state?.difficulty || 'standard') {
-  const value = Number.isFinite(Number(raw)) ? Number(raw) : 1;
-  const range = difficulty === 'training' ? [.94, 1.06] : difficulty === 'realistic' ? [.82, 1.24] : [.88, 1.15];
-  return clamp(value, range[0], range[1]);
-}
+// Compatibility exports keep call sites readable while the calculation itself stays in a pure,
+// independently tested module.
+export function rawLiveLoadFactor(snapshot, targetArrivals) { return calculateLiveLoadFactor(snapshot, targetArrivals); }
+export function boundedLiveLoadFactor(raw = state?.liveOps?.factor, difficulty = state?.difficulty || 'standard') { return capLiveLoadFactor(raw, difficulty); }
 export function liveLoadFactor() { return state?.liveOps?.live ? boundedLiveLoadFactor(state.liveOps.factor) : 1; }
-export function liveLoadPressure(factor = state?.liveOps?.factor || 1) {
-  if (factor < .92) return 'quiet';
-  if (factor <= 1.08) return 'normal';
-  if (factor <= 1.18) return 'busy';
-  return 'surge';
-}
+export function liveLoadPressure(factor = state?.liveOps?.factor || 1) { return classifyLiveLoad(factor); }
 export function appliedLiveLoad() { return { ...state.liveOps, appliedFactor: liveLoadFactor() }; }
 
 export async function refreshAirportLiveLoad({ force = false } = {}) {
@@ -59,10 +39,10 @@ export async function refreshAirportLiveLoad({ force = false } = {}) {
         checkedAt: data?.checkedAt || null, source: data?.source || 'baseline', sourceLabel: data?.sourceLabel || '공항 기본 게임 프리셋', reason: data?.reason || 'live-data-unavailable'
       };
     } else {
-      const factor = rawLiveLoadFactor(data, ap.liveTargetArrivals);
+      const factor = calculateLiveLoadFactor(data, ap.liveTargetArrivals);
       state.liveOps = {
         status: 'live', live: true, available: true, stale: false, airport: ap.code,
-        factor, pressure: liveLoadPressure(factor), arrivals: Number(data.arrivals) || 0,
+        factor, pressure: classifyLiveLoad(factor), arrivals: Number(data.arrivals) || 0,
         delayed: Number(data.delayed) || 0, cancelled: Number(data.cancelled) || 0,
         windowMinutes: Number(data.windowMinutes) || 120, checkedAt: data.checkedAt || new Date().toISOString(),
         source: data.source || 'official', sourceLabel: data.sourceLabel || '공식 공항 운항정보', reason: null
