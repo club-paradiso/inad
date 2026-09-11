@@ -36,7 +36,7 @@ test.describe('접근성·키보드', () => {
     // dialogs open/close with keyboard and restore focus
     await page.keyboard.press('KeyS');
     await expect(page.locator('#modalTitle')).toHaveText('접근성·조작 설정');
-    expect(await page.evaluate(() => document.activeElement.id)).toBe('modalClose');
+    await expect.poll(() => page.evaluate(() => document.activeElement.id), { timeout: 3000 }).toBe('modalClose');
     await page.keyboard.press('Escape');
     await expect(page.locator('#modal')).not.toHaveClass(/on/);
     await page.keyboard.press('Alt+KeyR');
