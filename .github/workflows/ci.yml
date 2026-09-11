@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Article 12 application source
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test "$(wc -c < index.html)" -gt 100000
+          grep -Fq 'INAD: 제12조' index.html
+          grep -Fq 'SECURE LOCAL SIMULATION' index.html
+          grep -Fq 'NO NETWORK REQUESTS' index.html
+          grep -Fq 'data:image/' index.html
+          sha256sum index.html
