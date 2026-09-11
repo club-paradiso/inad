@@ -14,7 +14,7 @@ function guideText(g) {
   return [g.categoryKo, g.categoryEn, g.titleKo, g.titleEn, g.summaryKo, g.summaryEn, ...(g.stepsKo || []), ...(g.stepsEn || [])].join(' ').toLowerCase();
 }
 function sourceRows(ids = []) {
-  return ids.map(sourceById).filter(Boolean).map((s) => `<div class="rule"><h3>${esc(s.title)}</h3><p><b>${esc(s.authority || '')}</b>${s.checked ? ` · ${t('확인', 'checked')} ${esc(s.checked)}` : ''}</p>${s.note ? `<p>${esc(s.note)}</p>` : ''}<p><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${t('공식 원문 열기', 'Open official source')}</a></p></div>`).join('');
+  return ids.map(sourceById).filter(Boolean).map((s) => `<div class="rule"><h3>${esc(s.title)}</h3><p><b>${esc(s.authority || '')}</b>${s.checked ? ` · ${t('확인', 'checked')} ${esc(s.checked)}` : ''}${s.effective ? ` · ${t('시행', 'effective')} ${esc(s.effective)}` : ''}</p>${s.note ? `<p>${esc(s.note)}</p>` : ''}<small class="mono">${esc(s.url)}</small><p><button type="button" class="manual-copy-source" data-source-url="${esc(s.url)}">${t('공식 원문 URL 복사', 'Copy official source URL')}</button></p></div>`).join('');
 }
 function renderCards(query = '') {
   const q = query.trim().toLowerCase();
@@ -41,7 +41,7 @@ export function openWorkManual(query = lastQuery) {
 function openGuide(id) {
   const g = workGuideById(id); if (!g) return;
   const steps = isEn() ? g.stepsEn : g.stepsKo;
-  showModal(isEn() ? g.titleEn : g.titleKo, `<div class="settings-grid"><section class="settings-section"><h3>${esc(isEn() ? g.categoryEn : g.categoryKo)}</h3><p>${esc(isEn() ? g.summaryEn : g.summaryKo)}</p><div class="rulegrid">${steps.map((step, i) => `<div class="rule"><h3>${String(i + 1).padStart(2, '0')}</h3><p>${esc(step)}</p></div>`).join('')}</div></section><section class="settings-section"><h3>${t('근거 확인', 'Verify sources')}</h3><p>${t('아래 자료는 게임 내부문서가 아니라 확인 가능한 공개 원문입니다.', 'These are verifiable public sources, not fictional internal documents.')}</p><div class="rulegrid">${sourceRows(g.sources)}</div></section><button type="button" id="manualBack">${t('업무지침 목록으로', 'Back to work manual')}</button></div>`, { size: 'wide' });
+  showModal(isEn() ? g.titleEn : g.titleKo, `<div class="settings-grid"><section class="settings-section"><h3>${esc(isEn() ? g.categoryEn : g.categoryKo)}</h3><p>${esc(isEn() ? g.summaryEn : g.summaryKo)}</p><div class="rulegrid">${steps.map((step, i) => `<div class="rule"><h3>${String(i + 1).padStart(2, '0')}</h3><p>${esc(step)}</p></div>`).join('')}</div></section><section class="settings-section"><h3>${t('근거 확인', 'Verify sources')}</h3><p>${t('아래 자료는 게임 내부문서가 아니라 확인 가능한 공개 원문입니다. INAD의 런타임 무통신 원칙 때문에 원문을 앱 안에서 불러오지 않고 공식 URL과 확인일을 제공합니다.', 'These are verifiable public sources, not fictional internal documents. To preserve INAD’s zero-runtime-network rule, the app does not fetch them in place and instead provides the official URL and verification date.')}</p><div class="rulegrid">${sourceRows(g.sources)}</div></section><button type="button" id="manualBack">${t('업무지침 목록으로', 'Back to work manual')}</button></div>`, { size: 'wide' });
   const back = byId('manualBack'); if (back) back.onclick = () => openWorkManual(lastQuery);
 }
 function openSourceSummary() {
@@ -53,7 +53,20 @@ function openSourceSummary() {
 function syncMenuLabel() {
   const b = byId('ruleBtn'); if (b) b.textContent = t('업무지침', 'Work Manual');
 }
+async function copySourceUrl(button) {
+  const url = button?.dataset?.sourceUrl; if (!url) return;
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+    await navigator.clipboard.writeText(url);
+    const old = button.textContent; button.textContent = t('복사됨', 'Copied');
+    setTimeout(() => { if (document.contains(button)) button.textContent = old; }, 1200);
+  } catch {
+    button.textContent = url;
+  }
+}
 function intercept(e) {
+  const copy = e.target.closest?.('.manual-copy-source');
+  if (copy) { e.preventDefault(); e.stopImmediatePropagation(); copySourceUrl(copy); return; }
   const target = e.target.closest?.('#ruleBtn, #helpRules');
   if (!target) return;
   e.preventDefault(); e.stopImmediatePropagation();
