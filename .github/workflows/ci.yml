@@ -3,7 +3,30 @@ on:
   push:
     branches: ['**']
   pull_request:
+permissions:
+  contents: read
 jobs:
+  source-integrity:
+    # Guards the canonical v6.1 artifact (byte-exact) and the generated release entry point.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical v6.1 artifact (legacy/v6.1)
+        run: |
+          set -euo pipefail
+          test "$(wc -c < legacy/v6.1/INAD_Article12_v6_1_KR.html)" -eq 1514881
+          echo "53bee5c1a4fe72a78f5e42eca1f3de0e11623e5d2ded752e995116c742a3a812  legacy/v6.1/INAD_Article12_v6_1_KR.html" | sha256sum -c -
+      - name: Verify Article 12 application entry point (root index.html = generated release mirror)
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test "$(wc -c < index.html)" -gt 100000
+          grep -Fq '<title>INAD: 제12조</title>' index.html
+          grep -Fq 'GENERATED FILE, DO NOT EDIT' index.html
+          grep -Fq '2026-09-07' index.html
+          grep -Fq 'INAD_SAVE_BUNDLE' index.html
+          grep -Fq 'data:image/' index.html
+          sha256sum index.html
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -15,6 +38,8 @@ jobs:
       - run: npm run lint
       - run: npm run test:unit
       - run: npm run build
+      - name: Root index.html must equal the fresh build (no stale mirror)
+        run: git diff --exit-code -- index.html
       - run: npm run test:integrity
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
