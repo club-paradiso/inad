@@ -13,7 +13,7 @@ if (!fs.existsSync(builtPath)) {
 
 const html = fs.readFileSync(builtPath, 'utf8');
 const checks = [
-  ['start screen', /\bid=["']startScreen["']/],
+  ['start overlay', /\bid=["']startOverlay["']/],
   ['start button', /\bid=["']startBtn["']/],
   ['optional UI isolation marker', /Optional UI enhancement disabled/],
   ['boot watchdog marker', /bootFailureNotice/]
