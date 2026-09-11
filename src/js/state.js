@@ -4,6 +4,9 @@
 import { storeGet } from './services/storage.js';
 
 export function emptyStats() { return { processed: 0, admitted: 0, secondary: 0, refused: 0, refugee: 0, investigation: 0, interpreter: 0 }; }
+export function emptyLiveOps(status = 'idle') {
+  return { status, live: false, available: false, stale: false, factor: 1, pressure: 'baseline', arrivals: null, delayed: 0, cancelled: 0, windowMinutes: 120, checkedAt: null, source: 'baseline', sourceLabel: '공항 기본 게임 프리셋', reason: null };
+}
 
 export const session = {
   seed: 0,
@@ -18,7 +21,7 @@ export const session = {
 export const state = {
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
   audio: true, soundCues: 0, announcements: 0,
-  airportId: storeGet('inad-airport', 'icn-t2'), airportApplied: false,
+  airportId: storeGet('inad-airport', 'icn-t2'), airportApplied: false, liveOps: emptyLiveOps(),
   difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
@@ -33,6 +36,8 @@ export const state = {
 };
 
 // Reset the per-session counters (v6.1 regenerateSession semantics; campaign fields are preserved by the caller).
+// liveOps intentionally survives a roster regeneration: it is a setup-time airport snapshot,
+// not a per-case counter. setAirport() resets it when the selected airport actually changes.
 export function resetSessionState() {
   Object.assign(state, {
     caseIndex: 0, reports: [], mistakes: [], sessionSaved: false, soundCues: 0, announcements: 0, stats: emptyStats(),
