@@ -36,6 +36,7 @@
 - `--navy/--surface/--surface2/--sans` 미정의 토큰 사용 → 토큰 정리.
 - 모달 포커스 트랩 부재, 설정 토글에 `aria-pressed` 없음.
 - (v7.2) 숨겨진 연계사건 스트립이 grid auto-placement에서 빠지면서 새 사건 헤더 행이 밀림 → chrome 요소 `grid-row` 명시.
+- (v7.2) Codex 콘솔 스킨(`border-console.css`)이 `.app` 행 템플릿을 덮어써 사건 헤더·연계사건 스트립이 5행을 공유 → 스킨 템플릿에 사건 헤더 행 추가(8행).
 - 한 글자 단축키가 Ctrl/Cmd 조합(복사·붙여넣기·인쇄)까지 가로챔.
 - `NORMAL_CASES` 정적 배열(68KB)이 정의만 되고 미사용 → 제거.
 

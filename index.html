@@ -1390,16 +1390,19 @@ body.border-console-v3 {
   --h-queue: 68px;
 }
 
+/* v7.2: the case header (.casebar) is its own row between the linked-case strip and the workspace,
+   so the rail, the (usually hidden) strip and the header never share a grid row. */
 body.border-console-v3 .app {
-  grid-template-rows: var(--h-header) var(--h-eventbar) var(--h-queue) 48px auto minmax(0, 1fr) var(--h-footer);
+  grid-template-rows: var(--h-header) var(--h-eventbar) var(--h-queue) 48px auto var(--h-casebar) minmax(0, 1fr) var(--h-footer);
 }
 body.border-console-v3 .top { grid-row: 1; }
 body.border-console-v3 .eventbar { grid-row: 2; }
 body.border-console-v3 .queuebar { grid-row: 3; }
 body.border-console-v3 .inspection-rail { grid-row: 4; }
 body.border-console-v3 .story-case-strip { grid-row: 5; }
-body.border-console-v3 .main { grid-row: 6; }
-body.border-console-v3 .footer { grid-row: 7; }
+body.border-console-v3 .casebar { grid-row: 6; }
+body.border-console-v3 .main { grid-row: 7; }
+body.border-console-v3 .footer { grid-row: 8; }
 
 /* Primary-inspection status rail: explicit, scannable, non-gamified. */
 .inspection-rail {
@@ -1618,12 +1621,13 @@ body.border-console-v3 .event-main:not(.warn):not(.bad) .event-lamp { background
 }
 
 @media (max-width: 1023px) {
-  body.border-console-v3 .app { grid-template-rows: auto auto auto auto auto auto auto; }
+  body.border-console-v3 .app { grid-template-rows: auto auto auto auto auto auto auto auto; }
   body.border-console-v3 .top,
   body.border-console-v3 .eventbar,
   body.border-console-v3 .queuebar,
   body.border-console-v3 .inspection-rail,
   body.border-console-v3 .story-case-strip,
+  body.border-console-v3 .casebar,
   body.border-console-v3 .main,
   body.border-console-v3 .footer { grid-row: auto; }
   .inspection-rail { grid-template-columns: 1fr 1fr; height: auto; }

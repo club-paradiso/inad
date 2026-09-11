@@ -31,6 +31,7 @@ start · primary inspection · briefing · tutorial · secondary · refugee · S
 - 1440×1000 · 1024×768: 가로 오버플로 0, `#stepper #terminal #basisBoard #clearBtn #secondaryBtn #refuseBtn #docview #pPortrait #questions` 전부 뷰포트 내, 콘솔 오류 0 (Playwright 캡처 스크립트).
 - 회귀: 사건 헤더 행 추가 시 숨겨진 연계사건 스트립 때문에 그리드 행이 밀려 작업대가 52px로 붕괴 → 모든 chrome 요소에 `grid-row` 명시 배치로 수정.
 - E2E 사양 갱신: visual smoke가 스테퍼 상태(일반심사 → 입국재심)와 작업대 탭 전환을 추가 검증(레거시 대상에서는 자동 생략).
+- 복구된 main(콘솔 스킨 `border-console-v3`) 병합 후: 스킨이 자체 `.app` 행 템플릿(7행)을 덮어써 사건 헤더와 연계사건 스트립이 같은 행(5)을 공유 → 스킨 템플릿을 8행(레일 4 · 스트립 5 · 사건 헤더 6 · 작업대 7 · 푸터 8)으로 확장. 계산된 행: `54 32 68 48 0 52 718 28`(1440×1000), 콘솔 오류 0(http), 뷰포트 검사 통과.
 
 ## v7.1 추가 검증 (2026-09-11)
 - 판단 근거 패널 8개 도메인 노드 렌더링·결과 화면 섹션(E2E 1번 사양에서 검증), 콘솔 오류 0.
