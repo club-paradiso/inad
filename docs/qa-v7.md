@@ -33,6 +33,13 @@ start · primary inspection · briefing · tutorial · secondary · refugee · S
 - E2E 사양 갱신: visual smoke가 스테퍼 상태(일반심사 → 입국재심)와 작업대 탭 전환을 추가 검증(레거시 대상에서는 자동 생략).
 - 복구된 main(콘솔 스킨 `border-console-v3`) 병합 후: 스킨이 자체 `.app` 행 템플릿(7행)을 덮어써 사건 헤더와 연계사건 스트립이 같은 행(5)을 공유 → 스킨 템플릿을 8행(레일 4 · 스트립 5 · 사건 헤더 6 · 작업대 7 · 푸터 8)으로 확장. 계산된 행: `54 32 68 48 0 52 718 28`(1440×1000), 콘솔 오류 0(http), 뷰포트 검사 통과.
 
+## v7.2 프로덕션 배포 검증 (2026-09-11, PR #7 → PR #6 병합, main 9954adb)
+- 배경: v7.1 이후 Codex 커밋으로 main CI가 빨간 상태였음 → 인수인계 패치(PR #7)로 복구(unit 47/47, E2E dist·legacy 19/19) 후 v7.2 병합.
+- Vercel 프로덕션 `https://inad-gray.vercel.app` SHA-256 = `main:index.html`(첫 조회에서 일치), 화면 버전 `v7.2`.
+- 페이지 검사(1440×1000): 콘솔·페이지 오류 0, app 행 `54 32 68 48 0 52 718 28`, 스테퍼 일반심사 → 입국재심 전환, 작업대 탭(제출 서류 | 입국 요건 자료), 콘솔 스킨 레일 공존, 결정 버튼·터미널·판단 근거·문서·초상·질문 뷰포트 내, 가로 오버플로 0.
+- 네트워크: 문서 1건 + `/api/airport-load?airport=ICN` 2건(CLAUDE.md의 유일한 same-origin 예외 · 키 미설정 시 fallback). 그 외 외부 요청 없음.
+- `INAD_TARGET=url INAD_BASE_URL=https://inad-gray.vercel.app npm run test:e2e` → 19/19.
+
 ## v7.1 추가 검증 (2026-09-11)
 - 판단 근거 패널 8개 도메인 노드 렌더링·결과 화면 섹션(E2E 1번 사양에서 검증), 콘솔 오류 0.
 - 390×800(모바일) fallback: 가로 오버플로 0, 시작 화면·근무 시작 버튼 접근 가능, 안내 배너 표시. 심사 작업대는 1024px 이상 권장(모바일 최적화 아님).
