@@ -4,7 +4,6 @@ import { DIFFICULTY_CONFIG, FIELD_EVENT_TYPES, SCENARIOS, SHIFT_TARGETS } from '
 import { airportById } from '../../data/airports.js';
 import { state, session } from '../state.js';
 import { hashSeed, makeRng, shuffled } from './rng.js';
-import { clampScore } from './score-engine.js';
 import { behaviorAfterWork } from './behavior-engine.js';
 import { bus, notify } from '../services/bus.js';
 import { storeSet } from '../services/storage.js';
@@ -62,14 +61,26 @@ export function applyScenarioStart() {
   }
   if (state.scenarioApplied) return; const sc = scenarioCfg(); state.backlogOffset += (sc.backlog || 0); state.pressurePeak = Math.max(state.pressurePeak, simulatedBacklog()); state.scenarioApplied = true; if (sc.id !== 'normal') { state.eventHistory.push({ at: 0, type: 'SCENARIO', title: `시나리오 · ${sc.name}`, effect: sc.desc, status: '적용' }); notify.toast(`시나리오 적용 · ${sc.name}`); } bus.emit('ops');
 }
-export function takeScheduledBreak() { state.breaksTaken++; state.fatigue = Math.max(0, state.fatigue - 30); state.simSeconds += 90; state.backlogOffset += 2; state.eventHistory.push({ at: state.stats.processed, type: 'BREAK', title: '교대 지원 휴식', effect: '피로도 -30 · 대기 +2명', status: '휴식' }); bus.emit('ops'); }
+export function takeScheduledBreak() {
+  const difficulty = state.difficulty || 'standard';
+  const simCost = difficulty === 'training' ? 45 : difficulty === 'standard' ? 60 : 90;
+  const backlogCost = difficulty === 'training' ? 0 : difficulty === 'standard' ? 1 : 2;
+  state.breaksTaken++;
+  state.fatigue = Math.max(0, state.fatigue - 30);
+  state.simSeconds += simCost;
+  state.backlogOffset += backlogCost;
+  state.eventHistory.push({ at: state.stats.processed, type: 'BREAK', title: '교대 지원 휴식', effect: `피로도 -30 · 대기 +${backlogCost}명`, status: '휴식' });
+  bus.emit('ops');
+}
 
 export function spendWork(sec, kind = 'work') {
   const ap = airportCfg();
   let base = sec; if (kind === 'interpreter' && state.activeEvent?.interpreterExtra) base += eventImpactValue(state.activeEvent.interpreterExtra); if (kind === 'interpreter') base += (scenarioCfg().interpreterExtra || 0) + (ap.interpreterExtra || 0);
   const actual = Math.max(1, Math.round(base * fieldTimeMultiplier(kind)));
   state.caseWorkSeconds += actual; state.simSeconds += actual; state.fatigue = Math.min(100, state.fatigue + actual / 60 * (scenarioCfg().fatigueFactor || 1) * (ap.fatigueFactor || 1)); state.peakFatigue = Math.max(state.peakFatigue, state.fatigue); state.pressurePeak = Math.max(state.pressurePeak, simulatedBacklog());
-  if (kind === 'repeat') { state.repeatedLookups++; state.efficiency = clampScore(state.efficiency - 1); }
+  // A repeated lookup already costs simulated time and therefore affects queue pressure and case efficiency.
+  // Track it for post-shift feedback, but do not immediately subtract another efficiency point.
+  if (kind === 'repeat') state.repeatedLookups++;
   behaviorAfterWork(actual, kind); bus.emit('ops');
   return actual;
 }
