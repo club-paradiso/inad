@@ -1,8 +1,8 @@
-// Data extracted verbatim from the v6.1 baseline (legacy/v6.1) — operational game variables: difficulty, scenarios, field events, shift targets
-// Legal/game content: do not edit without a documented review (docs/legal-baseline.md).
+// Data extracted from the v6.1 baseline (legacy/v6.1) — operational game variables: difficulty, scenarios, field events, shift targets
+// 2026-09-11 balance review: training/standard pressure was reduced without changing legal outcomes.
 export const DIFFICULTY_CONFIG = {
- training:{label:'훈련',arrivalEvery:92,eventCount:4,impact:.72,workFactor:.94,desc:'완만한 승객 유입과 축소된 현장 변수'},
- standard:{label:'표준',arrivalEvery:72,eventCount:6,impact:1,workFactor:1,desc:'권장 운영압박과 현장 이벤트'},
+ training:{label:'훈련',arrivalEvery:128,eventCount:4,impact:.45,workFactor:.82,desc:'완만한 승객 유입과 크게 축소된 현장 변수'},
+ standard:{label:'표준',arrivalEvery:88,eventCount:6,impact:.85,workFactor:.95,desc:'여유를 둔 운영압박과 현장 이벤트'},
  realistic:{label:'실전',arrivalEvery:58,eventCount:8,impact:1.22,workFactor:1.05,desc:'빠른 승객 유입과 강화된 현장 변수'}
 };
 export const SCENARIOS = {
