@@ -2,17 +2,78 @@
 // workload and fatigue. None of these alter entry requirements or legal outcomes.
 import { DIFFICULTY_CONFIG, FIELD_EVENT_TYPES, SCENARIOS, SHIFT_TARGETS } from '../../data/operations.js';
 import { airportById } from '../../data/airports.js';
-import { state, session } from '../state.js';
+import { state, session, emptyLiveOps } from '../state.js';
 import { hashSeed, makeRng, shuffled } from './rng.js';
 import { behaviorAfterWork } from './behavior-engine.js';
 import { bus, notify } from '../services/bus.js';
 import { storeSet } from '../services/storage.js';
+import { fetchAirportLiveLoad } from '../services/airport-live.js';
 import { addLog } from './log.js';
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function difficultyCfg() { return DIFFICULTY_CONFIG[state?.difficulty || 'standard'] || DIFFICULTY_CONFIG.standard; }
 export function scenarioCfg(id = state?.scenarioId || 'normal') { return SCENARIOS[id] || SCENARIOS.normal; }
 export function airportCfg(id = state?.airportId || 'icn-t2') { return airportById(id); }
 export function difficultyName(k) { return DIFFICULTY_CONFIG?.[k]?.label || ({ training: '훈련', standard: '표준', realistic: '실전' })[k] || k; }
+
+// Converts the next-two-hour international-arrival snapshot into a relative GAMEPLAY load.
+// liveTargetArrivals is a normalization target for game balance, not a real airport capacity.
+export function rawLiveLoadFactor(snapshot, targetArrivals) {
+  const target = Math.max(1, Number(targetArrivals) || 1);
+  const arrivals = Math.max(0, Number(snapshot?.arrivals) || 0);
+  const delayed = Math.max(0, Number(snapshot?.delayed) || 0);
+  const ratio = arrivals / target;
+  const delayRatio = arrivals ? Math.min(1, delayed / arrivals) : 0;
+  return clamp(.82 + ratio * .18 + delayRatio * .05, .80, 1.28);
+}
+
+// A live traffic spike must not silently turn Training back into hard mode. The user-selected
+// difficulty remains the primary control; real-time data is a bounded operational modifier.
+export function boundedLiveLoadFactor(raw = state?.liveOps?.factor, difficulty = state?.difficulty || 'standard') {
+  const value = Number.isFinite(Number(raw)) ? Number(raw) : 1;
+  const range = difficulty === 'training' ? [.94, 1.06] : difficulty === 'realistic' ? [.82, 1.24] : [.88, 1.15];
+  return clamp(value, range[0], range[1]);
+}
+export function liveLoadFactor() { return state?.liveOps?.live ? boundedLiveLoadFactor(state.liveOps.factor) : 1; }
+export function liveLoadPressure(factor = state?.liveOps?.factor || 1) {
+  if (factor < .92) return 'quiet';
+  if (factor <= 1.08) return 'normal';
+  if (factor <= 1.18) return 'busy';
+  return 'surge';
+}
+export function appliedLiveLoad() { return { ...state.liveOps, appliedFactor: liveLoadFactor() }; }
+
+export async function refreshAirportLiveLoad({ force = false } = {}) {
+  if (state.started) return appliedLiveLoad();
+  const ap = airportCfg(), requestedId = ap.id;
+  state.liveOps = { ...emptyLiveOps('loading'), airport: ap.code };
+  bus.emit('airportLive', state.liveOps); bus.emit('ops');
+  try {
+    const data = await fetchAirportLiveLoad(ap.code, { force });
+    if (state.airportId !== requestedId) return appliedLiveLoad();
+    if (!data?.live || !data?.available) {
+      state.liveOps = {
+        ...emptyLiveOps('fallback'), airport: ap.code, stale: !!data?.stale,
+        arrivals: data?.arrivals ?? null, delayed: Number(data?.delayed) || 0, cancelled: Number(data?.cancelled) || 0,
+        checkedAt: data?.checkedAt || null, source: data?.source || 'baseline', sourceLabel: data?.sourceLabel || '공항 기본 게임 프리셋', reason: data?.reason || 'live-data-unavailable'
+      };
+    } else {
+      const factor = rawLiveLoadFactor(data, ap.liveTargetArrivals);
+      state.liveOps = {
+        status: 'live', live: true, available: true, stale: false, airport: ap.code,
+        factor, pressure: liveLoadPressure(factor), arrivals: Number(data.arrivals) || 0,
+        delayed: Number(data.delayed) || 0, cancelled: Number(data.cancelled) || 0,
+        windowMinutes: Number(data.windowMinutes) || 120, checkedAt: data.checkedAt || new Date().toISOString(),
+        source: data.source || 'official', sourceLabel: data.sourceLabel || '공식 공항 운항정보', reason: null
+      };
+    }
+  } catch (error) {
+    if (state.airportId === requestedId) state.liveOps = { ...emptyLiveOps('fallback'), airport: ap.code, reason: error?.name === 'AbortError' ? 'timeout' : 'network-error' };
+  }
+  bus.emit('airportLive', state.liveOps); bus.emit('ops');
+  return appliedLiveLoad();
+}
 
 export function generateEventSchedule(seed, difficulty = 'standard', airportId = state?.airportId || 'icn-t2') {
   const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.standard, ap = airportCfg(airportId);
@@ -23,7 +84,10 @@ export function generateEventSchedule(seed, difficulty = 'standard', airportId =
   const types = shuffled(FIELD_EVENT_TYPES, rng); return picked.map((at, i) => ({ at, type: types[i % types.length].id }));
 }
 export function eventType(id) { return FIELD_EVENT_TYPES.find((x) => x.id === id); }
-export function eventImpactValue(v) { return Math.round((v || 0) * difficultyCfg().impact * (airportCfg().eventImpact || 1)); }
+export function eventImpactValue(v) {
+  const liveEventFactor = 1 + (liveLoadFactor() - 1) * .45;
+  return Math.round((v || 0) * difficultyCfg().impact * (airportCfg().eventImpact || 1) * liveEventFactor);
+}
 export function fieldTimeMultiplier(kind = 'work') {
   const ap = airportCfg();
   let f = difficultyCfg().workFactor * (ap.workFactor || 1); const sc = scenarioCfg(), e = state.activeEvent;
@@ -48,7 +112,9 @@ export function advanceFieldEventAfterCase() { const e = state.activeEvent; if (
 export function setAirport(id) {
   if (state.started) { notify.toast('근무 시작 후에는 공항을 변경할 수 없습니다.'); return false; }
   const ap = airportCfg(id); if (!ap || ap.id !== id) return false;
+  const changed = state.airportId !== id;
   state.airportId = id; state.airportApplied = false; storeSet('inad-airport', id);
+  if (changed) state.liveOps = { ...emptyLiveOps(), airport: ap.code };
   state.eventSchedule = generateEventSchedule(session.seed, state.difficulty, id); bus.emit('ops'); return true;
 }
 export function setDifficulty(k) { if (state.started) { notify.toast('근무 시작 후에는 난이도를 변경할 수 없습니다.'); return false; } if (!DIFFICULTY_CONFIG[k]) return false; state.difficulty = k; state.eventSchedule = generateEventSchedule(session.seed, k, state.airportId); bus.emit('ops'); return true; }
@@ -58,6 +124,10 @@ export function applyScenarioStart() {
   if (!state.airportApplied) {
     state.airportApplied = true;
     state.eventHistory.push({ at: 0, type: 'AIRPORT', title: `근무공항 · ${ap.nameKo}`, effect: ap.profileKo, status: '적용' });
+    if (state.liveOps?.live) {
+      const factor = liveLoadFactor();
+      state.eventHistory.push({ at: 0, type: 'LIVE_LOAD', title: '실시간 운항 스냅샷', effect: `향후 ${state.liveOps.windowMinutes || 120}분 국제선 도착 ${state.liveOps.arrivals}편 · 운영계수 ${factor.toFixed(2)}x`, status: '적용' });
+    }
   }
   if (state.scenarioApplied) return; const sc = scenarioCfg(); state.backlogOffset += (sc.backlog || 0); state.pressurePeak = Math.max(state.pressurePeak, simulatedBacklog()); state.scenarioApplied = true; if (sc.id !== 'normal') { state.eventHistory.push({ at: 0, type: 'SCENARIO', title: `시나리오 · ${sc.name}`, effect: sc.desc, status: '적용' }); notify.toast(`시나리오 적용 · ${sc.name}`); } bus.emit('ops');
 }
@@ -84,7 +154,12 @@ export function spendWork(sec, kind = 'work') {
   behaviorAfterWork(actual, kind); bus.emit('ops');
   return actual;
 }
-export function simulatedBacklog() { const ap = airportCfg(), arrivalFactor = (scenarioCfg().arrivalFactor || 1) * (ap.arrivalFactor || 1), every = difficultyCfg().arrivalEvery / Math.max(.45, arrivalFactor), arrivals = Math.floor(state.simSeconds / every); return Math.max(3, 37 + (state.backlogOffset || 0) + arrivals - state.stats.processed); }
+export function simulatedBacklog() {
+  const ap = airportCfg();
+  const arrivalFactor = (scenarioCfg().arrivalFactor || 1) * (ap.arrivalFactor || 1) * liveLoadFactor();
+  const every = difficultyCfg().arrivalEvery / Math.max(.45, arrivalFactor), arrivals = Math.floor(state.simSeconds / every);
+  return Math.max(3, 37 + (state.backlogOffset || 0) + arrivals - state.stats.processed);
+}
 export function pressureInfo() { const q = simulatedBacklog(); return q <= 27 ? ['안정', 'good', 34] : q <= 39 ? ['보통', 'warn', 58] : ['혼잡', 'bad', Math.min(100, 58 + (q - 39) * 5)]; }
 export function shiftStats(sh) { const rs = state.reports.filter((r) => r.shift === sh); if (!rs.length) return { count: 0, avg: 0, target: SHIFT_TARGETS[sh].avg, status: '대기' }; const avg = Math.round(rs.reduce((a, r) => a + r.seconds, 0) / rs.length), target = SHIFT_TARGETS[sh].avg; return { count: rs.length, avg, target, status: avg <= target ? '목표 달성' : avg <= target * 1.2 ? '주의' : '지연' }; }
 export { SHIFT_TARGETS };
