@@ -18,7 +18,13 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
   assert.ok(!/<link rel="stylesheet"/.test(html), 'no external stylesheets');
   assert.ok(!/<script[^>]+src=/.test(html), 'no external scripts');
   assert.ok(!/type="module"/.test(html), 'no runtime modules');
-  assert.equal((html.match(/https?:\/\//g) || []).filter((u) => !/www\.w3\.org/.test(u)).length, 0, 'no external URLs');
+  // No network-capable references: attributes, CSS url()/@import, and fetch/XHR/beacon calls.
+  // (Citation URLs in the legal source registry are plain text, never requested.)
+  const stripped = html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '');
+  assert.equal((stripped.match(/\b(src|href|action)=["']https?:/g) || []).length, 0, 'no external src/href/action');
+  assert.equal((stripped.match(/url\(\s*["']?https?:/g) || []).length, 0, 'no external CSS urls');
+  assert.equal((stripped.match(/@import/g) || []).length, 0, 'no CSS imports');
+  assert.equal((stripped.match(/\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|EventSource)\s*\(/g) || []).length, 0, 'no network APIs');
   assert.ok(!/\bimport\s*\(/.test(html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '')), 'no dynamic imports');
   assert.equal((html.match(/data:image\/webp;base64,/g) || []).length, 105, '105 inline portraits');
   assert.ok(!/assets\/portraits\//.test(html.replace(/\/\*[^]*?\*\//g, '')) || true);

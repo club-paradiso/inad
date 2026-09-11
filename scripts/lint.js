@@ -12,7 +12,9 @@ for (const f of files) {
   try { execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); } catch (e) { problems++; console.error('syntax:', path.relative(root, f), String(e.stderr)); }
   const text = fs.readFileSync(f, 'utf8'); const rel = path.relative(root, f);
   if (/\/engines\//.test(rel) && /\b(document\.|window\.|querySelector|getElementById|innerHTML)/.test(text)) { problems++; console.error('engine touches DOM:', rel); }
-  if (/https?:\/\/(?!www\.w3\.org)/.test(text) && !/legal-research|\/\/ .*https?:/.test(text)) { problems++; console.error('external URL in source:', rel); }
+  // URLs are allowed only as citation text in the legal source registry; nothing may request them.
+  if (/https?:\/\/(?!www\.w3\.org)/.test(text) && !/data[\\/]legal-sources\.js$/.test(rel)) { problems++; console.error('external URL in source:', rel); }
+  if (/\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|EventSource)\s*\(/.test(text)) { problems++; console.error('network API in source:', rel); }
   if (/console\.(log|debug)\(/.test(text)) { problems++; console.error('console.log left in source:', rel); }
 }
 for (const f of walk(path.join(root, 'src/data'))) { if (!fs.readFileSync(f, 'utf8').startsWith('//')) { problems++; console.error('data file without provenance header:', path.relative(root, f)); } }

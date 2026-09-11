@@ -5,10 +5,10 @@
 |---|---|
 | `npm run lint` | 51 modules OK |
 | `npm run test:unit` | 40/40 (v7.1: decision-model 4개 추가) |
-| `npm run build` | dist/index.html ≈1,430 KB (v6.1 1,514,881 bytes 대비 −5%), 105 portraits inline |
+| `npm run build` | dist/index.html 1,429,761 bytes (v6.1 1,514,881 대비 −5.6%), 105 portraits inline |
 | `npm run test:integrity` | pass |
 | `npm run test:e2e` (dist) | 19/19, pageerror 0, console.error 0 |
-| `INAD_TARGET=legacy npm run test:e2e` | 19/19 (v6.1 parity) |
+| `INAD_TARGET=legacy npm run test:e2e` | 19/19 (v6.1 parity, v7.1 사양 재실행 포함) |
 
 ## 대표 화면 육안 검증 (Browser pane, 1440×1000 · 1024×768)
 start · primary inspection · briefing · tutorial · secondary · refugee · SJP · repatriation · refusal reasons · profile · records · settings · campaign start. 가로 오버플로 0, 결정 버튼·선택 문서 뷰포트 내 표시, 패널 내부 스크롤만 사용.
