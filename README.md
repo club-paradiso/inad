@@ -1,13 +1,12 @@
-# INAD: Article 12
+# INAD: 제12조 — 입국심사관 시뮬레이션
 
+Fictional immigration-inspection simulation (Korean, vanilla HTML/CSS/JS, single-file release).
 Production: https://inad-gray.vercel.app
 
-## Repository status
+- Source of truth: `src/` · release artifact: `dist/index.html` (root `index.html` is the generated mirror)
+- Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/legal-baseline.md`, `docs/qa-v7.md`, `RELEASE_NOTES_v7.0.md`
+- Recovery history: `docs/RECOVERY.md`
 
-Source recovery is in progress. The current production deployment is not yet reproducible from `main`.
-
-Track recovery in issue #1 and see `docs/RECOVERY.md` for the required order of operations and acceptance criteria.
-
-## Development rule
-
-Until source parity is established, do not deploy ad-hoc replacement builds or perform a speculative rewrite. Recover the actual production source first, verify a clean build, then reconnect Vercel deployments to Git commits.
+```
+npm install && npm run build && npm test
+```

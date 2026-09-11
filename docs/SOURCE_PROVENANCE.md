@@ -1,6 +1,6 @@
 # INAD Article 12 source provenance
 
-Status: recovered source identified; repository import pending final byte-for-byte transfer.
+Status: IMPORTED — canonical artifact committed byte-exact as `legacy/v6.1/INAD_Article12_v6_1_KR.html` (also the former root `index.html` of the recovery merge). Root `index.html` is now the generated v7 release mirror built from `src/` (`npm run build`); CI verifies both the legacy SHA-256 and the generated entry point.
 
 ## Canonical recovered artifact
 
@@ -32,3 +32,9 @@ Do not replace the recovered artifact with a screenshot reconstruction, framewor
 5. Compare preview behavior with the retained pre-incident production deployment.
 6. Merge only after parity is established.
 7. Verify the production alias returns the Article 12 app and the deployment contains the merge commit SHA.
+
+## Resolution (2026-09-11, v7.1)
+
+- `legacy/v6.1/INAD_Article12_v6_1_KR.html` — canonical bytes (SHA-256 above), frozen; `INAD_TARGET=legacy npm run test:e2e` runs the 19-spec parity suite against it.
+- `docs/RELEASE_NOTES_v6.1.md`, `docs/QA_REPORT_v6.1.md` — the v6.1 baseline documents.
+- `src/` — modular v7 source of truth; `dist/index.html` and root `index.html` are generated (CI fails if the root mirror is stale).

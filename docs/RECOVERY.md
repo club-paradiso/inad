@@ -1,6 +1,6 @@
 # INAD: Article 12 — Source Recovery Plan
 
-Status: P0
+Status: RESOLVED (2026-09-11) — see "Recovery result" below
 Date established: 2026-09-11
 Tracking issue: #1
 Production: https://inad-gray.vercel.app
@@ -59,3 +59,10 @@ Prefer small, auditable changes. Preserve a clear distinction between factual ru
 - Do not switch frameworks merely to make the repository look modern.
 - Do not add AI-generated legal conclusions without deterministic rule validation and clear provenance.
 - Do not point production at a recovery branch until clean-build and parity checks pass.
+
+## Recovery result (2026-09-11)
+
+- No local working copy existed (searched home, Codex Desktop project folders, Codex session history, iCloud/Google Drive mounts). The app was authored and deployed from a ChatGPT/Codex cloud session, so the deployed single-file build is the complete source.
+- `legacy/v6.1/INAD_Article12_v6_1_KR.html` is the byte-exact production file (sha256 `53bee5c1a4fe72a78f5e42eca1f3de0e11623e5d2ded752e995116c742a3a812`), an unminified vanilla HTML/CSS/JS app with 105 inline portraits and zero external references.
+- Parity was proven with a 19-spec Playwright suite that passes against the recovered file and against the rebuilt v7.0 artifact.
+- Vercel production is still not linked to this repository; root `index.html` is the generated release mirror to deploy.

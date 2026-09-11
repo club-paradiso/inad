@@ -1,0 +1,140 @@
+import { test, expect } from '@playwright/test';
+import * as H from './helpers.js';
+
+const SEED = 271828;
+
+test.describe('특수절차', () => {
+  test('5. 난민신청 → 회부심사 → 불회부 → 입국심사 복귀 → 별도 입국심사', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-010');
+    await H.startShift(page);
+    await H.jumpTo(page, idx);
+    await H.ensureCommunication(page);
+    await H.ask(page, 'refugee');
+    await expect(page.locator('#log')).toContainText('난민법 제6조');
+    await expect(page.locator('#specialBtn')).toBeVisible();
+    await page.locator('#specialBtn').click(); // PRIMARY → secondary first
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'secondary');
+    await H.procAct(page, 'refugee');
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'refugee');
+    await expect(page.locator('#procTitle')).toHaveText('출입국항 난민 회부심사');
+    expect((await H.getState(page)).stage).toBe('REFUGEE');
+    await H.procAct(page, 'start-referral');
+    await H.procAct(page, 'non-referral');
+    await expect(page.locator('#modalTitle')).toHaveText('난민인정 심사 불회부결정통지서');
+    await H.continueDoc(page);
+    let st = await H.getState(page);
+    expect(st.stage, '불회부는 입국불허가 아니다').toBe('SECONDARY');
+    expect(st.refugeeStep).toBe(4);
+    expect(st.performed).toEqual(expect.arrayContaining(['REFUGEE_CLAIM', 'REFERRAL_SCREENING', 'NON_REFERRAL', 'RETURN_TO_ENTRY']));
+    await H.procAct(page, 'secondary');
+    await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
+    await H.ask(page, 'funds');
+    await H.ask(page, 'persecution');
+    await H.ask(page, 'workPlan');
+    await page.locator('#refuseBtn').click();
+    await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
+    await H.continueDoc(page);
+    await H.procAct(page, 'repat-order');
+    await H.continueDoc(page);
+    await H.procAct(page, 'waiting-room');
+    await H.procAct(page, 'finish-refusal');
+    await H.expectResult(page, '입국 불허');
+    st = await H.getState(page);
+    expect(st.strikes).toBe(0);
+    expect(st.stats.refugee).toBe(1);
+    expect(st.reports[0].procedure).toBe(100);
+    await H.expectNoErrors(errors);
+  });
+
+  test('5b. 근거 없는 회부 결정은 감찰 오류로 기록된다', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-010');
+    await H.startShift(page);
+    await H.jumpTo(page, idx);
+    await H.ensureCommunication(page);
+    await H.ask(page, 'refugee');
+    await page.locator('#specialBtn').click();
+    await H.procAct(page, 'refugee');
+    await H.procAct(page, 'start-referral');
+    await H.procAct(page, 'refer');
+    const st = await H.getState(page);
+    expect(st.strikes).toBe(1);
+    expect(st.refugeeStep).toBe(2);
+    await H.expectNoErrors(errors);
+  });
+
+  test('6. 위조여권 → 재심 → 감식 → 통역 → 사범조사 → 긴급체포 요건검토 → 체포', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-009');
+    await H.startShift(page);
+    await H.jumpTo(page, idx);
+    await expect(page.locator('#entry .bio-score')).toContainText('불일치');
+    // SJP before secondary is a procedural error
+    await page.locator('#sjpBtn').click();
+    let st = await H.getState(page);
+    expect(st.strikes).toBe(1);
+    await page.locator('#secondaryBtn').click();
+    await H.procAct(page, 'sjp');
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'sjp');
+    await H.procAct(page, 'forensic');
+    st = await H.getState(page);
+    expect(st.forensic).toBe(true);
+    expect(st.performed).toContain('LOOKUP_forensic');
+    // investigation without interpreter is blocked (제48조제6항)
+    await H.procAct(page, 'investigate');
+    st = await H.getState(page);
+    expect(st.investigation).toBe(false);
+    await expect(page.locator('#toast')).toContainText('통역');
+    await H.procAct(page, 'interpreter');
+    st = await H.getState(page);
+    expect(st.language.interpreterActive).toBe(true);
+    await H.procAct(page, 'investigate');
+    st = await H.getState(page);
+    expect(st.investigation).toBe(true);
+    expect(st.stage).toBe('INVESTIGATION');
+    await H.procAct(page, 'back');
+    await H.ask(page, 'trueName');
+    await H.ask(page, 'purchase');
+    await expect(page.locator('#specialBtn')).toBeVisible();
+    await page.locator('#specialBtn').click();
+    await H.procAct(page, 'arrest-review');
+    st = await H.getState(page);
+    expect(st.stage).toBe('ARREST_REVIEW');
+    const boxes = page.locator('#procBody .proc-ar');
+    await expect(boxes).toHaveCount(3);
+    for (let i = 0; i < 3; i++) await boxes.nth(i).check();
+    await H.procAct(page, 'execute-arrest');
+    await expect(page.locator('#modalTitle')).toHaveText('출입국사범 사건 인계기록');
+    await H.continueDoc(page);
+    await H.expectResult(page, '특사경 긴급체포');
+    st = await H.getState(page);
+    expect(st.stage).toBe('ARRESTED');
+    expect(st.stats.investigation).toBe(1);
+    expect(st.reports[0].procedure).toBe(100);
+    expect(st.reports[0].interpreter).toBe(1);
+    await H.expectNoErrors(errors);
+  });
+
+  test('6b. 요건을 모두 확인하지 않은 긴급체포 집행은 치명적 절차위반', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-009');
+    await H.startShift(page);
+    await H.jumpTo(page, idx);
+    await page.locator('#secondaryBtn').click();
+    await H.procAct(page, 'sjp');
+    await H.procAct(page, 'forensic');
+    await H.procAct(page, 'interpreter');
+    await H.procAct(page, 'investigate');
+    await H.procAct(page, 'arrest-review');
+    await page.locator('#procBody .proc-ar').first().check();
+    await H.procAct(page, 'execute-arrest');
+    await expect(page.locator('#modalTitle')).toHaveText('치명적 절차위반');
+    await expect(page.locator('#restart')).toBeVisible();
+    await H.expectNoErrors(errors);
+  });
+});
