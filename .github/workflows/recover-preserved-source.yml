@@ -1,0 +1,65 @@
+name: Recover preserved Article 12 source
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    if: >-
+      github.event.issue.number == 1 &&
+      startsWith(github.event.comment.body, '/recover-v6-source ')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/article12-v6.1-source
+          fetch-depth: 0
+
+      - name: Recover preserved deployment bytes
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="${COMMENT_BODY#'/recover-v6-source '}"
+          if [[ -z "$url" || "$url" == "$COMMENT_BODY" ]]; then
+            echo 'Recovery URL missing' >&2
+            exit 1
+          fi
+
+          cookie_jar="$(mktemp)"
+          trap 'rm -f "$cookie_jar"' EXIT
+          curl --fail --silent --show-error --location --compressed \
+            --cookie-jar "$cookie_jar" --cookie "$cookie_jar" \
+            "$url" -o index.html
+
+      - name: Verify canonical v6.1 bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_sha='53bee5c1a4fe72a78f5e42eca1f3de0e11623e5d2ded752e995116c742a3a812'
+          expected_size='1514881'
+          actual_sha="$(sha256sum index.html | awk '{print $1}')"
+          actual_size="$(wc -c < index.html | tr -d ' ')"
+          test "$actual_sha" = "$expected_sha"
+          test "$actual_size" = "$expected_size"
+          echo "Canonical v6.1 source verified: $actual_sha ($actual_size bytes)"
+
+      - name: Commit recovered source to recovery branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'index.html already matches the preserved deployment.'
+            exit 0
+          fi
+          git commit -m 'recovery: restore canonical Article 12 v6.1 source'
+          git push origin HEAD:recovery/article12-v6.1-source
