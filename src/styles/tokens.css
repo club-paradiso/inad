@@ -1,0 +1,85 @@
+/* INAD Design System v2 — semantic tokens.
+   Theme: Korean public-sector operations workstation (60%) · airport/border control (25%) · game feedback (15%).
+   Light, restrained, information-dense. Colour is applied by meaning only. */
+:root {
+  /* surfaces */
+  --canvas: #e6ebf0;          /* page background behind panels */
+  --chrome: #0f2a41;          /* header / footer / procedure header (deep navy) */
+  --chrome-2: #163a58;        /* chrome hover / secondary band */
+  --chrome-text: #eaf1f7;
+  --chrome-muted: #9fb6c8;
+  --surface: #f7f9fb;         /* panel body */
+  --surface-2: #eef2f6;       /* sunken areas (log, terminal wrapper) */
+  --elevated: #ffffff;        /* cards inside panels, modals */
+  --document: #fbfaf6;        /* paper */
+  --document-ink: #1b2732;
+  --panel-head: #dfe7ee;      /* panel title band */
+
+  /* borders */
+  --border-subtle: #d5dee6;
+  --border: #c2cfda;
+  --border-strong: #8fa3b4;
+
+  /* text */
+  --text: #16232e;
+  --text-2: #4a5b69;
+  --text-3: #7b8a97;
+  --text-inverse: #ffffff;
+
+  /* semantic colour */
+  --accent: #1a5fa0;
+  --accent-strong: #124a80;
+  --accent-soft: #e4eef8;
+  --accent-text: #0f4272;
+  --success: #1f7a4d;
+  --success-soft: #e2f2e8;
+  --success-text: #155f3b;
+  --warning: #b8760e;
+  --warning-soft: #fbf0da;
+  --warning-text: #7d4e05;
+  --danger: #b23a3a;
+  --danger-soft: #f9e4e4;
+  --danger-text: #8a2727;
+  --info: #2f6f9f;
+  --info-soft: #e6f0f8;
+  --neutral-soft: #eceff3;
+
+  /* procedure accents (set per data-mode) */
+  --proc: var(--accent);
+
+  /* typography — system fonts only */
+  --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-display: 28px;
+  --fs-title: 18px;
+  --fs-section: 13px;
+  --fs-body: 12.5px;
+  --fs-compact: 11.5px;
+  --fs-label: 10.5px;
+  --fs-meta: 10px;
+  --lh-tight: 1.25;
+  --lh-body: 1.5;
+  --lh-loose: 1.65;
+
+  /* spacing */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
+
+  /* radius — restrained for an operations system */
+  --r-0: 0; --r-1: 3px; --r-2: 5px; --r-3: 8px;
+
+  /* elevation — only for layered surfaces */
+  --shadow-1: 0 1px 2px rgba(15, 42, 65, .08);
+  --shadow-2: 0 8px 24px rgba(15, 42, 65, .16);
+  --shadow-3: 0 18px 48px rgba(15, 42, 65, .28);
+
+  /* motion */
+  --t-fast: 120ms; --t-base: 180ms; --t-slow: 220ms;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* layout */
+  --h-header: 56px; --h-eventbar: 34px; --h-queue: 84px; --h-footer: 28px;
+  --focus-ring: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
+}
+@media (max-height: 820px) {
+  :root { --h-header: 52px; --h-eventbar: 30px; --h-queue: 72px; --h-footer: 26px; }
+}
