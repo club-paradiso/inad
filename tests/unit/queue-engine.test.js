@@ -43,10 +43,16 @@ test('every queue item resolves to a case and a traveller with a portrait', () =
   }
 });
 
-test('normal cases are always CLEAR cases and their required actions reference existing questions/lookups', () => {
+test('generated normal cases contain routine admissions, secondary-clear cases and genuine refusals', () => {
   const cases = generateNormalCases(161803);
+  assert.equal(cases.length, 24);
+  assert.equal(cases.filter((c) => c.resolution.type === 'REFUSE').length, 3, 'one generated refusal per shift');
+  assert.equal(cases.filter((c) => c.resolution.type === 'CLEAR').length, 21);
+  assert.equal(cases.filter((c) => c.sessionVariant === 'secondary-clear').length, 6, 'two secondary-clear generated cases per shift');
+  for (const sh of [1, 2, 3]) assert.equal(cases.filter((c) => c.shift === sh && c.resolution.type === 'REFUSE').length, 1);
   for (const c of cases) {
-    assert.equal(c.resolution.type, 'CLEAR');
+    assert.ok(['CLEAR', 'REFUSE'].includes(c.resolution.type));
+    if (c.resolution.type === 'REFUSE') assert.match(c.resolution.reason, /^SIM-/);
     for (const r of c.required) {
       if (r.startsWith('QUESTION_')) assert.ok(c.questions.some((q) => q.id === r.slice(9)), `${c.id} ${r}`);
       if (r.startsWith('LOOKUP_')) assert.ok(c.lookups[r.slice(7)], `${c.id} ${r}`);
@@ -54,17 +60,23 @@ test('normal cases are always CLEAR cases and their required actions reference e
   }
   const variants = new Set(cases.map((c) => c.sessionVariant));
   assert.ok(variants.has('routine-clear'));
+  assert.ok([...variants].some((v) => v.startsWith('generated-refuse-')));
 });
 
-test('travel parties link 2–4 normal passengers of one shift and never a core case', () => {
+test('travel parties only link CLEAR normal passengers and never erase generated refusals', () => {
   buildSession(141421);
   assert.ok(session.parties.length >= 3);
+  const generatedRefusals = session.normalCases.filter((c) => c.resolution.type === 'REFUSE');
+  assert.equal(generatedRefusals.length, 3);
   for (const p of session.parties) {
     assert.ok(p.members.length >= 2 && p.members.length <= 4);
     assert.ok(p.members.every((m) => m.caseId === null));
     assert.ok(p.members.every((m) => session.queue[m.queueIndex].shift === p.shift));
+    assert.ok(p.members.every((m) => session.normalCaseMap.get(m.normalId).resolution.type === 'CLEAR'));
     assert.ok(['consistent', 'minor-resolved'].includes(p.mode));
   }
+  assert.ok(generatedRefusals.every((c) => c.resolution.type === 'REFUSE'));
+  assert.ok(generatedRefusals.every((c) => !session.partyByTraveler.has(c.travelerId)), 'refusal cases are excluded from travel-party rewriting');
   const minor = session.parties.filter((p) => p.mode === 'minor-resolved');
   for (const p of minor) { const last = session.normalCaseMap.get(session.queue[p.members[p.members.length - 1].queueIndex].normalId); assert.equal(last.sessionVariant, 'party-secondary-clear'); assert.equal(last.resolution.type, 'CLEAR', 'party cross-check never changes the legal outcome'); }
 });
