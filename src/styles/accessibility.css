@@ -1,19 +1,20 @@
 /* Focus, skip link, user preferences (large text / high contrast / reduced motion / shortcut hints). */
 :where(button, a, [tabindex], input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: var(--focus-ring); }
-.skip-link { position: fixed; top: -60px; left: 12px; z-index: 500; padding: 8px 12px; background: var(--chrome); color: #fff; border-radius: var(--r-2); font-weight: 700; transition: top var(--t-fast) var(--ease); }
+.skip-link { position: fixed; top: -60px; left: 12px; z-index: 500; padding: 8px 12px; background: var(--chrome); color: #fff; border-radius: var(--r-1); font-weight: 600; transition: top var(--t-fast) var(--ease); }
 .skip-link:focus { top: 10px; }
 
-/* shortcut hints */
+/* shortcut hints: keyboard-only affordance, never on touch layouts */
 body.show-hotkeys button[data-hotkey] { position: relative; }
-body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); position: absolute; top: 2px; right: 3px; font: 700 8px/1 var(--mono); letter-spacing: .02em; padding: 2px 3px; border-radius: 2px; background: rgba(15, 42, 65, .12); color: inherit; opacity: .75; pointer-events: none; }
-body.show-hotkeys .top button[data-hotkey]::after, body.show-hotkeys .act[data-hotkey]::after { background: rgba(255, 255, 255, .18); }
+body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); position: absolute; top: 2px; right: 3px; font: 600 var(--fs-meta)/1 var(--mono); letter-spacing: .02em; padding: 1px 3px; border-radius: 2px; background: rgba(20, 35, 47, .12); color: inherit; opacity: .75; pointer-events: none; }
+body.show-hotkeys .topbar button[data-hotkey]::after { background: rgba(255, 255, 255, .18); }
+@media (pointer: coarse), (max-width: 767px) { body.show-hotkeys button[data-hotkey]::after { display: none; } }
 
 /* large text: scale the body type only (chrome keeps its fixed rhythm) */
-body.pref-font-large { --fs-section: 14.5px; --fs-body: 14px; --fs-compact: 13px; --fs-label: 12px; --fs-meta: 11px; }
+body.pref-font-large { --fs-section: 14.5px; --fs-body: 14.5px; --fs-compact: 13.5px; --fs-label: 12.5px; --fs-meta: 11.5px; }
 
 /* high contrast: darker text, stronger borders, no translucent surfaces */
-body.pref-contrast { --canvas: #dfe5eb; --surface: #ffffff; --surface-2: #f1f4f7; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --success: #14613b; --warning: #8a5300; --danger: #931c1c; --chrome: #06192b; --chrome-muted: #cfe0ee; }
-body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, body.pref-contrast .docitem, body.pref-contrast .proc-card { border-color: var(--border-strong); }
+body.pref-contrast { --canvas: #d6dde3; --surface: #ffffff; --surface-2: #eef2f5; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --accent-text: #0b3d6e; --success: #14613b; --success-text: #0f4a2c; --warning: #8a5300; --warning-text: #5e3800; --danger: #931c1c; --danger-text: #721515; --chrome: #06192b; --chrome-muted: #cfe0ee; }
+body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, body.pref-contrast .docitem, body.pref-contrast .proc-card, body.pref-contrast .basis-node, body.pref-contrast .msg { border-color: var(--border-strong); }
 
 /* reduced motion: user setting and OS preference */
 body.pref-reduce-motion *, body.pref-reduce-motion *::before, body.pref-reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }

@@ -24,13 +24,21 @@
 - 긴장도·협조도·언어능력·통역 사용·동행 관계는 판정 근거가 아닙니다(`tests/unit/invariants.test.js`가 검사).
 - 휴대전화 제출 거부 하나만으로 자동 입국불허 처리 금지. 긴급체포 자동화 금지.
 
-## 디자인 시스템 원칙 (v2)
-- 토큰은 `src/styles/tokens.css`의 semantic token만 사용(색상 hex 직접 사용 최소화).
-- system font만 사용. 모노스페이스는 ID·MRZ·PNR·코드에만.
-- 간격 4/8/12/16/24/32, 반경 0/3/5/8, 그림자는 모달·절차화면·호출 카드에만.
+## 디자인 시스템 원칙 (v3 · 적응형 워크스테이션)
+- 토큰은 `src/styles/tokens.css`의 semantic token만 사용(색상 hex 직접 사용 최소화). 토큰은 Figma Variables와 1:1이며 이름을 바꾸지 않는다.
+- system font만 사용. 모노스페이스는 ID·MRZ·PNR·코드·KPI에만. 10.5px 미만 텍스트 금지.
+- 간격 4/8/12/16/24/32, 반경 0/2/4/6(6은 대화상자·시트·절차 화면만), 그림자는 모달·절차화면·호출 카드·PA 배너에만.
 - 모션 120~220ms, `prefers-reduced-motion`과 `body.pref-reduce-motion` 존중.
-- 금지: 사이버펑크/네온/글로우, 의미 없는 그라디언트, 카드 안의 카드, 8px 이하 모노 텍스트 남발, 선택한 UI 언어와 무관한 이중언어를 과도하게 섞어 시각 위계를 흐리는 구성.
-- 뷰포트: 1440×900 이상 기본, 1024×768에서도 핵심 플레이 가능. 페이지 가로 스크롤 금지.
+- DOM은 하나. 작업대는 네 구역(`.zone-person · .zone-interview · .zone-evidence · .zone-assessment`)이고 `body[data-task]`는 `src/js/ui/task-nav.js`만 바꾼다. `.desktop-app/.mobile-app` 같은 중복 트리, 3000줄짜리 mobile.css 금지 — CSS는 책임별 파일(shell·workspace·components·documents·procedures·modals·start·accessibility)에 둔다.
+- 브레이크포인트: ≥1280 3구역(320·유동·360) · 1024–1279 3구역(288·유동·320) · 768–1023 작업 영역 + 인스펙터 · <768 과업 1개 + 하단 과업 내비게이션. 페이지 가로 스크롤 금지(`tests/e2e/adaptive.spec.js` 불변식).
+- 터치: 조작 대상 44px 이상, iOS safe-area·`dvh` 반영. 결정 버튼은 터치에서 첫 탭 무장 → 두 번째 탭 실행(`decision-desk.js`); 단일 탭으로 법적 단계를 바꾸지 않는다.
+- 금지: 사이버펑크/네온/글로우, 의미 없는 그라디언트, 카드 안의 카드, 배지·아이콘 나열, 가짜 통계, 장식 마이크로카피, 터미널 클리셰, 선택한 UI 언어와 무관한 이중언어를 과도하게 섞어 시각 위계를 흐리는 구성, 판정 근거가 아닌 값(긴장도·협조도·언어능력·동행)을 판정처럼 보이게 하는 시각.
+
+## 디자인 변경 워크플로 (Figma ↔ 코드)
+- Figma 파일 `INAD — Adaptive Workstation Design System`(https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8)은 시각 언어·IA의 탐색·승인 공간이고, 동작·법률 로직·카피의 소스 오브 트루스는 코드다. 절차는 `docs/design-workflow.md`, 파일 구조는 `docs/figma-workspace-spec.md`.
+- 상태는 섹션 이름 접두어 `[Exploration] → [Review] → [Approved] → [Implemented]`로만 표시. 구현 대상은 `[Approved]` 프레임(또는 작업 지시에 명시된 프레임)뿐.
+- 자동화는 자신이 만든 노드만 수정·삭제한다. 사람이 만든 프레임·`[Approved]`·`[Implemented]` 섹션은 읽기 전용이며, 바꾸려면 복제본을 새 `[Exploration]` 섹션에 만든다. 변형·변수·스타일은 삭제·개명하지 않고 `13 — Archive`로 옮긴다.
+- 화면·컴포넌트를 바꾼 PR은 Figma 프레임 링크, `tokens.css` ↔ Variables 일치, 1440·1024·768·390 스크린샷, `npm run qa` 통과를 포함한다. 코드가 먼저 바뀌면 Figma를 `[Implemented]`로 동기화하고 `docs/figma-workspace-spec.md`를 갱신한다.
 
 ## 명령
 - `npm run dev` — `src/`를 http://127.0.0.1:4175 로 서빙(네이티브 ESM).
@@ -38,7 +46,7 @@
 - `npm run lint` — 문법·엔진 DOM 접근·외부 URL·승인되지 않은 네트워크 호출·console.log 검사.
 - `npm run test:unit` — 엔진 단위·불변식 테스트(node:test).
 - `npm run test:integrity` — 빌드 산출물 정적 검사.
-- `npm run test:e2e` — Playwright(dist 기준). `INAD_TARGET=legacy|src`로 대상 전환.
+- `npm run test:e2e` — Playwright(dist 기준). `INAD_TARGET=legacy|src`로 대상 전환. `tests/e2e/adaptive.spec.js`는 390·430·768·1024·1440 뷰포트 전체 흐름·가로 오버플로·터치 크기를 검사(legacy에서는 자동 생략).
 - `npm test` / `npm run qa` — 전체.
 
 ## 금지사항

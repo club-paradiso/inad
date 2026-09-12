@@ -1,23 +1,24 @@
-/* Physical-document surfaces: every document type keeps its own visual grammar on a paper surface. */
+/* Physical-document surfaces: every document type keeps its own visual grammar on a paper surface.
+   The paper keeps its own layout (MRZ, stubs, stickers); on phones the sheet fills the width and fields stack. */
 .doc-stage { padding: 12px; display: grid; gap: 8px; position: relative; }
 .doc-toolbar { display: flex; justify-content: space-between; align-items: center; }
 .doc-toolbar-left { display: flex; gap: 6px; align-items: center; }
-.doc-type-badge { font: 700 9px/1 var(--mono); letter-spacing: .08em; padding: 4px 7px; border-radius: 3px; background: var(--chrome); color: #fff; }
+.doc-type-badge { font: 600 var(--fs-meta)/1 var(--mono); letter-spacing: .06em; color: var(--text-2); }
 .doc-validity { font-size: var(--fs-meta); color: var(--success-text); font-weight: 600; }
 .doc-validity::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--success); margin-right: 5px; }
 .doc-validity.alert { color: var(--danger-text); }
 .doc-validity.alert::before { background: var(--danger); }
-.doc-zoom { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; color: var(--text-2); }
+.doc-zoom { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); }
 .doc-stage.scan-active::after { content: ""; position: absolute; left: 12px; right: 12px; top: 44px; height: 2px; background: var(--accent); opacity: .6; animation: scan 520ms var(--ease); pointer-events: none; }
 @keyframes scan { from { transform: translateY(0); opacity: .7; } to { transform: translateY(220px); opacity: 0; } }
 
-.docsheet { position: relative; background: var(--document); color: var(--document-ink); border: 1px solid #d9d3c4; border-radius: var(--r-2); box-shadow: var(--shadow-1); font-size: var(--fs-label); overflow: hidden; }
+.docsheet { position: relative; background: var(--document); color: var(--document-ink); border: 1px solid #d9d3c4; border-radius: var(--r-2); box-shadow: var(--shadow-1); font-size: var(--fs-label); overflow: hidden; max-width: 720px; }
 .docsheet.alert { outline: 2px solid var(--danger); outline-offset: -2px; }
-.micro { font: 600 8.5px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #6b7681; }
+.micro { font: 500 var(--fs-meta)/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #6b7681; }
 .doc-grid-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .doc-field { min-width: 0; }
 .doc-field.wide { grid-column: 1 / -1; }
-.field-label { display: block; font-size: 8.5px; color: #6b7681; text-transform: uppercase; letter-spacing: .04em; }
+.field-label { display: block; font-size: var(--fs-meta); color: #6b7681; text-transform: uppercase; letter-spacing: .03em; }
 .field-value { display: block; font-size: var(--fs-compact); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .doc-footnote { margin-top: 12px; font-size: var(--fs-meta); color: #6b7681; }
 
@@ -31,7 +32,7 @@
 .passport-main { display: grid; grid-template-columns: 96px 1fr; gap: 14px; padding: 14px; }
 .passport-photo-wrap { position: relative; width: 96px; height: 118px; border: 1px solid #c9c1ad; background: #e8e2d3; padding: 3px; }
 .passport-photo { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(1.05); }
-.passport-photo-wrap::after { content: "SIM"; position: absolute; right: 4px; bottom: 4px; font: 700 7px/1 var(--mono); color: #fff; background: rgba(29, 55, 82, .75); padding: 2px 4px; }
+.passport-photo-wrap::after { content: "SIM"; position: absolute; right: 4px; bottom: 4px; font: 600 var(--fs-meta)/1 var(--mono); color: #fff; background: rgba(29, 55, 82, .75); padding: 2px 4px; }
 .passport-fields { min-width: 0; display: grid; gap: 8px; align-content: start; }
 .passport-name .field-value { font-size: 14px; letter-spacing: .04em; font-family: var(--mono); }
 .mrz { margin: 0 14px 14px; padding: 8px 10px; background: #fff; border: 1px solid #d5cfbf; font: 600 10.5px/1.6 var(--mono); letter-spacing: .12em; color: #2b3640; white-space: nowrap; overflow: hidden; }
@@ -40,12 +41,12 @@
 .doc-earrival { background: #fafcff; border-color: #c9d6e2; }
 .ea-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #e6eef6; border-bottom: 1px solid #c9d6e2; }
 .ea-head b { font-size: 14px; font-weight: 800; color: var(--accent-text); }
-.ea-sub { font: 600 9px/1.3 var(--mono); letter-spacing: .06em; color: var(--text-2); }
+.ea-sub { font: 500 var(--fs-meta)/1.3 var(--mono); letter-spacing: .04em; color: var(--text-2); }
 .ea-head > span { font: 700 var(--fs-compact)/1 var(--mono); color: var(--text-2); }
 .ea-body { display: grid; grid-template-columns: 1fr 96px; gap: 14px; padding: 14px; }
 .ea-status { display: inline-block; margin-bottom: 8px; padding: 3px 8px; border-radius: 3px; background: var(--success-soft); color: var(--success-text); font-size: var(--fs-meta); font-weight: 700; }
 .fake-qr { width: 72px; height: 72px; margin: 0 auto; background: repeating-linear-gradient(90deg, #1b2732 0 4px, transparent 4px 8px), repeating-linear-gradient(0deg, #1b2732 0 4px, transparent 4px 8px); background-blend-mode: multiply; opacity: .85; border: 4px solid #fff; outline: 1px solid #c9d6e2; }
-.ea-ref { margin-top: 6px; text-align: center; font: 700 9px/1.2 var(--mono); color: var(--text-2); letter-spacing: .06em; }
+.ea-ref { margin-top: 6px; text-align: center; font: 600 var(--fs-meta)/1.2 var(--mono); color: var(--text-2); letter-spacing: .04em; }
 
 /* ticket / PNR */
 .doc-ticket { display: grid; grid-template-columns: 1fr 120px; background: #fff; }
@@ -58,7 +59,7 @@
 .route-line::after { content: ""; position: absolute; right: -2px; top: -4px; width: 0; height: 0; border-left: 8px solid #8fa3b4; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
 .ticket-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ticket-stub { padding: 14px 10px; display: grid; gap: 8px; align-content: start; text-align: center; background: #f4f7fa; }
-.ticket-stub small { font: 600 8.5px/1.4 var(--mono); color: var(--text-2); letter-spacing: .04em; }
+.ticket-stub small { font: 500 var(--fs-meta)/1.4 var(--mono); color: var(--text-2); letter-spacing: .03em; }
 .ticket-stub b { display: block; font: 800 16px/1 var(--mono); }
 .barcode { height: 34px; background: repeating-linear-gradient(90deg, #1b2732 0 2px, transparent 2px 4px, #1b2732 4px 5px, transparent 5px 8px); }
 
@@ -108,7 +109,7 @@
 .doc-letter { padding: 14px; background: #fff; }
 .letter-head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; border-bottom: 1px solid #d9d3c4; margin-bottom: 10px; }
 .letter-head b { font-size: 13px; font-weight: 800; }
-.letter-seal { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--danger); color: var(--danger); display: grid; place-items: center; font: 800 9px/1 var(--mono); transform: rotate(-12deg); opacity: .8; }
+.letter-seal { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--danger); color: var(--danger); display: grid; place-items: center; font: 700 var(--fs-meta)/1 var(--mono); transform: rotate(-12deg); opacity: .8; }
 .letter-body p { font-size: var(--fs-label); color: var(--text-2); margin-bottom: 8px; }
 
 .doc-modal-wrap .docsheet { font-size: var(--fs-compact); }
@@ -116,10 +117,27 @@
 .doc-modal-wrap .passport-photo-wrap { width: 128px; height: 156px; }
 .doc-modal-wrap .passport-main { grid-template-columns: 128px 1fr; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1279px) {
   .passport-main { grid-template-columns: 80px 1fr; }
   .passport-photo-wrap { width: 80px; height: 98px; }
   .ticket-meta { grid-template-columns: 1fr 1fr; }
   .doc-ticket { grid-template-columns: 1fr 96px; }
   .doc-grid-fields { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  .doc-stage { padding: 12px 16px; }
+  .docsheet { max-width: none; }
+  .doc-zoom { min-height: 36px; }
+  .field-value { white-space: normal; font-size: var(--fs-body); }
+  .doc-grid-fields { grid-template-columns: 1fr 1fr; }
+  .passport-main { grid-template-columns: 88px 1fr; gap: 12px; }
+  .passport-photo-wrap { width: 88px; height: 108px; }
+  .mrz { font-size: var(--fs-meta); letter-spacing: .06em; overflow-x: auto; white-space: nowrap; }
+  .doc-ticket { grid-template-columns: 1fr; }
+  .ticket-main { border-right: 0; border-bottom: 2px dashed #cdd5dd; }
+  .doc-hotel { grid-template-columns: 1fr; }
+  .hotel-visual { writing-mode: horizontal-tb; padding: 8px 12px; }
+  .visa-frame { grid-template-columns: 64px 1fr; }
+  .doc-idcard { grid-template-columns: 72px 1fr; }
+  .ea-body { grid-template-columns: 1fr; }
 }

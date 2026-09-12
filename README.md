@@ -1,10 +1,11 @@
 # INAD: 제12조 — 입국심사관 시뮬레이션
 
-Fictional immigration-inspection simulation (Korean, vanilla HTML/CSS/JS, single-file release).
+Fictional immigration-inspection simulation (Korean, vanilla HTML/CSS/JS, single-file release). One DOM adapts from 320px phones to 1440px+ workstations (승객 · 인터뷰 · 자료 · 판단 task navigation on phones, workspace + inspector on tablets, three-zone desk on desktop).
 Production: https://inad-gray.vercel.app
 
 - Source of truth: `src/` · release artifact: `dist/index.html` (root `index.html` is the generated mirror)
-- Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/legal-baseline.md`, `docs/qa-v7.md`, `RELEASE_NOTES_v7.0.md`
+- Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/design-workflow.md` (Figma ↔ code), `docs/figma-workspace-spec.md`, `docs/ux-audit-v8.md`, `docs/legal-baseline.md`, `docs/qa-v7.md`, `docs/qa-v8.md`, `RELEASE_NOTES_v7.0.md`
+- Figma: [INAD — Adaptive Workstation Design System](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8)
 - Recovery history: `docs/RECOVERY.md`
 
 ```

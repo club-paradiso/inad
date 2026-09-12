@@ -19,7 +19,7 @@ export function renderQuestions(onAsk) {
   qs.forEach((q) => {
     const unlocked = questionUnlocked(q); const b = document.createElement('button'); const wasAsked = state.asked.has(q.id);
     b.type = 'button'; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (unlocked ? '' : 'locked') + (wasAsked ? ' asked' : ''); b.disabled = state.ended || !unlocked;
-    b.innerHTML = !unlocked ? `선행 확인 후 추가 질문 가능<em>${esc(q.cat)} · 관련 단서를 먼저 확인하십시오</em>` : wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)} · ${q.requires ? '추가질문 · ' : ''}진술기록 저장</em>`;
+    b.innerHTML = !unlocked ? `선행 확인 후 추가 질문 가능<em>${esc(q.cat)} · 관련 단서를 먼저 확인하십시오</em>` : wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
     b.onclick = () => onAsk(q, wasAsked); box.appendChild(b);
   });
 }

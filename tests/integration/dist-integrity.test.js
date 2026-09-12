@@ -32,7 +32,7 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
   assert.equal((stripped.match(/fetch\s*\(\s*["'`]https?:/g) || []).length, 0, 'no absolute-URL fetch');
   // Optional UI modules must be bundled, not requested at runtime from a non-existent path.
   assert.ok(!/\bimport\s*\(/.test(stripped), 'no dynamic imports');
-  for (const marker of ['inad-locale', 'border-console-v3', 'Optional UI enhancement disabled']) {
+  for (const marker of ['inad-locale', 'manualSearch', 'Optional UI enhancement disabled']) {
     assert.ok(html.includes(marker), `optional UI module bundled: ${marker}`);
   }
   assert.equal((html.match(/data:image\/webp;base64,/g) || []).length, 105, '105 inline portraits');

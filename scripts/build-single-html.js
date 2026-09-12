@@ -24,11 +24,8 @@ function portraitDataModule() {
 
 export async function buildSingleHtml({ minify = true } = {}) {
   const html = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
-  // CSS: inline every stylesheet in document order plus workstation enhancements that are
-  // loaded dynamically during source-mode development.
-  const linkedCssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  const extraCssFiles = ['styles/border-console.css'];
-  const cssFiles = [...linkedCssFiles, ...extraCssFiles.filter((f) => !linkedCssFiles.includes(f) && fs.existsSync(path.join(src, f)))];
+  // CSS: inline every stylesheet in document order.
+  const cssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
   const css = cssFiles.map((f) => `/* ${f} */\n` + fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
   // JS: bundle ES modules into a classic IIFE, swapping the portrait module for inline data
   const portraits = portraitDataModule();
