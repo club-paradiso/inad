@@ -114,6 +114,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | type/label | 11 / 15 / Medium | `--fs-label` |
 | type/meta | 10.5 / 14 / Regular | `--fs-meta` |
 | type/code | 11 / 15 / Roboto Mono Regular | `--mono` |
+| type/control | 12 / 16 / Medium(600 대체) | 버튼·탭 라벨 (`.btn`, `.tasknav button`) |
 
 10px 미만 텍스트는 만들지 않는다.
 
@@ -161,6 +162,30 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 11 — Prototype: Start → Primary → Interview → Evidence → Lookup → Decision → Secondary → Final Decision.
 12 — Playground: Component / Desktop / Tablet / Mobile / Typography / Color Sandbox.
 
-## 6. 상태 표기(승인 흐름)
+## 6. 노드 ID (2026-09-12 기준)
+
+| 페이지 | 섹션 · 프레임 | ID |
+|---|---|---|
+| 00 Cover | Cover · Read Me | 39:2 · 39:18 |
+| 01 Audit | `[Implemented]` 섹션 · as-is 1440 · as-is 390 · 주석 · 캡처 자리 | 37:2 · 37:4 · 37:54 · 37:78 · 37:148 |
+| 02 UX Architecture | `[Implemented]` 섹션 · 흐름 · 영역 표 · 폼팩터 표 · IA 후보 표 | 38:2 · 38:4 · 38:29 · 38:147 · 38:193 |
+| 03 Foundations | 색 보드 · 간격 보드 · 타입 보드 · 브레이크포인트 7종 | 5:4 · 6:2 · 6:49 · 7:4~7:91 |
+| 04 Components | 30세트 (예: Action/Decision 10:47 · Navigation/TaskNav 12:42 · Case/Header 21:219 · Panel/Frame 20:97) · 코드 매핑 표 | 8:4 ~ 21:219 · 39:131 |
+| 05 Patterns | `[Implemented]` 섹션 · 패턴 그리드 10종 | 36:2 · 36:4 |
+| 06 Desktop | `[Approved]` IA-D 1440 · 1280 · 1024 / `[Exploration]` IA-A 1440 | 25:2 · 25:4 · 26:389 · 26:963 / 26:1536 · 26:1538 |
+| 07 Tablet | `[Approved]` 768 인터뷰 · 768 자료 | 27:2 · 27:4 · 27:411 |
+| 08 Mobile | `[Approved]` 390 승객·인터뷰·자료·문서 전체화면·판단 · 430 판단 · 320 인터뷰 | 28:2 · 28:4 · 28:154 · 28:329 · 28:555 · 28:669 · 28:864 · 28:1059 |
+| 09 Procedures | `[Approved]` 재심 · 송환 · 회부심사 · 사범조사 · 체포 요건 (1440/390) · Primary 흐름 · 사건 종결 | 29:2 · 29:4/29:213 · 29:409/29:585 · 29:748/29:913 · 29:1065/29:1244 · 29:1410/29:1576 · 30:1121/30:1166 · 30:1211/30:1266 |
+| 10 States | `[Approved]` 섹션 · 상태 그리드 14종 | 31:2 · 31:4 |
+| 11 Prototype | `[Approved]` 섹션 · P1~P8 (시작 지점 34:4) | 34:2 · 34:4 · 34:66 · 34:218 · 34:775 · 34:1287 · 34:1805 · 34:2319 · 34:2409 |
+| 12 Playground | `[Exploration]` 섹션 · 안내 · 샌드박스 | 33:2 |
+| 13 Archive | 사용법 안내(보관물 없음) | 39:57 |
+
+## 7. 알려진 제한
+
+- **Code Connect**: 현재 Figma 플랜(Dev/Full seat · Organization/Enterprise 필요)에서 `add_code_connect_map`가 거부된다. 대체 매핑: 각 컴포넌트 세트의 description(렌더러·파일 경로), 위 §4 표, 04 페이지 "코드 매핑" 표. 플랜이 바뀌면 §4 표대로 Javascript 라벨 매핑을 추가한다.
+- **래스터 업로드**: 작업 환경의 네트워크 정책이 figma.com 업로드를 차단하므로 01 Audit 페이지는 와이어프레임·주석으로 구성했고 캡처는 `docs/audit/v7.2/`에 있다. 사람이 "캡처 자리" 프레임에 끌어다 놓는다.
+
+## 8. 상태 표기(승인 흐름)
 
 섹션 이름 접두어로 관리한다: `[Exploration]`, `[Review]`, `[Approved]`, `[Implemented]`. 필 뱃지를 만들지 않는다. 구현 대상은 `[Approved]` 섹션 안의 프레임 또는 작업 지시에서 명시한 프레임뿐이다.
