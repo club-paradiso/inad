@@ -186,6 +186,8 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 - **Code Connect**: 현재 Figma 플랜(Dev/Full seat · Organization/Enterprise 필요)에서 `add_code_connect_map`가 거부된다. 대체 매핑: 각 컴포넌트 세트의 description(렌더러·파일 경로), 위 §4 표, 04 페이지 "코드 매핑" 표. 플랜이 바뀌면 §4 표대로 Javascript 라벨 매핑을 추가한다.
 - **래스터 업로드**: 작업 환경의 네트워크 정책이 figma.com 업로드를 차단하므로 01 Audit 페이지는 와이어프레임·주석으로 구성했고 캡처는 `docs/audit/v7.2/`에 있다. 사람이 "캡처 자리" 프레임에 끌어다 놓는다.
 
+- **파일 이름**: 플러그인 API로는 문서 이름을 바꿀 수 없어(`Setting the document name is currently not supported`) 파일이 Drafts에 `Document`로 표시된다. Figma에서 파일 이름을 `INAD — Adaptive Workstation Design System`으로 직접 바꿔야 한다(1회, 사람 작업).
+
 ## 8. 상태 표기(승인 흐름)
 
 섹션 이름 접두어로 관리한다: `[Exploration]`, `[Review]`, `[Approved]`, `[Implemented]`. 필 뱃지를 만들지 않는다. 구현 대상은 `[Approved]` 섹션 안의 프레임 또는 작업 지시에서 명시한 프레임뿐이다.
