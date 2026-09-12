@@ -18,7 +18,7 @@ const checks = [
   ['optional UI isolation marker', /Optional UI enhancement disabled/],
   ['boot watchdog marker', /bootFailureNotice/],
   ['UI localization bundled', /inad-locale/],
-  ['border-console shell bundled', /border-console-v3/],
+  ['adaptive task navigation present', /\bid=["']taskNav["']/],
   ['work manual bundled', /work-manual|workManual/]
 ];
 

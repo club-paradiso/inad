@@ -1,4 +1,4 @@
-// Optional UI-only enhancements (i18n, border-console shell, work manual).
+// Optional UI-only enhancements (i18n, work manual).
 //
 // IMPORTANT: these are deliberately loaded *after* the core application has booted. Keeping them
 // as static imports meant a failure (or an expensive observer) in any of them could prevent the
@@ -12,12 +12,11 @@
 
 const loaders = [
   ['i18n', () => import('./i18n.js')],
-  ['border-console', () => import('./border-console.js')],
   ['work-manual', () => import('./work-manual.js')]
 ];
 
 export async function loadUiEnhancements() {
-  // Load sequentially so i18n is ready before the two dynamic UI surfaces render.
+  // Load sequentially so i18n is ready before the work manual renders its first dialog.
   // A rejected enhancement is intentionally non-fatal: the simulator stays usable.
   const loaded = [];
   for (const [label, load] of loaders) {

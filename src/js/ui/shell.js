@@ -9,6 +9,7 @@ import { challengeCfg, challengeEvaluation } from '../engines/achievement-engine
 import { campaignCfg, currentCampaignSave, storyIsAnchor, storyChapterDef, campaignArc, storyPrevContext, storyStatusInfo } from '../engines/campaign-engine.js';
 
 const imageCache = new Map();
+const setText = (id, text) => { const el = byId(id); if (el) el.textContent = text; };
 
 export function renderWorkloadOnly() {
   const q = simulatedBacklog(), pi = pressureInfo();
@@ -26,10 +27,10 @@ export function renderWorkloadOnly() {
 export function renderEventBar() {
   const e = state.activeEvent, main = byId('eventMain'); if (!main) return;
   main.className = 'event-main' + (e ? ' ' + (e.tone || 'warn') : '');
-  byId('eventTitle').textContent = e ? e.title : '운영상황 정상';
-  byId('eventDesc').textContent = e ? `${e.desc} · 남은 ${e.remaining}건` : '현재 적용 중인 현장 이벤트가 없습니다.';
-  byId('eventEffect').textContent = e ? eventEffectText(e) : 'NORMAL OPS';
-  byId('difficultyLabel').textContent = difficultyCfg().label;
+  setText('eventTitle', e ? e.title : '운영상황 정상');
+  setText('eventDesc', e ? `${e.desc} · 남은 ${e.remaining}건` : '현재 적용 중인 현장 이벤트가 없습니다.');
+  setText('eventEffect', e ? eventEffectText(e) : 'NORMAL OPS');
+  setText('difficultyLabel', difficultyCfg().label);
   const sl = byId('scenarioLabel'); if (sl) sl.textContent = scenarioCfg().name;
   const fat = Math.round(state.fatigue || 0), fv = byId('fatigueValue'), ff = byId('fatigueFill'), ft = byId('fatigueTrack');
   if (fv) fv.textContent = fat; if (ff) ff.style.width = Math.min(100, fat) + '%'; if (ft) ft.className = 'fatigue-track ' + (fat >= 85 ? 'bad' : fat >= 65 ? 'warn' : '');
@@ -40,12 +41,12 @@ export function renderStoryStrip() { const el = byId('storyCaseStrip'); if (!el)
 
 export function renderTop() {
   const c = current(); if (!c) return;
-  byId('caseCount').textContent = `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`;
-  byId('progressFill').style.width = (state.stats.processed / session.queue.length * 100) + '%';
-  byId('shiftLabel').textContent = c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건';
-  $$('.strike').forEach((e, i) => e.classList.toggle('on', i < state.strikes));
+  setText('caseCount', `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`);
+  const pf = byId('progressFill'); if (pf) pf.style.width = (state.stats.processed / session.queue.length * 100) + '%';
+  setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
+  $$('.strike').forEach((e) => { const i = [...e.parentElement.querySelectorAll('.strike')].indexOf(e); e.classList.toggle('on', i < state.strikes); });
   renderAudioButton();
-  byId('stProcessed').textContent = state.stats.processed; byId('stAdmitted').textContent = state.stats.admitted; byId('stSecondary').textContent = state.stats.secondary; byId('stRefused').textContent = state.stats.refused;
+  setText('stProcessed', state.stats.processed); setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();
 }
 export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-active', state.audio); b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
@@ -55,4 +56,4 @@ export function renderQueue() {
 }
 export function preloadQueueImages() { session.queue.slice(state.caseIndex, state.caseIndex + 10).forEach((q) => { const t = getTraveler(q.travelerId); if (!imageCache.has(t.id)) { const im = new Image(); im.src = t.portrait; imageCache.set(t.id, im); } }); }
 export function startClock() { const tick = () => { const d = new Date(); const c = byId('clock'); if (c) c.textContent = d.toLocaleTimeString('ko-KR', { hour12: false }); renderWorkloadOnly(); }; tick(); setInterval(tick, 1000); }
-export function showCallout(onSkip) { const e = byId('callout'); byId('callNo').textContent = screeningNo(); byId('callText').textContent = '12번 심사대로 오십시오.'; e.classList.add('on'); setTimeout(() => { if (e.classList.contains('on')) e.classList.remove('on'); }, 1050); byId('skipCall').onclick = () => { e.classList.remove('on'); onSkip && onSkip(); }; }
+export function showCallout(onSkip) { const e = byId('callout'); if (!e) return; setText('callNo', screeningNo()); setText('callText', '12번 심사대로 오십시오.'); e.classList.add('on'); setTimeout(() => { if (e.classList.contains('on')) e.classList.remove('on'); }, 1050); byId('skipCall').onclick = () => { e.classList.remove('on'); onSkip && onSkip(); }; }

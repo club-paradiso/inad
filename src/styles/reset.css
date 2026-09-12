@@ -1,17 +1,19 @@
 /* Minimal reset + base typography. */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-html { color-scheme: light; }
+html { color-scheme: light; -webkit-text-size-adjust: 100%; }
 body { background: var(--canvas); color: var(--text); font: 400 var(--fs-body)/var(--lh-body) var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 h1, h2, h3, h4, p { margin: 0; font-weight: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
-button { background: none; border: 0; padding: 0; cursor: pointer; }
+button { background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
 button:disabled { cursor: not-allowed; }
 img { display: block; max-width: 100%; }
 table { border-collapse: collapse; }
 [hidden] { display: none !important; }
 .mono { font-family: var(--mono); }
-.scroll { overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.scroll { overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; -webkit-overflow-scrolling: touch; }
 .scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 .a11y-live, .sr-only { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+/* iOS Safari zooms into inputs smaller than 16px on touch devices */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }

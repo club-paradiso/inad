@@ -1,9 +1,11 @@
-# Architecture (v7.0)
+# Architecture (v8 — adaptive workstation)
 
 ```
 src/
   index.html                 dev shell (native ES modules; served by `npm run dev`)
-  styles/                    Design System v2 (tokens → reset → shell → workspace → components → documents → procedures → modals → start → accessibility)
+  styles/                    Design System v3, one file per responsibility, loaded in this order:
+                             tokens (variables ↔ Figma) → reset → shell (chrome rows, breakpoints, ops sheet, task nav) → workspace (four zones per breakpoint)
+                             → components (zone contents + touch targets) → documents (paper surfaces) → procedures → modals (desktop dialog / phone sheet) → start → accessibility
   data/                      content only, no logic (cases, travelers, entry-basis, operations, missions, achievements, campaigns, tutorial, legal-baseline)
   assets/portraits/          105 WebP portraits (TRV-0001 … TRV-0106, TRV-0081 unused) — inlined only at build
   js/
@@ -25,15 +27,16 @@ src/
       rng.js                 FNV-1a + PRNG + date helpers
     services/                bus (events), storage, audio (Web Audio), diagnostics, portraits,
                              airport-live (same-origin /api/airport-load client), boot-watchdog,
-                             ui-enhancements → i18n, border-console, work-manual (optional, post-boot)
-    ui/                      renderers (no state mutation): shell, passenger-panel, interview-panel, document-workbench, system-panel, decision-desk, procedure-screen, start-screen, modals, toast, icons, views/*
+                             ui-enhancements → i18n, work-manual (optional, post-boot)
+    ui/                      renderers (no state mutation): shell, passenger-panel, interview-panel, document-workbench, system-panel, decision-desk (touch arming),
+                             task-nav (body[data-task] + ops sheet, presentation state only), procedure-screen, start-screen, modals, toast, icons, views/*
 scripts/
   build-single-html.js       src → dist/index.html (+ root index.html mirror), esbuild IIFE, inline CSS/JS/WebP
   dev-server.js / static-server.js / lint.js / extract-legacy-data.js (one-off provenance)
 tests/
   unit/                      node:test — legal engine, queue determinism, invariants, save/migration, meta engines
   integration/               dist integrity
-  e2e/                       Playwright, target = dist | legacy | src
+  e2e/                       Playwright, target = dist | legacy | src | url; adaptive.spec.js walks the full workflow at 390·430·768·1024·1440
 legacy/v6.1/                 frozen v6.1 production build (baseline for parity tests)
 ```
 
@@ -45,9 +48,12 @@ Engines never touch the DOM (`npm run lint` enforces). UI never changes state di
 ## Boot order
 1. `app.js` imports `services/boot-watchdog.js` first. It records early `error`/`unhandledrejection` events and, if `#sessionSeed` is still empty after 4 s, renders a reload notice inside `#startOverlay`.
 2. `boot()` runs synchronously on `DOMContentLoaded` (session, UI bindings, start screen).
-3. `services/ui-enhancements.js` then loads the optional UI modules (`i18n`, `border-console`, `work-manual`) sequentially via `import()` on a 0 ms timer. Each specifier is a string literal so esbuild inlines them into the release bundle; a failing module only logs a warning and never blocks the core simulator.
+3. `services/ui-enhancements.js` then loads the optional UI modules (`i18n`, `work-manual`) sequentially via `import()` on a 0 ms timer. Each specifier is a string literal so esbuild inlines them into the release bundle; a failing module only logs a warning and never blocks the core simulator.
 
 Only `app.js` may import `boot-watchdog.js` / `ui-enhancements.js`: `bus.js`, `state.js` and every engine are also loaded under node:test, where `window`/`document` do not exist.
+
+## Adaptive layout
+One DOM serves every form factor. The workspace is four zones (`.zone-person`, `.zone-interview`, `.zone-evidence`, `.zone-assessment`); CSS media queries decide how many are visible (≥1024 all, 768–1023 workspace + inspector, <768 one at a time) and `body[data-task]` — set only by `ui/task-nav.js` — selects the visible task on stacked layouts. `task-nav.js` also moves the duty KPI nodes into the operations sheet on phones (`placeWorkload`). Decision buttons arm on the first tap under coarse pointers (`decision-desk.js confirmTouch`) so a single touch never changes the legal stage. See `docs/design-system.md` and `docs/design-workflow.md`.
 
 ## Save compatibility
 Keys and shapes are identical to v6.1 (`inad-meta-v54` v2, `inad-progress-v54` v1, `inad-campaign-v58` v1, bundle schema 1). `save-engine.migrateMeta/migrateProgress` is the single migration point.

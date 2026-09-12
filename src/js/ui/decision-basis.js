@@ -13,7 +13,7 @@ export function basisNodesHTML(nodes, { open = false } = {}) {
 export function renderBasisPanel() {
   const el = byId('basisBoard'); if (!el) return; const c = current(); if (!c) return;
   const nodes = decisionBasis(c, state); const sum = overallBasisSummary(nodes);
-  el.innerHTML = `<div class="basis-head"><span>판단 근거 · 출입국관리법 제12조제3항</span><b>${esc(sum.headline)}</b></div><div class="basis-legend"><span>충족 ${sum.pass}</span><span>추가 확인 ${sum.review}</span><span>미충족 ${sum.fail}</span><span>미확인 ${sum.pending}</span><button type="button" class="basis-registry-btn" id="basisRegistryBtn">법령·출처 등록부</button></div><div class="basis-list">${basisNodesHTML(nodes)}</div><p class="basis-foot">근거 패널은 설명용입니다. 최종 판단은 심사관이 전체 사실관계와 법정 요건을 종합해 내리며, 시뮬레이션 요소는 별도로 표시됩니다.</p>`;
+  el.innerHTML = `<div class="basis-head"><span>법적 근거</span><b>${esc(sum.headline)}</b></div><div class="basis-legend"><span>충족 ${sum.pass}</span><span>추가 확인 ${sum.review}</span><span>미충족 ${sum.fail}</span><span>미확인 ${sum.pending}</span><button type="button" class="basis-registry-btn" id="basisRegistryBtn">법령·출처 등록부</button></div><div class="basis-list">${basisNodesHTML(nodes)}</div><p class="basis-foot">근거 패널은 설명용입니다. 최종 판단은 심사관이 전체 사실관계와 법정 요건을 종합해 내립니다.</p>`;
   byId('basisRegistryBtn').onclick = showSourceRegistry;
 }
 export function basisSectionHTML(c, st) { const nodes = decisionBasis(c, st); const sum = overallBasisSummary(nodes); return `<div class="record-section basis-result"><h3>판단 근거 · ${esc(sum.headline)}</h3><div class="basis-list compact">${basisNodesHTML(nodes)}</div></div>`; }
