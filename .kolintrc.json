@@ -1,0 +1,15 @@
+{
+  "$comment": "Config for ~/dev/korean-language-quality (kolint). INAD's UI strings live in src/js/services/i18n.js and the ui/ modules. Interview dialogue in src/data/cases.js is deliberately colloquial spoken Korean and is not a style target. legacy/ is frozen and dist/ is generated, so neither is ever edited.",
+  "genre": "ux",
+  "intensity": "standard",
+  "exclude": [
+    "legacy/**",
+    "dist/**",
+    "index.html",
+    "src/data/cases.js",
+    "tests/**",
+    "test-results/**",
+    "node_modules/**"
+  ],
+  "extraTerms": ["인천공항", "제2여객터미널", "입국심사관"]
+}
