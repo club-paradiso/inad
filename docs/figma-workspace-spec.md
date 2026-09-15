@@ -181,8 +181,30 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | 12 Playground | `[Exploration]` 섹션 · 안내 · 샌드박스 | 33:2 |
 | 13 Archive | 사용법 안내(보관물 없음) | 39:57 |
 
+## 6.1 Astra Redesign 탐색 (2026-09-15 기준)
+
+`[Exploration] Astra Redesign — *` 섹션은 v7.2 `[Approved]` 시안을 대체하지 않는 병렬 탐색이다.
+`[Approved]`·`[Implemented]` 섹션은 그대로 두고 복제·재구성한 결과만 이 섹션에 둔다.
+
+| 페이지 | 섹션 | 프레임 · 컴포넌트 |
+|---|---|---|
+| 03 Foundations | 89:2 | Astra 토큰 탐색 |
+| 04 Components | — | Astra/Control 90:87 · Astra/Record 92:101 · Astra/SectionHeading 93:73 · Astra/InterviewMessage 93:98 · Astra/TravelerSummary 95:73 · Astra/Decision 106:74 · Astra/LegalCondition 108:6653 · Astra/Checkbox 121:7140 |
+| 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · Compact workstation 1024 111:6642 |
+| 07 Tablet | 115:7029 | 768 인터뷰 115:7030 · 768 자료 116:568 |
+| 08 Mobile | 112:2495 | 인터뷰 390 112:2496 · 판단 390 114:6772 · 결정 무장 390 114:6870 · 자료 390 114:6944 · 대상자 390 115:732 · 인터뷰 430 115:6974 |
+| 09 Procedures | 116:1476 | 1024: 입국재심 116:1477 · 난민 회부심사 119:753 · 출입국사범 조사 119:789 · 송환지시 119:825 · 긴급체포 요건 검토 121:7141 · 출국대기실 122:7148<br>390: 입국재심 124:820 · 난민 회부심사 133:838 · 출입국사범 조사 135:851 · 긴급체포 요건 검토 135:878 · 송환지시 135:912 · 출국대기실 135:938 |
+
+절차 6종은 코드의 절차 모드와 1:1로 대응한다: `secondary` · `refugee` · `sjp` · `repatriation`
+(`legal-engine.js` `procedureMeta`), 그리고 `sjp` 안의 `ARREST_REVIEW` 단계와 `repatriation`의
+출국대기실 단계(`repatriationTimeline` 제76조의2). 강제퇴거·출국명령과는 계속 구분한다.
+
+Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 Prototype · Desktop 1280.
+
+
 ## 7. 알려진 제한
 
+- **MCP 페이지 목록**: `get_metadata`를 `nodeId` 없이 호출하면 문서의 전체 페이지가 아니라 **현재 로드된 페이지 1개만** 반환한다. 실제 페이지 목록은 `use_figma`에서 `figma.root.children`로 확인해야 한다. 이 차이 때문에 "페이지가 `00 — Cover & Read Me` 하나뿐"이라는 잘못된 보고가 나온 적이 있다(2026-09-15 확인: 14개 페이지 · 변수 57개 · 컴포넌트 세트 34개 모두 존재).
 - **Code Connect**: 현재 Figma 플랜(Dev/Full seat · Organization/Enterprise 필요)에서 `add_code_connect_map`가 거부된다. 대체 매핑: 각 컴포넌트 세트의 description(렌더러·파일 경로), 위 §4 표, 04 페이지 "코드 매핑" 표. 플랜이 바뀌면 §4 표대로 Javascript 라벨 매핑을 추가한다.
 - **래스터 업로드**: 작업 환경의 네트워크 정책이 figma.com 업로드를 차단하므로 01 Audit 페이지는 와이어프레임·주석으로 구성했고 캡처는 `docs/audit/v7.2/`에 있다. 사람이 "캡처 자리" 프레임에 끌어다 놓는다.
 
