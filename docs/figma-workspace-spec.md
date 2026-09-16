@@ -190,7 +190,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 |---|---|---|
 | 03 Foundations | 89:2 | Astra 토큰 탐색 |
 | 04 Components | — | Astra/Control 90:87 · Astra/Record 92:101 · Astra/SectionHeading 93:73 · Astra/InterviewMessage 93:98 · Astra/TravelerSummary 95:73 · Astra/Decision 106:74 · Astra/LegalCondition 108:6653 · Astra/Checkbox 121:7140 |
-| 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · Compact workstation 1024 111:6642 |
+| 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · **Primary inspection 1280 173:1920** · Compact workstation 1024 111:6642 |
 | 07 Tablet | 115:7029 | 768 인터뷰 115:7030 · 768 자료 116:568 |
 | 08 Mobile | 112:2495 | 인터뷰 390 112:2496 · 판단 390 114:6772 · 결정 무장 390 114:6870 · 자료 390 114:6944 · 대상자 390 115:732 · 인터뷰 430 115:6974 |
 | 09 Procedures | 116:1476 | 1024: 입국재심 116:1477 · 난민 회부심사 119:753 · 출입국사범 조사 119:789 · 송환지시 119:825 · 긴급체포 요건 검토 121:7141 · 출국대기실 122:7148<br>390: 입국재심 124:820 · 난민 회부심사 133:838 · 출입국사범 조사 135:851 · 긴급체포 요건 검토 135:878 · 송환지시 135:912 · 출국대기실 135:938 |
@@ -199,7 +199,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 (`legal-engine.js` `procedureMeta`), 그리고 `sjp` 안의 `ARREST_REVIEW` 단계와 `repatriation`의
 출국대기실 단계(`repatriationTimeline` 제76조의2). 강제퇴거·출국명령과는 계속 구분한다.
 
-Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 Prototype · Desktop 1280.
+Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 Prototype.
 
 
 ## 6.2 Astra 컴포넌트의 구조적 제약과 확인된 결함 (2026-09-16 감사)
@@ -232,6 +232,26 @@ Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 P
   세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
   단, 실제 인스턴스는 상태어를 텍스트에 담아 쓴다(예: "· 충족", "· 추가 확인", "· 미확인").
 - `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16 · 3차 · Desktop 1280 추가
+
+`173:1920` `Astra / Primary inspection / 1280×800` — [Approved] IA-D와 같은 1280×800로 맞췄다.
+1024를 늘린 것이 아니라 **밴드가 다르다**: CLAUDE.md상 1024–1279는 288·유동·320,
+≥1280은 320·유동·360이다. 1440에서 복제한 뒤 폭만 줄이면 구역이 320·568·360으로
+자동 정렬된다(evidence가 FILL) — 즉 1280은 좁은 1440이지 넓은 1024가 아니다.
+
+세로 예산이 1440보다 200px 짧아(800) 세 곳이 넘쳤고, 기준을 나눠 처리했다.
+
+- `173:1962` Evidence / source document — `clips:false`로 형제 위에 **39px 흘러넘침**(진짜 결함).
+  1024가 같은 문제를 푸는 방식(문서 패널을 축소 + 스크롤 영역 선언)을 그대로 적용해
+  384 → 345, `clipsContent` + `overflowDirection: VERTICAL`. 구역 합계 656 = 구역 높이 656.
+- `173:1940` Interview 대화록(265/324)과 `173:1995` 법적 조건 목록(304/384)은 **건드리지 않았다.**
+  둘 다 `clipsContent` + `overflowDirection: VERTICAL`로 선언된 스크롤 영역이고,
+  경계에서 행이 잘리는 것은 "아래에 더 있다"는 정상적인 스크롤 어포던스다.
+  (같은 판단을 1024 프레임에서 이미 내렸다.)
+- 상태바 텍스트는 1440용 1408px 고정이라 1280에서 144px 넘쳤다 → `FILL`(1264px).
+
+10.5px 미만 텍스트 0 · 프레임 밖 텍스트 0 · 잔여 bleed 0.
 
 ### 2026-09-16 · 2차 (시안 개선)
 
