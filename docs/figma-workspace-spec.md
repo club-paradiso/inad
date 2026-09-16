@@ -228,12 +228,23 @@ Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 P
 
 ### 미해결 결함
 
-- `Astra/LegalCondition` **State=Pending(108:74)과 State=Review(108:6644)가 완전히 동일**하다
-  (같은 배경 #F6ECD7, 같은 텍스트 색 #745012, 공유 속성이라 문자열도 동일). 구분 수단이 없다.
-- `Astra/Control` **State=Loading(90:85)과 State=Disabled(90:79)가 시각적으로 동일**하다.
-- `Astra/Record`·`Astra/LegalCondition`은 상태를 **색으로만** 전달한다(아이콘·상태 라벨 레이어 없음).
+- `Astra/Record`는 상태를 **색으로만** 전달한다(아이콘·상태 라벨 레이어 없음).
   세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
+  단, 실제 인스턴스는 상태어를 텍스트에 담아 쓴다(예: "· 충족", "· 추가 확인", "· 미확인").
 - `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16 · 2차 (시안 개선)
+
+- `Astra/LegalCondition` **State=Pending과 State=Review가 완전히 동일**하던 문제를 해소했다.
+  Pending은 "아직 조회하지 않음", Review는 "확인했고 추가 확인 필요" — 의미가 다른데 둘 다 앰버였다.
+  Pending을 흰 배경 + **파선 테두리**(`color/border/strong`) + 보조 텍스트색(`color/text/secondary`)으로 바꿔
+  색 외의 채널로도 구분되게 했다. 나머지 네 상태는 그대로 두었다.
+  06 Desktop 기준 Pending 2개 · Review 4개 인스턴스가 이제 구별된다 —
+  "해야 할 조회"와 "확인된 쟁점"이 한눈에 갈린다.
+- `Astra/Control` **State=Loading이 State=Disabled와 시각적으로 동일**하던 문제 —
+  하단에 2px 진행 표시(`color/action/primary`, absolute 배치)를 추가했다. 오토레이아웃은 건드리지 않았다.
+
+두 변경 모두 기존 semantic token에 바인딩했고, 공유 TEXT 속성·인스턴스 덮어쓰기·레이아웃 구조는 건드리지 않았다.
 
 ### 2026-09-16에 고친 것
 
