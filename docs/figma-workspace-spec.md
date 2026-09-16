@@ -202,13 +202,54 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 Prototype · Desktop 1280.
 
 
+## 6.2 Astra 컴포넌트의 구조적 제약과 확인된 결함 (2026-09-16 감사)
+
+### 공유 TEXT 속성 — 변형 미리보기가 모두 같은 문자열로 보이는 이유
+
+`Astra/Decision` · `Astra/Record` · `Astra/InterviewMessage` · `Astra/LegalCondition`은
+각각 **하나의 공유 TEXT 컴포넌트 속성**으로 주 라벨을 노출한다.
+
+| 세트 | 공유 속성 | 기본값 |
+|---|---|---|
+| Astra/Decision | `Title#10:30` | 입국 허가 |
+| Astra/Record | `Kind#92:0` | 법적 조건 · 확인 전 |
+| Astra/InterviewMessage | `Speaker#93:8` | 심사관 |
+| Astra/LegalCondition | `Condition#108:2` | 입국금지 해당 여부 · 확인 전 |
+
+그래서 04 페이지의 변형 그리드는 Kind/Type/Speaker/State와 무관하게 **모든 변형이 같은 기본 문자열**을 보여준다.
+예: `Astra/Decision`의 Refuse·SJP·Special 변형도 제목이 "입국 허가"로 렌더링된다.
+
+**이것은 사용 시 결함이 아니다.** 실제 인스턴스는 인스턴스별로 속성을 덮어쓴다
+(확인: `124:836` Kind=Refuse → "입국 불허가", `133:850` Kind=Refuse → "난민인정심사 불회부").
+라이브러리 가독성 문제이며, 변형 텍스트를 직접 편집해 고칠 수 **없다** —
+공유 속성의 기본값을 바꾸면 15개 변형 전체가 함께 바뀐다(2026-09-16 실측 확인).
+고치려면 공유 속성을 제거하고 Kind별 리터럴 제목으로 재구성해야 하는데,
+이는 컴포넌트 계약 변경이며 기존 인스턴스의 덮어쓰기를 모두 잃는다. **작성자 승인 필요.**
+
+### 미해결 결함
+
+- `Astra/LegalCondition` **State=Pending(108:74)과 State=Review(108:6644)가 완전히 동일**하다
+  (같은 배경 #F6ECD7, 같은 텍스트 색 #745012, 공유 속성이라 문자열도 동일). 구분 수단이 없다.
+- `Astra/Control` **State=Loading(90:85)과 State=Disabled(90:79)가 시각적으로 동일**하다.
+- `Astra/Record`·`Astra/LegalCondition`은 상태를 **색으로만** 전달한다(아이콘·상태 라벨 레이어 없음).
+  세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
+- `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16에 고친 것
+
+- 컴포넌트 세트 5개가 `clipsContent`로 모든 변형의 오른쪽 16px을 잘라내던 문제 — 프레임 폭 확장
+  (Control 160→192 · Record 328→360 · InterviewMessage 296→328 · LegalCondition 360→392 · Checkbox 440→472).
+- `111:6733` 1024 프레임의 상태바 텍스트가 1408px로 프레임 밖 400px까지 뻗던 문제 — `FILL`로 변경(1008px).
+- `124:820` 입국재심 390 프레임의 좌우 여백이 다른 5개와 달리 12px이던 문제 — 16px로 통일.
+
+
 ## 7. 알려진 제한
 
 - **MCP 페이지 목록**: `get_metadata`를 `nodeId` 없이 호출하면 문서의 전체 페이지가 아니라 **현재 로드된 페이지 1개만** 반환한다. 실제 페이지 목록은 `use_figma`에서 `figma.root.children`로 확인해야 한다. 이 차이 때문에 "페이지가 `00 — Cover & Read Me` 하나뿐"이라는 잘못된 보고가 나온 적이 있다(2026-09-15 확인: 14개 페이지 · 변수 57개 · 컴포넌트 세트 34개 모두 존재).
 - **Code Connect**: 현재 Figma 플랜(Dev/Full seat · Organization/Enterprise 필요)에서 `add_code_connect_map`가 거부된다. 대체 매핑: 각 컴포넌트 세트의 description(렌더러·파일 경로), 위 §4 표, 04 페이지 "코드 매핑" 표. 플랜이 바뀌면 §4 표대로 Javascript 라벨 매핑을 추가한다.
 - **래스터 업로드**: 작업 환경의 네트워크 정책이 figma.com 업로드를 차단하므로 01 Audit 페이지는 와이어프레임·주석으로 구성했고 캡처는 `docs/audit/v7.2/`에 있다. 사람이 "캡처 자리" 프레임에 끌어다 놓는다.
 
-- **파일 이름**: 플러그인 API로는 문서 이름을 바꿀 수 없어(`Setting the document name is currently not supported`) 파일이 Drafts에 `Document`로 표시된다. Figma에서 파일 이름을 `INAD — Adaptive Workstation Design System`으로 직접 바꿔야 한다(1회, 사람 작업).
+- **파일 이름**: 플러그인 API로는 문서 이름을 바꿀 수 없다(`Setting the document name is currently not supported`). 또한 `figma.root.name`은 원격 MCP 세션에서 실제 파일 제목 대신 `Document`를 반환하므로 **파일 이름의 근거로 쓰면 안 된다**. 실제 이름은 Figma UI 또는 공유 URL 슬러그로 확인한다(2026-09-16 기준 URL 슬러그는 `INAD — Adaptive Workstation Design System`).
 
 ## 8. 상태 표기(승인 흐름)
 
