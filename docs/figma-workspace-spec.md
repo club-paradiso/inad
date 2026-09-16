@@ -193,6 +193,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · **Primary inspection 1280 173:1920** · Compact workstation 1024 111:6642 |
 | 07 Tablet | 115:7029 | 768 인터뷰 115:7030 · 768 자료 116:568 |
 | 08 Mobile | 112:2495 | 인터뷰 390 112:2496 · 판단 390 114:6772 · 결정 무장 390 114:6870 · 자료 390 114:6944 · 대상자 390 115:732 · 인터뷰 430 115:6974 |
+| 05 Patterns | 186:337 | 패턴 10종 그리드 186:339 |
 | 10 States & Edge Cases | 179:141 | 상태 14종 그리드 179:143 |
 | 09 Procedures | 116:1476 | 1024: 입국재심 116:1477 · 난민 회부심사 119:753 · 출입국사범 조사 119:789 · 송환지시 119:825 · 긴급체포 요건 검토 121:7141 · 출국대기실 122:7148<br>390: 입국재심 124:820 · 난민 회부심사 133:838 · 출입국사범 조사 135:851 · 긴급체포 요건 검토 135:878 · 송환지시 135:912 · 출국대기실 135:938 |
 
@@ -200,7 +201,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 (`legal-engine.js` `procedureMeta`), 그리고 `sjp` 안의 `ARREST_REVIEW` 단계와 `repatriation`의
 출국대기실 단계(`repatriationTimeline` 제76조의2). 강제퇴거·출국명령과는 계속 구분한다.
 
-Astra 탐색에 아직 없는 것: 05 Patterns · 11 Prototype.
+Astra 탐색에 아직 없는 것: 11 Prototype.
 
 
 ## 6.2 Astra 컴포넌트의 구조적 제약과 확인된 결함 (2026-09-16 감사)
@@ -233,6 +234,24 @@ Astra 탐색에 아직 없는 것: 05 Patterns · 11 Prototype.
   세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
   단, 실제 인스턴스는 상태어를 텍스트에 담아 쓴다(예: "· 충족", "· 추가 확인", "· 미확인").
 - `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16 · 5차 · Patterns 추가
+
+`186:337` `[Exploration] Astra Redesign — Patterns` · 그리드 `186:339` · 셀 10종.
+[Approved] 36:2와 같은 10개 패턴을 Astra 어휘로 다시 적었다. 각 셀은
+제목 · 언제 · 구성 · **근거(실제 Astra 프레임의 노드 id)** 네 줄에 살아 있는 인스턴스 예시를 붙였다.
+
+패턴은 "어떤 컴포넌트를 어떤 순서·크기로" 조합하는지에 대한 규칙이므로,
+이번에 Astra에서 실제로 정한 결정들을 규칙으로 승격했다. 예:
+- 3 Evidence Workspace — "문서 패널은 반드시 `clipsContent` + `overflowDirection`을 선언한다"
+  (1024·1280·768·390에서 흘러넘침을 고치며 매번 적용한 규칙).
+- 6 Assessment Summary — 미확인·추가확인을 위로, 충족을 아래로.
+- 8 Procedure Flow — 4구역 고정, 절차는 서로 합치지 않고 화면을 따로 가진다.
+
+9 Mobile Task Navigation에는 **Astra 전용 TaskNav 컴포넌트가 아직 없고 프레임에 직접
+조판되어 있다**는 사실을 숨기지 않고 적었다(컴포넌트화 미해결).
+
+검증: bleed 0 · 프레임 밖 텍스트 0 · 10.5px 미만 0.
 
 ### 2026-09-16 · 4차 · States & Edge Cases 추가
 
