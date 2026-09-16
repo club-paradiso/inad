@@ -193,13 +193,14 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · **Primary inspection 1280 173:1920** · Compact workstation 1024 111:6642 |
 | 07 Tablet | 115:7029 | 768 인터뷰 115:7030 · 768 자료 116:568 |
 | 08 Mobile | 112:2495 | 인터뷰 390 112:2496 · 판단 390 114:6772 · 결정 무장 390 114:6870 · 자료 390 114:6944 · 대상자 390 115:732 · 인터뷰 430 115:6974 |
+| 10 States & Edge Cases | 179:141 | 상태 14종 그리드 179:143 |
 | 09 Procedures | 116:1476 | 1024: 입국재심 116:1477 · 난민 회부심사 119:753 · 출입국사범 조사 119:789 · 송환지시 119:825 · 긴급체포 요건 검토 121:7141 · 출국대기실 122:7148<br>390: 입국재심 124:820 · 난민 회부심사 133:838 · 출입국사범 조사 135:851 · 긴급체포 요건 검토 135:878 · 송환지시 135:912 · 출국대기실 135:938 |
 
 절차 6종은 코드의 절차 모드와 1:1로 대응한다: `secondary` · `refugee` · `sjp` · `repatriation`
 (`legal-engine.js` `procedureMeta`), 그리고 `sjp` 안의 `ARREST_REVIEW` 단계와 `repatriation`의
 출국대기실 단계(`repatriationTimeline` 제76조의2). 강제퇴거·출국명령과는 계속 구분한다.
 
-Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 Prototype.
+Astra 탐색에 아직 없는 것: 05 Patterns · 11 Prototype.
 
 
 ## 6.2 Astra 컴포넌트의 구조적 제약과 확인된 결함 (2026-09-16 감사)
@@ -232,6 +233,26 @@ Astra 탐색에 아직 없는 것: 05 Patterns · 10 States & Edge Cases · 11 P
   세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
   단, 실제 인스턴스는 상태어를 텍스트에 담아 쓴다(예: "· 충족", "· 추가 확인", "· 미확인").
 - `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16 · 4차 · States & Edge Cases 추가
+
+`179:141` `[Exploration] Astra Redesign — States & Edge Cases` · 그리드 `179:143` · 셀 14종.
+[Approved] 31:2와 같은 14개 상태를 Astra 컴포넌트 어휘로 다시 구성했다.
+CLAUDE.md 원칙대로 **각 셀은 코드에 실제로 존재하는 렌더 경로**를 근거로 적었고,
+셀 설명에 해당 파일·함수를 명시했다(예: `system-panel.js` `state.queries` 빈 배열,
+`start-screen.js:39` `live.status === 'fallback'`, `legal-engine.js` `validateArrestExecution`).
+
+새 기능을 가정하지 않았다. 컴포넌트로 표현할 수 없는 두 가지는 인스턴스 대신 직접 조판했다:
+09 `pref-large-text`(13→15 / 12→13.5 비교)와 10 `pref-high-contrast`(배경 틴트 없이 좌측 3px 선).
+
+법률 불변식 확인:
+- 12는 조회 결과를 사실로만 적고 "이 기록 자체가 입국불허 사유로 자동 연결되지 않는다"를 명시.
+- 14는 `ARREST_REQUIREMENTS` 3개를 개별 체크로 두고, 버튼을 비활성으로 숨기는 대신
+  `validateArrestExecution`이 관문임을 적었다 — 코드와 같고, 자동 체포가 아니다.
+- 13은 6.2에서 고친 `Astra/LegalCondition`을 실제 조합에서 검증한다:
+  Fail(적색) · Review(앰버) · Pending(흰색+파선)이 서로 구별된다.
+
+검증: bleed 0 · 프레임 밖 텍스트 0 · 10.5px 미만 0 · 그리드가 섹션 안에 들어감.
 
 ### 2026-09-16 · 3차 · Desktop 1280 추가
 
