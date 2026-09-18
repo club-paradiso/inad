@@ -181,12 +181,166 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | 12 Playground | `[Exploration]` 섹션 · 안내 · 샌드박스 | 33:2 |
 | 13 Archive | 사용법 안내(보관물 없음) | 39:57 |
 
+## 6.1 Astra Redesign 탐색 (2026-09-15 기준)
+
+`[Exploration] Astra Redesign — *` 섹션은 v7.2 `[Approved]` 시안을 대체하지 않는 병렬 탐색이다.
+`[Approved]`·`[Implemented]` 섹션은 그대로 두고 복제·재구성한 결과만 이 섹션에 둔다.
+
+| 페이지 | 섹션 | 프레임 · 컴포넌트 |
+|---|---|---|
+| 03 Foundations | 89:2 | Astra 토큰 탐색 |
+| 04 Components | — | Astra/Control 90:87 · Astra/Record 92:101 · Astra/SectionHeading 93:73 · Astra/InterviewMessage 93:98 · Astra/TravelerSummary 95:73 · Astra/Decision 106:74 · Astra/LegalCondition 108:6653 · Astra/Checkbox 121:7140 |
+| 06 Desktop | 98:1717 | Primary inspection 1440 98:1718 · **Primary inspection 1280 173:1920** · Compact workstation 1024 111:6642 |
+| 07 Tablet | 115:7029 | 768 인터뷰 115:7030 · 768 자료 116:568 |
+| 08 Mobile | 112:2495 | 인터뷰 390 112:2496 · 판단 390 114:6772 · 결정 무장 390 114:6870 · 자료 390 114:6944 · 대상자 390 115:732 · 인터뷰 430 115:6974 |
+| 05 Patterns | 186:337 | 패턴 10종 그리드 186:339 |
+| 11 Prototype | 189:1930 | 모바일 흐름 P1~P6 189:1932 · 189:1946 · 189:1972 · 189:2019 · 189:2045 · 189:2071 |
+| 10 States & Edge Cases | 179:141 | 상태 14종 그리드 179:143 |
+| 09 Procedures | 116:1476 | 1024: 입국재심 116:1477 · 난민 회부심사 119:753 · 출입국사범 조사 119:789 · 송환지시 119:825 · 긴급체포 요건 검토 121:7141 · 출국대기실 122:7148<br>390: 입국재심 124:820 · 난민 회부심사 133:838 · 출입국사범 조사 135:851 · 긴급체포 요건 검토 135:878 · 송환지시 135:912 · 출국대기실 135:938 |
+
+절차 6종은 코드의 절차 모드와 1:1로 대응한다: `secondary` · `refugee` · `sjp` · `repatriation`
+(`legal-engine.js` `procedureMeta`), 그리고 `sjp` 안의 `ARREST_REVIEW` 단계와 `repatriation`의
+출국대기실 단계(`repatriationTimeline` 제76조의2). 강제퇴거·출국명령과는 계속 구분한다.
+
+Astra 탐색의 남은 과제(페이지가 아니라 항목): Astra 전용 TaskNav·Dialog·Toast 컴포넌트 부재 · `Astra/Record` 색 전용 상태 · 변형 매트릭스 희소 · `Astra/Decision` 공유 속성 재구성(승인 대기). 01 Audit·02 UX Architecture는 현재 제품을 기록하는 페이지라 Astra 사본을 만들지 않았다.
+
+
+## 6.2 Astra 컴포넌트의 구조적 제약과 확인된 결함 (2026-09-16 감사)
+
+### 공유 TEXT 속성 — 변형 미리보기가 모두 같은 문자열로 보이는 이유
+
+`Astra/Decision` · `Astra/Record` · `Astra/InterviewMessage` · `Astra/LegalCondition`은
+각각 **하나의 공유 TEXT 컴포넌트 속성**으로 주 라벨을 노출한다.
+
+| 세트 | 공유 속성 | 기본값 |
+|---|---|---|
+| Astra/Decision | `Title#10:30` | 입국 허가 |
+| Astra/Record | `Kind#92:0` | 법적 조건 · 확인 전 |
+| Astra/InterviewMessage | `Speaker#93:8` | 심사관 |
+| Astra/LegalCondition | `Condition#108:2` | 입국금지 해당 여부 · 확인 전 |
+
+그래서 04 페이지의 변형 그리드는 Kind/Type/Speaker/State와 무관하게 **모든 변형이 같은 기본 문자열**을 보여준다.
+예: `Astra/Decision`의 Refuse·SJP·Special 변형도 제목이 "입국 허가"로 렌더링된다.
+
+**이것은 사용 시 결함이 아니다.** 실제 인스턴스는 인스턴스별로 속성을 덮어쓴다
+(확인: `124:836` Kind=Refuse → "입국 불허가", `133:850` Kind=Refuse → "난민인정심사 불회부").
+라이브러리 가독성 문제이며, 변형 텍스트를 직접 편집해 고칠 수 **없다** —
+공유 속성의 기본값을 바꾸면 15개 변형 전체가 함께 바뀐다(2026-09-16 실측 확인).
+고치려면 공유 속성을 제거하고 Kind별 리터럴 제목으로 재구성해야 하는데,
+이는 컴포넌트 계약 변경이며 기존 인스턴스의 덮어쓰기를 모두 잃는다. **작성자 승인 필요.**
+
+### 미해결 결함
+
+- `Astra/Record`는 상태를 **색으로만** 전달한다(아이콘·상태 라벨 레이어 없음).
+  세트 description은 "label and icon as well as colour"라고 적고 있어 설명과 실제가 어긋난다.
+  단, 실제 인스턴스는 상태어를 텍스트에 담아 쓴다(예: "· 충족", "· 추가 확인", "· 미확인").
+- `Astra/Control`은 Kind×State 18조합 중 8개, `Astra/Record`는 24조합 중 8개만 존재한다.
+
+### 2026-09-16 · 6차 · Prototype 추가
+
+`189:1930` `[Exploration] Astra Redesign — Prototype · 모바일 과업 흐름` · P1~P6 · 반응 8개 ·
+시작점 `입국심사 흐름 (모바일 390)`.
+
+[Approved] 34:2가 이미 데스크톱 1440 흐름을 다루므로 **중복하지 않고 모바일 390 흐름**을 지었다.
+Astra 작업이 가장 두터운 곳이고, 모바일에서만 드러나는 세 가지 동작을 한 흐름에 담을 수 있다.
+
+P1 대상자 → P2 인터뷰 → P3 자료 → P4 판단 (하단 과업 내비게이션)
+P4 → P5 (입국 허가 **첫 탭 무장**) → P1 (**두 번째 탭 실행** · 사건 종결 후 다음 승객)
+P5 → P4 (`AFTER_TIMEOUT` 4초 = **무장 해제**, 코드의 4초 만료를 그대로 모델링)
+P4 → P6 입국재심 절차 (**절차 인계**) → P4 (일반 심사대 보기)
+
+즉 흐름 자체가 법률 불변식을 보여 준다: 단일 탭으로 법적 단계가 바뀌지 않고,
+절차는 작업대와 분리된 화면을 가지며, 절차에서 심사대로 되돌아올 수 있다.
+
+핫스팟은 투명 사각형이며 모두 `layoutPositioning: ABSOLUTE`라 프레임 오토레이아웃을 건드리지 않는다
+(검증: 6프레임 bleed 0 · 프레임 밖 텍스트 0).
+
+### 2026-09-16 · 5차 · Patterns 추가
+
+`186:337` `[Exploration] Astra Redesign — Patterns` · 그리드 `186:339` · 셀 10종.
+[Approved] 36:2와 같은 10개 패턴을 Astra 어휘로 다시 적었다. 각 셀은
+제목 · 언제 · 구성 · **근거(실제 Astra 프레임의 노드 id)** 네 줄에 살아 있는 인스턴스 예시를 붙였다.
+
+패턴은 "어떤 컴포넌트를 어떤 순서·크기로" 조합하는지에 대한 규칙이므로,
+이번에 Astra에서 실제로 정한 결정들을 규칙으로 승격했다. 예:
+- 3 Evidence Workspace — "문서 패널은 반드시 `clipsContent` + `overflowDirection`을 선언한다"
+  (1024·1280·768·390에서 흘러넘침을 고치며 매번 적용한 규칙).
+- 6 Assessment Summary — 미확인·추가확인을 위로, 충족을 아래로.
+- 8 Procedure Flow — 4구역 고정, 절차는 서로 합치지 않고 화면을 따로 가진다.
+
+9 Mobile Task Navigation에는 **Astra 전용 TaskNav 컴포넌트가 아직 없고 프레임에 직접
+조판되어 있다**는 사실을 숨기지 않고 적었다(컴포넌트화 미해결).
+
+검증: bleed 0 · 프레임 밖 텍스트 0 · 10.5px 미만 0.
+
+### 2026-09-16 · 4차 · States & Edge Cases 추가
+
+`179:141` `[Exploration] Astra Redesign — States & Edge Cases` · 그리드 `179:143` · 셀 14종.
+[Approved] 31:2와 같은 14개 상태를 Astra 컴포넌트 어휘로 다시 구성했다.
+CLAUDE.md 원칙대로 **각 셀은 코드에 실제로 존재하는 렌더 경로**를 근거로 적었고,
+셀 설명에 해당 파일·함수를 명시했다(예: `system-panel.js` `state.queries` 빈 배열,
+`start-screen.js:39` `live.status === 'fallback'`, `legal-engine.js` `validateArrestExecution`).
+
+새 기능을 가정하지 않았다. 컴포넌트로 표현할 수 없는 두 가지는 인스턴스 대신 직접 조판했다:
+09 `pref-large-text`(13→15 / 12→13.5 비교)와 10 `pref-high-contrast`(배경 틴트 없이 좌측 3px 선).
+
+법률 불변식 확인:
+- 12는 조회 결과를 사실로만 적고 "이 기록 자체가 입국불허 사유로 자동 연결되지 않는다"를 명시.
+- 14는 `ARREST_REQUIREMENTS` 3개를 개별 체크로 두고, 버튼을 비활성으로 숨기는 대신
+  `validateArrestExecution`이 관문임을 적었다 — 코드와 같고, 자동 체포가 아니다.
+- 13은 6.2에서 고친 `Astra/LegalCondition`을 실제 조합에서 검증한다:
+  Fail(적색) · Review(앰버) · Pending(흰색+파선)이 서로 구별된다.
+
+검증: bleed 0 · 프레임 밖 텍스트 0 · 10.5px 미만 0 · 그리드가 섹션 안에 들어감.
+
+### 2026-09-16 · 3차 · Desktop 1280 추가
+
+`173:1920` `Astra / Primary inspection / 1280×800` — [Approved] IA-D와 같은 1280×800로 맞췄다.
+1024를 늘린 것이 아니라 **밴드가 다르다**: CLAUDE.md상 1024–1279는 288·유동·320,
+≥1280은 320·유동·360이다. 1440에서 복제한 뒤 폭만 줄이면 구역이 320·568·360으로
+자동 정렬된다(evidence가 FILL) — 즉 1280은 좁은 1440이지 넓은 1024가 아니다.
+
+세로 예산이 1440보다 200px 짧아(800) 세 곳이 넘쳤고, 기준을 나눠 처리했다.
+
+- `173:1962` Evidence / source document — `clips:false`로 형제 위에 **39px 흘러넘침**(진짜 결함).
+  1024가 같은 문제를 푸는 방식(문서 패널을 축소 + 스크롤 영역 선언)을 그대로 적용해
+  384 → 345, `clipsContent` + `overflowDirection: VERTICAL`. 구역 합계 656 = 구역 높이 656.
+- `173:1940` Interview 대화록(265/324)과 `173:1995` 법적 조건 목록(304/384)은 **건드리지 않았다.**
+  둘 다 `clipsContent` + `overflowDirection: VERTICAL`로 선언된 스크롤 영역이고,
+  경계에서 행이 잘리는 것은 "아래에 더 있다"는 정상적인 스크롤 어포던스다.
+  (같은 판단을 1024 프레임에서 이미 내렸다.)
+- 상태바 텍스트는 1440용 1408px 고정이라 1280에서 144px 넘쳤다 → `FILL`(1264px).
+
+10.5px 미만 텍스트 0 · 프레임 밖 텍스트 0 · 잔여 bleed 0.
+
+### 2026-09-16 · 2차 (시안 개선)
+
+- `Astra/LegalCondition` **State=Pending과 State=Review가 완전히 동일**하던 문제를 해소했다.
+  Pending은 "아직 조회하지 않음", Review는 "확인했고 추가 확인 필요" — 의미가 다른데 둘 다 앰버였다.
+  Pending을 흰 배경 + **파선 테두리**(`color/border/strong`) + 보조 텍스트색(`color/text/secondary`)으로 바꿔
+  색 외의 채널로도 구분되게 했다. 나머지 네 상태는 그대로 두었다.
+  06 Desktop 기준 Pending 2개 · Review 4개 인스턴스가 이제 구별된다 —
+  "해야 할 조회"와 "확인된 쟁점"이 한눈에 갈린다.
+- `Astra/Control` **State=Loading이 State=Disabled와 시각적으로 동일**하던 문제 —
+  하단에 2px 진행 표시(`color/action/primary`, absolute 배치)를 추가했다. 오토레이아웃은 건드리지 않았다.
+
+두 변경 모두 기존 semantic token에 바인딩했고, 공유 TEXT 속성·인스턴스 덮어쓰기·레이아웃 구조는 건드리지 않았다.
+
+### 2026-09-16에 고친 것
+
+- 컴포넌트 세트 5개가 `clipsContent`로 모든 변형의 오른쪽 16px을 잘라내던 문제 — 프레임 폭 확장
+  (Control 160→192 · Record 328→360 · InterviewMessage 296→328 · LegalCondition 360→392 · Checkbox 440→472).
+- `111:6733` 1024 프레임의 상태바 텍스트가 1408px로 프레임 밖 400px까지 뻗던 문제 — `FILL`로 변경(1008px).
+- `124:820` 입국재심 390 프레임의 좌우 여백이 다른 5개와 달리 12px이던 문제 — 16px로 통일.
+
+
 ## 7. 알려진 제한
 
+- **MCP 페이지 목록**: `get_metadata`를 `nodeId` 없이 호출하면 문서의 전체 페이지가 아니라 **현재 로드된 페이지 1개만** 반환한다. 실제 페이지 목록은 `use_figma`에서 `figma.root.children`로 확인해야 한다. 이 차이 때문에 "페이지가 `00 — Cover & Read Me` 하나뿐"이라는 잘못된 보고가 나온 적이 있다(2026-09-15 확인: 14개 페이지 · 변수 57개 · 컴포넌트 세트 34개 모두 존재).
 - **Code Connect**: 현재 Figma 플랜(Dev/Full seat · Organization/Enterprise 필요)에서 `add_code_connect_map`가 거부된다. 대체 매핑: 각 컴포넌트 세트의 description(렌더러·파일 경로), 위 §4 표, 04 페이지 "코드 매핑" 표. 플랜이 바뀌면 §4 표대로 Javascript 라벨 매핑을 추가한다.
 - **래스터 업로드**: 작업 환경의 네트워크 정책이 figma.com 업로드를 차단하므로 01 Audit 페이지는 와이어프레임·주석으로 구성했고 캡처는 `docs/audit/v7.2/`에 있다. 사람이 "캡처 자리" 프레임에 끌어다 놓는다.
 
-- **파일 이름**: 플러그인 API로는 문서 이름을 바꿀 수 없어(`Setting the document name is currently not supported`) 파일이 Drafts에 `Document`로 표시된다. Figma에서 파일 이름을 `INAD — Adaptive Workstation Design System`으로 직접 바꿔야 한다(1회, 사람 작업).
+- **파일 이름**: 플러그인 API로는 문서 이름을 바꿀 수 없다(`Setting the document name is currently not supported`). 또한 `figma.root.name`은 원격 MCP 세션에서 실제 파일 제목 대신 `Document`를 반환하므로 **파일 이름의 근거로 쓰면 안 된다**. 실제 이름은 Figma UI 또는 공유 URL 슬러그로 확인한다(2026-09-16 기준 URL 슬러그는 `INAD — Adaptive Workstation Design System`).
 
 ## 8. 상태 표기(승인 흐름)
 
