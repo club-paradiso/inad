@@ -137,6 +137,13 @@ test.describe('접근성 구조', () => {
     await H.lookup(page, 'visa');
     await expect(page.locator('#terminal .line[data-seen="1"]')).toHaveCount(1);
     await expect(page.locator('#terminal .line')).toHaveCount(2);
+    // same content and order as a full render: newest result first, no line twice
+    const lines = await page.locator('#terminal .line > span:first-child').allInnerTexts();
+    expect(lines).toEqual(['사증·입국자격', '출입국기록']);
+    // if the rendered lines no longer match what was tracked, the next render rebuilds the list in full
+    await page.locator('#terminal').evaluate((el) => el.replaceChildren());
+    await H.lookup(page, 'pnr');
+    expect(await page.locator('#terminal .line > span:first-child').allInnerTexts()).toEqual(['항공 PNR', '사증·입국자격', '출입국기록']);
     await H.expectNoErrors(errors);
   });
 

@@ -64,6 +64,6 @@
 - E2E는 `window.INADTest` 훅(seed 고정·큐 점프·상태 조회)만 사용하고 나머지는 실제 UI 조작.
 
 ## 마지막 정상 QA 결과
-- 2026-10-01 (v9.0): lint 65 modules OK, unit 106/106, integrity 10/10, E2E dist 83/83 · legacy 19 통과(61 v9 전용 생략) · src 부분집합 19/19, 8개 뷰포트 오류·가로 오버플로 0 (`docs/qa-v9.md`).
+- 2026-10-01 (v9.0): lint 65 modules OK, unit 106/106, integrity 10/10, E2E dist 83/83 · legacy 19 통과(64 v9 전용 생략) · src 부분집합 19/19, 8개 뷰포트 오류·가로 오버플로 0 (`docs/qa-v9.md`).
 - 2026-09-11 (인수 후): lint OK(64 modules), unit 47/47, integrity 3/3, E2E dist 19/19 · legacy 19/19 · src 19/19, dist 1,500,602 bytes (v6.1 1,514,881 대비 0.9% 감소, 15% 한도 내). esbuild 0.27.7로 v7.1 커밋을 재빌드해 커밋된 mirror와 바이트 동일함을 확인한 뒤 같은 버전으로 mirror 재생성.
 - 2026-09-11 (v7.1 릴리스): unit 36/36, E2E(dist) 19/19, E2E(legacy) 19/19, lint OK, dist 1,391,510 bytes (v6.1 1,514,881 대비 −8%).

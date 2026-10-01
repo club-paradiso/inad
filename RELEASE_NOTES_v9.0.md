@@ -73,5 +73,5 @@ banner, the README and this file in step.
 
 ## Verification
 See `docs/qa-v9.md`: lint, 106 unit, 10 integration, 83 E2E on the release build, 19 E2E on the v6.1
-baseline (61 v9-only tests skipped there), 19 E2E on the native-ESM source, and an eight-viewport sweep
+baseline (64 v9-only tests skipped there), 19 E2E on the native-ESM source, and an eight-viewport sweep
 with zero errors and zero overflow.

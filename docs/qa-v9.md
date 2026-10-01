@@ -20,7 +20,7 @@ session on the commit that carries this file; nothing here is copied from an ear
 | Build | `npm run build` | boot contract 86 ids OK · dist 1,522 KB · smoke check OK | boot contract 15 ids |
 | Integrity | `npm run test:integrity` | **10 / 10** | 3 / 3 |
 | E2E · release (`dist`) | `npx playwright test` | **83 / 83** | 25 / 25 under headless-shell; under full Chromium every test failed on the `/favicon.ico` 404 |
-| E2E · v6.1 baseline (`legacy`) | `INAD_TARGET=legacy npx playwright test` | **19 passed · 61 skipped** (v9-only behaviour) | 19 / 19 failed under full Chromium (favicon 404) |
+| E2E · v6.1 baseline (`legacy`) | `INAD_TARGET=legacy npx playwright test` | **19 passed · 64 skipped** (v9-only behaviour) | 19 / 19 failed under full Chromium (favicon 404) |
 | E2E · dev source (`src`, native ESM) | `INAD_TARGET=src npx playwright test flows-primary flows-special a11y-structure` | **19 / 19** | not run in CI |
 | Root mirror | `git diff --exit-code -- index.html` after build | clean | — |
 
