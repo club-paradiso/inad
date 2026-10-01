@@ -35,4 +35,20 @@ test.describe('UI 언어 전환', () => {
     await expect(page.locator('#terminal')).toContainText('출입국기록');
     await H.expectNoErrors(errors);
   });
+
+  test('English procedure screens and decision desk do not mix Korean UI copy into controls', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inad-locale', 'en'));
+    const errors = await H.openGame(page);
+    await H.setSeed(page, 271828);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-009');
+    await H.chooseStartOption(page, '[data-guidance="expert"]');
+    await page.locator('#startBtn').click(); await page.locator('#briefStart').click();
+    await H.jumpTo(page, idx);
+    await page.locator('#secondaryBtn').click();
+    await H.procAct(page, 'sjp');
+    // controls only; language names and traveler data are content, not UI copy
+    const korean = await page.evaluate(() => [...document.querySelectorAll('#procedureScreen button, #procedureScreen h2, .act, #actionHint')].map((x) => x.innerText.replace(/\s+/g, ' ').trim()).filter((t) => /[가-힣]/.test(t) && !/^Call interpreter \(/.test(t)));
+    expect(korean).toEqual([]);
+    await H.expectNoErrors(errors);
+  });
 });

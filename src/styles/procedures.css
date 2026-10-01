@@ -84,7 +84,20 @@
 .proc-row.warn .dot { background: var(--warning-soft); color: var(--warning-text); }
 .proc-row button { height: 26px; padding: 0 10px; border: 1px solid var(--accent); color: var(--accent-text); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; white-space: nowrap; }
 .proc-row button:hover { background: var(--accent-soft); }
-.proc-timeline { display: grid; gap: 4px; }
+.proc-timeline { display: grid; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.proc-step.active b::after { content: " · 현재"; color: var(--text-2); font-weight: 500; }
+/* steps that are not available yet: visible, disabled, with the reason as the subtitle */
+.proc-action.is-blocked { border-style: dashed; background: var(--surface-2); color: var(--text-2); opacity: 1; }
+.proc-action.is-blocked small { color: var(--text-2); }
+.proc-action:disabled { cursor: not-allowed; }
+.proc-note { padding: 6px 8px; border-left: 3px solid var(--border-strong); background: var(--surface-2); font-size: var(--fs-label); line-height: 1.5; color: var(--text-2); }
+.proc-note.warn { border-left-color: var(--warning); background: var(--warning-soft); color: var(--warning-text); }
+.proc-record { display: grid; border: 1px solid var(--border-subtle); background: var(--elevated); }
+.proc-record-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border-subtle); font-size: var(--fs-label); line-height: 1.45; }
+.proc-record-row:last-child { border-bottom: 0; }
+.proc-record-row b { color: var(--text-2); font-weight: 600; }
+.proc-title h2:focus { outline: none; }
+.proc-title h2:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .proc-step { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 6px 10px; border: 1px solid var(--border-subtle); border-left: 3px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); }
 .proc-step b { font-weight: 600; }
 .proc-step p { color: var(--text-3); font-size: var(--fs-meta); }
@@ -134,4 +147,12 @@
   .proc-action { min-height: 52px; }
   .proc-row button { min-height: 40px; }
   .proc-compare .photo img { width: 64px; height: 78px; }
+}
+
+/* touch: every procedure control is a 44px target (rows, close, interpreter, requirement ticks) */
+@media (pointer: coarse), (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+  .proc-close, .proc-row button, .proc-interpreter-btn { min-height: var(--size-touch); min-width: var(--size-touch); }
+  .arrest-check label { min-height: var(--size-touch); align-items: center; }
+  .arrest-check input { width: 20px; height: 20px; margin: 0; }
+  .proc-action { min-height: 52px; }
 }

@@ -148,7 +148,7 @@ for (const device of DEVICES) {
       await expect(clear).not.toHaveClass(/armed/);
       await expect(clear.locator('.arm-hint')).toHaveCount(0);
       await expect(secondary).not.toHaveClass(/armed/, { timeout: 6000 });
-      await expect(secondary).toHaveAttribute('aria-pressed', 'false');
+      await expect(secondary).not.toHaveAttribute('aria-pressed'); // not left behind as a toggle button
       // after expiry the next tap arms again instead of executing
       await secondary.tap();
       await expect(secondary).toHaveClass(/armed/);

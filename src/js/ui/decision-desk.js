@@ -12,14 +12,18 @@ import { notify } from '../services/bus.js';
 export const ARM_MS = 4000;
 const ARM_HINT = '다시 눌러 확정';
 let armed = null, armTimer = 0;
-const coarse = () => !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+// Touch is decided per device *and* per activation: a touchscreen laptop reports pointer: fine (trackpad)
+// but a finger tap arrives as pointerType 'touch'. Keyboard/mouse activations on fine pointers run directly.
+let lastPointerType = '';
+if (typeof document !== 'undefined') document.addEventListener('pointerdown', (e) => { lastPointerType = e.pointerType || ''; }, true);
+const coarse = () => (!!window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || lastPointerType === 'touch' || lastPointerType === 'pen';
 
 export function isArmed(btn) { return !!btn && armed === btn; }
 export function disarm() {
   clearTimeout(armTimer); armTimer = 0;
   const b = armed; armed = null;
   if (!b) return;
-  b.classList.remove('armed'); b.setAttribute('aria-pressed', 'false');
+  b.classList.remove('armed'); b.removeAttribute('aria-pressed');
   b.querySelector(':scope > .arm-hint')?.remove();
 }
 // Returns true when the activation may proceed; false when it only armed the control.
@@ -53,6 +57,9 @@ export function renderActions({ onRefugee, onSjp, onReopen }) {
   const run = !a ? null : a.kind === 'refugee' ? onRefugee : a.kind === 'sjp' ? onSjp : () => onReopen && onReopen(a.kind);
   if (a) { byId('specialTitle').textContent = a.title; byId('specialSub').textContent = a.sub; }
   sp.hidden = !a; sp.dataset.kind = a?.kind || ''; sp.onclick = !run ? null : a.legal ? guardDecision(run) : run;
-  byId('actionHint').textContent = state.stage === 'PRIMARY' ? '일반심사 중' : stageText(state.stage) + ' 진행 중';
+  // Disabled decisions say why (visible hint + aria-describedby), instead of only dimming.
+  const hint = byId('actionHint');
+  hint.textContent = state.ended ? '결정 기록됨 · 후속 절차 또는 다음 승객' : state.stage === 'PRIMARY' ? '일반심사 중' : state.stage === 'REFUGEE' ? '난민 회부 여부 결정 후 입국 판단' : state.stage === 'SECONDARY' ? '입국재심 진행 중 · 재심 인계 완료' : stageText(state.stage) + ' 진행 중';
+  ['clearBtn', 'secondaryBtn', 'refuseBtn', 'sjpBtn'].forEach((id) => { const b = byId(id); if (b.disabled) b.setAttribute('aria-describedby', 'actionHint'); else b.removeAttribute('aria-describedby'); });
   if (armed && (armed.disabled || armed.hidden || !armed.isConnected)) disarm();
 }

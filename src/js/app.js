@@ -129,7 +129,7 @@ function shiftCompleteFlow() {
   const r = caseEngine.shiftComplete();
   showShiftComplete(r, { onProfile: showPlayerProfile, onRecords: recordsFlow, onRestart: () => { const cr = r.campaignResult; if (cr && (cr.completed || cr.failed)) clearCampaign(); location.reload(); } });
 }
-function gameOverFlow() { caseEngine.gameOver(); showGameOver(() => location.reload()); }
+function gameOverFlow() { caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 function recordsFlow() { showRecordsCenter({ onResume: state.started ? null : resumeFlow, onProfile: showPlayerProfile, onBoard: showChallengeBoard, onDaily: showDailyMissions }); }
 function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true) === false) toast('근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.'); }, onRecords: recordsFlow, onProfile: showPlayerProfile, onChallenge: showChallengeDetail }); }
 
