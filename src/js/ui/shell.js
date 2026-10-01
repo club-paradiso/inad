@@ -6,6 +6,7 @@ import { getTraveler } from '../engines/traveler-engine.js';
 import { simulatedBacklog, pressureInfo, difficultyCfg, scenarioCfg, eventEffectText } from '../engines/operation-engine.js';
 import { overallScore, workloadClass } from '../engines/score-engine.js';
 import { challengeCfg, challengeEvaluation } from '../engines/achievement-engine.js';
+import { penaltyPolicy } from '../engines/case-engine.js';
 import { campaignCfg, currentCampaignSave, storyIsAnchor, storyChapterDef, campaignArc, storyPrevContext, storyStatusInfo } from '../engines/campaign-engine.js';
 
 const imageCache = new Map();
@@ -39,12 +40,18 @@ export function renderChallengeHud() { const el = byId('challengeHud'), tx = byI
 export function renderCampaignHud() { const hud = byId('campaignHud'), txt = byId('campaignHudText'); if (!hud) return; const id = state.campaignId || 'none'; if (id === 'none') { hud.hidden = true; return; } hud.hidden = false; const c = currentCampaignSave(), day = c?.day ?? state.campaignDay ?? 0; txt.textContent = `${campaignCfg(id).name} · DAY ${day + 1}/3`; }
 export function renderStoryStrip() { const el = byId('storyCaseStrip'); if (!el) return; const c = current(); if (state.campaignId === 'none' || !storyIsAnchor(c)) { el.classList.remove('on'); el.hidden = true; return; } const arc = campaignArc(), d = storyChapterDef(), st = storyStatusInfo(); el.hidden = false; el.classList.add('on'); byId('storyCaseTitle').textContent = `연계사건 · ${d.title}`; byId('storyCaseText').textContent = `${arc.title} · ${storyPrevContext()}`; byId('storyCaseStatus').textContent = st[1]; }
 
+// Strike count as text (감찰 n/limit) plus one dot per allowed strike of the active difficulty (6 · 4 · 3).
+export function renderStrikes() {
+  const limit = penaltyPolicy().strikeLimit, n = Math.min(state.strikes, limit);
+  $$('.strike-count').forEach((e) => { e.textContent = `${n}/${limit}`; }); $$('.strikes').forEach((e) => e.classList.toggle('warn', n > 0));
+  $$('.strike-dots').forEach((box) => { if (box.childElementCount !== limit) box.innerHTML = '<i class="strike"></i>'.repeat(limit); [...box.children].forEach((d, i) => d.classList.toggle('on', i < n)); });
+}
 export function renderTop() {
   const c = current(); if (!c) return;
   setText('caseCount', `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`);
   const pf = byId('progressFill'); if (pf) pf.style.width = (state.stats.processed / session.queue.length * 100) + '%';
   setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
-  $$('.strike').forEach((e) => { const i = [...e.parentElement.querySelectorAll('.strike')].indexOf(e); e.classList.toggle('on', i < state.strikes); });
+  renderStrikes();
   renderAudioButton();
   setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();

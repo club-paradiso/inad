@@ -25,7 +25,7 @@ export function documentHTML(d, c, t, pp) {
 
 export function renderDocs({ onSelect, onZoom }) {
   const c = current(), t = getTraveler(c.travelerId);
-  byId('doclist').innerHTML = c.docs.map((d, i) => `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small>${esc(d.k)}</small></span></button>`).join('');
+  byId('doclist').innerHTML = c.docs.map((d, i) => `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small>${esc(d.k)}${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}</small></span></button>`).join('');
   $$('.docitem').forEach((b) => { b.onclick = () => onSelect(+b.dataset.i); });
   markOverflow(byId('doclist'));
   const d = c.docs[state.selectedDoc]; if (!d) return; const pp = getTraveler(c.passportPortraitId || c.travelerId);

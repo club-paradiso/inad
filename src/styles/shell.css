@@ -124,9 +124,11 @@
 /* ---- status bar ---- */
 .statusbar { display: flex; align-items: center; gap: var(--s-4); padding: 0 var(--s-4); background: var(--chrome); color: var(--chrome-muted); font-size: var(--fs-meta); }
 .statusbar > span:first-child { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.strikes { display: inline-flex; align-items: center; gap: 5px; }
-.strike { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .4); }
+.strikes { display: inline-flex; align-items: center; gap: 6px; }
+.strike-dots { display: inline-flex; gap: 5px; }
+.strike { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .55); }
 .strike.on { background: var(--danger); border-color: var(--danger); }
+.strike-count { font-size: var(--fs-meta); }
 
 /* ---- task navigation (tablet segment / phone bottom nav) ---- */
 .tasknav { display: none; }
@@ -150,8 +152,9 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
 .event-toast.on { opacity: 1; transform: none; }
 .event-toast b { display: block; font-size: var(--fs-compact); margin-bottom: 2px; }
 .event-toast p { font-size: var(--fs-label); color: var(--text-2); }
-.callout { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(20, 35, 47, .32); opacity: 0; pointer-events: none; transition: opacity var(--t-fast) var(--ease); }
-.callout.on { opacity: 1; pointer-events: auto; }
+/* Hidden (not just transparent) when off, so its button is never an invisible Tab stop; the PA banner announces the call. */
+.callout { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(20, 35, 47, .32); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--t-fast) var(--ease), visibility 0s linear var(--t-fast); }
+.callout.on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity var(--t-fast) var(--ease), visibility 0s; }
 .callcard { width: min(320px, 100%); padding: 22px 22px 18px; background: var(--elevated); border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: var(--r-3); box-shadow: var(--shadow-3); text-align: center; display: grid; gap: 6px; justify-items: center; }
 .call-icon { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--accent); position: relative; }
 .call-icon::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--accent); }
@@ -239,8 +242,8 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .case-meter { padding: 0 0 0 8px; }
   .case-meter span { display: none; }
   .case-meter b { font-size: var(--fs-compact); }
-  .strikes-mobile { display: inline-flex; padding-left: 8px; }
-  .strikes-mobile .strike { border-color: var(--border-strong); }
+  .strikes-mobile { display: inline-flex; gap: 4px; padding-left: 8px; font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; }
+  .strikes-mobile.warn .strike-count { color: var(--danger-text); }
   /* `.app > .tasknav` (tablet) out-specifies a bare `.tasknav`; the phone bar must restate the grid or it collapses to content width */
   .app > .tasknav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; background: var(--chrome); padding: 0 0 var(--safe-bottom); border-top: 1px solid #0b1620; }
   .tasknav button, .tasknav button:first-of-type, .tasknav button:last-of-type { height: var(--h-tasknav); display: grid; place-items: center; margin: 0; padding: 0 4px; border: 0; border-radius: 0; background: transparent; color: var(--chrome-muted); font-size: var(--fs-compact); font-weight: 600; position: relative; }

@@ -3,7 +3,7 @@
 // engines stay DOM-free and UI modules stay logic-free.
 // The boot watchdog is the first module evaluated so a failure anywhere below still surfaces.
 import './services/boot-watchdog.js';
-import { state, session, resetSessionState } from './state.js';
+import { state, session, resetSessionState, preferences } from './state.js';
 import { bus, notify } from './services/bus.js';
 import { initAudio, ensureAudio, cues } from './services/audio.js';
 import { installErrorCollectors, runDiagnostics, diagnosticText } from './services/diagnostics.js';
@@ -26,7 +26,7 @@ import { showModal, closeModal, requestCloseModal, isModalOpen, bindModalChrome 
 import { initNotices, toast, showAnnouncement, announceA11y, showFieldEventToast } from './ui/toast.js';
 import { renderTop, renderQueue, renderWorkloadOnly, renderEventBar, renderChallengeHud, renderCampaignHud, renderStoryStrip, renderAudioButton, preloadQueueImages, startClock, showCallout } from './ui/shell.js';
 import { renderPassenger, renderBehavior, renderParty } from './ui/passenger-panel.js';
-import { renderLog, renderQuestions, chooseQuestionCategory } from './ui/interview-panel.js';
+import { renderLog, renderQuestions, chooseQuestionCategory, tabKey } from './ui/interview-panel.js';
 import { renderDocs, focusSelectedDoc } from './ui/document-workbench.js';
 import { renderEntry, renderTerminal, renderMatrix } from './ui/system-panel.js';
 import { renderActions, guardDecision, disarm } from './ui/decision-desk.js';
@@ -56,10 +56,14 @@ function renderAll() {
 }
 function onAsk(q, repeat = false) { caseEngine.ask(q, repeat); }
 function showWorkbenchTab(name) {
-  $$('.wb-tab').forEach((b) => { const on = b.dataset.wb === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  $$('.wb-tab').forEach((b) => { const on = b.dataset.wb === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
   $$('.wb-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
 }
-function bindWorkbenchTabs() { $$('.wb-tab').forEach((b) => { b.onclick = () => showWorkbenchTab(b.dataset.wb); }); }
+function bindWorkbenchTabs() {
+  $$('.wb-tab').forEach((b) => { b.onclick = () => showWorkbenchTab(b.dataset.wb); });
+  $('.wb-tabs').addEventListener('keydown', (e) => { const tabs = $$('.wb-tab'), i = tabs.indexOf(document.activeElement), next = tabKey(e.key, i, tabs.length); if (i < 0 || next === null) return; e.preventDefault(); showWorkbenchTab(tabs[next].dataset.wb); tabs[next].focus(); });
+  showWorkbenchTab('docs');
+}
 
 // ---- session ---------------------------------------------------------------------------------
 function regenerate(seed = newSessionSeed()) {
@@ -71,6 +75,9 @@ function regenerate(seed = newSessionSeed()) {
 }
 function beginCase(skipCall = false) {
   const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages();
+  // Every case starts after a dialog (briefing, case result, shift change): put focus on the new passenger, not on
+  // <body> and never back on a decision button that would act on a traveler the examiner has not seen yet.
+  const head = byId('caseName'); if (!isModalOpen() && head?.getClientRects().length) head.focus({ preventScroll: true });
   if (r.callout) { showCallout(); cues.call(); showAnnouncement('승객 호출', `심사번호 ${screeningNo()}, 12번 심사대로 오십시오.`, 'CALL', 1850); notify.pulse('#queueStrip', 'call-pulse', 600); }
   if (r.tutorial) setTimeout(() => { if (!isModalOpen() && !isProcedureOpen() && !tutorial.isOpen()) tutorial.start(); }, 1350);
 }
@@ -131,7 +138,7 @@ function shiftCompleteFlow() {
 }
 function gameOverFlow() { caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 function recordsFlow() { showRecordsCenter({ onResume: state.started ? null : resumeFlow, onProfile: showPlayerProfile, onBoard: showChallengeBoard, onDaily: showDailyMissions }); }
-function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true) === false) toast('근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.'); }, onRecords: recordsFlow, onProfile: showPlayerProfile, onChallenge: showChallengeDetail }); }
+function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true, byId('helpBtn')) === false) toast('근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.'); }, onRecords: recordsFlow, onProfile: showPlayerProfile, onChallenge: showChallengeDetail }); }
 
 // ---- chrome bindings ---------------------------------------------------------------------------
 function bindChrome() {
@@ -144,7 +151,6 @@ function bindChrome() {
   $$('.lookup-tabs button').forEach((b) => { b.onclick = () => { caseEngine.lookup(b.dataset.lu); revealZone(byId('terminal')); }; });
   byId('challengeHud').onclick = showChallengeDetail; byId('campaignHud').onclick = showCampaignDetail; byId('eventDetailsBtn').onclick = showOperationsLog; byId('storyDossierBtn').onclick = storyDossierFlow;
   renderParty.onOpen = showPartyDossier;
-  [['#clearBtn', '입국 허가'], ['#secondaryBtn', '입국재심 인계'], ['#refuseBtn', '입국 불허가 사유 선택'], ['#sjpBtn', '출입국사범 절차'], ['#audioBtn', '음향 켜기 또는 끄기'], ['#helpBtn', '도움말 열기'], ['#recordsBtn', '근무기록 열기'], ['#dailyBtn', '오늘의 미션 열기'], ['#profileBtn', '심사관 프로필 열기'], ['#settingsBtn', '접근성 및 조작 설정 열기']].forEach(([sel, label]) => { const el = $(sel); if (el) el.setAttribute('aria-label', label); });
   // more menu
   const more = byId('moreBtn'), menu = byId('moreMenu'); const setOpen = (o) => { menu.hidden = !o; more.setAttribute('aria-expanded', String(o)); if (o) menu.querySelector('button')?.focus(); };
   more.onclick = (e) => { e.stopPropagation(); setOpen(menu.hidden); }; menu.addEventListener('click', () => setOpen(false)); document.addEventListener('click', (e) => { if (!more.parentElement.contains(e.target)) setOpen(false); }); menu.addEventListener('keydown', (e) => {
@@ -170,13 +176,15 @@ function bindKeyboard() {
     // Menus and sheets consume their own Escape (preventDefault) so it never also closes the procedure screen.
     if (e.key === 'Escape') { if (e.defaultPrevented) return; if (tutorial.isOpen()) tutorial.end(true); else if (isModalOpen()) requestCloseModal(); else closeProcedureScreen(); return; }
     if (shortcutBlocked(e) || e.isComposing) return;
-    const plain = !e.altKey && !e.ctrlKey && !e.metaKey;
-    const k = KEY(e);
-    if (plain && k === 'm') { e.preventDefault(); byId('audioBtn').click(); return; }
     // A dialog-opening shortcut must never replace an open dialog: that would drop a refusal-reason choice
-    // or a decision notice whose action carries the case forward.
+    // or a decision notice whose action carries the case forward. Nothing else acts behind a dialog either.
     if (isModalOpen() || tutorial.isOpen()) return;
-    if (e.key === 'F1' || e.key === '?') { e.preventDefault(); helpFlow(); return; }
+    // Unmodified single-character shortcuts follow the 단축키 사용 setting (WCAG 2.1.4); F1 and Alt combinations always work.
+    const plain = !e.altKey && !e.ctrlKey && !e.metaKey && preferences.shortcuts;
+    const k = KEY(e);
+    if (e.key === 'F1') { e.preventDefault(); helpFlow(); return; }
+    if (plain && k === 'm') { e.preventDefault(); byId('audioBtn').click(); return; }
+    if (plain && e.key === '?') { e.preventDefault(); helpFlow(); return; }
     if (plain && k === 's') { e.preventDefault(); showSettings(); return; }
     if (plain && k === 'l') { e.preventDefault(); recordsFlow(); return; }
     if (plain && k === 'u') { e.preventDefault(); showPlayerProfile(); return; }

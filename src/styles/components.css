@@ -108,6 +108,9 @@
 .docitem.on strong { color: var(--accent-text); }
 .docitem.alert { border-left-color: var(--danger); }
 .docitem.alert small { color: var(--danger-text); }
+.docitem.on.alert { border-left-color: var(--accent); }
+.doc-flag { margin-left: 6px; font-style: normal; font-weight: 700; }
+.doc-flag::before { content: "! "; }
 .docview { min-height: 0; background: var(--canvas); }
 
 /* ---- 자료: 입국 요건 ---- */
@@ -305,6 +308,7 @@
   .docitem { border-bottom: 0; border-left: 0; border-bottom: 3px solid transparent; padding: 10px 12px; }
   .docitem.on { border-bottom-color: var(--accent); }
   .docitem.alert { border-bottom-color: var(--danger); }
+  .docitem.on.alert { border-bottom-color: var(--accent); }
   .docview { overflow: visible; }
   .entry { padding: 12px 16px; }
   .lookup-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px 16px; gap: 6px; }

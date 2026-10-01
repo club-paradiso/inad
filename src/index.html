@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="styles/accessibility.css">
 </head>
 <body data-task="passenger">
-<a class="skip-link" href="#mainContent">본문 바로가기</a>
+<a class="skip-link" id="skipLink" href="#mainContent">본문 바로가기</a>
 <div class="app" id="app">
 <header class="topbar" role="banner">
   <div class="brand"><div class="brand-copy"><h1>INAD: 제12조 <small id="brandTag">v9.0</small></h1><p>인천공항 제2여객터미널 · 입국심사 시뮬레이션</p></div></div>
@@ -35,10 +35,10 @@
 </section>
 <section class="story-case-strip" id="storyCaseStrip" aria-live="polite" hidden><span class="story-case-mark mono" aria-hidden="true">LINK</span><div class="story-case-copy"><b id="storyCaseTitle">연계사건</b><span id="storyCaseText">캠페인 연계기록</span></div><span class="story-case-status" id="storyCaseStatus">선택정보</span><button type="button" id="storyDossierBtn">연계기록 열기</button></section>
 <section class="casebar" id="caseBar" aria-label="현재 사건 요약 및 심사 단계">
-  <div class="case-ident"><span class="case-no mono" id="caseId">심사번호 A001</span><img class="case-mini" id="caseMiniPortrait" alt=""><div class="case-copy"><b id="caseName">—</b><span id="caseSummary">—</span></div></div>
+  <div class="case-ident"><span class="case-no mono" id="caseId">심사번호 A001</span><img class="case-mini" id="caseMiniPortrait" alt=""><div class="case-copy"><b id="caseName" tabindex="-1">—</b><span id="caseSummary">—</span></div></div>
   <ol class="stepper" id="stepper" aria-label="심사 단계"><li data-step="primary"><i aria-hidden="true"></i>일반심사</li><li data-step="secondary"><i aria-hidden="true"></i>입국재심</li><li data-step="decision"><i aria-hidden="true"></i>심사결정</li><li data-step="followup"><i aria-hidden="true"></i>후속절차</li></ol>
   <span class="stage" id="stageBox"><i class="dot" aria-hidden="true"></i><b id="stageLabel">일반심사</b></span>
-  <div class="case-meters"><div class="case-meter"><span>처리시간</span><b id="caseTimer" class="mono">00:18</b></div><span class="strikes strikes-mobile" aria-label="감찰 경고"><i class="strike"></i><i class="strike"></i><i class="strike"></i></span></div>
+  <div class="case-meters"><div class="case-meter"><span>처리시간</span><b id="caseTimer" class="mono">00:18</b></div><span class="strikes strikes-mobile"><span class="strike-label">감찰</span> <b class="strike-count mono">0/4</b></span></div>
 </section>
 <main class="main" id="mainContent" tabindex="-1">
 <section class="zone zone-person" data-zone="passenger" aria-label="대상자">
@@ -49,12 +49,12 @@
 <section class="zone zone-interview" data-zone="interview" aria-label="인터뷰">
   <div class="panel panel-interview panel-questions"><div class="ph"><h2>인터뷰</h2><small id="logCount">0건</small></div>
     <div class="log scroll" id="log" role="log" aria-live="polite"></div>
-    <div class="composer"><div class="language-toolbar"><div class="language-current"><strong id="languageMode">의사소통 확인</strong><small id="languageStatus" class="language-status">질문 언어 또는 통역을 선택하십시오.</small></div><div class="language-actions" role="group" aria-label="질문 언어"><button type="button" class="lang-btn" id="langKo" data-hotkey="K">한국어</button><button type="button" class="lang-btn" id="langEn" data-hotkey="E">영어</button><button type="button" class="lang-btn interpreter" id="langInterp" data-hotkey="I">통역 호출</button></div></div><div class="qtabs" id="qtabs" role="tablist" aria-label="질문 카테고리"></div><div class="qs scroll" id="questions"></div></div></div>
+    <div class="composer"><div class="language-toolbar"><div class="language-current"><strong id="languageMode">의사소통 확인</strong><small id="languageStatus" class="language-status">질문 언어 또는 통역을 선택하십시오.</small></div><div class="language-actions" role="group" aria-label="질문 언어"><button type="button" class="lang-btn" id="langKo" data-hotkey="K">한국어</button><button type="button" class="lang-btn" id="langEn" data-hotkey="E">영어</button><button type="button" class="lang-btn interpreter" id="langInterp" data-hotkey="I">통역 호출</button></div></div><div class="qtabs" id="qtabs" role="tablist" aria-label="질문 카테고리"></div><div class="qs scroll" id="questions" role="tabpanel"></div></div></div>
 </section>
 <section class="zone zone-evidence" data-zone="evidence" aria-label="자료">
-  <div class="panel panel-docs"><div class="ph wb-head"><div class="wb-tabs" role="tablist" aria-label="자료 보기"><button type="button" class="wb-tab on" role="tab" aria-selected="true" data-wb="docs" id="wbTabDocs">제출 서류 <span class="wb-count mono" id="docCount"></span></button><button type="button" class="wb-tab" role="tab" aria-selected="false" data-wb="entry" id="wbTabEntry">입국 요건</button></div><small id="legalBaselineTag">공개 기준 시뮬레이션</small></div>
-    <div class="wb-pane" data-pane="docs" role="tabpanel" aria-labelledby="wbTabDocs"><div class="casework"><div class="doclist scroll" id="doclist" role="group" aria-label="제출 서류 목록"></div><div class="docview scroll" id="docview"></div></div></div>
-    <div class="wb-pane" data-pane="entry" role="tabpanel" aria-labelledby="wbTabEntry" hidden><div class="entry scroll" id="entry"></div></div></div>
+  <div class="panel panel-docs"><div class="ph wb-head"><div class="wb-tabs" role="tablist" aria-label="자료 보기"><button type="button" class="wb-tab on" role="tab" aria-selected="true" data-wb="docs" id="wbTabDocs" aria-controls="wbPaneDocs">제출 서류 <span class="wb-count mono" id="docCount"></span></button><button type="button" class="wb-tab" role="tab" aria-selected="false" data-wb="entry" id="wbTabEntry" aria-controls="wbPaneEntry" tabindex="-1">입국 요건</button></div><small id="legalBaselineTag">공개 기준 시뮬레이션</small></div>
+    <div class="wb-pane" id="wbPaneDocs" data-pane="docs" role="tabpanel" aria-labelledby="wbTabDocs"><div class="casework"><div class="doclist scroll" id="doclist" role="group" aria-label="제출 서류 목록"></div><div class="docview scroll" id="docview"></div></div></div>
+    <div class="wb-pane" id="wbPaneEntry" data-pane="entry" role="tabpanel" aria-labelledby="wbTabEntry" hidden><div class="entry scroll" id="entry"></div></div></div>
   <div class="panel panel-lookup"><div class="ph"><h2>전산 조회</h2><small id="lookupCount"></small></div><div class="lookup-tabs" role="group" aria-label="전산 조회 항목"><button type="button" data-lu="history" data-hotkey="H">출입국기록</button><button type="button" data-lu="visa" data-hotkey="V">사증·자격</button><button type="button" data-lu="pnr" data-hotkey="P">항공 PNR</button><button type="button" data-lu="contact" data-hotkey="C">국내관계</button><button type="button" data-lu="party" data-hotkey="G">동행인</button><button type="button" data-lu="public" data-hotkey="O">공개정보</button></div><div class="results scroll" id="terminal" aria-live="polite"></div></div>
 </section>
 <section class="zone zone-assessment" data-zone="assessment" aria-label="판단 및 결정">
@@ -65,7 +65,7 @@
 </main>
 <nav class="tasknav" id="taskNav" aria-label="작업 이동"><button type="button" data-task="passenger" aria-current="true">승객</button><button type="button" data-task="interview">인터뷰</button><button type="button" data-task="evidence">자료</button><button type="button" data-task="assessment">판단</button></nav>
 <div class="procedure-screen" id="procedureScreen" data-mode="secondary" aria-hidden="true" role="region" aria-labelledby="procTitle"><div class="proc-head"><div class="proc-title"><div class="proc-kicker mono" id="procKicker">SECONDARY EXAMINATION</div><h2 id="procTitle" tabindex="-1">입국재심</h2><p id="procSubtitle">출입국관리법 제12조 입국심사의 계속</p></div><button type="button" class="proc-close" id="procClose">일반 심사대 보기</button></div><div class="proc-body scroll" id="procBody"></div></div>
-<footer class="statusbar" role="contentinfo"><span>가상 시스템 · 실제 법무부 내부전산 또는 비공개 심사기준을 재현한 것이 아님</span><span id="footerTag" class="footer-tag mono"></span><span id="clock" class="mono">00:00:00</span><span class="strikes" aria-label="감찰 경고"><span>감찰</span><i class="strike"></i><i class="strike"></i><i class="strike"></i></span></footer>
+<footer class="statusbar" role="contentinfo"><span>가상 시스템 · 실제 법무부 내부전산 또는 비공개 심사기준을 재현한 것이 아님</span><span id="footerTag" class="footer-tag mono"></span><span id="clock" class="mono">00:00:00</span><span class="strikes"><span class="strike-label">감찰</span><span class="strike-dots" aria-hidden="true"></span><b class="strike-count mono">0/4</b></span></footer>
 </div>
 <div class="startover" id="startOverlay"><div class="startcard">
 <div class="start-head"><div class="startmark">대한민국 공항 입국심사 · FICTIONAL SIMULATION</div><h1 class="start-title">INAD: 제12조</h1><div class="startsub">입국심사관 시뮬레이션 <span class="release-chip mono" id="startReleaseChip">v9.0 · RELEASE</span></div><div class="startlocation">인천공항출입국·외국인청<br>제2여객터미널 · 입국심사장</div></div>
@@ -90,8 +90,8 @@
 </aside>
 </div>
 </div></div>
-<div class="callout" id="callout" role="status"><div class="callcard"><span class="call-icon" aria-hidden="true"></span><span>승객 호출</span><b id="callNo" class="mono">A001</b><p id="callText">12번 심사대로 오십시오.</p><button type="button" id="skipCall">바로 심사</button></div></div>
-<div class="tutorial-layer" id="tutorialLayer" aria-hidden="true"><div class="tutorial-focus" id="tutorialFocus" aria-hidden="true"></div><div class="tutorial-card" id="tutorialCard" role="dialog" aria-modal="false" aria-labelledby="tutorialTitle"><div class="tutorial-kicker mono" id="tutorialProgress">화면 안내 1 / 6</div><h2 id="tutorialTitle">현재 승객부터 확인하십시오</h2><p id="tutorialText"></p><div class="tutorial-legal" id="tutorialLegal"></div><div class="tutorial-actions"><button type="button" id="tutorialSkip">안내 종료</button><div><button type="button" id="tutorialPrev">이전</button><button type="button" id="tutorialNext" class="primary">다음</button></div></div></div></div>
+<div class="callout" id="callout"><div class="callcard"><span class="call-icon" aria-hidden="true"></span><span>승객 호출</span><b id="callNo" class="mono">A001</b><p id="callText">12번 심사대로 오십시오.</p><button type="button" id="skipCall">바로 심사</button></div></div>
+<div class="tutorial-layer" id="tutorialLayer" aria-hidden="true"><div class="tutorial-focus" id="tutorialFocus" aria-hidden="true"></div><div class="tutorial-card" id="tutorialCard" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" aria-describedby="tutorialText"><div class="tutorial-kicker mono" id="tutorialProgress">화면 안내 1 / 6</div><h2 id="tutorialTitle">현재 승객부터 확인하십시오</h2><p id="tutorialText"></p><div class="tutorial-legal" id="tutorialLegal"></div><div class="tutorial-actions"><button type="button" id="tutorialSkip">안내 종료</button><div><button type="button" id="tutorialPrev">이전</button><button type="button" id="tutorialNext" class="primary">다음</button></div></div></div></div>
 <div class="modalback" id="modal" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="mh"><h2 id="modalTitle">알림</h2><button type="button" class="mclose" id="modalClose" aria-label="대화상자 닫기">닫기</button></div><div class="mb scroll" id="modalBody"></div></div></div>
 <div class="a11y-live" id="a11yLive" aria-live="polite" aria-atomic="true"></div>
 <div class="event-toast" id="eventToast" role="status" aria-live="polite"><b id="eventToastTitle"></b><p id="eventToastText"></p></div>

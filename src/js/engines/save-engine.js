@@ -21,7 +21,7 @@ export const CAMPAIGN_VERSION = 1;
 export const SHIFT_LENGTH = 36;         // 24 seeded normal passengers + 12 core cases (queue-engine)
 // Preferences added after v6.1. SAVE_KEYS stays byte-identical for bundle compatibility; these extra
 // keys travel in the bundle as well and are covered by the 'all' reset.
-export const PREFERENCE_EXTRA_KEYS = ['inad-airport', 'inad-locale', 'inad-audio'];
+export const PREFERENCE_EXTRA_KEYS = ['inad-airport', 'inad-locale', 'inad-audio', 'inad-shortcuts'];
 export const BUNDLE_KEYS = [...SAVE_KEYS, ...PREFERENCE_EXTRA_KEYS];
 const MAX_BUNDLE_CHARS = 4_500_000;     // below the ~5M-char localStorage quota of current browsers
 export { SAVE_KEYS, RELEASE };
@@ -119,7 +119,7 @@ export function applyProgressToState(p) {
 
 // ---- Preferences ---------------------------------------------------------------------------
 export function saveAudioPreference(on) { storeSet('inad-audio', on ? '1' : '0'); }
-export function savePreferences() { storeSet('inad-font', preferences.font); storeSet('inad-contrast', preferences.contrast ? '1' : '0'); storeSet('inad-reduce-motion', preferences.reduceMotion ? '1' : '0'); storeSet('inad-shortcut-hints', preferences.shortcutHints ? '1' : '0'); }
+export function savePreferences() { storeSet('inad-font', preferences.font); storeSet('inad-contrast', preferences.contrast ? '1' : '0'); storeSet('inad-reduce-motion', preferences.reduceMotion ? '1' : '0'); storeSet('inad-shortcut-hints', preferences.shortcutHints ? '1' : '0'); storeSet('inad-shortcuts', preferences.shortcuts ? '1' : '0'); }
 export function saveGuidance(mode) { storeSet('inad-guidance', mode); }
 export function saveBestGrade(grade) { storeSet('inadBest', grade); }
 export function markTutorialSeen() { storeSet('inad-tutorial-seen', '1'); }

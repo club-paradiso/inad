@@ -58,5 +58,7 @@ export const preferences = {
   contrast: storeGet('inad-contrast', '0') === '1',
   reduceMotion: storeGet('inad-reduce-motion', '0') === '1',
   // Shortcut hints are an opt-in keyboard aid (설정); on by default they cluttered every control label.
-  shortcutHints: storeGet('inad-shortcut-hints', '0') === '1'
+  shortcutHints: storeGet('inad-shortcut-hints', '0') === '1',
+  // Single-key shortcuts (K, H, 1–6, M …) can be turned off (WCAG 2.1.4); Alt combinations, F1 and Esc stay.
+  shortcuts: storeGet('inad-shortcuts', '1') !== '0'
 };

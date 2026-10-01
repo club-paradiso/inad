@@ -5,40 +5,61 @@
 import { $, $$, byId } from './dom.js';
 import { disarm } from './decision-desk.js';
 
+// Where focus goes when the dialog chain ends. A dialog that opens while another is closing in the same tick
+// (decision notice → case result → next passenger) keeps the original target instead of the vanished button.
 let returnFocus = null;
 // A required dialog that opens a sub-dialog (e.g. 근무 종료 → 프로필) is parked here with its live nodes,
 // so its bound handlers survive and dismissing the sub-dialog brings it back instead of losing the flow.
 const parked = [];
 const FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 // Everything behind the dialog: the workstation (incl. procedure screen), the start overlay, the tutorial and call card.
-const BACKGROUND = ['app', 'startOverlay', 'tutorialLayer', 'callout'];
+const BACKGROUND = ['skipLink', 'app', 'startOverlay', 'tutorialLayer', 'callout'];
 
 export function isModalOpen() { return !!byId('modal')?.classList.contains('on'); }
 export function isModalDismissible() { return byId('modal')?.dataset.dismissible !== 'false'; }
-function setBackgroundInert(on) { BACKGROUND.forEach((id) => { const el = byId(id); if (el) el.inert = on; }); }
+const startVisible = () => { const s = byId('startOverlay'); return !!s && !s.classList.contains('hide'); };
+// With no dialog open, the workstation (and the skip link into it) stays inert while the start screen covers it:
+// its controls would otherwise be tabbable, and operable, before a shift exists.
+export function syncBackgroundInert() {
+  const modal = isModalOpen(), start = startVisible();
+  BACKGROUND.forEach((id) => { const el = byId(id); if (el) el.inert = modal || (start && (id === 'app' || id === 'skipLink')); });
+}
+const focusable = (el) => !!el && typeof el.focus === 'function' && el.isConnected && !el.disabled && !el.closest('[inert],[hidden],[aria-hidden="true"]') && el.getClientRects().length > 0;
+function restoreAfterDialog(rf) {
+  // A trigger inside a menu that has since closed cannot take focus; return it to the menu button instead.
+  const menu = rf?.closest?.('[role="menu"]'); if (menu?.id) rf = document.querySelector(`[aria-controls="${menu.id}"]`) || rf;
+  if (focusable(rf)) { rf.focus(); return; }
+  // The trigger is gone or disabled (a decided case): land somewhere meaningful instead of <body>.
+  const fallback = [byId('procedureScreen')?.classList.contains('on') ? byId('procTitle') : null, startVisible() ? byId('startBtn') : null, byId('mainContent')].find(focusable);
+  fallback?.focus();
+}
 function initialFocus(m) {
   const target = m.querySelector('[data-autofocus]') || (isModalDismissible() ? byId('modalClose') : null) || $$(FOCUSABLE, byId('modalBody')).find((el) => el.offsetParent !== null) || byId('modalClose');
   target?.focus();
 }
 export function showModal(title, html, { size = '', dismissible = true } = {}) {
   const m = byId('modal'); if (!m) return; disarm();
-  if (!m.classList.contains('on')) returnFocus = document.activeElement;
+  if (!m.classList.contains('on')) { const a = document.activeElement; if (!m.contains(a)) returnFocus = a; }
   else if (!isModalDismissible()) parked.push({ title: byId('modalTitle').textContent, nodes: [...byId('modalBody').childNodes], size: m.querySelector('.modal').dataset.size || '' });
   byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html; byId('modalBody').scrollTop = 0; m.querySelector('.modal').scrollTop = 0;
   m.querySelector('.modal').dataset.size = size;
   m.dataset.dismissible = String(dismissible); byId('modalClose').hidden = !dismissible;
-  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); setBackgroundInert(true); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';
+  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); syncBackgroundInert(); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';
   setTimeout(() => { if (isModalOpen()) initialFocus(m); }, 0);
 }
 // Programmatic close (a dialog's own action buttons). User dismissal goes through requestCloseModal().
 export function closeModal() {
   const m = byId('modal'); if (!m || !m.classList.contains('on')) return; disarm(); parked.length = 0;
-  m.classList.remove('on'); m.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-modal'); setBackgroundInert(false);
+  m.classList.remove('on'); m.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-modal'); syncBackgroundInert();
   m.dataset.dismissible = 'true'; byId('modalClose').hidden = false;
-  let rf = returnFocus; returnFocus = null;
-  // A trigger inside a menu that has since closed cannot take focus; return it to the menu button instead.
-  const menu = rf?.closest?.('[role="menu"]'); if (menu?.id) rf = document.querySelector(`[aria-controls="${menu.id}"]`) || rf;
-  if (rf && typeof rf.focus === 'function' && document.contains(rf)) setTimeout(() => rf.focus(), 0);
+  const rf = returnFocus;
+  setTimeout(() => {
+    if (isModalOpen()) return; // a follow-up dialog took over and returns to the same target
+    returnFocus = null;
+    // The continuation already moved focus on purpose (e.g. to the next passenger).
+    const a = document.activeElement; if (a && a !== document.body && !m.contains(a)) return;
+    restoreAfterDialog(rf);
+  }, 0);
 }
 // Escape / backdrop / 닫기. A required dialog stays open and moves focus back to its action instead.
 export function requestCloseModal() {

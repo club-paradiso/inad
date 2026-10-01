@@ -17,6 +17,7 @@ export function renderPassenger() {
   renderCaseBar(c, t);
 }
 // Stepper position is derived from the legal stage only (never from behaviour/language/party).
+const PARTY_STATUS = { current: '현재 심사 중', done: '심사 완료', waiting: '심사 대기' };
 export function stepperState(stage, ended) {
   const s = stage || 'PRIMARY';
   if (s === 'PRIMARY') return { active: 'primary', done: [], tone: '' };
@@ -34,7 +35,8 @@ export function renderCaseBar(c, t) {
   const sum = byId('caseSummary'); if (sum) sum.textContent = `${t.nationality.korean} · ${t.nationality.code} · ${c.basis} · ${c.purpose} · ${c.stay}`;
   const mini = byId('caseMiniPortrait'); if (mini && mini.getAttribute('src') !== t.portrait) mini.src = t.portrait;
   const st = stepperState(state.stage, state.ended);
-  $$('#stepper li').forEach((li) => { const k = li.dataset.step; li.className = (k === st.active ? 'on ' + st.tone : st.done.includes(k) ? 'done' : '').trim(); li.setAttribute('aria-current', k === st.active ? 'step' : 'false'); });
+  // State in text as well as colour: aria-current on the active step, a hidden '완료' on finished ones.
+  $$('#stepper li').forEach((li) => { const k = li.dataset.step, done = k !== st.active && st.done.includes(k); li.className = (k === st.active ? 'on ' + st.tone : done ? 'done' : '').trim(); li.setAttribute('aria-current', k === st.active ? 'step' : 'false'); let m = li.querySelector('.sr-only'); if (done && !m) li.insertAdjacentHTML('beforeend', '<span class="sr-only"> 완료</span>'); else if (!done && m) m.remove(); });
 }
 export function renderBehavior() {
   const b = state.behavior; if (!b) return; const band = behaviorBand(), a = byId('pAttitude'); if (a) { a.textContent = band.label; a.className = 'attitude ' + band.cls; }
@@ -60,7 +62,7 @@ export function renderLanguage() {
 export function renderParty(onOpen) {
   const box = byId('partyBox'); if (!box) return; const party = travelPartyFor();
   if (!party) { box.className = 'party-summary'; box.innerHTML = ''; return; }
-  const members = party.members.map((m) => { const t = getTraveler(m.travelerId), st = partyStatusForTraveler(t.id); return `<div class="party-member ${st}"><img src="${t.portrait}" alt="${esc(t.name.korean)}"><i></i><span>${esc(t.name.korean)}</span></div>`; }).join('');
+  const members = party.members.map((m) => { const t = getTraveler(m.travelerId), st = partyStatusForTraveler(t.id); return `<div class="party-member ${st}"><img src="${t.portrait}" alt=""><i aria-hidden="true"></i><span>${esc(t.name.korean)}</span><span class="sr-only">${PARTY_STATUS[st] || ''}</span></div>`; }).join('');
   box.className = 'party-summary on'; box.innerHTML = `<div class="party-head"><strong>동행여행 · ${esc(party.label)}</strong><small>${party.members.length}명 · ${esc(party.sharedPNR)}</small></div><div class="party-members">${members}</div><div class="party-foot"><span>동행 사실 자체는 입국판정 근거가 아닙니다.</span><button class="party-open" id="partyOpen" type="button">동행인 기록</button></div>`;
   const b = box.querySelector('#partyOpen'); if (b && renderParty.onOpen) b.onclick = renderParty.onOpen;
 }

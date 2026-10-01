@@ -1,13 +1,17 @@
 /* Focus, skip link, user preferences (large text / high contrast / reduced motion / shortcut hints). */
 :where(button, a, [tabindex], input, select, textarea, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: var(--focus-ring); }
+/* Items inside scroll lists draw the ring inside their box; an outset ring is clipped by the list's overflow. */
+:where(.qbtn, .docitem, .qtab, .wb-tab, .basis-node summary, .proc-action):focus-visible { outline-offset: -2px; box-shadow: inset 0 0 0 4px var(--surface); }
 .skip-link { position: fixed; top: -60px; left: 12px; z-index: 500; padding: 8px 12px; background: var(--chrome); color: #fff; border-radius: var(--r-1); font-weight: 600; transition: top var(--t-fast) var(--ease); }
 .skip-link:focus { top: 10px; }
 
 /* shortcut hints (설정 → 단축키 표시, off by default): an inline key cap after the label, never on top of it.
    Keyboard-only affordance, so never on touch or phone layouts. */
-body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); display: inline-block; margin-left: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: var(--r-1); font: 600 var(--fs-meta)/1.5 var(--mono); letter-spacing: 0; opacity: .6; vertical-align: 1px; pointer-events: none; }
+body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); content: attr(data-hotkey) / ""; display: inline-block; margin-left: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: var(--r-1); font: 600 var(--fs-meta)/1.5 var(--mono); letter-spacing: 0; opacity: .6; vertical-align: 1px; pointer-events: none; }
 body.show-hotkeys .act[data-hotkey] { position: relative; padding-right: 56px; }
 body.show-hotkeys .act[data-hotkey]::after { position: absolute; top: 50%; right: 10px; margin: 0; transform: translateY(-50%); }
+/* 단축키 사용 off: single-key hints would advertise keys that no longer work; Alt combinations keep theirs. */
+body.shortcuts-off button[data-hotkey]:not([data-hotkey^="Alt"])::after { display: none; }
 @media (pointer: coarse), (max-width: 767px), (max-height: 500px) and (max-width: 1023px) { body.show-hotkeys button[data-hotkey]::after { display: none; } body.show-hotkeys .act[data-hotkey] { padding-right: 12px; } }
 
 /* large text: scale the body type only (chrome keeps its fixed rhythm) */
@@ -16,6 +20,21 @@ body.pref-font-large { --fs-section: 14.5px; --fs-body: 14.5px; --fs-compact: 13
 /* high contrast: darker text, stronger borders, no translucent surfaces */
 body.pref-contrast { --canvas: #d6dde3; --surface: #ffffff; --surface-2: #eef2f5; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --accent-text: #0b3d6e; --success: #14613b; --success-text: #0f4a2c; --warning: #8a5300; --warning-text: #5e3800; --danger: #931c1c; --danger-text: #721515; --chrome: #06192b; --chrome-muted: #cfe0ee; }
 body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, body.pref-contrast .docitem, body.pref-contrast .proc-card, body.pref-contrast .basis-node, body.pref-contrast .msg { border-color: var(--border-strong); }
+/* the OS-level "more contrast" preference gets the same token set as the 고대비 setting */
+@media (prefers-contrast: more) {
+  body { --canvas: #d6dde3; --surface: #ffffff; --surface-2: #eef2f5; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --accent-text: #0b3d6e; --success: #14613b; --success-text: #0f4a2c; --warning: #8a5300; --warning-text: #5e3800; --danger: #931c1c; --danger-text: #721515; --chrome: #06192b; --chrome-muted: #cfe0ee; }
+  .panel, .ev, .qbtn, .docitem, .proc-card, .basis-node, .msg { border-color: var(--border-strong); }
+}
+
+/* Windows high contrast / forced colours: selected and current states must not depend on background colour alone. */
+@media (forced-colors: active) {
+  .lang-btn.on, .qtab.on, .wb-tab.on, .docitem.on, .segmented button.on, .setting-toggle.on, .diff-btn.on, .scenario-btn.on, .campaign-btn.on, .guide-btn.on, .challenge-btn.on, .airport-btn.on,
+  .tasknav button[aria-current="true"], .lookup-tabs button[aria-pressed="true"], .stepper li.on { outline: 2px solid Highlight; outline-offset: -2px; }
+  .stepper li.on { font-weight: 700; text-decoration: underline; }
+  .strike, .stepper li i, .party-member i, .event-lamp { forced-color-adjust: none; border: 1px solid CanvasText; background: Canvas; }
+  .strike.on, .stepper li.done i, .stepper li.on i, .party-member.current i, .party-member.done i { background: CanvasText; }
+  .act:disabled { color: GrayText; border-color: GrayText; }
+}
 
 /* reduced motion: user setting and OS preference */
 body.pref-reduce-motion *, body.pref-reduce-motion *::before, body.pref-reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
