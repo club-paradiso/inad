@@ -24,3 +24,12 @@ test('static server: malformed escapes and traversal are rejected without crashi
     assert.equal(j.airport, 'GMP'); assert.equal(j.live, false);
   } finally { server.close(); }
 });
+
+test('static server: a missing /favicon.ico is "no content" (legacy baseline), other missing files stay 404', async () => {
+  const server = await createStaticServer(path.join(root, 'legacy', 'v6.1'), 0, { quiet: true });
+  const { port } = server.address();
+  try {
+    assert.equal((await get(port, '/favicon.ico')).status, 204);
+    assert.equal((await get(port, '/missing.png')).status, 404);
+  } finally { server.close(); }
+});

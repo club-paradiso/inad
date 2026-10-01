@@ -194,14 +194,13 @@ test('touch decision safety: first tap arms, second tap executes', async ({ brow
   await H.jumpTo(page, idx);
   await task(page, 'assessment');
   const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
+  expect(coarse, 'a touch phone context reports a coarse pointer').toBe(true);
   await page.locator('#secondaryBtn').click();
-  if (coarse) {
-    await expect(page.locator('#secondaryBtn')).toHaveClass(/armed/);
-    await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
-    const st = await H.getState(page);
-    expect(st.stage, 'a single tap must not change the legal stage').toBe('PRIMARY');
-    await page.locator('#secondaryBtn').click();
-  }
+  await expect(page.locator('#secondaryBtn')).toHaveClass(/armed/);
+  await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
+  const st = await H.getState(page);
+  expect(st.stage, 'a single tap must not change the legal stage').toBe('PRIMARY');
+  await page.locator('#secondaryBtn').click();
   await expect(page.locator('#procedureScreen')).toHaveClass(/on/);
   expect((await H.getState(page)).stage).toBe('SECONDARY');
   await H.expectNoErrors(errors);

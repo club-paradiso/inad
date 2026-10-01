@@ -20,5 +20,8 @@ for (const f of files) {
   if (approvedProxyClient && (!text.includes('fetch(`/api/airport-load?') || /fetch\(\s*["']https?:/i.test(text))) { problems++; console.error('airport live client must use only same-origin /api/airport-load:', rel); }
   if (/console\.(log|debug)\(/.test(text)) { problems++; console.error('console.log left in source:', rel); }
 }
+// Server function, build scripts and tests: syntax only (they legitimately log and name the public-data hosts).
+const tooling = ['api', 'scripts', 'tests'].flatMap((d) => walk(path.join(root, d))).filter((f) => /\.(m?js)$/.test(f));
+for (const f of tooling) { try { execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); } catch (e) { problems++; console.error('syntax:', path.relative(root, f), String(e.stderr)); } }
 for (const f of walk(path.join(root, 'src/data'))) { if (!fs.readFileSync(f, 'utf8').startsWith('//')) { problems++; console.error('data file without provenance header:', path.relative(root, f)); } }
-if (problems) { console.error(`lint: ${problems} problem(s)`); process.exit(1); } else console.log(`lint: ${files.length} modules OK`);
+if (problems) { console.error(`lint: ${problems} problem(s)`); process.exit(1); } else console.log(`lint: ${files.length} modules OK · ${tooling.length} tooling files parse`);

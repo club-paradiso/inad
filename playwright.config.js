@@ -36,7 +36,8 @@ export default defineConfig({
     // airport-load proxy, so the game always takes its static-preset fallback path.
     env: { ...process.env, DATA_GO_KR_SERVICE_KEY: '', AIRPORT_DATA_API_KEY: '', PUBLIC_DATA_API_KEY: '' },
     url: `http://127.0.0.1:${port}${files[target] === 'index.html' ? '/' : '/' + files[target]}`,
-    reuseExistingServer: true,
+    // Never silently reuse a running server: `npm run dev` may hold a live public-data key (see env above).
+    reuseExistingServer: !!process.env.INAD_REUSE_SERVER,
     timeout: 20_000
   },
   // INAD_CHROMIUM_PATH lets sandboxes with a preinstalled Chromium of a different revision run

@@ -1,3 +1,5 @@
+// Smoke run through the main screens at two desktop sizes: no horizontal overflow, key controls in view,
+// screenshots kept as artefacts for review (not compared against baselines).
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import * as H from './helpers.js';
@@ -29,9 +31,9 @@ for (const vp of [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }]) 
     await shot(page, `primary-${tag}`);
     // decision controls and core documents must be visible without page scrolling
     for (const sel of ['#clearBtn', '#secondaryBtn', '#refuseBtn', '#docview', '#pPortrait', '#questions']) await expect(page.locator(sel)).toBeInViewport();
-    // v7.2 case header: stage stepper + lookup terminal stay visible alongside the decision desk
-    const stepper = page.locator('#stepper');
-    if (await stepper.count()) {
+    // case header: stage stepper + lookup terminal stay visible alongside the decision desk (the v6.1 baseline has none)
+    const modern = target !== 'legacy';
+    if (modern) {
       for (const sel of ['#stepper', '#terminal', '#basisBoard']) await expect(page.locator(sel)).toBeInViewport();
       await expect(page.locator('#stepper li.on')).toHaveText('일반심사');
       await expect(page.locator('#caseId')).toContainText('심사번호');
@@ -43,7 +45,7 @@ for (const vp of [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }]) 
     const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S2-006');
     await H.jumpTo(page, idx);
     await page.locator('#secondaryBtn').click();
-    if (await stepper.count()) await expect(page.locator('#stepper li.on')).toHaveText('입국재심');
+    if (modern) await expect(page.locator('#stepper li.on')).toHaveText('입국재심');
     await shot(page, `secondary-${tag}`);
     await noOverflow(page);
     await H.procAct(page, 'back');

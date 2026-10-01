@@ -37,6 +37,9 @@ export function createStaticServer(dir, port, { quiet = false } = {}) {
       res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
       res.end(data);
     } catch (e) {
+      // Browsers request /favicon.ico on their own. The release page carries an inline icon, but the frozen
+      // v6.1 baseline (legacy/) has none: answer "no content" rather than a 404 console error in its E2E run.
+      if (pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
       res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found');
     }
   });

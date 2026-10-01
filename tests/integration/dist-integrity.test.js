@@ -37,7 +37,8 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
     assert.ok(html.includes(marker), `optional UI module bundled: ${marker}`);
   }
   assert.equal((html.match(/data:image\/webp;base64,/g) || []).length, 105, '105 inline portraits');
-  assert.ok(!/assets\/portraits\//.test(html.replace(/\/\*[^]*?\*\//g, '')) || true);
+  // every portrait is inline; the only asset path left is portraitSrc()'s dev fallback, unreachable when all 105 resolve
+  assert.equal((html.match(/assets\/portraits\//g) || []).length, 1, 'only the dev fallback path remains');
   assert.ok(html.includes('AudioContext'), 'Web Audio present');
   assert.ok(!/\.\.\/|src\/js\//.test(html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '')), 'no leaked source paths');
 });
