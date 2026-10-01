@@ -54,6 +54,8 @@ test.describe('실시간 공항 운항정보 · 장애 대응', () => {
     await H.chooseStartOption(page, '[data-guidance="expert"]');
     await page.locator('#startBtn').click();
     await expect(page.locator('#startBtn')).toHaveAttribute('aria-busy', 'true');
+    // nothing else may start a shift while the start is pending (resume would be overwritten by the briefing)
+    if (await page.locator('#resumeBtn').isVisible()) await expect(page.locator('#resumeBtn')).toBeDisabled();
     await expect(page.locator('#startBtn')).toContainText('확인 중');
     await expect(page.locator('#briefStart')).toBeVisible({ timeout: 7000 });
     await expect(page.locator('#startBtn')).not.toHaveAttribute('aria-busy', 'true');

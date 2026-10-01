@@ -26,8 +26,11 @@ export function createStaticServer(dir, port, { quiet = false } = {}) {
       });
       return;
     }
-    let file = path.join(rootDir, decodeURIComponent(url.pathname));
-    if (!file.startsWith(rootDir)) { res.writeHead(403); res.end(); return; }
+    let pathname;
+    try { pathname = decodeURIComponent(url.pathname); } catch { res.writeHead(400, { 'content-type': 'text/plain' }); res.end('bad request'); return; }
+    let file = path.join(rootDir, pathname);
+    const rel = path.relative(rootDir, file);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) { res.writeHead(403); res.end(); return; }
     try {
       if (fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
       const data = fs.readFileSync(file);

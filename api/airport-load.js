@@ -6,7 +6,7 @@
 // Failure contract: every request for a supported airport answers 200 with the same JSON shape.
 // `live: true` only when an upstream snapshot was parsed; otherwise `live: false` + a machine-readable
 // `reason` (api-key-not-configured · upstream-timeout · upstream-http-NNN · upstream-non-json ·
-// upstream-auth-error · upstream-result-CODE · upstream-malformed · upstream-error) and, when a recent
+// upstream-auth-error · upstream-result-CODE · upstream-malformed · upstream-truncated · upstream-error) and, when a recent
 // good snapshot exists, `stale: true` with its numbers. The browser client treats anything that is not
 // `live` as the static airport preset, so no upstream state can block or alter the game.
 
@@ -68,12 +68,19 @@ export function hhmmMinutes(value) {
   return (h % 24) * 60 + m;
 }
 
-export function inUpcomingWindow(value, nowMinutes, windowMinutes = WINDOW_MINUTES) {
+// Both services return the current KST service day. A bare HHMM is a time on that day, so a flight at
+// 00:30 seen at 23:00 already landed: no wrap past midnight (the next day is not in this data — a small
+// undercount near midnight is accepted). A full YYYYMMDDHHmm is compared as an absolute time.
+export function inUpcomingWindow(value, nowMinutes, windowMinutes = WINDOW_MINUTES, todayKey = null) {
+  const digits = String(value ?? '').replace(/\D/g, '');
   const flightMinutes = hhmmMinutes(value);
   if (flightMinutes === null) return false;
-  const delta = (flightMinutes - nowMinutes + 1440) % 1440;
-  return delta <= windowMinutes;
+  let dayOffset = 0;
+  if (digits.length >= 12 && todayKey) { const d = digits.slice(0, 8); if (d !== todayKey) dayOffset = d > todayKey ? 1440 : -1440; }
+  const delta = flightMinutes + dayOffset - nowMinutes;
+  return delta >= 0 && delta <= windowMinutes;
 }
+export function koreaDateKey(now = new Date()) { const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now); return p.replace(/-/g, ''); }
 
 function arrayify(value) {
   if (Array.isArray(value)) return value;
@@ -91,6 +98,7 @@ export function itemsOf(payload) {
   return arrayify(items).filter((x) => x && typeof x === 'object').slice(0, MAX_ROWS);
 }
 
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 class UpstreamError extends Error { constructor(reason) { super(reason); this.reason = reason; } }
 
 // data.go.kr answers key/quota problems with an XML envelope (OpenAPI_ServiceResponse) even when JSON
@@ -105,9 +113,14 @@ export function parseUpstreamBody(text) {
   let payload;
   try { payload = JSON.parse(raw); } catch { throw new UpstreamError('upstream-non-json'); }
   if (!payload || typeof payload !== 'object') throw new UpstreamError('upstream-malformed');
-  const header = payload?.response?.header || payload?.header;
-  const resultCode = String(header?.resultCode ?? '00');
-  if (resultCode && !['00', '0', 'NORMAL_SERVICE'].includes(resultCode)) throw new UpstreamError(`upstream-result-${resultCode.replace(/[^\w-]/g, '').slice(0, 24) || 'unknown'}`);
+  if (payload.OpenAPI_ServiceResponse) throw new UpstreamError('upstream-auth-error');
+  // Fail closed: only a data.go.kr success envelope (header.resultCode 00 + a body) counts as data. `{}`,
+  // a bare {resultCode:'30'} or any unknown shape must not become "live, 0 arrivals".
+  const header = payload?.response?.header || payload?.header || (payload.resultCode !== undefined ? payload : null);
+  const resultCode = header ? String(header.resultCode ?? '') : '';
+  if (!resultCode) throw new UpstreamError('upstream-malformed');
+  if (!['00', '0', 'NORMAL_SERVICE'].includes(resultCode)) throw new UpstreamError(`upstream-result-${resultCode.replace(/[^\w-]/g, '').slice(0, 24) || 'unknown'}`);
+  if (!isObj(payload?.response?.body ?? payload?.body)) throw new UpstreamError('upstream-malformed');
   return payload;
 }
 
@@ -132,10 +145,10 @@ function statusFlags(text) {
   };
 }
 
-export function summarize(rows, getTime, getStatus, nowMinutes = koreaClockMinutes()) {
+export function summarize(rows, getTime, getStatus, nowMinutes = koreaClockMinutes(), todayKey = koreaDateKey()) {
   let arrivals = 0, delayed = 0, cancelled = 0;
   for (const row of rows) {
-    if (!inUpcomingWindow(getTime(row), nowMinutes)) continue;
+    if (!inUpcomingWindow(getTime(row), nowMinutes, WINDOW_MINUTES, todayKey)) continue;
     const flags = statusFlags(getStatus(row));
     if (flags.cancelled) { cancelled++; continue; }
     arrivals++;
@@ -154,17 +167,40 @@ export function kacArrivals(payload) {
   });
 }
 
+// IIAC publishes one row per marketing flight number: codeshare 'Slave' rows repeat the operating ('Master')
+// flight. Count physical arrivals once (skip slaves, then de-duplicate by master flight + time).
 export function incheonT2Arrivals(payload) {
+  const seen = new Set();
   return itemsOf(payload).filter((item) => {
     const terminal = String(item?.terminalId ?? item?.terminalid ?? '').toUpperCase();
     const flightType = String(item?.typeOfFlight ?? item?.typeofflight ?? '').toUpperCase();
-    return terminal === 'P03' && (!flightType || flightType === 'I');
+    if (terminal !== 'P03' || (flightType && flightType !== 'I')) return false;
+    if (String(item?.codeshare ?? '').toLowerCase() === 'slave') return false;
+    const key = `${item?.masterflightid || item?.masterFlightId || item?.flightId || item?.flightid || ''}|${item?.scheduleDateTime || item?.scheduledatetime || ''}`;
+    if (key !== '|' && seen.has(key)) return false;
+    seen.add(key); return true;
   });
+}
+
+// Reads totalCount and follows up to MAX_PAGES pages; a response that is still incomplete is not trusted.
+const MAX_PAGES = 3;
+async function getAllPages(base, params) {
+  let merged = null;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    params.set('pageNo', String(page));
+    const payload = await getJson(`${base}?${params}`);
+    const rows = itemsOf(payload), body = payload?.response?.body || payload?.body || {};
+    if (!merged) merged = { response: { header: { resultCode: '00' }, body: { items: { item: [] }, totalCount: Number(body.totalCount) } } };
+    merged.response.body.items.item.push(...rows);
+    const total = Number(body.totalCount);
+    if (!Number.isFinite(total) || merged.response.body.items.item.length >= total || rows.length === 0) return merged;
+  }
+  throw new UpstreamError('upstream-truncated');
 }
 
 async function fetchKac(airport, key) {
   const params = new URLSearchParams({ serviceKey: key, type: 'json', numOfRows: String(MAX_ROWS), pageNo: '1', schAirCode: airport });
-  const payload = await getJson(`https://apis.data.go.kr/B551178/flight-status/info?${params}`);
+  const payload = await getAllPages('https://apis.data.go.kr/B551178/flight-status/info', params);
   return {
     ...summarize(kacArrivals(payload), (x) => x?.etd || x?.std, (x) => x?.rmkKor || x?.rmkEng || x?.remark),
     source: 'KAC',
@@ -174,8 +210,10 @@ async function fetchKac(airport, key) {
 }
 
 async function fetchIncheonT2(key) {
-  const params = new URLSearchParams({ serviceKey: key, from_time: '0000', to_time: '2400', numOfRows: String(MAX_ROWS), pageNo: '1', lang: 'K', type: 'json' });
-  const payload = await getJson(`https://apis.data.go.kr/B551177/StatusOfPassengerFlightsOdp/getPassengerArrivalsOdp?${params}`);
+  // ask only for the window that is counted (now → now+120 min, capped at the end of the service day)
+  const now = koreaClockMinutes(), hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}${String(m % 60).padStart(2, '0')}`;
+  const params = new URLSearchParams({ serviceKey: key, from_time: hhmm(now), to_time: hhmm(Math.min(now + WINDOW_MINUTES, 1439)), numOfRows: String(MAX_ROWS), pageNo: '1', lang: 'K', type: 'json' });
+  const payload = await getAllPages('https://apis.data.go.kr/B551177/StatusOfPassengerFlightsOdp/getPassengerArrivalsOdp', params);
   return {
     ...summarize(incheonT2Arrivals(payload), (x) => x?.estimatedDateTime || x?.scheduleDateTime, (x) => x?.remark),
     source: 'IIAC',

@@ -12,7 +12,8 @@ export function calculateLiveLoadFactor(snapshot, targetArrivals) {
 }
 
 export function capLiveLoadFactor(raw, difficulty = 'standard') {
-  const value = Number.isFinite(Number(raw)) ? Number(raw) : 1;
+  // null / '' / non-numbers mean "no live factor" (1), not the lower bound (Number(null) is 0)
+  const value = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '') ? (Number.isFinite(Number(raw)) ? Number(raw) : 1) : 1;
   const range = difficulty === 'training' ? [.94, 1.06] : difficulty === 'realistic' ? [.82, 1.24] : [.88, 1.15];
   return clamp(value, range[0], range[1]);
 }

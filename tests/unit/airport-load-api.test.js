@@ -21,6 +21,7 @@ async function call(url, { method = 'GET' } = {}) {
 }
 const ok = (body) => ({ ok: true, status: 200, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) });
 const pad = (n) => String(n).padStart(2, '0');
+function kstStamp(offsetMin) { const d = new Date(Date.now() + offsetMin * 60000); const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d).map((x) => [x.type, x.value])); return `${p.year}${p.month}${p.day}${p.hour.replace('24', '00')}${p.minute}`; }
 function kstHHMM(offsetMin) { const d = new Date(Date.now() + offsetMin * 60000); const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d); return p.find((x) => x.type === 'hour').value.replace('24', '00') + p.find((x) => x.type === 'minute').value; }
 
 beforeEach(() => {
@@ -78,6 +79,10 @@ const failureCases = [
   ['truncated JSON', async () => ok('{"response": {"body": '), 'upstream-non-json'],
   ['empty body', async () => ok(''), 'upstream-malformed'],
   ['JSON null', async () => ok('null'), 'upstream-malformed'],
+  ['empty object (no envelope)', async () => ok({}), 'upstream-malformed'],
+  ['header without body', async () => ok({ response: { header: { resultCode: '00' } } }), 'upstream-malformed'],
+  ['bare result code', async () => ok({ resultCode: '30', resultMsg: 'SERVICE KEY IS NOT REGISTERED ERROR.' }), 'upstream-result-30'],
+  ['JSON auth envelope', async () => ok({ OpenAPI_ServiceResponse: { cmmMsgHeader: { returnAuthMsg: 'LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR' } } }), 'upstream-auth-error'],
   ['result code error', async () => ok({ response: { header: { resultCode: '22', resultMsg: 'LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR' } } }), 'upstream-result-22'],
   ['timeout', async () => { const e = new Error('timed out'); e.name = 'TimeoutError'; throw e; }, 'upstream-timeout'],
   ['network reset', async () => { throw new TypeError('fetch failed'); }, 'upstream-error']
@@ -101,7 +106,8 @@ for (const [name, impl, reason] of failureCases) {
 test('live snapshot counts only upcoming international arrivals; failures then serve the stale snapshot', async () => {
   process.env.DATA_GO_KR_SERVICE_KEY = 'test-key';
   const item = (t, extra = {}) => ({ terminalId: 'P03', typeOfFlight: 'I', scheduleDateTime: t, estimatedDateTime: t, remark: '', ...extra });
-  const payload = { response: { header: { resultCode: '00' }, body: { items: { item: [item(kstHHMM(20)), item(kstHHMM(40), { remark: '지연' }), item(kstHHMM(60), { remark: '결항' }), item(kstHHMM(-30)), item(kstHHMM(30), { terminalId: 'P01' }), item(kstHHMM(30), { typeOfFlight: 'D' })] } } } };
+  // full YYYYMMDDHHmm stamps keep the test valid across KST midnight
+  const payload = { response: { header: { resultCode: '00' }, body: { items: { item: [item(kstStamp(20), { masterflightid: 'A1' }), item(kstStamp(20), { codeshare: 'Slave', masterflightid: 'A1' }), item(kstStamp(40), { remark: '지연' }), item(kstStamp(60), { remark: '결항' }), item(kstStamp(-30)), item(kstStamp(30), { terminalId: 'P01' }), item(kstStamp(30), { typeOfFlight: 'D' })] } } } };
   let calls = 0;
   globalThis.fetch = async () => { calls++; return ok(payload); };
   const first = await call('/api/airport-load?airport=ICN');
@@ -150,14 +156,16 @@ test('upstream parsing helpers', () => {
   assert.equal(hhmmMinutes('2561'), null);
   assert.equal(hhmmMinutes(''), null);
   assert.equal(hhmmMinutes(null), null);
-  assert.equal(inUpcomingWindow('0010', 1430), true, 'window wraps past midnight');
+  assert.equal(inUpcomingWindow('0010', 1430, 120, '20261001'), false, 'a bare HHMM is today: 00:10 seen at 23:50 already landed');
+  assert.equal(inUpcomingWindow('202610020010', 1430, 120, '20261001'), true, 'a next-day stamp is 20 minutes ahead');
+  assert.equal(inUpcomingWindow('202609302350', 10, 120, '20261001'), false, 'yesterday is past');
   assert.equal(inUpcomingWindow('1400', 1430), false);
   assert.deepEqual(itemsOf({ response: { body: { items: { item: { terminalId: 'P03' } } } } }), [{ terminalId: 'P03' }], 'single item object');
   assert.deepEqual(itemsOf({ response: { body: { items: '' } } }), [], 'empty items string');
   assert.deepEqual(itemsOf({ response: { body: { items: { item: [null, 3, 'x', { a: 1 }] } } } }), [{ a: 1 }], 'non-object rows dropped');
   assert.equal(incheonT2Arrivals({ items: [{ terminalId: 'p03', typeOfFlight: 'i' }, { terminalId: 'P01' }] }).length, 1);
   assert.equal(kacArrivals({ items: [{ io: 'O' }, { io: 'I', line: '국내' }, { io: 'I', line: '국제' }, { io: 'I' }] }).length, 2);
-  const s = summarize([{ t: '1000' }, { t: '1030', st: 'DELAYED' }, { t: '1100', st: 'CANCELLED' }, { t: 'xx' }], (r) => r.t, (r) => r.st, 600);
+  const s = summarize([{ t: '1000' }, { t: '1030', st: 'DELAYED' }, { t: '1100', st: 'CANCELLED' }, { t: 'xx' }], (r) => r.t, (r) => r.st, 600, '20261001');
   assert.deepEqual(s, { arrivals: 2, delayed: 1, cancelled: 1, windowMinutes: 120 });
   assert.throws(() => parseUpstreamBody('<returnAuthMsg>SERVICE_KEY_IS_NOT_REGISTERED_ERROR</returnAuthMsg>'), /upstream-auth-error/);
   assert.throws(() => parseUpstreamBody('{"header":{"resultCode":"99<script>"}}'), (e) => e.reason === 'upstream-result-99script');
@@ -198,3 +206,16 @@ test('client failure reasons', () => {
   assert.equal(failureReason(new TypeError('Failed to fetch')), 'network-error');
   assert.equal(failureReason(undefined), 'network-error');
 });
+
+test('pagination follows totalCount; a still-incomplete answer is not trusted', async () => {
+  process.env.DATA_GO_KR_SERVICE_KEY = 'test-key';
+  const page = (n, total) => ok({ response: { header: { resultCode: '00' }, body: { totalCount: total, items: { item: Array.from({ length: n }, () => ({ io: 'I', line: '국제', etd: '0000' })) } } } });
+  let calls = 0; globalThis.fetch = async (url) => { calls++; return page(new URL(url).searchParams.get('pageNo') === '1' ? 1000 : 500, 1500); };
+  const ok2 = await call('/api/airport-load?airport=CJU');
+  assert.equal(ok2.json.live, true); assert.equal(calls, 2);
+  resetAirportLoadCache(); calls = 0;
+  globalThis.fetch = async () => { calls++; return page(1000, 9000); };
+  const cut = await call('/api/airport-load?airport=CJU');
+  assert.equal(cut.json.live, false); assert.equal(cut.json.reason, 'upstream-truncated'); assert.equal(calls, 3);
+});
+
