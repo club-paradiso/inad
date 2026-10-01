@@ -29,7 +29,7 @@ export function showRecordsCenter({ onResume, onProfile, onBoard, onDaily }) {
   $$('[data-session-replay]').forEach((b) => { b.onclick = () => showSessionReplay(b.dataset.sessionReplay); });
   byId('recordsProfile').onclick = onProfile; byId('recordsBoard').onclick = onBoard; byId('recordsDaily').onclick = onDaily;
   const rb = byId('recordResume'); if (rb) rb.onclick = () => { closeModal(); onResume(); };
-  byId('resetRecords').onclick = () => { showModal('근무기록 초기화', `<p class="modal-note">완료된 근무기록과 자동저장 체크포인트를 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p><button type="button" class="act refuse block" id="confirmResetRecords"><strong>기록 초기화</strong></button>`); byId('confirmResetRecords').onclick = () => { saveMeta(emptyMeta()); discardProgressSave(); closeModal(); toast('근무기록을 초기화했습니다.'); }; };
+  byId('resetRecords').onclick = () => { showModal('근무기록 초기화', `<p class="modal-note">완료된 근무기록과 자동저장 체크포인트를 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p><button type="button" class="act danger block" id="confirmResetRecords"><strong>기록 초기화</strong></button>`); byId('confirmResetRecords').onclick = () => { saveMeta(emptyMeta()); discardProgressSave(); closeModal(); toast('근무기록을 초기화했습니다.'); }; };
 }
 export function showPlayerProfile() {
   const meta = loadMeta(), c = meta.career || careerTemplate(), lv = levelInfo(c.xp), unlocked = ACHIEVEMENTS.filter((a) => c.achievements?.[a.id]).length;

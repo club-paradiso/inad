@@ -13,10 +13,16 @@ export function currentTask() { return document.body.dataset.task || 'passenger'
 export function isStacked() { return window.matchMedia(STACKED_QUERY).matches; }
 export function isPhone() { return window.matchMedia(PHONE_QUERY).matches; }
 
+// The tablet bar has two segments (인터뷰 · 자료) beside the always-visible traveler and decision columns: there
+// the interview segment is the current one for every task except 자료, so the bar never shows no selection.
+function syncNav() {
+  const name = currentTask(), seg = isStacked() && !isPhone() ? (name === 'evidence' ? 'evidence' : 'interview') : name;
+  $$('#taskNav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.task === seg ? 'true' : 'false'); });
+}
 export function showTask(name, { focus = false } = {}) {
   if (!TASKS.includes(name)) return;
   document.body.dataset.task = name;
-  $$('#taskNav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.task === name ? 'true' : 'false'); });
+  syncNav();
   const zone = document.querySelector(`.zone[data-zone="${name}"]`);
   if (zone && isStacked()) { zone.scrollTop = 0; if (focus) zone.querySelector('button:not([disabled]), [tabindex]')?.focus?.(); }
 }
@@ -49,7 +55,8 @@ export function placeForViewport() {
 
 export function bindTaskNav({ onChange } = {}) {
   placeForViewport();
-  window.matchMedia(PHONE_QUERY).addEventListener('change', placeForViewport);
+  window.matchMedia(PHONE_QUERY).addEventListener('change', () => { placeForViewport(); syncNav(); });
+  window.matchMedia(STACKED_QUERY).addEventListener('change', syncNav);
   // the UI-language button is created later by the optional i18n module
   document.addEventListener('inad:localechange', placeForViewport);
   $$('#taskNav button').forEach((b) => { b.onclick = () => { showTask(b.dataset.task); onChange && onChange(b.dataset.task); }; });

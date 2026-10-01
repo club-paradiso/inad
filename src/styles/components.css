@@ -47,7 +47,7 @@
 .msgavatar { grid-row: 1 / span 2; width: 24px; height: 24px; border-radius: var(--r-1); object-fit: cover; display: grid; place-items: center; font: 600 var(--fs-meta)/1 var(--mono); color: #fff; background: var(--text-3); }
 .msg.officer .msgavatar { background: var(--accent); }
 .msg.interpreter .msgavatar { background: var(--info); }
-.msgtext { grid-column: 2; font-size: var(--fs-compact); line-height: 1.5; overflow-wrap: anywhere; }
+.msgtext { grid-column: 2; font-size: var(--fs-body); line-height: 1.5; overflow-wrap: anywhere; }
 .msg.system, .msg.alert { grid-template-columns: minmax(0, 1fr); }
 .msg.system .msgavatar, .msg.alert .msgavatar { display: none; }
 .msg.system b, .msg.system .msgtext, .msg.alert b, .msg.alert .msgtext { grid-column: 1; }
@@ -57,8 +57,13 @@
 .behavior-event, .language-event { margin-left: 6px; padding: 0 5px; border-radius: 2px; background: var(--neutral-soft); color: var(--text-2); font-weight: 500; }
 
 /* ---- 인터뷰: question composer ---- */
-.composer { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; max-height: min(340px, 44vh); max-height: min(340px, 44dvh); border-top: 1px solid var(--border); background: var(--surface); }
-.language-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border-subtle); }
+.composer { display: grid; grid-template-rows: auto max-content minmax(0, 1fr); min-height: 0; max-height: min(340px, 44vh); max-height: min(340px, 44dvh); border-top: 1px solid var(--border); background: var(--surface); }
+/* mode + language buttons on one row, the guidance sentence full width below (it used to wrap into a 4-line column) */
+.language-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "mode actions" "status status"; align-items: center; gap: 2px 8px; padding: 6px 12px; border-bottom: 1px solid var(--border-subtle); }
+.language-toolbar .language-current { display: contents; }
+.language-toolbar .language-current strong { grid-area: mode; }
+.language-toolbar .language-status { grid-area: status; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.language-toolbar .language-actions { grid-area: actions; }
 .language-current { min-width: 0; display: grid; }
 .language-current strong { font-size: var(--fs-label); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .language-status { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.4; }
@@ -72,7 +77,7 @@
 .qtabs { display: flex; padding: 0 8px; overflow-x: auto; border-bottom: 1px solid var(--border-subtle); scrollbar-width: none; }
 .qtabs::-webkit-scrollbar { display: none; }
 .qtab { flex: none; padding: 7px 8px 6px; border-bottom: 2px solid transparent; font-size: var(--fs-label); font-weight: 600; color: var(--text-2); white-space: nowrap; }
-.qtab .qtab-count { color: var(--text-3); font-weight: 500; margin-left: 3px; font-size: var(--fs-meta); font-family: var(--mono); }
+.qtab .qtab-count { color: var(--text-3); font-weight: 500; margin-left: 3px; font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
 .qtab.on { color: var(--accent-text); border-bottom-color: var(--accent); }
 .qs { display: grid; align-content: start; min-height: 44px; }
 .qbtn { display: block; width: 100%; text-align: left; padding: 7px 12px 7px 11px; border-bottom: 1px solid var(--border-subtle); border-left: 3px solid transparent; background: transparent; font-size: var(--fs-compact); line-height: 1.4; transition: background var(--t-fast) var(--ease); }
@@ -102,7 +107,8 @@
 .docitem.alert { border-left-color: var(--danger); }
 .docitem.alert small { color: var(--danger-text); }
 .docitem.on.alert { border-left-color: var(--accent); }
-.doc-flag { margin-left: 6px; font-style: normal; font-weight: 700; }
+.doc-flag { font-style: normal; font-weight: 700; }
+.doc-code + .doc-flag { margin-left: 6px; }
 .doc-flag::before { content: "! "; }
 .docview { min-height: 0; background: var(--canvas); }
 
@@ -154,7 +160,7 @@
 .meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--t-slow) var(--ease); }
 .hint { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.45; }
 .jsec h3, .basis-head, .cluehead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px 4px; font-size: var(--fs-label); font-weight: 700; color: var(--text-2); }
-.jsec h3 span, .basis-head b, .cluehead b { font-weight: 500; color: var(--text-3); font-family: var(--mono); font-size: var(--fs-meta); }
+.jsec h3 span, .basis-head b, .cluehead b { font-weight: 500; color: var(--text-3); font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
 .matrix { display: grid; }
 .ev { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; align-items: baseline; padding: 6px 12px 6px 9px; border-bottom: 1px solid var(--border-subtle); border-left: 3px solid var(--border-strong); min-width: 0; }
 .ev label { font-size: var(--fs-label); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -192,7 +198,7 @@
 .basis-conf.inferred { color: var(--info); }
 .basis-conf.simulated { color: var(--warning-text); }
 .basis-conf.not_publicly_verified { color: var(--danger-text); }
-.basis-law { font: 500 var(--fs-meta)/1.5 var(--mono); color: var(--accent-text); }
+.basis-law { font: 500 var(--fs-meta)/1.5 var(--font); color: var(--accent-text); }
 .basis-rule p { color: var(--text-2); line-height: 1.5; }
 .basis-sources { display: flex; flex-wrap: wrap; gap: 4px; }
 .basis-sources span { padding: 0 6px; border: 1px solid var(--border); border-radius: 2px; background: var(--elevated); color: var(--text-2); }
@@ -229,6 +235,10 @@
 .act.secondary { --tone: var(--warning); --tone-soft: var(--warning-soft); --tone-text: var(--warning-text); }
 .act.refuse { --tone: var(--danger); --tone-soft: var(--danger-soft); --tone-text: var(--danger-text); }
 .act.sjp { --tone: var(--sjp); --tone-soft: var(--sjp-soft); --tone-text: var(--sjp); }
+/* Outside the decision desk: a continuation is the one accent primary, a destructive confirmation is danger.
+   The verdict tones (clear / secondary / refuse / sjp) stay reserved for legal decisions. */
+.act.primary { --tone: var(--accent); --tone-soft: var(--accent-soft); --tone-text: var(--accent-text); }
+.act.danger { --tone: var(--danger); --tone-soft: var(--danger-soft); --tone-text: var(--danger-text); }
 .act.special { --tone: var(--accent); --tone-soft: var(--accent-soft); --tone-text: var(--accent-text); grid-column: 1 / -1; background: var(--accent-soft); }
 .act.armed { background: var(--tone-soft); border-color: var(--tone); }
 .act.block { width: 100%; grid-column: 1 / -1; justify-items: center; text-align: center; border-left-width: 1px; }
@@ -288,7 +298,6 @@
   .aux-note { display: inline; }
   .party-summary.on { padding: 10px 16px; }
   .log { padding: 4px 16px; }
-  .msgtext { font-size: var(--fs-body); }
   .language-toolbar { padding: 8px 16px; }
   .qtabs { padding: 0 8px; }
   .qtab { padding: 11px 10px 10px; font-size: var(--fs-compact); }

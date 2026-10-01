@@ -51,3 +51,21 @@ test.describe('디자인 불변식', () => {
     await H.expectNoErrors(errors);
   });
 });
+
+test.describe('작업 공간 배분', () => {
+  test.skip(target === 'legacy', 'v6.1 baseline layout');
+  for (const [w, h] of [[1024, 768], [1280, 800], [1440, 1000]]) {
+    test(`the question list keeps room for at least one full question and part of the next at ${w}×${h}`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      const errors = await H.openGame(page);
+      await H.setSeed(page, 271828);
+      await H.startShift(page);
+      const m = await page.evaluate(() => { const box = document.getElementById('questions').getBoundingClientRect(), tabs = document.getElementById('qtabs').getBoundingClientRect(), first = document.querySelector('#questions .qbtn').getBoundingClientRect(); return { box: box.height, tabs: tabs.height, first: first.height }; });
+      expect(m.tabs, 'category tabs are not collapsed').toBeGreaterThan(24);
+      expect(m.box, JSON.stringify(m)).toBeGreaterThan(m.first * 1.5);
+      // the strike counter for phones is not drawn on the desktop case bar
+      await expect(page.locator('.strikes-mobile')).toBeHidden();
+      await H.expectNoErrors(errors);
+    });
+  }
+});

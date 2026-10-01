@@ -138,8 +138,13 @@
 .segmented button { height: 30px; padding: 0 12px; font-size: var(--fs-label); font-weight: 600; color: var(--text-2); background: var(--elevated); }
 .segmented button + button { border-left: 1px solid var(--border); }
 .segmented button.on { background: var(--accent); color: #fff; }
-.setting-toggle { height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); min-width: 90px; }
-.setting-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.setting-toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 6px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); min-width: 104px; white-space: nowrap; }
+/* a switch, not a button: a track with a knob; only the track takes the accent when on (never a filled CTA) */
+.setting-toggle::before { content: ""; flex: none; width: 28px; height: 16px; border-radius: var(--r-2); background: var(--border-strong); transition: background var(--t-fast) var(--ease); }
+.setting-toggle::after { content: ""; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: var(--r-1); background: var(--elevated); transition: transform var(--t-fast) var(--ease); }
+.setting-toggle.on { color: var(--text); border-color: var(--border-strong); }
+.setting-toggle.on::before { background: var(--accent); }
+.setting-toggle.on::after { transform: translateX(12px); }
 .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 .shortcut-row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; font-size: var(--fs-label); padding: 3px 0; }
 .shortcut-row kbd { font: 600 var(--fs-meta)/1.4 var(--mono); padding: 2px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 2px; background: var(--elevated); text-align: center; }

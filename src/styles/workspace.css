@@ -1,9 +1,9 @@
 /* Inspection workspace: four zones (대상자 · 인터뷰 · 자료 · 판단/결정) in one DOM.
    ≥1024: three-column workstation. 768–1023: workspace + inspector (interview ⇄ evidence by segment).
    <768: one zone at a time selected by the bottom task navigation (body[data-task]). */
-.main { display: grid; grid-template-columns: var(--w-left) minmax(0, 1fr) var(--w-right); grid-template-rows: minmax(0, max-content) minmax(260px, 1fr); gap: var(--s-2); padding: var(--s-2); min-height: 0; min-width: 0; }
+.main { display: grid; grid-template-columns: var(--w-left) minmax(0, 1fr) var(--w-right); grid-template-rows: fit-content(42%) minmax(260px, 1fr); gap: var(--s-2); padding: var(--s-2); min-height: 0; min-width: 0; }
 .zone { display: grid; min-height: 0; min-width: 0; gap: var(--s-2); }
-/* vertical budget: the traveller panel may shrink and scroll; the interview keeps at least 260px (1024×768, 1280×800) */
+/* vertical budget: the traveller panel takes at most 42% of the column and scrolls; the interview gets the rest (≥260px) */
 .zone-person { grid-column: 1; grid-row: 1; overflow: hidden; }
 .zone-person > .panel-subject { overflow-y: auto; align-content: start; overscroll-behavior: contain; }
 .zone-interview { grid-column: 1; grid-row: 2; grid-template-rows: minmax(0, 1fr); }
@@ -16,7 +16,7 @@
 .ph h2 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 .ph small { min-width: 0; flex: 0 1 auto; text-align: right; font-size: var(--fs-meta); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-subject { grid-template-rows: auto auto auto; }
-.panel-interview { grid-template-rows: auto minmax(96px, 1fr) auto; }
+.panel-interview { grid-template-rows: auto minmax(96px, 1fr) minmax(auto, 1.25fr); } /* the question list grows with the transcript instead of starving */
 .panel-docs { grid-template-rows: auto minmax(0, 1fr); }
 .panel-lookup { grid-template-rows: auto auto minmax(0, 1fr); }
 .panel-judgment { grid-template-rows: auto minmax(0, 1fr); }
@@ -48,7 +48,7 @@
   .zone .panel { border-left: 0; border-right: 0; border-radius: 0; }
   body[data-task="passenger"] .zone-person { display: grid; grid-template-rows: minmax(0, 1fr); }
   body[data-task="interview"] .zone-interview { display: grid; }
-  .panel-interview { grid-template-rows: auto minmax(120px, 1fr) auto; }
+  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) minmax(auto, 1.4fr); }
   body[data-task="evidence"] .zone-evidence { display: block; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   body[data-task="assessment"] .zone-assessment { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
   .zone-evidence .panel { border-top: 0; }

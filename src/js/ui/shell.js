@@ -30,7 +30,7 @@ export function renderEventBar() {
   main.className = 'event-main' + (e ? ' ' + (e.tone || 'warn') : '');
   setText('eventTitle', e ? e.title : '운영상황 정상');
   setText('eventDesc', e ? `${e.desc} · 남은 ${e.remaining}건` : '현재 적용 중인 현장 이벤트가 없습니다.');
-  setText('eventEffect', e ? eventEffectText(e) : 'NORMAL OPS');
+  setText('eventEffect', e ? eventEffectText(e) : ''); // the title already says 운영상황 정상
   setText('difficultyLabel', difficultyCfg().label);
   const sl = byId('scenarioLabel'); if (sl) sl.textContent = scenarioCfg().name;
   const fat = Math.round(state.fatigue || 0), fv = byId('fatigueValue'), ff = byId('fatigueFill'), ft = byId('fatigueTrack');
@@ -61,5 +61,5 @@ export function renderQueue() {
   strip.innerHTML = items.map((q, i) => { const t = getTraveler(q.travelerId); return `<div class="qperson ${i === 0 ? 'current' : ''}" title="${i === 0 ? '현재 호출 승객' : '대기 승객'}"><img src="${t.portrait}" alt="" loading="lazy" decoding="async"><small>${screeningNo(state.caseIndex + i)}</small></div>`; }).join('');
 }
 export function preloadQueueImages() { session.queue.slice(state.caseIndex, state.caseIndex + 10).forEach((q) => { const t = getTraveler(q.travelerId); if (!imageCache.has(t.id)) { const im = new Image(); im.src = t.portrait; imageCache.set(t.id, im); } }); }
-export function startClock() { const tick = () => { const d = new Date(); const c = byId('clock'); if (c) c.textContent = d.toLocaleTimeString(document.documentElement.lang === 'en' ? 'en-GB' : 'ko-KR', { hour12: false }); renderWorkloadOnly(); }; tick(); setInterval(tick, 1000); }
+export function startClock() { const tick = () => { const d = new Date(); const c = byId('clock'); if (c) c.textContent = [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':'); renderWorkloadOnly(); }; tick(); setInterval(tick, 1000); }
 export function showCallout(onSkip) { const e = byId('callout'); if (!e) return; setText('callNo', screeningNo()); setText('callText', '12번 심사대로 오십시오.'); e.classList.add('on'); setTimeout(() => { if (e.classList.contains('on')) e.classList.remove('on'); }, 1050); byId('skipCall').onclick = () => { e.classList.remove('on'); onSkip && onSkip(); }; }

@@ -46,6 +46,11 @@
 .event-copy b { color: var(--text); font-weight: 600; white-space: nowrap; }
 .event-copy span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-effect { font-size: var(--fs-meta); letter-spacing: .04em; color: var(--text-3); white-space: nowrap; }
+.event-effect:empty { display: none; }
+/* Decorative English labels (procedure kicker, LIVE tag, document type codes) belong to the English UI only:
+   in Korean they repeated the Korean title in a second language (CLAUDE.md: no hierarchy-blurring bilingual mix). */
+html[lang="ko"] .proc-kicker, html[lang="ko"] .portrait-tag, html[lang="ko"] .doc-code { display: none; }
+html[lang="ko"] .doctext small:not(:has(.doc-flag)) { display: none; }
 .meta-status { display: flex; align-items: center; gap: 12px; white-space: nowrap; min-width: 0; overflow: hidden; }
 .meta-status > * { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .meta-status b { color: var(--text); font-weight: 600; }
@@ -109,7 +114,8 @@
 .stepper li.on.critical { --step: var(--danger); }
 .stepper li.on.refugee { --step: var(--info); }
 .stage { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text); white-space: nowrap; }
-.stage .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.stage .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.stage.admitted .dot { background: var(--success); }
 .stage.secondary { border-color: var(--warning); background: var(--warning-soft); color: var(--warning-text); }
 .stage.secondary .dot { background: var(--warning); }
 .stage.critical { border-color: var(--danger); background: var(--danger-soft); color: var(--danger-text); }
@@ -119,7 +125,7 @@
 .case-meter span { font-size: var(--fs-meta); color: var(--text-3); white-space: nowrap; line-height: 1.2; }
 .case-meter b { font: 600 13px/1.2 var(--mono); color: var(--text); }
 .case-meter b.good { color: var(--success-text); }
-.strikes-mobile { display: none; }
+.strikes.strikes-mobile { display: none; }
 
 /* ---- status bar ---- */
 .statusbar { display: flex; align-items: center; gap: var(--s-4); padding: 0 var(--s-4); background: var(--chrome); color: var(--chrome-muted); font-size: var(--fs-meta); }
@@ -167,6 +173,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
 @keyframes barPulse { 0% { box-shadow: inset 0 0 0 0 rgba(36, 95, 134, 0); } 30% { box-shadow: inset 0 0 0 2px rgba(36, 95, 134, .5); } 100% { box-shadow: inset 0 0 0 0 rgba(36, 95, 134, 0); } }
 
 /* ---- compact desktop (1024–1279) ---- */
+@media (min-width: 1024px) { .stage[data-redundant="true"] { display: none; } }
 @media (max-width: 1279px) {
   .topbar { gap: 8px; padding: 0 10px; grid-template-columns: auto minmax(120px, 1fr) auto auto; }
   .brand p { display: none; }
@@ -242,7 +249,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .case-meter { padding: 0 0 0 8px; }
   .case-meter span { display: none; }
   .case-meter b { font-size: var(--fs-compact); }
-  .strikes-mobile { display: inline-flex; gap: 4px; padding-left: 8px; font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; }
+  .strikes.strikes-mobile { display: inline-flex; gap: 4px; padding-left: 8px; font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; }
   .strikes-mobile.warn .strike-count { color: var(--danger-text); }
   /* `.app > .tasknav` (tablet) out-specifies a bare `.tasknav`; the phone bar must restate the grid or it collapses to content width */
   .app > .tasknav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; background: var(--chrome); padding: 0 0 var(--safe-bottom); border-top: 1px solid #0b1620; }
