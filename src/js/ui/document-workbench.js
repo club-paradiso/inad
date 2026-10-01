@@ -1,5 +1,5 @@
 // CENTER column · document stack and paper-like document renderers.
-import { $, $$, byId, esc } from './dom.js';
+import { $, $$, byId, esc, markOverflow } from './dom.js';
 import { state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -25,8 +25,9 @@ export function documentHTML(d, c, t, pp) {
 
 export function renderDocs({ onSelect, onZoom }) {
   const c = current(), t = getTraveler(c.travelerId);
-  byId('doclist').innerHTML = c.docs.map((d, i) => `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small>${esc(d.k)}</small></span></button>`).join('');
+  byId('doclist').innerHTML = c.docs.map((d, i) => `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small><span class="doc-code">${esc(d.k)}</span>${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}</small></span></button>`).join('');
   $$('.docitem').forEach((b) => { b.onclick = () => onSelect(+b.dataset.i); });
+  markOverflow(byId('doclist'));
   const d = c.docs[state.selectedDoc]; if (!d) return; const pp = getTraveler(c.passportPortraitId || c.travelerId);
   byId('docview').innerHTML = `<div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? '추가 확인 필요' : '제출자료'}</span></div><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} 확대</button></div>${documentHTML(d, c, t, pp)}</div>`;
   byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, t, pp));

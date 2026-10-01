@@ -5,6 +5,7 @@ import { WORK_GUIDES, workGuideById } from '../../data/work-guides.js';
 import { sourceById } from '../../data/legal-sources.js';
 import { showModal } from '../ui/modals.js';
 import { byId, esc } from '../ui/dom.js';
+import { setReferenceView } from '../ui/views/reference.js';
 
 const isEn = () => document.documentElement.lang === 'en' || document.documentElement.dataset.locale === 'en';
 const t = (ko, en) => isEn() ? en : ko;
@@ -28,7 +29,7 @@ function renderCards(query = '') {
 
 export function openWorkManual(query = lastQuery) {
   lastQuery = query || '';
-  showModal(t('업무지침 · 공개자료 기반', 'Work Manual · Public Sources'), `<div class="settings-grid"><section class="settings-section"><h3>${t('업무지침 검색', 'Search work guidance')}</h3><p>${t('법령·법무부·HiKorea 등 공개자료를 사건 처리 순서로 재구성한 교육용 체크리스트입니다. 실제 비공개 내부 편람이나 위험선별 기준을 재현하지 않습니다.', 'Educational checklists reorganized from statutes and public Ministry of Justice / HiKorea guidance. This does not reproduce non-public internal manuals or screening criteria.')}</p><div class="setting-row"><div class="setting-copy"><b>${t('검색', 'Search')}</b><span>${t('예: K-ETA, 입국목적, 난민, 생체정보', 'e.g. K-ETA, purpose, refugee, biometrics')}</span></div><input id="manualSearch" type="search" value="${esc(lastQuery)}" placeholder="${t('업무지침 검색', 'Search work manual')}" autocomplete="off"></div><div class="setting-row"><div class="setting-copy"><b>${t('현재 자료', 'Available guidance')}</b><span id="manualCount"></span></div><button type="button" id="manualSources">${t('출처 등록부 보기', 'Open source registry summary')}</button></div></section><section class="settings-section"><div class="help-grid" id="manualResults"></div></section></div>`, { size: 'wide' });
+  showModal(t('업무지침 · 공개자료 기반', 'Work Manual · Public Sources'), `<div class="settings-grid"><section class="settings-section"><h3>${t('업무지침 검색', 'Search work guidance')}</h3><p>${t('법령·법무부·HiKorea 등 공개자료를 사건 처리 순서로 재구성한 교육용 체크리스트입니다. 실제 비공개 내부 편람이나 위험선별 기준을 재현하지 않습니다.', 'Educational checklists reorganized from statutes and public Ministry of Justice / HiKorea guidance. This does not reproduce non-public internal manuals or screening criteria.')}</p><div class="setting-row"><div class="setting-copy"><label for="manualSearch"><b>${t('검색', 'Search')}</b></label><span id="manualSearchHint">${t('예: K-ETA, 입국목적, 난민, 생체정보', 'e.g. K-ETA, purpose, refugee, biometrics')}</span></div><input id="manualSearch" aria-describedby="manualSearchHint manualCount" type="search" value="${esc(lastQuery)}" placeholder="${t('업무지침 검색', 'Search work manual')}" autocomplete="off"></div><div class="setting-row"><div class="setting-copy"><b>${t('현재 자료', 'Available guidance')}</b><span id="manualCount" role="status"></span></div><button type="button" id="manualSources">${t('출처 등록부 보기', 'Open source registry summary')}</button></div></section><section class="settings-section"><div class="help-grid" id="manualResults"></div></section></div>`, { size: 'wide' });
   renderCards(lastQuery);
   const input = byId('manualSearch');
   if (input) input.oninput = () => { lastQuery = input.value; renderCards(lastQuery); };
@@ -50,9 +51,6 @@ function openSourceSummary() {
   const back = byId('manualBack'); if (back) back.onclick = () => openWorkManual(lastQuery);
 }
 
-function syncMenuLabel() {
-  const b = byId('ruleBtn'); if (b) b.textContent = t('업무지침', 'Work Manual');
-}
 async function copySourceUrl(button) {
   const url = button?.dataset?.sourceUrl; if (!url) return;
   try {
@@ -64,15 +62,6 @@ async function copySourceUrl(button) {
     button.textContent = url;
   }
 }
-function intercept(e) {
-  const copy = e.target.closest?.('.manual-copy-source');
-  if (copy) { e.preventDefault(); e.stopImmediatePropagation(); copySourceUrl(copy); return; }
-  const target = e.target.closest?.('#ruleBtn, #helpRules');
-  if (!target) return;
-  e.preventDefault(); e.stopImmediatePropagation();
-  openWorkManual();
-}
-
-document.addEventListener('click', intercept, true);
-document.addEventListener('inad:localechange', syncMenuLabel);
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncMenuLabel); else syncMenuLabel();
+// Source rows offer a copy-URL button (no navigation: the app makes no external requests).
+document.addEventListener('click', (e) => { const copy = e.target.closest?.('.manual-copy-source'); if (copy) { e.preventDefault(); copySourceUrl(copy); } });
+setReferenceView(() => openWorkManual());

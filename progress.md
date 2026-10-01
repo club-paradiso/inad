@@ -1,4 +1,15 @@
-# progress.md — INAD v7.0 rebuild
+# progress.md — INAD
+
+## 현재 상태 (2026-10-01 · v9.0)
+- v9.0 안정성·제품 품질 개편: 브랜치 `claude/gracious-bell-ev8lcm`(기준 `main` `c922399`), 결과·검증은 `RELEASE_NOTES_v9.0.md`, `docs/qa-v9.md`.
+- 판정 로직(`legal-engine.js`, `case-engine.js`, `src/data/cases.js`)·저장 스키마·`legacy/` 무변경.
+- 열린 항목:
+  - 2026-10-02 형사소송법 일괄 개정이 긴급체포(제200조의3) 외 다른 인용 조문에 영향을 주는지 검토 후 `RELEASE.legalBaseline` 이동 여부 결정(`docs/legal-review.md`).
+  - 불회부 결정 순서(박해 사유 인터뷰 전 불회부)를 판정에 반영할지 — 판정 변경이므로 별도 승인 필요(`docs/legal-review.md` 5번).
+  - Figma 동기화: v9 코드 변경(토큰 값·레이아웃·컴포넌트) → `[Implemented]` 반영 대기(`docs/figma-workspace-spec.md` §9).
+  - 이력 태그(v7.0.0=c83244e, v7.1.0=7baa045, v7.2.0=9954adb) 미생성.
+
+## 이력 (v7.0 재구축 이후)
 
 ## 완료된 phase
 - PHASE 0 baseline audit: GitHub `club-paradiso/inad`에 소스 없음 → 프로덕션 `inad-gray.vercel.app`(v6.1 단일 HTML)을 복구해 `legacy/v6.1/`에 동결. 로컬·Codex·iCloud 어디에도 원본 작업 폴더 없음(ChatGPT/Codex 클라우드에서 개발·배포된 것으로 확인).
@@ -27,8 +38,8 @@
 - Claude Design 캔버스로 A(심사대 콘솔)·B(사건 서류철)·C(분할 심사) 3안 시안 후 A를 채택(게임 루프상 전산 조회 결과가 항상 보여야 하므로 터미널은 탭에 넣지 않음).
 - 사건 헤더 행(스테퍼·준비도·처리시간), 중앙 탭 작업대 + 문서 상태 타일, 우측 심사 판단 레일 + 고정 결정 데스크. 판정 로직·데이터·저장 스키마 변경 없음.
 
-## 현재 작업
-- main 복구 PR(#7, `fix/handover-boot-bundle-qa`) 병합 → v7.2 작업대 UX PR(#6, `feat/v7.2-workstation-ux`, 복구된 main 병합 반영) 병합 → Vercel 프로덕션 재검증(`INAD_TARGET=url INAD_BASE_URL=https://inad-gray.vercel.app npm run test:e2e`).
+## 완료 (v7.2 이후)
+- PR #7·#6 병합(9954adb), v8 적응형 워크스테이션 PR #10(ef8fe66, 버전 표기는 7.2로 배포), Astra Figma 탐색 문서 PR #11(a3cbda7). v9.0에서 버전을 9.0.0으로 통일.
 
 ## 발견된 버그 (v6.1 → v7에서 수정)
 - 캠페인 연계사건 스트립이 `.app` 그리드 행을 차지해 메인 작업대가 30px로 붕괴 → auto 행으로 분리.
@@ -41,7 +52,7 @@
 - `NORMAL_CASES` 정적 배열(68KB)이 정의만 되고 미사용 → 제거.
 
 ## 완료 (배포)
-- PR #4 병합(main c1b5a24) → Vercel 프로덕션 배포 성공, 바이트 동일성·E2E 19/19·진단 PASS 확인. `vercel.json`은 정적 단일 파일 배포.
+- PR #4 병합(main c1b5a24) → Vercel 프로덕션 배포 성공, 바이트 동일성·E2E 19/19·진단 PASS 확인. (PR #7 이후 `vercel.json`은 Vercel에서 `npm ci && npm run build`를 실행해 `dist/`를 배포한다.)
 
 ## 남은 항목
 - 조건부 입국허가(제13조)를 플레이 가능한 조치로 설계할지 검토 — 조문·절차 리서치 완료(`docs/legal-research.md` §7: 3가지 적용 사유, 72(~144)시간 허가기간, 보증금·국고귀속 절차 확인). 구현 여부·범위는 게임 루프 설계 결정 및 별도 승인 대기, 코드 변경 없음.
@@ -53,5 +64,6 @@
 - E2E는 `window.INADTest` 훅(seed 고정·큐 점프·상태 조회)만 사용하고 나머지는 실제 UI 조작.
 
 ## 마지막 정상 QA 결과
+- 2026-10-01 (v9.0): lint 65 modules OK, unit 106/106, integrity 10/10, E2E dist 83/83 · legacy 19 통과(64 v9 전용 생략) · src 부분집합 19/19, 8개 뷰포트 오류·가로 오버플로 0 (`docs/qa-v9.md`).
 - 2026-09-11 (인수 후): lint OK(64 modules), unit 47/47, integrity 3/3, E2E dist 19/19 · legacy 19/19 · src 19/19, dist 1,500,602 bytes (v6.1 1,514,881 대비 0.9% 감소, 15% 한도 내). esbuild 0.27.7로 v7.1 커밋을 재빌드해 커밋된 mirror와 바이트 동일함을 확인한 뒤 같은 버전으로 mirror 재생성.
 - 2026-09-11 (v7.1 릴리스): unit 36/36, E2E(dist) 19/19, E2E(legacy) 19/19, lint OK, dist 1,391,510 bytes (v6.1 1,514,881 대비 −8%).

@@ -29,13 +29,19 @@ export function renderDocStatus(c) {
   const dc = byId('docCount'); if (dc) dc.textContent = String((c.docs || []).length);
 }
 export function tone(t) { return t === '정상' ? '정상' : t === '주의' ? '주의' : t === '경고' ? '경고' : '치명'; }
+const shownQueries = { list: null, n: 0 };
 export function renderTerminal() {
   const c = current(); const el = byId('terminal'); if (!el) return;
   const worst = {}; state.queries.forEach((q) => { if (!worst[q.kind] || rank(q.t) > rank(worst[q.kind])) worst[q.kind] = q.t; });
   document.querySelectorAll('.lookup-tabs button[data-lu]').forEach((b) => { const k = b.dataset.lu, t = worst[k]; b.classList.toggle('done', !!t && rank(t) < 2); b.classList.toggle('alert', !!t && rank(t) >= 2); b.setAttribute('aria-pressed', String(!!t)); });
   const cnt = byId('lookupCount'); if (cnt) cnt.textContent = state.queries.length ? `${state.queries.length}건 · ${state.looked.size}종` : '';
-  if (!state.queries.length) { el.innerHTML = `<div class="line empty">사건 조회 준비 완료 · 필요한 항목만 조회하십시오. 내부 규제코드·비공개 위험선별 알고리즘은 재현하지 않습니다.${c.special === 'forgery' ? ' 위변조 의심 시 출입국사범 절차에서 문서감식을 요청할 수 있습니다.' : ''}</div>`; return; }
-  el.innerHTML = state.queries.map((q) => `<div class="line"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(q.t)}</b>${esc(q.text)}</span></div>`).join('');
+  const list = state.queries, line = (q) => `<div class="line"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(q.t)}</b>${esc(q.text)}</span></div>`;
+  if (!list.length) { el.innerHTML = `<div class="line empty">사건 조회 준비 완료 · 필요한 항목만 조회하십시오. 내부 규제코드·비공개 위험선별 알고리즘은 재현하지 않습니다.${c.special === 'forgery' ? ' 위변조 의심 시 출입국사범 절차에서 문서감식을 요청할 수 있습니다.' : ''}</div>`; shownQueries.list = null; return; }
+  // #terminal is a live region: insert only new results so each lookup is announced once. The engine puts the
+  // newest result first (queries.unshift), so new lines go to the top, in the same order a full render gives.
+  if (shownQueries.list === list && shownQueries.n <= list.length && el.childElementCount === shownQueries.n) { if (list.length > shownQueries.n) el.insertAdjacentHTML('afterbegin', list.slice(0, list.length - shownQueries.n).map(line).join('')); }
+  else el.innerHTML = list.map(line).join('');
+  shownQueries.list = list; shownQueries.n = list.length;
 }
 const rank = (t) => t === '정상' ? 0 : t === '주의' ? 1 : t === '경고' ? 2 : 3;
 export function renderClueBoard() {
@@ -51,7 +57,6 @@ export function renderMatrix() {
   let hint = r.pct >= 95 ? '필요한 확인이 충분합니다. 전체 사실관계와 법적 근거를 종합해 판단하십시오.' : `필수 절차 ${r.hit}/${r.needed}${c.clues ? ` · 핵심 단서 ${cs.keyGot.length}/${cs.keys.length}` : ''} · 질문·조회로 사실관계를 더 확인하십시오.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
-  const cr = byId('caseReady'); if (cr) { cr.textContent = r.pct + '%'; cr.className = 'mono' + (r.pct >= 95 ? ' good' : ''); }
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
   const done = state.performed.map((x) => ACTION_NAMES[x] || x.replace('QUESTION_', '문답:').replace('LOOKUP_', '조회:'));
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';

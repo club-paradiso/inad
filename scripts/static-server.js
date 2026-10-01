@@ -20,21 +20,26 @@ export function createStaticServer(dir, port, { quiet = false } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname === '/api/airport-load') {
-      req.query = Object.fromEntries(url.searchParams);
       Promise.resolve(airportLoad(req, res)).catch(() => {
         if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'airport-load-failed' }));
       });
       return;
     }
-    let file = path.join(rootDir, decodeURIComponent(url.pathname));
-    if (!file.startsWith(rootDir)) { res.writeHead(403); res.end(); return; }
+    let pathname;
+    try { pathname = decodeURIComponent(url.pathname); } catch { res.writeHead(400, { 'content-type': 'text/plain' }); res.end('bad request'); return; }
+    let file = path.join(rootDir, pathname);
+    const rel = path.relative(rootDir, file);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) { res.writeHead(403); res.end(); return; }
     try {
       if (fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
       const data = fs.readFileSync(file);
       res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
       res.end(data);
     } catch (e) {
+      // Browsers request /favicon.ico on their own. The release page carries an inline icon, but the frozen
+      // v6.1 baseline (legacy/) has none: answer "no content" rather than a 404 console error in its E2E run.
+      if (pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
       res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found');
     }
   });

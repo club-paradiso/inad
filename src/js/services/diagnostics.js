@@ -1,5 +1,6 @@
 // Runtime issue collection and the built-in integrity check (v6.1 system centre semantics).
 import { RELEASE } from '../../data/legal-baseline.js';
+import { amendmentStatus } from '../engines/legal-baseline-status.js';
 import { CASES } from '../../data/cases.js';
 import { session } from '../state.js';
 import { travelerMap } from '../engines/traveler-engine.js';
@@ -32,7 +33,9 @@ export function runDiagnostics() {
   checks.push(check('필수절차 데이터 참조', refs ? 'pass' : 'fail', refs ? '누락 0' : `${bad}개 불일치`));
   const overflow = document.documentElement.scrollWidth > document.documentElement.clientWidth + 2; checks.push(check('현재 뷰포트', overflow ? 'warn' : 'pass', overflow ? '가로 오버플로 감지' : '가로 오버플로 0'));
   checks.push(check('런타임 오류 수집', runtimeIssues.length ? 'warn' : 'pass', `${runtimeIssues.length}건`));
-  checks.push(check('법령 기준 버전', 'pass', `기준일 ${RELEASE.legalBaseline}`));
+  // an amendment that took effect after the baseline date is surfaced as a warning, never silently 'pass'
+  const inForce = amendmentStatus().filter((s) => s.inForce);
+  checks.push(check('법령 기준 버전', inForce.length ? 'warn' : 'pass', inForce.length ? `기준일 ${RELEASE.legalBaseline} · 이후 시행 개정 ${inForce.map((s) => `${s.law}(${s.effective})`).join(', ')}` : `기준일 ${RELEASE.legalBaseline}`));
   checks.push(check('저장 스키마', 'pass', `INAD_SAVE_BUNDLE v${RELEASE.saveSchema}`));
   return checks;
 }

@@ -46,17 +46,12 @@ const EXACT = new Map([
   ['다시 눌러 확정', 'Tap again to confirm'],
   ['현재 사건 요약 및 심사 단계', 'Current case summary and inspection stage'],
   ['판단 및 결정', 'Assessment and decision'],
-  ['대기 승객 현황', 'Waiting traveler status'],
   ['본문 바로가기', 'Skip to main content'],
-  ['이 시뮬레이션의 심사 작업대는 가로 1024px 이상 화면에 맞춰 설계되었습니다. 좁은 화면에서는 패널이 세로로 쌓이며 일부 기능이 제한될 수 있습니다.', 'This simulation workspace is designed for screens at least 1024px wide. On narrower screens, panels stack vertically and some functions may be limited.'],
   ['INAD: 제12조', 'INAD: Article 12'],
   ['인천공항 제2여객터미널 · 입국심사 시뮬레이션', 'Incheon Airport Terminal 2 · Immigration Inspection Simulation'],
   ['근무조', 'Duty shift'],
-  ['사건 진행', 'Case progress'],
   ['근무 현황', 'Duty status'],
   ['처리', 'Processed'],
-  ['대기 승객', 'Waiting travelers'],
-  ['평균 심사', 'Avg. inspection'],
   ['종합평가', 'Overall rating'],
   ['보조 메뉴', 'Utility menu'],
   ['도움말', 'Help'],
@@ -66,13 +61,13 @@ const EXACT = new Map([
   ['음향 끔', 'Sound off'],
   ['메뉴', 'Menu'],
   ['업무참고', 'Reference'],
+  ['업무지침', 'Work Manual'],
   ['프로필', 'Profile'],
   ['설정', 'Settings'],
   ['법령·출처 등록부', 'Laws & Sources'],
   ['시스템·데이터', 'System & Data'],
   ['현장 운영 상황', 'Field operations status'],
   ['운영상황 정상', 'Normal operations'],
-  ['특이 현장 이벤트 없음', 'No unusual field events'],
   ['현재 적용 중인 현장 이벤트가 없습니다.', 'No field event is currently active.'],
   ['난이도', 'Difficulty'],
   ['시나리오', 'Scenario'],
@@ -81,11 +76,9 @@ const EXACT = new Map([
   ['도전', 'Challenge'],
   ['운영기록', 'Operations log'],
   ['대기 승객 현황', 'Waiting traveler status'],
-  ['현재 호출 및 다음 대기 승객', 'Current and next travelers'],
   ['업무압박', 'Workload pressure'],
   ['보통', 'Moderate'],
   ['낮음', 'Low'],
-  ['높음', 'High'],
   ['입국허가', 'Admitted'],
   ['재심', 'Secondary'],
   ['입국불허', 'Refused'],
@@ -93,49 +86,33 @@ const EXACT = new Map([
   ['캠페인 연계기록', 'Campaign-linked record'],
   ['선택정보', 'Optional information'],
   ['연계기록 열기', 'Open linked record'],
-  ['피심사인 및 인터뷰', 'Traveler and interview'],
-  ['승객 정보', 'Traveler information'],
   ['현재 피심사인 초상', 'Current traveler portrait'],
   ['실시간 촬영', 'Live capture'],
-  ['태도: 협조적', 'Demeanor: cooperative'],
   ['여권번호', 'Passport no.'],
   ['신청 체류', 'Requested stay'],
   ['입국목적', 'Purpose of entry'],
   ['입국편', 'Arrival flight'],
   ['입국기반', 'Entry basis'],
-  ['심사단계', 'Inspection stage'],
   ['일반심사', 'Primary inspection'],
   ['상호작용 상태', 'Interaction status'],
   ['판정근거 아님', 'Not a decision factor'],
   ['긴장도', 'Tension'],
   ['협조도', 'Cooperation'],
-  ['질문 방식과 대기시간에 따라 대화 반응만 달라집니다.', 'Questioning style and wait time only affect conversational responses.'],
   ['주언어', 'Primary language'],
   ['한국어', 'Korean'],
   ['영어', 'English'],
-  ['언어능력은 판정근거가 아닙니다.', 'Language ability is not a decision factor.'],
   ['진술 기록', 'Interview record'],
-  ['질문·소명 요청', 'Questions & clarification'],
-  ['질문은 사건기록에 남음', 'Questions are recorded in the case file'],
   ['의사소통 확인', 'Communication check'],
   ['질문 언어 또는 통역을 선택하십시오.', 'Select a question language or an interpreter.'],
   ['통역 호출', 'Call interpreter'],
   ['질문 언어', 'Question language'],
-  ['사건 작업대', 'Case workspace'],
   ['제출 서류', 'Submitted documents'],
-  ['제출자료 · 진술 · 전산정보 교차검증', 'Cross-check documents · statements · system data'],
   ['제출 서류 목록', 'Submitted document list'],
   ['입국요건 검토', 'Entry requirements review'],
-  ['국적은 자격 산정요소이지 위험점수가 아님', 'Nationality determines eligibility, not a risk score'],
   ['판단 준비도', 'Decision readiness'],
-  ['필요한 확인 절차를 진행하십시오.', 'Complete the required verification steps.'],
-  ['절차 진행기록', 'Procedure log'],
   ['0개 완료', '0 completed'],
-  ['시스템 조회 및 심사 결정', 'System lookup and inspection decision'],
-  ['입국 요건 자료', 'Entry requirements'],
   ['공개 기준 시뮬레이션', 'Public-criteria simulation'],
   ['전산 조회', 'System lookup'],
-  ['가상 전산 · 공개/사건 데이터만 사용', 'Simulated system · public/case data only'],
   ['전산 조회 항목', 'System lookup categories'],
   ['출입국기록', 'Immigration history'],
   ['사증·자격', 'Visa/status'],
@@ -144,7 +121,6 @@ const EXACT = new Map([
   ['동행인', 'Companions'],
   ['공개정보', 'Public information'],
   ['심사 결정', 'Inspection decision'],
-  ['결론 전 필요한 확인을 마치십시오', 'Complete required checks before deciding'],
   ['입국 허가', 'Admit'],
   ['입국재심 인계', 'Refer to secondary'],
   ['입국 불허가', 'Refuse entry'],
@@ -152,8 +128,6 @@ const EXACT = new Map([
   ['특수절차', 'Special procedure'],
   ['추가 확인', 'Additional verification'],
   ['사유 선택', 'Select reason'],
-  ['감식/조사/체포검토', 'Forensics / investigation / arrest review'],
-  ['처분 결과보다 선행절차와 근거가 더 중요합니다. 재심은 제재처분이 아니라 입국심사의 계속입니다.', 'Procedure and legal basis matter more than the outcome. Secondary inspection continues the admission examination; it is not a sanction.'],
   ['입국재심', 'Secondary inspection'],
   ['출입국관리법 제12조 입국심사의 계속', 'Continuation of immigration inspection under Article 12 of the Immigration Act'],
   ['일반 심사대 보기', 'Return to primary desk'],
@@ -169,7 +143,6 @@ const EXACT = new Map([
   ['다른 배치 생성', 'Generate another roster'],
   ['현재 근무 구성', 'Current duty setup'],
   ['표준 · 기본 근무 · 단일 근무 · 처음 근무 · 일반 근무', 'Standard · Normal duty · Single shift · Guided · No challenge'],
-  ['기본 설정으로 바로 시작하거나 필요한 항목만 펼쳐 조정할 수 있습니다.', 'Start with the defaults or expand only the options you want to change.'],
   ['시스템', 'System'],
   ['권장값', 'Defaults'],
   ['세부 설정', 'Advanced settings'],
@@ -189,12 +162,8 @@ const EXACT = new Map([
   ['이전 근무 이어하기', 'Resume previous duty'],
   ['자동저장 · 승객 처리 완료 시 체크포인트 생성', 'Autosave · checkpoint created after each traveler'],
   ['금일 입국심사 브리핑', "Today's immigration briefing"],
-  ['금일 예상 입국자', 'Expected arrivals today'],
   ['현재 대기', 'Currently waiting'],
-  ['재심 대기', 'Awaiting secondary'],
-  ['운영 심사대', 'Open inspection booths'],
   ['예정 현장 이벤트', 'Scheduled field events'],
-  ['제1근무조 목표 평균', 'Shift 1 target average'],
   ['평가 방식', 'Scoring'],
   ['정확성 + 절차 + 효율 + 비례성', 'Accuracy + procedure + efficiency + proportionality'],
   ['제1근무조 시작', 'Start Shift 1'],
@@ -213,6 +182,13 @@ const EXACT = new Map([
   ['사용 안 함', 'Off'],
   ['표시 중', 'Shown'],
   ['숨김', 'Hidden'],
+  ['단축키 사용', 'Use shortcuts'],
+  ['한 글자·숫자 단축키(K, H, 1–6, M 등)를 사용합니다. 끄면 Alt 조합·F1·Esc만 동작합니다.', 'Single-key shortcuts (K, H, 1–6, M …). When off, only Alt combinations, F1 and Esc work.'],
+  ['주요 업무 텍스트를 조금 더 크게 표시합니다.', 'Shows the main working text slightly larger.'],
+  ['텍스트와 패널 경계의 대비를 강화합니다.', 'Stronger contrast for text and panel borders.'],
+  ['스캔·전환·알림 애니메이션을 최소화합니다.', 'Minimises scan, transition and alert animations.'],
+  ['주요 버튼 모서리에 키보드 조작 힌트를 표시합니다.', 'Shows keyboard hints next to the main buttons.'],
+  ['Tab / Shift+Tab과 Enter / Space는 브라우저 표준 포커스·버튼 조작을 그대로 사용합니다. 최종 결정은 오입력을 줄이기 위해 Alt 조합을 사용합니다.', 'Tab / Shift+Tab and Enter / Space work as standard browser focus and button controls. Final decisions use Alt combinations to reduce mistakes.'],
   ['업무참고 · 공개 기준', 'Reference · Public criteria'],
   ['도움말 · 심사관 업무 안내', 'Help · Immigration officer guide'],
   ['화면 안내 다시 보기', 'Replay interface tour'],
@@ -231,7 +207,7 @@ const EXACT = new Map([
   ['새 근무 배치를 생성했습니다.', 'A new duty roster was generated.'],
   ['이어할 저장된 근무가 없습니다.', 'There is no saved duty to resume.'],
   ['저장된 근무를 복원했습니다.', 'Saved duty restored.'],
-  ['근무 시작', 'Duty started'],
+  ['근무 시작', 'Start duty'],
   ['제1근무조 입국심사를 시작합니다.', 'Shift 1 immigration inspection is now starting.'],
   ['자동저장 복원', 'Autosave restored'],
   ['승객 호출', 'Traveler call'],
@@ -240,11 +216,230 @@ const EXACT = new Map([
   ['대기 승객', 'Waiting traveler'],
   ['음향 시스템', 'Audio system'],
   ['효과음과 안내방송 차임을 사용합니다.', 'Sound effects and announcement chimes are enabled.'],
-  ['음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'Audio is off. On-screen captions remain available.']
+  ['음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'Audio is off. On-screen captions remain available.'],
+  ['한국어 직접', 'Korean, direct'],
+  ['영어 직접', 'English, direct'],
+  ['직접 의사소통 곤란', 'Direct communication difficult'],
+  ['동행 사실 자체는 입국판정 근거가 아닙니다.', 'Travelling together is not a basis for the entry decision.'],
+  ['동행인 기록', 'Companion record'],
+  ['여권', 'Passport'],
+  ['숙박예약', 'Accommodation booking'],
+  ['입국자격 자료', 'Entry eligibility record'],
+  ['항공예약', 'Flight booking'],
+  ['동행여행 확인자료', 'Travel-party records'],
+  ['신원', 'Identity'],
+  ['입국자격', 'Entry eligibility'],
+  ['여행계획', 'Travel plan'],
+  ['체재능력', 'Means of stay'],
+  ['충족', 'met'],
+  ['일치', 'match'],
+  ['확정', 'confirmed'],
+  ['충분', 'sufficient'],
+  ['미충족', 'not met'],
+  ['미확인', 'unchecked'],
+  ['정상', 'Normal'],
+  ['주의', 'Caution'],
+  ['경고', 'Warning'],
+  ['법정 요건 확인 완료', 'Statutory requirements checked'],
+  ['확인이 남은 항목 있음', 'Some items remain to be checked'],
+  ['단서의 존재만으로 불허·체포를 결정하지 마십시오. 서로 독립된 진술·서류·전산정보를 교차검증해야 합니다.', 'Do not refuse or arrest on a clue alone. Cross-check independent statements, documents and records.'],
+  ['근거 패널은 설명용입니다. 최종 판단은 심사관이 전체 사실관계와 법정 요건을 종합해 내립니다.', 'This panel explains; the officer decides on all facts and the statutory requirements.'],
+  ['필요한 확인이 충분합니다. 전체 사실관계와 법적 근거를 종합해 판단하십시오.', 'The required checks are sufficient. Decide on all facts and the legal basis.'],
+  ['아직 기록 없음', 'No actions yet'],
+  ['직접 의사소통이 곤란합니다. 통역 호출을 권고합니다.', 'Direct communication is difficult. Calling an interpreter is advised.'],
+  ['신원 미확인', 'identity unverified'],
+  ['입국재심 진행 중 · 재심 인계 완료', 'Secondary inspection in progress'],
+  ['결정 기록됨 · 후속 절차 또는 다음 승객', 'Decision recorded · follow-up or next traveler'],
+  ['난민 회부 여부 결정 후 입국 판단', 'Decide on referral before entry'],
+  ['출입국사범 조사 전용화면', 'Offence investigation screen'],
+  ['감식 · 조사 · 긴급체포 요건', 'Forensics · investigation · arrest review'],
+  ['현재 조사 상태 유지', 'Keeps the investigation status'],
+  ['난민신청·회부심사 전용화면', 'Refugee claim · referral screen'],
+  ['난민 회부심사 계속', 'Continue referral screening'],
+  ['난민법 제6조 · 시행령 제5조', 'Refugee Act Art. 6 · Decree Art. 5'],
+  ['출입국항 난민 회부심사', 'Port-of-entry refugee referral screening'],
+  ['출입국사범 조사', 'Immigration-offence investigation'],
+  ['입국불허 후 송환', 'Repatriation after entry refusal'],
+  ['출입국관리법 제12조 · 추가 소명 및 사실확인', 'Immigration Act Art. 12 · further explanation and fact-finding'],
+  ['난민법 제6조 · 난민법 시행령 제5조', 'Refugee Act Art. 6 · Enforcement Decree Art. 5'],
+  ['출입국관리법 제47·48조 · 형사소송법 제200조의3', 'Immigration Act Arts. 47–48 · Criminal Procedure Act Art. 200-3'],
+  ['출입국관리법 제76조 · 제76조의2', 'Immigration Act Arts. 76 and 76-2'],
+  ['진술·소명 검토', 'Statements & explanation'],
+  ['재심 작업목록', 'Secondary worklist'],
+  ['증거·전산조회', 'Evidence · lookups'],
+  ['재심 인계 사유', 'Reason for referral'],
+  ['진술 비교', 'Statement comparison'],
+  ['자동 모순 검토 보조', 'Inconsistency check aid'],
+  ['최초 진술', 'First statement'],
+  ['현재까지 확인된 진술', 'Latest confirmed statement'],
+  ['최초 진술 기록 없음', 'No first statement recorded'],
+  ['추가 질문', 'Follow-up questions'],
+  ['추가 질문 완료', 'Follow-up questions done'],
+  ['추가 확인을 위해 재심으로 인계됨', 'Referred to secondary for further checks'],
+  ['진술 내용이 변경되었습니다. 변경 자체가 위반사실을 의미하지 않으며 추가 소명이 필요합니다.', 'The statement changed. A change is not itself a violation; further explanation is needed.'],
+  ['재심의 성격', 'Nature of secondary inspection'],
+  ['재심은 별도의 제재처분이 아니라 출입국관리법 제12조에 따른 입국심사의 계속입니다.', 'Secondary inspection is not a sanction; it continues the entry inspection under Immigration Act Art. 12.'],
+  ['소명이 완료된 경우', 'When the explanation is complete'],
+  ['입국불허 검토', 'Consider refusal'],
+  ['법정 사유 선택', 'Choose a statutory reason'],
+  ['난민신청·회부심사', 'Refugee claim · referral screening'],
+  ['난민법 제6조 전용 절차로 이동', 'Go to the Refugee Act Art. 6 procedure'],
+  ['문서감식·사범조사', 'Forensics · offence investigation'],
+  ['구체적 범죄혐의 확인 절차', 'Procedure to establish a concrete offence'],
+  ['재심 상태를 유지한 채 원 화면 확인', 'Keeps the secondary status'],
+  ['난민신청 의사가 진술되지 않음 · 진술이 있어야 신청 절차를 개시합니다', 'No refugee claim stated · the procedure starts only after a stated claim'],
+  ['회부심사 기록', 'Referral screening record'],
+  ['최대 7일 · 게임상 시간 압축', 'Up to 7 days · compressed in game time'],
+  ['절차 타임라인', 'Procedure timeline'],
+  ['인터뷰상 확인사항', 'Findings from the interview'],
+  ['사건 데이터', 'Case data'],
+  ['회부심사 인터뷰', 'Referral interview'],
+  ['진술 구체화', 'Detailing the statement'],
+  ['회부심사 결정', 'Referral decision'],
+  ['난민신청 의사 확인', 'Refugee claim stated'],
+  ['난민인정신청 접수', 'Application received'],
+  ['회부 여부 심사', 'Referral screening'],
+  ['회부/불회부 결정', 'Refer / not refer'],
+  ['출입국관리법상 입국심사', 'Entry inspection (Immigration Act)'],
+  ['현재 단계', 'Current step'],
+  ['진행 중', 'In progress'],
+  ['현재 심사 중', 'Being examined now'],
+  ['심사 완료', 'Examined'],
+  ['심사 대기', 'Waiting'],
+  ['완료', 'Done'],
+  ['정치적 박해 주장', 'Political persecution claim'],
+  ['종교적 박해 주장', 'Religious persecution claim'],
+  ['특정 사회집단·정치적 견해 관련 박해 진술', 'Persecution for social group / political opinion'],
+  ['취업·소득 목적 진술', 'Work / income purpose statement'],
+  ['확인되지 않음', 'not established'],
+  ['반복 확인', 'confirmed repeatedly'],
+  ['미확인 · 해당 인터뷰 전', 'not checked · interview not yet held'],
+  ['박해 사유 인터뷰(난민 질문)를 아직 하지 않았습니다. 불회부는 신청 사유를 검토한 뒤 판단하십시오.', 'The persecution interview has not been held. Decide non-referral only after examining the claim.'],
+  ['회부심사 개시', 'Start referral screening'],
+  ['난민인정심사 불회부', 'Do not refer to refugee status determination'],
+  ['시행령 제5조제1항제7호 · 게임상 사실관계', 'Enforcement Decree Art. 5(1)(vii) · case facts in this game'],
+  ['난민인정심사 회부', 'Refer to refugee status determination'],
+  ['이 사건에서는 근거가 부족한 선택', 'Not supported by this case'],
+  ['입국심사로 복귀', 'Return to entry inspection'],
+  ['제12조상 입국 여부를 별도로 판단', 'Decide entry separately under Art. 12'],
+  ['현재 절차 상태 유지', 'Keeps the procedure status'],
+  ['난민인정 신청이 접수되었습니다. 회부 여부 심사를 개시하십시오.', 'The application was received. Start the referral screening.'],
+  ['회부 여부를 판단할 수 있습니다. 이 케이스의 인터뷰·자료를 검토하십시오.', 'You can decide on referral. Review this case’s interview and documents.'],
+  ['불회부 결정 후 입국심사로 복귀했습니다.', 'Returned to entry inspection after the non-referral decision.'],
+  ['난민신청 절차를 진행하십시오.', 'Continue the refugee procedure.'],
+  ['절차상 주의', 'Procedural note'],
+  ['불회부 결정은 입국불허와 동일한 처분이 아닙니다. 불회부 후 출입국관리법에 따른 입국심사로 돌아갑니다.', 'Non-referral is not the same decision as entry refusal. After it, the entry inspection under the Immigration Act resumes.'],
+  ['공개 법령 근거', 'Published legal basis'],
+  ['신원·문서 감식', 'Identity & document forensics'],
+  ['실제 얼굴 ↔ 여권상 명의', 'Live face ↔ passport holder'],
+  ['여권/칩 사진', 'Passport / chip photo'],
+  ['전자문서 이상', 'Electronic document anomaly'],
+  ['문서 감식', 'Document forensics'],
+  ['긴급체포 요건', 'Emergency-arrest requirements'],
+  ['위·변조 판정 확보', 'Forgery finding secured'],
+  ['전자칩/MRZ 이상 정밀확인 필요', 'Chip / MRZ anomaly needs examination'],
+  ['조사 착수·분리 기록', 'Investigation opened · recorded separately'],
+  ['감식 후 구체적 혐의 확립 필요', 'Concrete suspicion needed after forensics'],
+  ['요건별 검토 단계', 'Requirement review'],
+  ['자동 체포 금지', 'No automatic arrest'],
+  ['조사 후속 질문', 'Investigation questions'],
+  ['감식·조사 결과에 따라 해금', 'Unlocked by forensics / investigation'],
+  ['조사 조치', 'Investigation steps'],
+  ['여권·문서 감식 의뢰', 'Request passport & document forensics'],
+  ['위변조 의심 문서 진위 확인', 'Verify a suspected forged document'],
+  ['출입국사범 조사 전환', 'Open offence investigation'],
+  ['입국심사와 형사·행정 조사를 분리 기록', 'Recorded separately from the entry inspection'],
+  ['긴급체포 요건 검토', 'Review emergency-arrest requirements'],
+  ['위조여권 발견만으로 자동 체포하지 않음', 'A forged passport alone does not trigger arrest'],
+  ['긴급체포 집행', 'Execute emergency arrest'],
+  ['모든 법정요건 확인 후 · 미충족 집행은 위법', 'Only when every statutory requirement is met · otherwise unlawful'],
+  ['문서 감식으로 구체적 범죄혐의를 먼저 확인해야 합니다', 'Establish a concrete offence by forensics first'],
+  ['출입국사범 조사 전환 후에만 검토할 수 있습니다 · 위조여권 발견만으로 자동 체포하지 않음', 'Only after an investigation is opened · a forged passport alone does not trigger arrest'],
+  ['신문 전 통역 확보', 'Secure an interpreter before questioning'],
+  ['통역 확보 필요 · 출입국관리법 제48조제6항: 국어가 통하지 않는 용의자의 진술은 통역인에게 통역하게 합니다.', 'Interpreter required · Immigration Act Art. 48(6): a suspect who does not understand Korean is questioned through an interpreter.'],
+  ['특별사법경찰 범위', 'Special judicial police scope'],
+  ['출입국관리 업무 종사 4~7급 공무원은 법정 범위의 출입국관리에 관한 범죄 등에 대해 사법경찰관 직무를 수행합니다.', 'Immigration officers of grades 4–7 act as judicial police officers for immigration offences within the statutory scope.'],
+  ['조사 기록 원칙', 'Investigation record rule'],
+  ['출입국관리법 제48조상 용의자 신문은 다른 출입국관리공무원이 참여하고, 진술은 조서에 기록하는 구조입니다. 일반 입국재심 인터뷰와 구분합니다.', 'Under Immigration Act Art. 48 a suspect is questioned with another officer present and the statement is recorded in a report — distinct from a secondary-inspection interview.'],
+  ['형사소송법 제200조의3', 'Criminal Procedure Act Art. 200-3'],
+  ['출입국관리법 제47·48조', 'Immigration Act Arts. 47–48'],
+  ['장기 3년 이상 징역·금고 해당 범죄 및 범죄혐의의 상당한 이유', 'An offence punishable by 3+ years and probable cause'],
+  ['증거인멸 또는 도망·도망 우려', 'Risk of destroying evidence or of flight'],
+  ['체포영장을 받을 시간적 여유가 없는 긴급성', 'Urgency: no time to obtain a warrant'],
+  ['송환 절차 타임라인', 'Repatriation timeline'],
+  ['입국 불허가 결정·통지', 'Entry refusal decided and notified'],
+  ['운수업자 송환지시', 'Repatriation order to the carrier'],
+  ['출국대기실 인계', 'Hand over to the departure waiting room'],
+  ['대한민국 밖으로 송환', 'Removed from Korea'],
+  ['운항계획에 따라 진행', 'According to the flight schedule'],
+  ['운수업자', 'Carrier'],
+  ['송환대상 외국인을 비용과 책임으로 대한민국 밖으로 송환하는 절차를 진행합니다.', 'The carrier removes the person from Korea at its own cost and responsibility.'],
+  ['후속 집행', 'Follow-up'],
+  ['법정서식·대기장소', 'Statutory forms · waiting area'],
+  ['송환지시서 발급', 'Issue repatriation order'],
+  ['운수업자에게 제76조에 따른 송환지시', 'Art. 76 order to the carrier'],
+  ['제76조의2 · 국가 관리 출국대기실', 'Art. 76-2 · state-run waiting room'],
+  ['송환대기 처리 완료', 'Close the case'],
+  ['사건을 종결하고 다음 승객 호출', 'Close the case and call the next traveler'],
+  ['송환대기장소', 'Waiting area'],
+  ['송환대상외국인은 출국 전까지 출국대기실에서 대기하는 것이 원칙이며, 법정 예외에 따라 출입국항 내 지정장소에서 조건부 대기가 가능합니다.', 'A person to be repatriated waits in the departure waiting room; statutory exceptions allow conditional waiting at a designated place in the port.'],
+  ['INAD 표시', 'INAD label'],
+  ['INAD는 게임상·항공운송상 상태표시이며 대한민국 법률상 처분명은 ‘입국 불허가’입니다.', 'INAD is an aviation/game status label; the legal decision under Korean law is “entry refusal”.'],
+  ['상호작용 상태 · 판정근거 아님', 'Interaction state · not a basis for decisions'],
+  ['언어·통역 · 판정근거 아님', 'Language & interpreting · not a basis for decisions'],
+  ['직접 의사소통이 부족하면 통역을 호출하십시오.', 'Call an interpreter if direct communication is insufficient.'],
+  ['동행여행 교차검증', 'Travel-party cross-check'],
+  ['앞서 처리된 동행인 진술', 'Statements of companions already processed'],
+  ['같은 PNR·숙소·동행관계는 진술 교차검증 자료입니다. 가족·단체여행이라는 이유 자체로 불리하게 판단하지 않습니다.', 'A shared PNR, lodging or relationship is cross-check material. Travelling as a family or group is never held against anyone.'],
+  ['최근 진술·조회', 'Recent statements & lookups'],
+  ['사건 기록', 'Case record'],
+  ['확보 단서', 'Clues found'],
+  ['아직 연결된 단서 없음', 'No clues linked yet'],
+  ['요건 확인', 'Requirements confirmed'],
+  ['질문', 'Ask'],
+  ['신문', 'Question'],
+  ['조회', 'Look up'],
+  ['재조회', 'Look up again'],
+  ['심사관', 'Officer'],
+  ['피심사인', 'Traveler'],
+  ['통역', 'Interpreter'],
+  ['처리완료', 'Processed'],
+  ['현재심사', 'In inspection'],
+  ['방문목적', 'Purpose'],
+  ['체류예정', 'Planned stay'],
+  ['입국 불허가 사유 선택 · 출입국관리법 제12조제4항', 'Choose the refusal reason · Immigration Act Art. 12(4)'],
+  ['유효한 여권·사증 요건 미충족', 'Valid passport / visa requirement not met'],
+  ['사전여행허가 요건 미충족', 'Travel-authorisation (K-ETA) requirement not met'],
+  ['입국목적과 체류자격 불일치 또는 목적 소명 실패', 'Purpose does not match the status, or not explained'],
+  ['생체정보 제공·본인확인 절차 불응', 'Refused biometrics / identity verification'],
+  ['대한민국의 이익 또는 공공안전 위해 우려', 'Risk to national interest or public safety'],
+  ['경제·사회질서 또는 선량한 풍속 저해 우려', 'Risk to economic / social order or public morals'],
+  ['강제퇴거 후 5년 미경과', 'Less than 5 years since deportation'],
+  ['근거 조문 안내', 'Statutory references'],
+  ['SIM 코드는 실제 법무부 내부 분류코드가 아닙니다.', 'SIM codes are not real Ministry of Justice codes.'],
+  ['심사결정', 'Decision'],
+  ['후속절차', 'Follow-up'],
+  ['확대', 'Zoom'],
+  ['제출자료', 'Submitted'],
+  ['추가 확인 필요', 'Needs further check'],
+  ['송환 절차 계속', 'Continue repatriation'],
+  ['송환지시 · 출국대기실 · 사건 종결', 'Repatriation order · waiting room · close case'],
+  ['입국재심 화면 다시 열기', 'Reopen secondary inspection'],
+  ['재심 인계 사유 · 진술 비교 · 추가 확인', 'Referral reasons · statement comparison · follow-up'],
+  ['기본사항', 'Basics'],
+  ['여행·체류', 'Travel & stay'],
+  ['추가소명', 'Further explanation'],
+  ['통역 연결됨', 'Interpreter connected'],
+  ['다음 승객 호출', 'Call next traveler'],
+  ['운항정보 확인 중…', 'Checking flight data…'],
+  ['저장소 사용 불가 · 이 브라우저에서는 진행이 저장되지 않습니다', 'Storage unavailable · progress is not saved in this browser'],
+  ['근무 중에는 저장된 근무를 불러올 수 없습니다.', 'A saved duty cannot be loaded during a shift.'],
+  ['근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.', 'Start a duty to replay the screen guide.'],
+  ['브라우저 저장소에 쓸 수 없어 진행이 저장되지 않았습니다.', 'Browser storage refused the write; progress was not saved.']
 ]);
 
 const PATTERNS = [
-  [/^심사번호\s+(.+)$/, 'Inspection no. $1'],
+  [/^심사번호\s+([A-Z]?\d+)$/, 'Inspection no. $1'],
   [/^제1근무조 · 기초 심사$/, 'Shift 1 · Basic inspection'],
   [/^제2근무조 · 재심·목적 확인$/, 'Shift 2 · Secondary / purpose review'],
   [/^제3근무조 · 특수사건$/, 'Shift 3 · Special cases'],
@@ -257,8 +452,20 @@ const PATTERNS = [
   [/^SESSION (.+) · (\d+)명 처리 지점부터 근무를 이어갑니다\.$/, 'SESSION $1 · resuming from $2 travelers processed.'],
   [/^연계사건 · (.+)$/, 'Linked case · $1'],
   [/^도전 (.+) · 시나리오 (.+) · 일반승객 (\d+)명 · 동행여행 (\d+)팀 · 추가확인 변형 (\d+)명 · 핵심사건 (\d+)건$/, 'Challenge $1 · Scenario $2 · $3 regular travelers · $4 parties · $5 review variants · $6 key cases'],
-  [/^(.+)회$/, '$1 times'],
-  [/^(.+)건$/, '$1 cases']
+  [/^현재 (.+) · 복잡한 질문은 이해도에 따라 통역이 필요할 수 있습니다\.$/, (m, x) => `Now: ${EXACT.get(x) || x} · complex questions may need an interpreter`, true],
+  [/^현재 (.+) 수준이 제한적입니다\. 복잡한 질문에는 통역이 필요할 수 있습니다\.$/, (m, x) => `${EXACT.get(x) || x} is limited · complex questions may need an interpreter`, true],
+  [/^(.+) ↔ 한국어 통역 중 · 유효 진술 확보 가능$/, 'Interpreting $1 ↔ Korean · statements are recordable', true],
+  [/^(\d+)\/(\d+) · (\d+) 가능$/, '$1/$2 · $3 open'],
+  [/^(.+) · 재질문 · 반복 질문은 효율에 반영$/, (m, x) => `${EXACT.get(x) || x} · asked before · repeats cost efficiency`, true],
+  [/^(\d{4}-\d{2}-\d{2}) 공개 기준 시뮬레이션$/, 'Simulation · published law as of $1'],
+  [/^법령 기준 (\S+) · DATA (\S+)$/, 'Law as of $1 · data $2'],
+  [/^충족 (\d+)$/, 'Met $1'], [/^추가 확인 (\d+)$/, 'Review $1'], [/^미충족 (\d+)$/, 'Not met $1'], [/^미확인 (\d+)$/, 'Unchecked $1'],
+  [/^문답:(.+)$/, 'Q: $1'], [/^조회:(.+)$/, 'Lookup: $1'],
+  [/^(\d+)일$/, '$1 days'],
+  [/^현재 (.+)$/, (m, x) => `Now: ${EXACT.get(x) || x}`, true],
+  [/^(.+) 통역 호출$/, (m, lang) => `Call interpreter (${EXACT.get(lang) || lang})`, true], // the language name is data, not UI copy
+  [/^(\d+)회$/, '$1 times'],
+  [/^(\d+)건$/, '$1 cases']
 ];
 
 function normalizeLocale(value) { return value === 'en' ? 'en' : 'ko'; }
@@ -269,8 +476,11 @@ export function translateString(value) {
   const trimmed = value.trim();
   const exact = EXACT.get(trimmed);
   if (exact) return value.replace(trimmed, exact);
-  for (const [pattern, replacement] of PATTERNS) {
-    if (pattern.test(trimmed)) return value.replace(trimmed, trimmed.replace(pattern, replacement));
+  for (const [pattern, replacement, keepsData] of PATTERNS) {
+    if (!pattern.test(trimmed)) continue;
+    const out = trimmed.replace(pattern, replacement);
+    // a half-translated string (Korean UI copy left inside) is worse than the original: keep the original
+    return hasHangul(out) && !keepsData ? value : value.replace(trimmed, out);
   }
   return value;
 }
@@ -280,17 +490,22 @@ function ignored(node) {
   return !!parent?.closest?.('[data-i18n-control], script, style, code, pre');
 }
 
+// `written` remembers what this layer itself put into a node/attribute. Our own write fires a mutation; without
+// this check the translation would be stored as the "original" and switching back to Korean kept English.
+const writtenText = new WeakMap();
 function applyTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE || ignored(node)) return;
+  const ours = writtenText.has(node) && writtenText.get(node) === node.data;
   if (locale === 'ko') {
     const original = originalText.get(node);
-    if (original !== undefined && node.data !== original) node.data = original;
+    if (ours && original !== undefined) { node.data = original; }
+    writtenText.delete(node);
     return;
   }
-  if (!hasHangul(node.data)) return;
+  if (ours || !hasHangul(node.data)) return;
   originalText.set(node, node.data);
   const translated = translateString(node.data);
-  if (translated !== node.data) node.data = translated;
+  if (translated !== node.data) { writtenText.set(node, translated); node.data = translated; }
 }
 
 function attrMapFor(el) {
@@ -299,20 +514,45 @@ function attrMapFor(el) {
   return map;
 }
 
+const writtenAttrs = new WeakMap();
 function applyAttributes(el) {
   if (!el || el.nodeType !== Node.ELEMENT_NODE || ignored(el)) return;
   const map = attrMapFor(el);
+  let written = writtenAttrs.get(el); if (!written) { written = new Map(); writtenAttrs.set(el, written); }
   for (const attr of ATTRS) {
     const value = el.getAttribute(attr);
+    const ours = written.has(attr) && written.get(attr) === value;
     if (locale === 'ko') {
-      if (map.has(attr) && value !== map.get(attr)) el.setAttribute(attr, map.get(attr));
+      if (ours && map.has(attr)) el.setAttribute(attr, map.get(attr));
+      written.delete(attr);
       continue;
     }
-    if (!value || !hasHangul(value)) continue;
+    if (ours || !value || !hasHangul(value)) continue;
     map.set(attr, value);
     const translated = translateString(value);
-    if (translated !== value) el.setAttribute(attr, translated);
+    if (translated !== value) { written.set(attr, translated); el.setAttribute(attr, translated); }
   }
+}
+
+// Language of parts (WCAG 3.1.2): in the English UI, case data stays Korean (statements, names, records).
+// An element whose text is Korean with no English words is marked lang="ko" so screen readers voice it as Korean;
+// the mark is dropped when English appears in it or the UI returns to Korean.
+const LATIN_WORD = /[A-Za-z]{2,}/;
+function markLang(el) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE || ignored(el)) return;
+  const ours = el.dataset.i18nLang === 'ko';
+  if (locale !== 'en') { if (ours) { el.removeAttribute('lang'); delete el.dataset.i18nLang; } return; }
+  const text = el.textContent || '', korean = hasHangul(text) && !LATIN_WORD.test(text);
+  if (korean && !el.hasAttribute('lang')) { el.setAttribute('lang', 'ko'); el.dataset.i18nLang = 'ko'; }
+  else if (!korean && ours) { el.removeAttribute('lang'); delete el.dataset.i18nLang; }
+}
+function markLangWithin(root) {
+  const el = root?.nodeType === Node.TEXT_NODE ? root.parentElement : root;
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
+  if (locale !== 'en') { el.querySelectorAll('[data-i18n-lang]').forEach(markLang); markLang(el); return; }
+  const parents = new Set(); const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (hasHangul(n.data) && n.parentElement) parents.add(n.parentElement);
+  parents.forEach(markLang); markLang(el);
 }
 
 function walk(root) {
@@ -365,6 +605,8 @@ function syncControls() {
     if (button.textContent !== text) button.textContent = text;
     if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
     if (button.title !== label) button.title = label;
+    // the button names the other language in that language
+    if (button.lang !== (english ? 'ko' : 'en')) button.lang = english ? 'ko' : 'en';
   }
 }
 
@@ -378,7 +620,7 @@ export function setLocale(value) {
   document.documentElement.lang = locale;
   document.documentElement.dataset.locale = locale;
   document.title = locale === 'en' ? 'INAD: Article 12' : 'INAD: 제12조';
-  if (document.body) walk(document.body);
+  if (document.body) { walk(document.body); markLangWithin(document.body); }
   syncControls();
   document.dispatchEvent(new CustomEvent('inad:localechange', { detail: { locale } }));
   return locale;
@@ -388,9 +630,9 @@ function mutationHandler(records) {
   for (const record of records) {
     const target = record.target?.nodeType === Node.ELEMENT_NODE ? record.target : record.target?.parentElement;
     if (target?.closest?.('[data-i18n-control]')) continue;
-    if (record.type === 'characterData') applyTextNode(record.target);
+    if (record.type === 'characterData') { applyTextNode(record.target); markLang(target); }
     else if (record.type === 'attributes') applyAttributes(record.target);
-    else for (const node of record.addedNodes) walk(node);
+    else { for (const node of record.addedNodes) { walk(node); markLangWithin(node); } markLang(target); }
   }
   ensureControls();
   syncControls();

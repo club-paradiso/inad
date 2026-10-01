@@ -114,17 +114,17 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | type/label | 11 / 15 / Medium | `--fs-label` |
 | type/meta | 10.5 / 14 / Regular | `--fs-meta` |
 | type/code | 11 / 15 / Roboto Mono Regular | `--mono` |
-| type/control | 12 / 16 / Medium(600 대체) | 버튼·탭 라벨 (`.btn`, `.tasknav button`) |
+| type/control | 12 / 16 / Medium(600 대체) | 버튼·탭 라벨 (`.act`, `.iconbtn`, `.qtab`, `.wb-tab`, `.tasknav button`) |
 
-10px 미만 텍스트는 만들지 않는다.
+10.5px 미만 텍스트는 만들지 않는다(CLAUDE.md·design-system.md와 같은 하한).
 
 ## 4. 컴포넌트 (04 — Components)
 
 | 컴포넌트 | 변형 | 코드 |
 |---|---|---|
-| Action/Button | Type: Primary · Secondary · Ghost · Danger / State: Default · Hover · Pressed · Disabled | `src/styles/components.css` `.btn` |
+| Action/Button | Type: Primary · Secondary · Ghost · Danger / State: Default · Hover · Pressed · Disabled | `components.css` `.act.primary` · `.act` · `.act.danger`, 크롬 `.iconbtn` (전용 `.btn` 클래스 없음; Pressed는 코드에 `:active` 규칙이 없어 `--accent-strong` 미사용) |
 | Action/Decision | Kind: Clear · Secondary · Refuse · SJP · Special / State: Default · Disabled · Armed | `src/js/ui/decision-desk.js` |
-| Navigation/Tab | State: Default · Active / Count: on·off | `.tabs .tab` |
+| Navigation/Tab | State: Default · Active / Count: on·off | `.qtab`(질문 분류) · `.wb-tab`(자료 보기), APG 탭 패턴 |
 | Navigation/TaskNav | Active: Passenger · Interview · Evidence · Assessment | `src/js/ui/task-nav.js` |
 | Navigation/Stepper | Stage: Primary · Secondary · Decision · Followup / Tone: default · warning · danger · info | `src/js/ui/passenger-panel.js` `renderCaseBar` |
 | Case/Identity | Density: full · compact | `src/js/ui/passenger-panel.js` |
@@ -136,7 +136,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | Document/Selector | State: default · selected · alert | `src/js/ui/document-workbench.js` |
 | Document/Field | Width: half · wide | `docFieldRows` |
 | Document/Paper | Kind: passport · visa · earrival · pnr · hotel · idcard · biometric · watchlist · letter | `documentHTML` |
-| Lookup/Action | State: default · done | `.lookup-actions button` |
+| Lookup/Action | State: default · done · alert(✓ / ! 접두) | `.lookup-tabs button` |
 | Lookup/Result | Tone: 정상 · 주의 · 경고 · 치명 | `src/js/ui/system-panel.js` `renderTerminal` |
 | Assessment/Readiness | Level: low · mid · ready | `renderMatrix` |
 | Assessment/Fact | Status: ok · warn · bad | `renderMatrix` `.ev` |
@@ -147,7 +147,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | Procedure/Row | State: default · done · warn | `.proc-row` |
 | Procedure/Action | Kind: primary · good · danger · neutral | `.proc-action` |
 | Feedback/Toast | Kind: toast · event | `src/js/ui/toast.js` |
-| Feedback/Inline | Tone: info · warn · danger · legal | `.note` |
+| Feedback/Inline | Tone: info · warn · danger · legal | `.inline-note`(대화상자) · `.proc-note`(절차 화면) |
 | Overlay/Dialog | Size: default · wide / Breakpoint: desktop · mobile(sheet) | `src/js/ui/modals.js` |
 | Overlay/Callout | — | `src/js/ui/shell.js` `showCallout` |
 | Panel/Frame | Head: on·off | `.panel` `.ph` |
@@ -345,3 +345,36 @@ CLAUDE.md 원칙대로 **각 셀은 코드에 실제로 존재하는 렌더 경�
 ## 8. 상태 표기(승인 흐름)
 
 섹션 이름 접두어로 관리한다: `[Exploration]`, `[Review]`, `[Approved]`, `[Implemented]`. 필 뱃지를 만들지 않는다. 구현 대상은 `[Approved]` 섹션 안의 프레임 또는 작업 지시에서 명시한 프레임뿐이다.
+
+## 9. v9.0 코드 → Figma 동기화 대기 (2026-10-01)
+
+v9.0은 코드가 먼저 바뀌었다(작업 지시: 안정성·제품 품질 개편). Figma 파일은 **수정하지 않았다**: 변수 값을 바꾸면
+`[Approved]`·`[Implemented]` 프레임의 모습도 함께 바뀌는데, 그 섹션은 자동화에 읽기 전용이기 때문이다(CLAUDE.md).
+사람이 아래 표대로 반영한 뒤 해당 섹션을 `[Implemented]`로 표기한다. 이름은 하나도 바뀌지 않았다.
+
+### 변수 값 (Color)
+| Figma 변수 | Figma 값(§2) | 코드 값(v9.0) | 이유 |
+|---|---|---|---|
+| color/bg/canvas | #DFE5EA | #E6EAEE | 패널과의 대비를 낮춰 차분한 바닥 |
+| color/bg/surface | #F6F8F9 | #FFFFFF | 패널 본문 흰색 |
+| color/bg/subtle | #EDF1F4 | #F3F5F7 | 가라앉은 영역 |
+| color/bg/panel-head | #E7EDF1 | #FFFFFF | 회색 제목 띠 대신 구분선 |
+| color/border/subtle | #D2DBE1 | #E0E5E9 | 흰 패널 기준 |
+| color/border/default | #B8C5CD | #C4CED5 | 흰 패널 기준 |
+| color/text/muted | #66777F | #5B6B74 | 모든 바탕에서 10.5–11px 텍스트 ≥4.5:1 (이전 3.9–4.4:1) |
+
+### 레이아웃·컴포넌트 (코드 기준, `src/styles/*`)
+- Case/Header: 단계 칩은 스테퍼와 같은 단계를 말할 때(일반심사·입국재심) ≥1024에서 숨김, 일반심사 점은 중립색. 처리시간 옆 감찰은 "감찰 n/한도" 텍스트 + 한도 수만큼의 점(6·4·3). 판단 준비도 미터는 사건 헤더에서 제거(판단 패널에만).
+- Case/Identity: 태도·긴장·협조 막대와 행동 칩, 의사소통 상태는 중립 회색만(이전: 성공·경고·위험 색).
+- Interview/Message: 진술 본문 13px(body). Interview/LanguageBar: 모드+언어 버튼 한 줄, 안내 문장은 아래 한 줄(전체 문장은 title).
+- 대상자 구역은 왼쪽 열 높이의 최대 42%를 쓰고 스크롤, 나머지는 인터뷰(질문 목록 1280×800에서 93px).
+- Action/Decision: 무장 상태에 "다시 눌러 확정" 문구, 비활성 사유는 `#actionHint`. 결정 데스크 밖 계속 버튼은 Action/Button Primary(accent), 파괴적 확인은 Danger — 판정 색(clear/secondary/refuse/sjp)은 판정에만.
+- Settings 토글 → Switch(트랙+노브, 켬일 때 트랙만 accent). Figma에 Overlay/Switch 컴포넌트가 없으므로 새로 만들 때 이 모양을 따른다.
+- 한국어 UI에서 장식용 영어 라벨(절차 kicker, 초상 LIVE, 문서 유형 코드, NORMAL OPS) 숨김.
+- 문서 선택기: 추가 확인 문서에 "! 추가 확인" 텍스트, 선택된 경고 문서는 accent 선택 띠 유지.
+- 모노스페이스는 ID·MRZ·PNR·코드·숫자에만(법조문 표기·상태 문장·시계 라벨 제외), 시계는 HH:MM:SS.
+- Procedure/*: 절차 화면은 사람·현재 단계·전체 순서·불가 사유(`is-blocked` + 이유)·근거 기록(`proc-record`)·돌아가기를 항상 표시. 긴급체포 집행은 외곽선 danger + "요건 확인 n/3" (Astra의 채움 빨강 CTA는 채택하지 않음).
+
+### Astra 탐색안에서 채택하지 않은 것
+§6.1–6.2의 Astra(`[Exploration]`)는 영역별로 비교했다. 채택: 판정 근거가 아닌 값의 중립 표기, 무장 상태 문구, 비활성 사유 문구, 한 화면 한 주요 행동. 보류(승인 필요): 결정 데스크 재배치(판정 쌍 + 절차 버튼), 판단 목록 단일화·정렬, 진술 기록의 초상 제거, 1279px 이하 문서 가로 탭, 운영 바 축소. 채택하지 않음: 초상·여권 사진 제거, 단일 질문 표시, 채움 빨강 긴급체포 버튼, 중복된 "일반 심사대 보기", KPI·운영 바 제거.
+

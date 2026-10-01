@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const distPath = path.join(root, 'dist/index.html');
@@ -36,7 +37,8 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
     assert.ok(html.includes(marker), `optional UI module bundled: ${marker}`);
   }
   assert.equal((html.match(/data:image\/webp;base64,/g) || []).length, 105, '105 inline portraits');
-  assert.ok(!/assets\/portraits\//.test(html.replace(/\/\*[^]*?\*\//g, '')) || true);
+  // every portrait is inline; the only asset path left is portraitSrc()'s dev fallback, unreachable when all 105 resolve
+  assert.equal((html.match(/assets\/portraits\//g) || []).length, 1, 'only the dev fallback path remains');
   assert.ok(html.includes('AudioContext'), 'Web Audio present');
   assert.ok(!/\.\.\/|src\/js\//.test(html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '')), 'no leaked source paths');
 });
@@ -45,4 +47,18 @@ test('release artifact size stays within 15% of the v6.1 baseline', () => {
   const size = fs.statSync(distPath).size;
   const legacy = fs.statSync(path.join(root, 'legacy/v6.1/INAD_Article12_v6_1_KR.html')).size;
   assert.ok(size <= legacy * 1.15, `dist ${size} vs legacy ${legacy}`);
+});
+
+test('the inline release bundle compiles and runs in strict mode', () => {
+  const html = fs.readFileSync(distPath, 'utf8');
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  assert.equal(scripts.length, 1, 'one inline script');
+  assert.doesNotThrow(() => new vm.Script(scripts[0]), 'bundle parses');
+  assert.ok(/^\s*"use strict";/.test(scripts[0]), 'strict mode like the native ES modules in src/');
+});
+
+test('the build never expands replacement patterns from the bundle ($& etc.)', () => {
+  const html = fs.readFileSync(distPath, 'utf8');
+  const src = fs.readFileSync(path.join(root, 'src/js/ui/dom.js'), 'utf8');
+  if (src.includes('$&')) assert.ok(html.includes('$&'), 'a literal $& in source survives into the bundle');
 });

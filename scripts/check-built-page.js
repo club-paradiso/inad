@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,6 +28,12 @@ const missing = checks.filter(([, pattern]) => !pattern.test(html)).map(([label]
 // A computed `import(path)` survives bundling as a runtime request that 404s on the single-file
 // release page. Every optional module has to be inlined by esbuild.
 if (/\bimport\s*\(/.test(stripped)) missing.push('no unresolved dynamic import() in bundle');
+
+// The inline bundle must compile: a corrupted release (e.g. an expanded `$&` in a string replacement)
+// otherwise only shows up as a blank start screen in the browser.
+const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+if (scripts.length !== 1) missing.push(`exactly one inline script (found ${scripts.length})`);
+for (const code of scripts) { try { new vm.Script(code, { filename: 'dist/index.html#inline' }); } catch (e) { missing.push(`inline script compiles (${e.message})`); } }
 
 if (missing.length) {
   console.error(`Built-page smoke check failed. Missing: ${missing.join(', ')}`);

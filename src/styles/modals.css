@@ -11,6 +11,10 @@
 .mb h3 { font-size: var(--fs-section); font-weight: 700; }
 .mb p { line-height: var(--lh-loose); }
 .modal-note { font-size: var(--fs-compact); color: var(--text-2); line-height: var(--lh-loose); }
+/* inline notice inside a dialog: a left rule + tinted ground, text carries the meaning */
+.inline-note { margin-top: 10px; padding: 8px 10px; border-left: 3px solid var(--accent); background: var(--accent-soft); font-size: var(--fs-compact); line-height: var(--lh-body); color: var(--text); }
+.inline-note.warn { border-left-color: var(--warning); background: var(--warning-soft); color: var(--warning-text); }
+.inline-note.danger { border-left-color: var(--danger); background: var(--danger-soft); color: var(--danger-text); }
 .record-warning { font-size: var(--fs-compact); color: var(--text-2); }
 .block { width: 100%; }
 
@@ -134,8 +138,13 @@
 .segmented button { height: 30px; padding: 0 12px; font-size: var(--fs-label); font-weight: 600; color: var(--text-2); background: var(--elevated); }
 .segmented button + button { border-left: 1px solid var(--border); }
 .segmented button.on { background: var(--accent); color: #fff; }
-.setting-toggle { height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); min-width: 90px; }
-.setting-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.setting-toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 6px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); min-width: 104px; white-space: nowrap; }
+/* a switch, not a button: a track with a knob; only the track takes the accent when on (never a filled CTA) */
+.setting-toggle::before { content: ""; flex: none; width: 28px; height: 16px; border-radius: var(--r-2); background: var(--border-strong); transition: background var(--t-fast) var(--ease); }
+.setting-toggle::after { content: ""; position: absolute; left: 9px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: var(--r-1); background: var(--elevated); transition: transform var(--t-fast) var(--ease); }
+.setting-toggle.on { color: var(--text); border-color: var(--border-strong); }
+.setting-toggle.on::before { background: var(--accent); }
+.setting-toggle.on::after { transform: translateX(12px); }
 .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 .shortcut-row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; font-size: var(--fs-label); padding: 3px 0; }
 .shortcut-row kbd { font: 600 var(--fs-meta)/1.4 var(--mono); padding: 2px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 2px; background: var(--elevated); text-align: center; }
@@ -145,7 +154,7 @@
 .progress-card { display: grid; gap: 4px; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--surface); font-size: var(--fs-compact); }
 .progress-card span { color: var(--text-2); font-size: var(--fs-label); }
 .record-board-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-.record-mini-btn, .session-actions button, .records-footer button, .daily-open { height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--accent-text); }
+.record-mini-btn, .session-actions button, .records-footer button, .daily-open { min-height: 28px; white-space: nowrap; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--accent-text); }
 .record-mini-btn:hover, .session-actions button:hover, .daily-open:hover { background: var(--accent-soft); }
 .records-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
 .record-kpi { padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); text-align: center; }
@@ -319,14 +328,13 @@
 .sys-import-kpis div { padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); }
 .sys-import-kpis span { display: block; font-size: var(--fs-meta); color: var(--text-3); }
 .sys-import-kpis b { display: block; font: 700 15px/1.3 var(--mono); }
-.doc-modal-wrap .docsheet { font-size: var(--fs-compact); }
 
 @media (max-width: 1100px) {
   .rulegrid, .help-grid, .record-board-grid, .sys-release-head, .sys-check-list, .shortcut-grid { grid-template-columns: 1fr; }
   .mission-list, .campaign-results, .story-timeline, .difficulty-records { grid-template-columns: 1fr 1fr; }
   .sys-data-actions { grid-template-columns: 1fr; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .modalback { padding: 0; place-items: end stretch; }
   .modal, .modal[data-size="wide"] { width: 100%; max-height: calc(100dvh - 24px - var(--safe-top)); border-radius: var(--r-3) var(--r-3) 0 0; border-left: 0; border-right: 0; border-bottom: 0; }
   .mh { padding: 12px 16px; position: sticky; top: 0; }

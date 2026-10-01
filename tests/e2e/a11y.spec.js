@@ -54,9 +54,13 @@ test.describe('접근성·키보드', () => {
     await H.expectResult(page, '입국 허가');
     st = await H.getState(page);
     expect(st.strikes).toBe(0);
-    // focus-visible styling exists for keyboard users
+    // focus-visible styling exists for keyboard users, and a keyboard-focused control actually draws a ring
     const hasFocusVisible = await page.evaluate(() => [...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => /focus-visible/.test(r.selectorText || '')); } catch (e) { return false; } }));
     expect(hasFocusVisible).toBe(true);
+    await page.keyboard.press('Tab');
+    const ring = await page.evaluate(() => { const cs = getComputedStyle(document.activeElement); return { tag: document.activeElement.tagName, outline: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2, shadow: cs.boxShadow !== 'none' }; });
+    expect(ring.tag).not.toBe('BODY');
+    expect(ring.outline || ring.shadow, JSON.stringify(ring)).toBe(true);
     await H.expectNoErrors(errors);
   });
 

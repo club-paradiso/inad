@@ -1,29 +1,29 @@
-/* INAD Design System v3 — semantic tokens.
+/* INAD Design System v3.1 (v9 calm workstation) — semantic tokens.
    Direction: Korean public-sector operations software · airport border-inspection workstation · restrained simulation feedback.
    Every value here has a Figma Variable twin (docs/figma-workspace-spec.md). Colour is applied by meaning only. */
 :root {
   /* surfaces — Figma color/bg/* */
-  --canvas: #dfe5ea;          /* page ground behind panels */
+  --canvas: #e6eaee;          /* page ground behind panels */
   --chrome: #14232f;          /* top bar, status bar, task nav */
   --chrome-2: #203746;        /* chrome hover / procedure header */
   --chrome-text: #f2f6f8;
   --chrome-muted: #a9bac6;
-  --surface: #f6f8f9;         /* panel body */
-  --surface-2: #edf1f4;       /* sunken areas: transcript, results, composer */
+  --surface: #ffffff;         /* panel body */
+  --surface-2: #f3f5f7;       /* sunken areas: transcript, results, composer */
   --elevated: #ffffff;        /* rows, controls, dialogs */
   --document: #fbfaf6;        /* paper */
   --document-ink: #1b2732;
-  --panel-head: #e7edf1;      /* panel title band */
+  --panel-head: #ffffff;      /* panel title row (v9: same as the panel, separated by a rule — no grey band) */
 
   /* borders — Figma color/border/* */
-  --border-subtle: #d2dbe1;
-  --border: #b8c5cd;
+  --border-subtle: #e0e5e9;
+  --border: #c4ced5;
   --border-strong: #8498a5;
 
   /* text — Figma color/text/* */
   --text: #14232d;
   --text-2: #435560;
-  --text-3: #66777f;
+  --text-3: #5b6b74;         /* ≥4.5:1 on --surface-2 for 10.5–11px meta text */
   --text-inverse: #ffffff;
 
   /* action + status — Figma color/action/* · color/status/* */
@@ -84,7 +84,9 @@
   --w-left: 320px; --w-right: 360px; --w-inspector: 300px;
   --size-touch: 44px;
   --focus-ring: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
-  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); --safe-right: env(safe-area-inset-right, 0px);
 }
 @media (max-width: 1279px) { :root { --w-left: 288px; --w-right: 320px; } }
 @media (max-height: 820px) { :root { --h-topbar: 44px; --h-opsbar: 30px; --h-casebar: 40px; } }
+/* short landscape phones run the phone layout (task-nav.js PHONE_QUERY) with tighter chrome */
+@media (max-height: 500px) and (max-width: 1023px) { :root { --h-mobile-header: 44px; --h-tasknav: 44px; --h-casebar: 36px; } }

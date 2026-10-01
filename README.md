@@ -1,16 +1,20 @@
-# INAD: 제12조 — 입국심사관 시뮬레이션
+# INAD: 제12조 — 입국심사관 시뮬레이션 (v9.0)
 
-Fictional immigration-inspection simulation (Korean, vanilla HTML/CSS/JS, single-file release). One DOM adapts from 320px phones to 1440px+ workstations (승객 · 인터뷰 · 자료 · 판단 task navigation on phones, workspace + inspector on tablets, three-zone desk on desktop).
+Fictional immigration-inspection simulation (Korean UI with a selectable English UI, vanilla HTML/CSS/JS, single-file release). One DOM adapts from 320px phones to 1440px+ workstations (승객 · 인터뷰 · 자료 · 판단 task navigation on phones, workspace + inspector on tablets, three-zone desk on desktop).
 Production: https://inad-gray.vercel.app
 
 - Source of truth: `src/` · release artifact: `dist/index.html` (root `index.html` is the generated mirror)
-- Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/design-workflow.md` (Figma ↔ code), `docs/figma-workspace-spec.md`, `docs/ux-audit-v8.md`, `docs/legal-baseline.md`, `docs/qa-v7.md`, `docs/qa-v8.md`, `RELEASE_NOTES_v7.0.md`
+- Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/design-workflow.md` (Figma ↔ code), `docs/figma-workspace-spec.md`, `docs/legal-baseline.md`, `docs/legal-review.md`, QA `docs/qa-v9.md` (current) · `docs/qa-v8.md` · `docs/qa-v7.md`, release notes `RELEASE_NOTES_v9.0.md` (current) · `RELEASE_NOTES_v7.0.md` (v7.0–v7.2)
 - Figma: [INAD — Adaptive Workstation Design System](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8)
 - Recovery history: `docs/RECOVERY.md`
 
 ```
-npm install && npm run build && npm test
+npm install && npm run build && npm test     # npm run qa = lint + unit + build + integrity + E2E
+INAD_TARGET=legacy npm run test:e2e           # v6.1 parity (frozen baseline)
+INAD_TARGET=src npm run test:e2e              # native ES modules, no bundle
 ```
+E2E needs a Playwright Chromium: `npx playwright install chromium`, or point `INAD_CHROMIUM_PATH` at an
+installed one. `INAD_PORT` picks the port when several checkouts test side by side.
 
 ## Live airport workload
 

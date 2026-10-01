@@ -10,18 +10,31 @@ const SEED = 223606;
 const target = process.env.INAD_TARGET || 'dist';
 const outDir = `test-results/${target}/adaptive`;
 const VIEWPORTS = [
+  { name: 'phone-320', width: 320, height: 568, kind: 'phone' },
   { name: 'phone-390', width: 390, height: 844, kind: 'phone' },
+  { name: 'landscape-844', width: 844, height: 390, kind: 'phone' },
   { name: 'phone-430', width: 430, height: 932, kind: 'phone' },
   { name: 'tablet-768', width: 768, height: 1024, kind: 'tablet' },
   { name: 'compact-1024', width: 1024, height: 768, kind: 'desktop' },
+  { name: 'laptop-1366', width: 1366, height: 768, kind: 'desktop' },
   { name: 'desktop-1440', width: 1440, height: 1000, kind: 'desktop' }
 ];
 
 async function shot(page, name) { fs.mkdirSync(outDir, { recursive: true }); await page.screenshot({ path: `${outDir}/${name}.png`, fullPage: false }); }
 async function noOverflow(page, label) {
-  const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, bw: document.body.scrollWidth }));
+  const o = await page.evaluate(() => { const app = document.getElementById('app'); return { sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, bw: document.body.scrollWidth, aw: app.scrollWidth, acw: app.clientWidth, al: app.scrollLeft }; });
   expect(o.sw, `${label}: horizontal overflow ${JSON.stringify(o)}`).toBeLessThanOrEqual(o.cw + 1);
   expect(o.bw, `${label}: body overflow ${JSON.stringify(o)}`).toBeLessThanOrEqual(o.cw + 1);
+  // .app clips its overflow, so a too-wide grid shows up as a shifted (scrollLeft) workspace, not page overflow
+  expect(o.aw, `${label}: app grid overflow ${JSON.stringify(o)}`).toBeLessThanOrEqual(o.acw + 1);
+  expect(o.al, `${label}: app shifted sideways`).toBe(0);
+}
+// The control must be the topmost element at its centre (not covered by a panel, banner or footer).
+async function hittable(page, selector) {
+  await expect(page.locator('#callout')).not.toHaveClass(/\bon\b/); // the 1 s call card is a deliberate overlay
+  const b = page.locator(selector).first(); await b.scrollIntoViewIfNeeded();
+  const ok = await b.evaluate((el) => { const r = el.getBoundingClientRect(); if (!r.width || !r.height) return false; const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && (hit === el || el.contains(hit)); });
+  expect(ok, `${selector} is hit-testable`).toBe(true);
 }
 // Switch the workspace task on stacked layouts (no-op on desktop where every zone is visible).
 async function task(page, name) {
@@ -44,11 +57,12 @@ async function startShift(page) {
   await expect(page.locator('#log .msg').first()).toBeAttached();
 }
 async function inViewport(page, selectors) { for (const s of selectors) await expect(page.locator(s), s).toBeInViewport(); }
-async function touchTargets(page, selectors, min = 40) {
+// CLAUDE.md: touch targets are at least 44px. Every visible match is measured, not just the first.
+async function touchTargets(page, selectors, min = 44) {
   for (const s of selectors) {
-    const box = await page.locator(s).first().boundingBox();
-    expect(box, s).not.toBeNull();
-    expect(box.height, `${s} hit height`).toBeGreaterThanOrEqual(min);
+    const boxes = await page.locator(s).evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ w: r.width, h: r.height })));
+    expect(boxes.length, s).toBeGreaterThan(0);
+    for (const b of boxes) { expect(b.h, `${s} hit height`).toBeGreaterThanOrEqual(min - 0.5); expect(b.w, `${s} hit width`).toBeGreaterThanOrEqual(min - 0.5); }
   }
 }
 
@@ -66,7 +80,8 @@ for (const vp of VIEWPORTS) {
       await expect(page.locator('#opsToggle')).toBeVisible();
       await expect(page.locator('body')).toHaveAttribute('data-task', 'passenger');
       await inViewport(page, ['#pPortrait', '#pName', '#taskNav']);
-      await touchTargets(page, ['#taskNav button', '#opsToggle'], 44);
+      await touchTargets(page, ['#taskNav button', '#opsToggle', '#moreBtn', '#audioBtn'], 44);
+      await hittable(page, '#caseTimer');
       // operations sheet carries queue, pressure and duty KPIs on phones
       await page.locator('#opsToggle').click();
       await expect(page.locator('#queueStrip')).toBeVisible();
@@ -84,7 +99,8 @@ for (const vp of VIEWPORTS) {
     // interview
     await task(page, 'interview');
     await inViewport(page, ['#log', '#questions', '#langInterp']);
-    if (vp.kind === 'phone') await touchTargets(page, ['#questions .qbtn', '#langInterp', '#qtabs .qtab'], 40);
+    if (vp.kind === 'phone') await touchTargets(page, ['#questions .qbtn', '#langInterp', '#qtabs .qtab'], 44);
+    await hittable(page, '#questions .qbtn');
     await H.ensureCommunication(page);
     await H.ask(page, 'purpose');
     await expect(page.locator('#log')).toContainText('심사관');
@@ -95,7 +111,7 @@ for (const vp of VIEWPORTS) {
     await page.locator('#doclist .docitem').nth(1).click();
     await expect(page.locator('#doclist .docitem').nth(1)).toHaveClass(/on/);
     await expect(page.locator('#docview .docsheet')).toBeVisible();
-    if (vp.kind === 'phone') { await touchTargets(page, ['#doclist .docitem', '.lookup-tabs button', '#wbTabEntry'], 40); await page.locator('#terminal').scrollIntoViewIfNeeded(); }
+    if (vp.kind === 'phone') { await touchTargets(page, ['#doclist .docitem', '.lookup-tabs button', '#wbTabEntry', '#docZoom'], 44); await page.locator('#terminal').scrollIntoViewIfNeeded(); }
     await H.lookup(page, 'history');
     await expect(page.locator('#terminal')).toContainText('출입국기록');
     await expect(page.locator('.lookup-tabs button[data-lu="history"]')).toHaveAttribute('aria-pressed', 'true');
@@ -179,16 +195,27 @@ test('touch decision safety: first tap arms, second tap executes', async ({ brow
   await H.jumpTo(page, idx);
   await task(page, 'assessment');
   const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
+  expect(coarse, 'a touch phone context reports a coarse pointer').toBe(true);
   await page.locator('#secondaryBtn').click();
-  if (coarse) {
-    await expect(page.locator('#secondaryBtn')).toHaveClass(/armed/);
-    await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
-    const st = await H.getState(page);
-    expect(st.stage, 'a single tap must not change the legal stage').toBe('PRIMARY');
-    await page.locator('#secondaryBtn').click();
-  }
+  await expect(page.locator('#secondaryBtn')).toHaveClass(/armed/);
+  await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
+  const st = await H.getState(page);
+  expect(st.stage, 'a single tap must not change the legal stage').toBe('PRIMARY');
+  await page.locator('#secondaryBtn').click();
   await expect(page.locator('#procedureScreen')).toHaveClass(/on/);
   expect((await H.getState(page)).stage).toBe('SECONDARY');
   await H.expectNoErrors(errors);
   await ctx.close();
+});
+
+test('English UI at 320px: no task shifts the workspace sideways', async ({ page }) => {
+  test.skip(target === 'legacy', 'v6.1 baseline has no UI localisation');
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.addInitScript(() => localStorage.setItem('inad-locale', 'en'));
+  const errors = await H.openGame(page);
+  await noOverflow(page, 'start-en');
+  await H.setSeed(page, SEED);
+  await startShift(page);
+  for (const t of ['passenger', 'interview', 'evidence', 'assessment']) { await task(page, t); await noOverflow(page, `en-${t}`); }
+  await H.expectNoErrors(errors);
 });

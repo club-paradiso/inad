@@ -2,7 +2,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 html { color-scheme: light; -webkit-text-size-adjust: 100%; }
-body { background: var(--canvas); color: var(--text); font: 400 var(--fs-body)/var(--lh-body) var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body { background: var(--canvas); color: var(--text); font: 400 var(--fs-body)/var(--lh-body) var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; word-break: keep-all; overflow-wrap: break-word; }
 h1, h2, h3, h4, p { margin: 0; font-weight: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }

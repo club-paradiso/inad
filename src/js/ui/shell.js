@@ -1,19 +1,20 @@
 // Application chrome: header KPIs, event bar, queue strip, footer clock, workload meters.
-import { $, $$, byId, esc, fmtClock } from './dom.js';
+import { $, $$, byId, esc, fmtClock, setText } from './dom.js';
 import { session, state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
 import { simulatedBacklog, pressureInfo, difficultyCfg, scenarioCfg, eventEffectText } from '../engines/operation-engine.js';
 import { overallScore, workloadClass } from '../engines/score-engine.js';
 import { challengeCfg, challengeEvaluation } from '../engines/achievement-engine.js';
+import { penaltyPolicy } from '../engines/case-engine.js';
 import { campaignCfg, currentCampaignSave, storyIsAnchor, storyChapterDef, campaignArc, storyPrevContext, storyStatusInfo } from '../engines/campaign-engine.js';
 
 const imageCache = new Map();
-const setText = (id, text) => { const el = byId(id); if (el) el.textContent = text; };
 
 export function renderWorkloadOnly() {
   const q = simulatedBacklog(), pi = pressureInfo();
   const qe = byId('queue'); if (qe) qe.textContent = q;
+  const qk = byId('queueKpi'); if (qk) qk.className = 'kpi ' + pi[1]; // tone follows the simulated pressure (안정·보통·혼잡)
   const pl = byId('pressureLabel'); if (pl) pl.textContent = pi[0];
   const pf = byId('pressureFill'); if (pf) { pf.style.width = pi[2] + '%'; pf.dataset.tone = pi[1]; }
   const qb = byId('queuePressureBox'); if (qb) qb.classList.toggle('pressure-high', pi[1] === 'bad');
@@ -29,7 +30,7 @@ export function renderEventBar() {
   main.className = 'event-main' + (e ? ' ' + (e.tone || 'warn') : '');
   setText('eventTitle', e ? e.title : '운영상황 정상');
   setText('eventDesc', e ? `${e.desc} · 남은 ${e.remaining}건` : '현재 적용 중인 현장 이벤트가 없습니다.');
-  setText('eventEffect', e ? eventEffectText(e) : 'NORMAL OPS');
+  setText('eventEffect', e ? eventEffectText(e) : ''); // the title already says 운영상황 정상
   setText('difficultyLabel', difficultyCfg().label);
   const sl = byId('scenarioLabel'); if (sl) sl.textContent = scenarioCfg().name;
   const fat = Math.round(state.fatigue || 0), fv = byId('fatigueValue'), ff = byId('fatigueFill'), ft = byId('fatigueTrack');
@@ -39,21 +40,26 @@ export function renderChallengeHud() { const el = byId('challengeHud'), tx = byI
 export function renderCampaignHud() { const hud = byId('campaignHud'), txt = byId('campaignHudText'); if (!hud) return; const id = state.campaignId || 'none'; if (id === 'none') { hud.hidden = true; return; } hud.hidden = false; const c = currentCampaignSave(), day = c?.day ?? state.campaignDay ?? 0; txt.textContent = `${campaignCfg(id).name} · DAY ${day + 1}/3`; }
 export function renderStoryStrip() { const el = byId('storyCaseStrip'); if (!el) return; const c = current(); if (state.campaignId === 'none' || !storyIsAnchor(c)) { el.classList.remove('on'); el.hidden = true; return; } const arc = campaignArc(), d = storyChapterDef(), st = storyStatusInfo(); el.hidden = false; el.classList.add('on'); byId('storyCaseTitle').textContent = `연계사건 · ${d.title}`; byId('storyCaseText').textContent = `${arc.title} · ${storyPrevContext()}`; byId('storyCaseStatus').textContent = st[1]; }
 
+// Strike count as text (감찰 n/limit) plus one dot per allowed strike of the active difficulty (6 · 4 · 3).
+export function renderStrikes() {
+  const limit = penaltyPolicy().strikeLimit, n = Math.min(state.strikes, limit);
+  $$('.strike-count').forEach((e) => { e.textContent = `${n}/${limit}`; }); $$('.strikes').forEach((e) => e.classList.toggle('warn', n > 0));
+  $$('.strike-dots').forEach((box) => { if (box.childElementCount !== limit) box.innerHTML = '<i class="strike"></i>'.repeat(limit); [...box.children].forEach((d, i) => d.classList.toggle('on', i < n)); });
+}
 export function renderTop() {
   const c = current(); if (!c) return;
   setText('caseCount', `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`);
-  const pf = byId('progressFill'); if (pf) pf.style.width = (state.stats.processed / session.queue.length * 100) + '%';
   setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
-  $$('.strike').forEach((e) => { const i = [...e.parentElement.querySelectorAll('.strike')].indexOf(e); e.classList.toggle('on', i < state.strikes); });
+  renderStrikes();
   renderAudioButton();
-  setText('stProcessed', state.stats.processed); setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
+  setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();
 }
-export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-active', state.audio); b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
+export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
 export function renderQueue() {
   const strip = byId('queueStrip'); if (!strip) return; const items = session.queue.slice(state.caseIndex, state.caseIndex + 10);
   strip.innerHTML = items.map((q, i) => { const t = getTraveler(q.travelerId); return `<div class="qperson ${i === 0 ? 'current' : ''}" title="${i === 0 ? '현재 호출 승객' : '대기 승객'}"><img src="${t.portrait}" alt="" loading="lazy" decoding="async"><small>${screeningNo(state.caseIndex + i)}</small></div>`; }).join('');
 }
 export function preloadQueueImages() { session.queue.slice(state.caseIndex, state.caseIndex + 10).forEach((q) => { const t = getTraveler(q.travelerId); if (!imageCache.has(t.id)) { const im = new Image(); im.src = t.portrait; imageCache.set(t.id, im); } }); }
-export function startClock() { const tick = () => { const d = new Date(); const c = byId('clock'); if (c) c.textContent = d.toLocaleTimeString('ko-KR', { hour12: false }); renderWorkloadOnly(); }; tick(); setInterval(tick, 1000); }
+export function startClock() { const tick = () => { const d = new Date(); const c = byId('clock'); if (c) c.textContent = [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':'); renderWorkloadOnly(); }; tick(); setInterval(tick, 1000); }
 export function showCallout(onSkip) { const e = byId('callout'); if (!e) return; setText('callNo', screeningNo()); setText('callText', '12번 심사대로 오십시오.'); e.classList.add('on'); setTimeout(() => { if (e.classList.contains('on')) e.classList.remove('on'); }, 1050); byId('skipCall').onclick = () => { e.classList.remove('on'); onSkip && onSkip(); }; }

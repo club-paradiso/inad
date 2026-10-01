@@ -10,13 +10,14 @@ import { travelPartyFor, partyStatusForTraveler } from '../engines/companion-eng
 
 export function renderPassenger() {
   const c = current(), t = getTraveler(c.travelerId);
-  byId('caseId').textContent = `심사번호 ${screeningNo()}`; byId('pName').textContent = t.name.korean; byId('pRoman').textContent = t.name.latin; byId('pNat').textContent = `${t.nationality.korean} · ${t.nationality.code}`;
+  byId('caseId').innerHTML = `심사번호 <span class="mono">${esc(screeningNo())}</span>`; byId('pName').textContent = t.name.korean; byId('pRoman').textContent = t.name.latin; byId('pNat').textContent = `${t.nationality.korean} · ${t.nationality.code}`;
   byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = c.purpose; byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
   const img = byId('pPortrait'); if (img.getAttribute('src') !== t.portrait) img.src = t.portrait; img.alt = `${t.name.korean} 가상 여행객 초상`;
   renderBehavior(); renderLanguage(); renderParty();
   renderCaseBar(c, t);
 }
 // Stepper position is derived from the legal stage only (never from behaviour/language/party).
+const PARTY_STATUS = { current: '현재 심사 중', done: '심사 완료', waiting: '심사 대기' };
 export function stepperState(stage, ended) {
   const s = stage || 'PRIMARY';
   if (s === 'PRIMARY') return { active: 'primary', done: [], tone: '' };
@@ -29,12 +30,16 @@ export function stepperState(stage, ended) {
 }
 export function renderCaseBar(c, t) {
   const stageEl = byId('stageLabel'); if (stageEl) stageEl.textContent = stageText(state.stage);
-  const box = byId('stageBox'); if (box) box.className = ('stage ' + (/SECONDARY|REFUGEE/.test(state.stage) ? 'secondary' : /INVESTIGATION|ARREST|ENTRY_REFUSED/.test(state.stage) ? 'critical' : '')).trim();
+  const box = byId('stageBox'); if (box) box.className = ('stage ' + (/SECONDARY|REFUGEE/.test(state.stage) ? 'secondary' : /INVESTIGATION|ARREST|ENTRY_REFUSED/.test(state.stage) ? 'critical' : state.stage === 'ADMITTED' ? 'admitted' : '')).trim();
   const name = byId('caseName'); if (name) name.textContent = `${t.name.korean} · ${t.name.latin}`;
   const sum = byId('caseSummary'); if (sum) sum.textContent = `${t.nationality.korean} · ${t.nationality.code} · ${c.basis} · ${c.purpose} · ${c.stay}`;
   const mini = byId('caseMiniPortrait'); if (mini && mini.getAttribute('src') !== t.portrait) mini.src = t.portrait;
   const st = stepperState(state.stage, state.ended);
-  $$('#stepper li').forEach((li) => { const k = li.dataset.step; li.className = (k === st.active ? 'on ' + st.tone : st.done.includes(k) ? 'done' : '').trim(); li.setAttribute('aria-current', k === st.active ? 'step' : 'false'); });
+  // State in text as well as colour: aria-current on the active step, a hidden '완료' on finished ones.
+  // the chip repeats the stepper for plain inspection and 입국재심; it only adds information for follow-up procedures
+  const activeLabel = [...($('#stepper li[data-step="' + st.active + '"]')?.childNodes || [])].filter((n) => n.nodeType === 3).map((n) => n.data).join('').trim();
+  if (box) box.dataset.redundant = String(activeLabel === stageText(state.stage));
+  $$('#stepper li').forEach((li) => { const k = li.dataset.step, done = k !== st.active && st.done.includes(k); li.className = (k === st.active ? 'on ' + st.tone : done ? 'done' : '').trim(); li.setAttribute('aria-current', k === st.active ? 'step' : 'false'); let m = li.querySelector('.sr-only'); if (done && !m) li.insertAdjacentHTML('beforeend', '<span class="sr-only"> 완료</span>'); else if (!done && m) m.remove(); });
 }
 export function renderBehavior() {
   const b = state.behavior; if (!b) return; const band = behaviorBand(), a = byId('pAttitude'); if (a) { a.textContent = band.label; a.className = 'attitude ' + band.cls; }
@@ -52,6 +57,7 @@ export function renderLanguage() {
   it.textContent = l.interpreterActive ? '통역 연결됨' : '통역 호출'; it.title = l.interpreterActive ? `${l.primary} 통역 연결됨` : `${l.primary} 통역 호출`;
   const lm = byId('languageMode'); if (lm) lm.textContent = `현재 ${languageModeLabel()}`;
   const s = byId('languageStatus'); if (!s) return; const direct = currentLanguageLevel(), need = 2;
+  queueMicrotask(() => { s.title = s.textContent; }); // shown on one line; the full sentence on hover
   if (l.interpreterActive) { s.textContent = `${l.primary} ↔ 한국어 통역 중 · 유효 진술 확보 가능`; s.className = 'language-status good'; }
   else if (l.mode === 'none') { s.textContent = `직접 의사소통이 곤란합니다. 통역 호출을 권고합니다.`; s.className = 'language-status bad'; }
   else if (direct < need) { s.textContent = `현재 ${languageModeLabel()} 수준이 제한적입니다. 복잡한 질문에는 통역이 필요할 수 있습니다.`; s.className = 'language-status warn'; }
@@ -60,7 +66,7 @@ export function renderLanguage() {
 export function renderParty(onOpen) {
   const box = byId('partyBox'); if (!box) return; const party = travelPartyFor();
   if (!party) { box.className = 'party-summary'; box.innerHTML = ''; return; }
-  const members = party.members.map((m) => { const t = getTraveler(m.travelerId), st = partyStatusForTraveler(t.id); return `<div class="party-member ${st}"><img src="${t.portrait}" alt="${esc(t.name.korean)}"><i></i><span>${esc(t.name.korean)}</span></div>`; }).join('');
+  const members = party.members.map((m) => { const t = getTraveler(m.travelerId), st = partyStatusForTraveler(t.id); return `<div class="party-member ${st}"><img src="${t.portrait}" alt=""><i aria-hidden="true"></i><span>${esc(t.name.korean)}</span><span class="sr-only">${PARTY_STATUS[st] || ''}</span></div>`; }).join('');
   box.className = 'party-summary on'; box.innerHTML = `<div class="party-head"><strong>동행여행 · ${esc(party.label)}</strong><small>${party.members.length}명 · ${esc(party.sharedPNR)}</small></div><div class="party-members">${members}</div><div class="party-foot"><span>동행 사실 자체는 입국판정 근거가 아닙니다.</span><button class="party-open" id="partyOpen" type="button">동행인 기록</button></div>`;
   const b = box.querySelector('#partyOpen'); if (b && renderParty.onOpen) b.onclick = renderParty.onOpen;
 }

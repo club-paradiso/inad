@@ -8,7 +8,8 @@ import { defineConfig } from '@playwright/test';
 const target = process.env.INAD_TARGET || 'dist';
 const dirs = { dist: 'dist', legacy: 'legacy/v6.1', src: 'src' };
 const files = { dist: 'index.html', legacy: 'INAD_Article12_v6_1_KR.html', src: 'index.html', url: '' };
-const port = { dist: 4173, legacy: 4174, src: 4175 }[target];
+// INAD_PORT lets two checkouts (e.g. git worktrees) run the suite side by side without reusing each other's server.
+const port = Number(process.env.INAD_PORT) || { dist: 4173, legacy: 4174, src: 4175 }[target];
 const remote = target === 'url' ? (process.env.INAD_BASE_URL || '').replace(/\/$/, '') : null;
 if (target === 'url' && !remote) throw new Error('INAD_TARGET=url requires INAD_BASE_URL');
 process.env.INAD_ENTRY = remote ? '/' : `/${files[target]}`;
@@ -35,8 +36,11 @@ export default defineConfig({
     // airport-load proxy, so the game always takes its static-preset fallback path.
     env: { ...process.env, DATA_GO_KR_SERVICE_KEY: '', AIRPORT_DATA_API_KEY: '', PUBLIC_DATA_API_KEY: '' },
     url: `http://127.0.0.1:${port}${files[target] === 'index.html' ? '/' : '/' + files[target]}`,
-    reuseExistingServer: true,
+    // Never silently reuse a running server: `npm run dev` may hold a live public-data key (see env above).
+    reuseExistingServer: !!process.env.INAD_REUSE_SERVER,
     timeout: 20_000
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }]
+  // INAD_CHROMIUM_PATH lets sandboxes with a preinstalled Chromium of a different revision run
+  // the suite without `playwright install`; CI leaves it unset and uses the bundled browser.
+  projects: [{ name: 'chromium', use: { browserName: 'chromium', ...(process.env.INAD_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.INAD_CHROMIUM_PATH } } : {}) } }]
 });

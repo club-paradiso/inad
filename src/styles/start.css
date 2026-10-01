@@ -13,7 +13,7 @@
 .start-side { display: grid; gap: 12px; min-width: 0; }
 .session-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); font-size: var(--fs-compact); color: var(--text-2); }
 .session-row b { margin-left: auto; font: 700 15px/1 var(--mono); letter-spacing: .06em; color: var(--text); }
-.session-row button { height: 30px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; }
+.session-row button { min-height: 30px; white-space: nowrap; flex: none; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; }
 .daily-start { display: grid; gap: 8px; padding: 10px 14px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); }
 .daily-start-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .daily-start-head b { display: block; font-size: var(--fs-compact); }
@@ -90,7 +90,7 @@
 @media (max-width: 1023px) {
   .start-body { grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .startover { padding: 0; place-items: start stretch; }
   .startcard { width: 100%; max-height: none; min-height: 100%; border: 0; border-radius: 0; box-shadow: none; padding: calc(20px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); gap: 16px; }
   .start-title { font-size: 26px; }
@@ -105,3 +105,5 @@
   .session-row b { font-size: 14px; }
   .tutorial-card { left: 14px !important; right: 14px; width: auto; }
 }
+
+.save-status.warn { color: var(--warning-text); font-weight: 600; }

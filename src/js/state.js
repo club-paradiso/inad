@@ -2,6 +2,12 @@
 // `session` holds the generated duty roster for the current seed; `state` holds the live
 // inspection/game state; `preferences` are persisted accessibility settings.
 import { storeGet } from './services/storage.js';
+import { AIRPORTS } from '../data/airports.js';
+
+// Stored preference strings are normalised on read: an unknown value (hand-edited, from a future build or a
+// damaged import) falls back to the default instead of leaving no option selected.
+const oneOf = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
+const storedAirport = () => oneOf(storeGet('inad-airport', 'icn-t2'), AIRPORTS.map((a) => a.id), 'icn-t2');
 
 export function emptyStats() { return { processed: 0, admitted: 0, secondary: 0, refused: 0, refugee: 0, investigation: 0, interpreter: 0 }; }
 export function emptyLiveOps(status = 'idle') {
@@ -20,12 +26,12 @@ export const session = {
 
 export const state = {
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
-  audio: true, soundCues: 0, announcements: 0,
-  airportId: storeGet('inad-airport', 'icn-t2'), airportApplied: false, liveOps: emptyLiveOps(),
+  audio: storeGet('inad-audio', '1') !== '0', soundCues: 0, announcements: 0,
+  airportId: storedAirport(), airportApplied: false, liveOps: emptyLiveOps(),
   difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
-  guidance: storeGet('inad-guidance', 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false,
+  guidance: oneOf(storeGet('inad-guidance', 'guided'), ['guided', 'expert'], 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false,
   stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [],
   selectedDoc: 0, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 0, simSeconds: 0, totalCaseSeconds: 0,
   overSecondary: 0, repeatedLookups: 0, repeatedQuestions: 0, rushed: 0, pressurePeak: 37, fatigue: 0, peakFatigue: 0, breaksTaken: 0,
@@ -48,8 +54,11 @@ export function resetSessionState() {
 }
 
 export const preferences = {
-  font: storeGet('inad-font', 'standard'),
+  font: oneOf(storeGet('inad-font', 'standard'), ['standard', 'large'], 'standard'),
   contrast: storeGet('inad-contrast', '0') === '1',
   reduceMotion: storeGet('inad-reduce-motion', '0') === '1',
-  shortcutHints: storeGet('inad-shortcut-hints', '1') === '1'
+  // Shortcut hints are an opt-in keyboard aid (설정); on by default they cluttered every control label.
+  shortcutHints: storeGet('inad-shortcut-hints', '0') === '1',
+  // Single-key shortcuts (K, H, 1–6, M …) can be turned off (WCAG 2.1.4); Alt combinations, F1 and Esc stay.
+  shortcuts: storeGet('inad-shortcuts', '1') !== '0'
 };

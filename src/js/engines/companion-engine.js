@@ -5,7 +5,6 @@ import { current, currentQueueItem, caseForQueueItem } from './queue-engine.js';
 import { getTraveler } from './traveler-engine.js';
 
 export function travelPartyFor(c = current()) { return c ? session.partyByTraveler.get(c.travelerId) || null : null; }
-export function partyMemberCase(m) { const q = session.queue[m.queueIndex]; return q ? caseForQueueItem(q) : null; }
 export function partyStatusForTraveler(id) { if (currentQueueItem()?.travelerId === id) return 'current'; if (session.partyArchive.has(id)) return 'done'; return 'waiting'; }
 
 export function archivePartyStatement(c = current()) {

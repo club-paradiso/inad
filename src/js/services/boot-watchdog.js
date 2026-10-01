@@ -54,34 +54,36 @@ function showBootFailure() {
     return;
   }
 
+  // Inline styles on purpose (the stylesheet may be what failed), with the token values of danger-soft /
+  // danger / danger-text and the dialog radius. One language: the stored UI language, Korean by default.
+  let en = false; try { en = localStorage.getItem('inad-locale') === 'en'; } catch { /* storage blocked */ }
   const notice = document.createElement('section');
   notice.id = 'bootFailureNotice';
   notice.setAttribute('role', 'alert');
-  notice.setAttribute('aria-live', 'assertive');
   notice.style.cssText = [
     'margin:16px auto',
     'max-width:760px',
-    'padding:16px 18px',
-    'border:1px solid #b44747',
-    'border-radius:10px',
-    'background:#2a1518',
-    'color:#fff',
+    'padding:16px',
+    'border:1px solid #a33239',
+    'border-radius:6px',
+    'background:#f5e3e4',
+    'color:#81272e',
     'font:14px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
     'box-sizing:border-box'
   ].join(';');
 
   const title = document.createElement('strong');
-  title.textContent = '초기화 오류 / Boot error';
-  title.style.cssText = 'display:block;margin-bottom:6px;font-size:16px';
+  title.textContent = en ? 'Boot error' : '초기화 오류';
+  title.style.cssText = 'display:block;margin-bottom:8px;font-size:16px';
 
   const body = document.createElement('p');
-  body.textContent = '시뮬레이터 초기화가 완료되지 않았습니다. 페이지를 새로고침해 복구할 수 있습니다.';
+  body.textContent = en ? 'The simulator did not finish starting. Reloading the page usually recovers it.' : '시뮬레이터 초기화가 완료되지 않았습니다. 페이지를 새로고침해 복구할 수 있습니다.';
   body.style.cssText = 'margin:0 0 12px';
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = '새로고침 / Reload';
-  button.style.cssText = 'padding:8px 12px;border:1px solid currentColor;border-radius:7px;background:transparent;color:inherit;font:inherit;cursor:pointer';
+  button.textContent = en ? 'Reload' : '새로고침';
+  button.style.cssText = 'min-height:44px;padding:8px 12px;border:1px solid currentColor;border-radius:4px;background:#fff;color:inherit;font:inherit;cursor:pointer';
   button.addEventListener('click', () => location.reload());
 
   notice.append(title, body, button);

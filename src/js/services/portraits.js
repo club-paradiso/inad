@@ -8,4 +8,3 @@ export function portraitSrc(id) {
   if (PORTRAIT_DATA && PORTRAIT_DATA[id]) return PORTRAIT_DATA[id];
   return `assets/portraits/${id}.webp`;
 }
-export const portraitsInline = () => !!PORTRAIT_DATA;
