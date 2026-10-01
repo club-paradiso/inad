@@ -11,10 +11,10 @@
 .zone-assessment { grid-column: 3; grid-row: 1 / 3; grid-template-rows: minmax(0, 1fr) auto; }
 
 /* ---- panel ---- */
-.panel { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-1); overflow: hidden; }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); min-height: 0; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-1); overflow: hidden; }
 .ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 0 12px; background: var(--panel-head); border-bottom: 1px solid var(--border-subtle); }
 .ph h2 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
-.ph small { font-size: var(--fs-meta); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph small { min-width: 0; flex: 0 1 auto; text-align: right; font-size: var(--fs-meta); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-subject { grid-template-rows: auto auto auto; }
 .panel-interview { grid-template-rows: auto minmax(96px, 1fr) auto; }
 .panel-docs { grid-template-rows: auto minmax(0, 1fr); }

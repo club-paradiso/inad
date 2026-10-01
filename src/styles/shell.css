@@ -1,6 +1,6 @@
 /* Application chrome: app grid, top bar, operations strip, case header, task navigation, status bar, transient notices.
    Same DOM at every width; `body[data-task]` only decides which zone is shown on tablet/phone (workspace.css). */
-.app { height: 100vh; height: 100dvh; display: grid; grid-template-rows: var(--h-topbar) var(--h-opsbar) auto var(--h-casebar) minmax(0, 1fr) var(--h-statusbar); background: var(--canvas); overflow: hidden; }
+.app { height: 100vh; height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--h-topbar) var(--h-opsbar) auto var(--h-casebar) minmax(0, 1fr) var(--h-statusbar); background: var(--canvas); overflow: hidden; }
 /* explicit row placement: the linked-case strip (row 3) is display:none most of the time and must not shift the rows below it */
 .app > .topbar { grid-row: 1; } .app > .opsbar { grid-row: 2; } .app > .story-case-strip { grid-row: 3; } .app > .casebar { grid-row: 4; } .app > .main { grid-row: 5; } .app > .statusbar { grid-row: 6; }
 .app > .tasknav { display: none; }
@@ -10,7 +10,7 @@
 .topbar { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto auto; align-items: center; gap: var(--s-4); padding: 0 var(--s-4); background: var(--chrome); color: var(--chrome-text); }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand-copy { min-width: 0; }
-.brand h1 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; white-space: nowrap; }
+.brand h1 { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .brand h1 small { font: 600 var(--fs-meta)/1 var(--mono); color: var(--chrome-muted); margin-left: 6px; vertical-align: 1px; }
 .brand p { font-size: var(--fs-meta); color: var(--chrome-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shift-meta { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-left: 1px solid rgba(255, 255, 255, .14); min-width: 0; height: 28px; }
@@ -36,7 +36,7 @@
 .more-menu .iconbtn::after { background: var(--neutral-soft) !important; }
 
 /* ---- operations strip: field event · duty settings · queue ---- */
-.opsbar { display: grid; grid-template-columns: minmax(200px, 1fr) auto minmax(260px, 1fr); align-items: center; gap: var(--s-4); padding: 0 var(--s-4); background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: var(--fs-label); color: var(--text-2); min-width: 0; }
+.opsbar { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, auto) minmax(260px, 1fr); align-items: center; gap: var(--s-4); padding: 0 var(--s-4); background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: var(--fs-label); color: var(--text-2); min-width: 0; }
 .event-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .event-lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex: none; }
 .event-main.warn .event-lamp { background: var(--warning); }
@@ -46,7 +46,8 @@
 .event-copy b { color: var(--text); font-weight: 600; white-space: nowrap; }
 .event-copy span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-effect { font-size: var(--fs-meta); letter-spacing: .04em; color: var(--text-3); white-space: nowrap; }
-.meta-status { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.meta-status { display: flex; align-items: center; gap: 12px; white-space: nowrap; min-width: 0; overflow: hidden; }
+.meta-status > * { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .meta-status b { color: var(--text); font-weight: 600; }
 .fatigue-mini { display: inline-flex; align-items: center; gap: 6px; }
 .fatigue-track { display: inline-block; width: 48px; height: 4px; background: var(--border-subtle); overflow: hidden; }
@@ -143,8 +144,8 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
 .pa-copy b { font-size: var(--fs-label); white-space: nowrap; }
 .pa-copy span { font-size: var(--fs-label); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pa-tag { font-size: var(--fs-meta); letter-spacing: .04em; color: var(--text-3); white-space: nowrap; }
-.toast { position: fixed; left: 50%; bottom: calc(40px + var(--safe-bottom)); transform: translate(-50%, 10px); z-index: 120; max-width: calc(100vw - 32px); padding: 8px 14px; background: var(--chrome); color: #fff; border-radius: var(--r-2); font-size: var(--fs-compact); font-weight: 600; box-shadow: var(--shadow-2); opacity: 0; pointer-events: none; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease); }
-.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast { position: fixed; left: 16px; right: 16px; margin-inline: auto; width: fit-content; bottom: calc(40px + var(--safe-bottom)); transform: translateY(10px); z-index: 120; max-width: calc(100vw - 32px); text-align: center; padding: 8px 14px; background: var(--chrome); color: #fff; border-radius: var(--r-2); font-size: var(--fs-compact); font-weight: 600; box-shadow: var(--shadow-2); opacity: 0; pointer-events: none; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease); }
+.toast.on { opacity: 1; transform: none; }
 .event-toast { position: fixed; right: 16px; top: calc(var(--h-topbar) + var(--h-opsbar) + 8px + var(--safe-top)); z-index: 120; width: min(300px, calc(100vw - 32px)); padding: 10px 12px; background: var(--elevated); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: var(--r-2); box-shadow: var(--shadow-2); opacity: 0; transform: translateX(12px); pointer-events: none; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease); }
 .event-toast.on { opacity: 1; transform: none; }
 .event-toast b { display: block; font-size: var(--fs-compact); margin-bottom: 2px; }
@@ -168,7 +169,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .brand p { display: none; }
   .kpi { min-width: 52px; padding: 0 7px; }
   .iconbtn { padding: 0 7px; font-size: var(--fs-label); height: 28px; }
-  .opsbar { padding: 0 10px; gap: 10px; grid-template-columns: minmax(160px, 1fr) auto minmax(180px, .8fr); }
+  .opsbar { padding: 0 10px; gap: 10px; grid-template-columns: minmax(160px, 1fr) minmax(0, auto) minmax(180px, .8fr); }
   .event-effect { display: none; }
   .meta-status { gap: 8px; }
   .scenario-chip { display: none; }
@@ -186,10 +187,13 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .app > .main { grid-row: 6; } .app > .statusbar { grid-row: 7; }
   .topbar { grid-template-columns: auto minmax(0, 1fr) auto auto; }
   .shift-meta { display: none; }
-  .kpi { min-width: 0; padding: 0 8px; }
+  .workload { min-width: 0; overflow: hidden; }
+  .kpi { min-width: max-content; padding: 0 8px; }
   .kpi b { font-size: 13px; }
   .opsbar { grid-template-columns: minmax(0, 1fr) auto; padding: 4px 10px; row-gap: 2px; }
-  .opsbar .queue { display: none; }
+  .opsbar .queue { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .opsbar .queue-strip { display: none; }
+  .opsbar .queue-stats { display: flex; }
   .meta-status { flex-wrap: wrap; row-gap: 4px; }
   .casebar { grid-template-columns: minmax(0, 1fr) auto auto; }
   .stepper { display: none; }
@@ -222,6 +226,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .app.ops-open > .opsbar .kpi b { color: var(--text); }
   .app.ops-open > .opsbar .kpi.warn b { color: var(--warning-text); } .app.ops-open > .opsbar .kpi.good b { color: var(--success-text); } .app.ops-open > .opsbar .kpi.bad b { color: var(--danger-text); }
   .app.ops-open > .opsbar .queue { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .app.ops-open > .opsbar .queue-strip { display: flex; }
   .app.ops-open > .opsbar .queue-stats { grid-column: 1 / -1; }
   .app.ops-open > .opsbar .qperson, .app.ops-open > .opsbar .qperson img { width: 32px; height: 32px; }
   .casebar { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; padding: 0 12px; }
@@ -248,3 +253,5 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .event-toast { top: calc(var(--h-mobile-header) + 8px + var(--safe-top)); left: 16px; right: 16px; width: auto; }
   .toast { bottom: calc(var(--h-tasknav) + 12px + var(--safe-bottom)); }
 }
+
+@media (max-width: 359px) { .brand h1 small { display: none; } }

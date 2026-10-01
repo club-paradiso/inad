@@ -116,6 +116,8 @@
 .doc-modal-wrap .field-value { font-size: 14px; }
 .doc-modal-wrap .passport-photo-wrap { width: 128px; height: 156px; }
 .doc-modal-wrap .passport-main { grid-template-columns: 128px 1fr; }
+.doc-modal-wrap { display: grid; justify-items: center; }
+.doc-modal-wrap .docsheet { width: 100%; }
 
 @media (max-width: 1279px) {
   .passport-main { grid-template-columns: 80px 1fr; }
@@ -140,4 +142,12 @@
   .visa-frame { grid-template-columns: 64px 1fr; }
   .doc-idcard { grid-template-columns: 72px 1fr; }
   .ea-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .doc-modal-wrap .passport-main { grid-template-columns: 88px minmax(0, 1fr); }
+  .doc-modal-wrap .passport-photo-wrap { width: 88px; height: 108px; }
+  .doc-modal-wrap .docsheet { font-size: var(--fs-body); }
+  .doc-modal-wrap .field-value { font-size: 15px; white-space: normal; overflow-wrap: anywhere; }
+  .doc-modal-wrap .mrz, .doc-modal-wrap [class*="mrz"] { font-size: 11px; overflow-wrap: anywhere; }
 }

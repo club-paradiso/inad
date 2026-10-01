@@ -20,3 +20,12 @@ body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, bod
 /* reduced motion: user setting and OS preference */
 body.pref-reduce-motion *, body.pref-reduce-motion *::before, body.pref-reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; } }
+
+/* touch: every interactive control is at least 44px tall under a coarse pointer or on phone layouts */
+@media (pointer: coarse), (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+  .iconbtn, .ops-toggle, .mclose, .doc-zoom, .challenge-hud, .campaign-hud, .event-details, .story-case-strip button,
+  .lang-btn, .lookup-tabs button, .wb-tab, .qtab, .basis-registry-btn, .party-open, .record-mini-btn, .session-actions button,
+  .records-footer button, .daily-open, .setup-actions button, .session-row button, .start-settings, .campaign-actions button,
+  .tasknav button, .skip-call, #skipCall, .tutorial-actions button, .segmented button, .setting-toggle { min-height: var(--size-touch); }
+  .option-grid button { min-height: var(--size-touch); }
+}

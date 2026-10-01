@@ -149,7 +149,7 @@
 .progress-card { display: grid; gap: 4px; padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--surface); font-size: var(--fs-compact); }
 .progress-card span { color: var(--text-2); font-size: var(--fs-label); }
 .record-board-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-.record-mini-btn, .session-actions button, .records-footer button, .daily-open { height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--accent-text); }
+.record-mini-btn, .session-actions button, .records-footer button, .daily-open { min-height: 28px; white-space: nowrap; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--accent-text); }
 .record-mini-btn:hover, .session-actions button:hover, .daily-open:hover { background: var(--accent-soft); }
 .records-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
 .record-kpi { padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); text-align: center; }

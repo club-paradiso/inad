@@ -30,17 +30,18 @@
 .aux-detail { display: none; padding: 6px 12px; font-size: var(--fs-meta); color: var(--text-3); line-height: 1.45; border-bottom: 1px solid var(--border-subtle); }
 .party-summary { display: none; }
 .party-summary.on { display: grid; gap: 6px; padding: 8px 12px; border-left: 3px solid var(--info); background: var(--info-soft); font-size: var(--fs-label); }
-.party-head { display: flex; justify-content: space-between; }
+.party-head { display: flex; justify-content: space-between; gap: 8px; }
+.party-head small { font-size: var(--fs-meta); }
 .party-head small { color: var(--text-2); font-family: var(--mono); }
 .party-members { display: flex; gap: 6px; }
-.party-member { width: 40px; text-align: center; position: relative; }
+.party-member { width: 64px; text-align: center; position: relative; }
 .party-member img { width: 32px; height: 32px; margin: 0 auto; object-fit: cover; border-radius: var(--r-1); border: 1px solid var(--border); }
 .party-member span { display: block; font-size: var(--fs-meta); color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .party-member i { position: absolute; top: -3px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); border: 1px solid #fff; }
 .party-member.current i { background: var(--accent); }
 .party-member.done i { background: var(--success); }
 .party-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text-2); font-size: var(--fs-meta); }
-.party-open { height: 24px; padding: 0 8px; border: 1px solid var(--info); color: var(--info); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; }
+.party-open { min-height: 24px; flex: none; white-space: nowrap; padding: 0 8px; border: 1px solid var(--info); color: var(--info); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; }
 
 /* ---- 인터뷰: transcript ---- */
 .log { padding: 4px 12px; background: var(--surface-2); display: grid; align-content: start; }
@@ -66,7 +67,7 @@
 .language-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border-subtle); }
 .language-current { min-width: 0; display: grid; }
 .language-current strong { font-size: var(--fs-label); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.language-status { font-size: var(--fs-meta); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.language-status { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.4; }
 .language-status.good { color: var(--success-text); }
 .language-status.warn { color: var(--warning-text); }
 .language-status.bad { color: var(--danger-text); }
@@ -341,3 +342,6 @@
   .act small { display: none; }
   .act.armed > .arm-hint { font-size: var(--fs-meta); }
 }
+
+/* scrollers with hidden scrollbars fade at the trailing edge while more items are off-screen (dom.js markOverflow) */
+.qtabs.scroll-more, .doclist.scroll-more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }

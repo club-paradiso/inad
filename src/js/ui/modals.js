@@ -24,7 +24,7 @@ export function showModal(title, html, { size = '', dismissible = true } = {}) {
   const m = byId('modal'); if (!m) return; disarm();
   if (!m.classList.contains('on')) returnFocus = document.activeElement;
   else if (!isModalDismissible()) parked.push({ title: byId('modalTitle').textContent, nodes: [...byId('modalBody').childNodes], size: m.querySelector('.modal').dataset.size || '' });
-  byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html; byId('modalBody').scrollTop = 0;
+  byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html; byId('modalBody').scrollTop = 0; m.querySelector('.modal').scrollTop = 0;
   m.querySelector('.modal').dataset.size = size;
   m.dataset.dismissible = String(dismissible); byId('modalClose').hidden = !dismissible;
   m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); setBackgroundInert(true); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';

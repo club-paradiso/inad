@@ -26,3 +26,12 @@ export function restoreFocus(key) {
   el?.focus({ preventScroll: true });
 }
 export function withFocus(render) { const key = focusKey(); const out = render(); restoreFocus(key); return out; }
+
+// Horizontal scrollers (question categories, phone document strip) hide their scrollbar; a fade on the
+// trailing edge tells the user there is more. Bound once per element, refreshed after every render.
+export function markOverflow(el) {
+  if (!el) return;
+  const sync = () => el.classList.toggle('scroll-more', el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  if (!el.dataset.overflowBound) { el.dataset.overflowBound = '1'; el.addEventListener('scroll', sync, { passive: true }); if (typeof ResizeObserver !== 'undefined') new ResizeObserver(sync).observe(el); }
+  sync();
+}

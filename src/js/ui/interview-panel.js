@@ -1,5 +1,5 @@
 // LEFT column · statement log and question categories.
-import { $, $$, byId, esc, withFocus } from './dom.js';
+import { $, $$, byId, esc, withFocus, markOverflow } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -18,6 +18,7 @@ export function renderQuestions(onAsk) {
   const c = current(); const cats = [...new Set(c.questions.map((q) => q.cat))]; if (!cats.includes(state.qcat)) state.qcat = cats[0];
   byId('qtabs').innerHTML = cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => questionUnlocked(q) && !state.asked.has(q.id)).length; return `<button class="qtab ${x === state.qcat ? 'on' : ''}" role="tab" aria-selected="${x === state.qcat}" data-cat="${esc(x)}" data-hotkey="${Math.min(6, cats.indexOf(x) + 1)}">${esc(x)} <span class="qtab-count">${done}/${list.length}${open ? ' · ' + open + ' 가능' : ''}</span></button>`; }).join('');
   $$('#qtabs .qtab').forEach((b) => { b.onclick = () => { state.qcat = b.dataset.cat; withFocus(() => renderQuestions(onAsk)); }; });
+  markOverflow(byId('qtabs'));
   const qs = c.questions.filter((q) => q.cat === state.qcat); const box = byId('questions'); box.innerHTML = '';
   qs.forEach((q) => {
     const unlocked = questionUnlocked(q); const b = document.createElement('button'); const wasAsked = state.asked.has(q.id);
