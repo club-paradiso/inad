@@ -8,7 +8,8 @@ import { defineConfig } from '@playwright/test';
 const target = process.env.INAD_TARGET || 'dist';
 const dirs = { dist: 'dist', legacy: 'legacy/v6.1', src: 'src' };
 const files = { dist: 'index.html', legacy: 'INAD_Article12_v6_1_KR.html', src: 'index.html', url: '' };
-const port = { dist: 4173, legacy: 4174, src: 4175 }[target];
+// INAD_PORT lets two checkouts (e.g. git worktrees) run the suite side by side without reusing each other's server.
+const port = Number(process.env.INAD_PORT) || { dist: 4173, legacy: 4174, src: 4175 }[target];
 const remote = target === 'url' ? (process.env.INAD_BASE_URL || '').replace(/\/$/, '') : null;
 if (target === 'url' && !remote) throw new Error('INAD_TARGET=url requires INAD_BASE_URL');
 process.env.INAD_ENTRY = remote ? '/' : `/${files[target]}`;

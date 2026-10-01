@@ -10,11 +10,16 @@ import { clueStats, questionUnlocked } from '../engines/clue-engine.js';
 import { travelPartyFor, partyCrossCheck, partyStatusForTraveler } from '../engines/companion-engine.js';
 import { lookupName } from '../engines/case-engine.js';
 import { notify } from '../services/bus.js';
+import { guardDecision, disarm } from './decision-desk.js';
+
+// Procedure actions that only navigate or fetch an interpreter run on one activation; every other action
+// moves a legal procedure (stage change, notice, arrest, repatriation) and is touch-armed like the decision desk.
+const NAVIGATION_ACTS = new Set(['back', 'interpreter']);
 
 let focusReturn = null;
 export function isProcedureOpen() { return byId('procedureScreen')?.classList.contains('on'); }
 export function openProcedureScreen(mode, handlers) {
-  state.procedureMode = mode; const e = byId('procedureScreen'); const wasOpen = e.classList.contains('on');
+  disarm(); state.procedureMode = mode; const e = byId('procedureScreen'); const wasOpen = e.classList.contains('on');
   if (!wasOpen) focusReturn = document.activeElement;
   e.dataset.mode = mode; e.classList.add('on', 'proc-enter'); e.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-procedure');
   notify.sound('procedure', mode); renderProcedureScreen(handlers);
@@ -22,7 +27,7 @@ export function openProcedureScreen(mode, handlers) {
   if (!wasOpen) setTimeout(() => byId('procClose')?.focus(), 0);
 }
 export function closeProcedureScreen() {
-  const e = byId('procedureScreen'); if (!e) return; const wasOpen = e.classList.contains('on');
+  const e = byId('procedureScreen'); if (!e) return; const wasOpen = e.classList.contains('on'); if (wasOpen) disarm();
   e.classList.remove('on'); e.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-procedure'); state.procedureMode = null;
   if (wasOpen && focusReturn && document.contains(focusReturn)) { const f = focusReturn; focusReturn = null; setTimeout(() => f.focus(), 0); }
 }
@@ -62,9 +67,15 @@ export function renderProcedureScreen(handlers) {
   if (!state.procedureMode) return; const c = current(), t = getTraveler(c.travelerId), meta = procedureMeta(state.procedureMode);
   byId('procTitle').textContent = meta[0]; byId('procKicker').textContent = meta[1]; byId('procSubtitle').textContent = meta[2];
   const body = state.procedureMode === 'secondary' ? renderSecondaryProcedure(c, t) : state.procedureMode === 'refugee' ? renderRefugeeProcedure(c, t) : state.procedureMode === 'sjp' ? renderSjpProcedure(c, t) : renderRepatriationProcedure(c, t);
+  // Re-rendering (after a question or lookup inside the screen) must not silently clear requirement ticks.
+  const ticked = $$('#procBody .proc-ar').map((x) => x.checked);
   byId('procBody').innerHTML = body;
+  $$('#procBody .proc-ar').forEach((x, i) => { if (ticked[i]) x.checked = true; });
   if (!handlers) return;
   $$('#procBody [data-proc-q]').forEach((b) => { b.onclick = () => handlers.ask(b.dataset.procQ); });
   $$('#procBody [data-proc-lu]').forEach((b) => { b.onclick = () => handlers.lookup(b.dataset.procLu); });
-  $$('#procBody [data-proc-act]').forEach((b) => { b.onclick = () => handlers.act(b.dataset.procAct, { checked: $$('#procBody .proc-ar:checked').length }); });
+  $$('#procBody [data-proc-act]').forEach((b) => {
+    const act = b.dataset.procAct, run = () => handlers.act(act, { checked: $$('#procBody .proc-ar:checked').length });
+    b.onclick = NAVIGATION_ACTS.has(act) ? run : guardDecision(run);
+  });
 }

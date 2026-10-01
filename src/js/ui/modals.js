@@ -1,12 +1,13 @@
 // Single modal dialog (#modal) with focus trap, Escape handling and focus restoration.
 import { $, $$, byId } from './dom.js';
+import { disarm } from './decision-desk.js';
 
 let returnFocus = null;
 const FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export function isModalOpen() { return byId('modal')?.classList.contains('on'); }
 export function showModal(title, html, { size = '' } = {}) {
-  const m = byId('modal'); if (!m) return;
+  const m = byId('modal'); if (!m) return; disarm();
   if (!m.classList.contains('on')) returnFocus = document.activeElement;
   byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html;
   m.querySelector('.modal').dataset.size = size;
@@ -14,7 +15,7 @@ export function showModal(title, html, { size = '' } = {}) {
   setTimeout(() => byId('modalClose')?.focus(), 0);
 }
 export function closeModal() {
-  const m = byId('modal'); if (!m || !m.classList.contains('on')) return;
+  const m = byId('modal'); if (!m || !m.classList.contains('on')) return; disarm();
   m.classList.remove('on'); m.setAttribute('aria-hidden', 'true'); document.body.classList.remove('has-modal');
   const rf = returnFocus; returnFocus = null;
   if (rf && typeof rf.focus === 'function' && document.contains(rf)) setTimeout(() => rf.focus(), 0);

@@ -319,3 +319,8 @@
   .actions { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom)); }
   .act { min-height: 56px; }
 }
+
+/* ---- touch arming (decision-desk.js confirmTouch): the first tap replaces the subtitle with an explicit prompt ---- */
+.arm-hint { display: block; font-size: var(--fs-label); font-weight: 700; letter-spacing: 0; }
+.armed > small, .armed > span:not(.arm-hint) { display: none; }
+.act.armed, .proc-action.armed, .reason.armed { border-width: 2px; box-shadow: inset 0 0 0 1px currentColor; }
