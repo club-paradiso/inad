@@ -1,5 +1,5 @@
 // Application chrome: header KPIs, event bar, queue strip, footer clock, workload meters.
-import { $, $$, byId, esc, fmtClock } from './dom.js';
+import { $, $$, byId, esc, fmtClock, setText } from './dom.js';
 import { session, state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -10,11 +10,11 @@ import { penaltyPolicy } from '../engines/case-engine.js';
 import { campaignCfg, currentCampaignSave, storyIsAnchor, storyChapterDef, campaignArc, storyPrevContext, storyStatusInfo } from '../engines/campaign-engine.js';
 
 const imageCache = new Map();
-const setText = (id, text) => { const el = byId(id); if (el) el.textContent = text; };
 
 export function renderWorkloadOnly() {
   const q = simulatedBacklog(), pi = pressureInfo();
   const qe = byId('queue'); if (qe) qe.textContent = q;
+  const qk = byId('queueKpi'); if (qk) qk.className = 'kpi ' + pi[1]; // tone follows the simulated pressure (안정·보통·혼잡)
   const pl = byId('pressureLabel'); if (pl) pl.textContent = pi[0];
   const pf = byId('pressureFill'); if (pf) { pf.style.width = pi[2] + '%'; pf.dataset.tone = pi[1]; }
   const qb = byId('queuePressureBox'); if (qb) qb.classList.toggle('pressure-high', pi[1] === 'bad');
@@ -49,14 +49,13 @@ export function renderStrikes() {
 export function renderTop() {
   const c = current(); if (!c) return;
   setText('caseCount', `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`);
-  const pf = byId('progressFill'); if (pf) pf.style.width = (state.stats.processed / session.queue.length * 100) + '%';
   setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
   renderStrikes();
   renderAudioButton();
   setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();
 }
-export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-active', state.audio); b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
+export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
 export function renderQueue() {
   const strip = byId('queueStrip'); if (!strip) return; const items = session.queue.slice(state.caseIndex, state.caseIndex + 10);
   strip.innerHTML = items.map((q, i) => { const t = getTraveler(q.travelerId); return `<div class="qperson ${i === 0 ? 'current' : ''}" title="${i === 0 ? '현재 호출 승객' : '대기 승객'}"><img src="${t.portrait}" alt="" loading="lazy" decoding="async"><small>${screeningNo(state.caseIndex + i)}</small></div>`; }).join('');

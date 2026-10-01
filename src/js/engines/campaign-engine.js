@@ -19,7 +19,6 @@ export function saveCampaign(c) { if (isFutureSave(CAMPAIGN_KEY, CAMPAIGN_VERSIO
 export function clearCampaign() { storeRemove(CAMPAIGN_KEY); }
 export function campaignDaySeed(c) { return 100000 + (hashSeed(`${c.baseSeed}|CAMPAIGN|${c.id}|DAY|${c.day}`) % 900000); }
 export function currentCampaignSave() { const c = loadCampaign(); return c && c.active ? c : null; }
-export function campaignDayInfo() { const c = currentCampaignSave(); if (c && c.id === state.campaignId) return CAMPAIGNS[c.id].days[c.day] || null; const cfg = campaignCfg(); return cfg.days[state.campaignDay] || null; }
 export function campaignCarryFromSession(s) { if (s.failed || s.grade === 'F') return { backlog: 8, fatigue: 22, label: '중대한 업무부담 이월' }; let backlog = 0, fatigue = 10, label = '통상 인수인계'; if ((s.overall || 0) >= 92 && (s.ops || 0) >= 85 && !(s.mistakes || []).length) { backlog = -4; fatigue = 5; label = '원활한 인수인계'; } else if ((s.overall || 0) < 82 || (s.ops || 0) < 75) { backlog = 6; fatigue = 18; label = '업무부담 이월'; } if ((s.breaksTaken || 0) > 0) fatigue = Math.max(0, fatigue - 3); return { backlog, fatigue, label }; }
 
 export function setCampaign(id) {

@@ -60,7 +60,3 @@ export async function fetchAirportLiveLoad(code, { force = false } = {}) {
   }
 }
 
-export function clearAirportLiveCache(code = null) {
-  if (code) memory.delete(String(code).toUpperCase());
-  else memory.clear();
-}

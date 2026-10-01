@@ -7,5 +7,3 @@ import { portraitSrc } from '../services/portraits.js';
 
 export const travelerMap = new Map(TRAVELER_POOL.map((t) => [t.id, { ...t, portrait: portraitSrc(t.id) }]));
 export const getTraveler = (id) => travelerMap.get(id);
-export const CORE_TRAVELER_IDS = (cases) => new Set(cases.map((c) => c.travelerId));
-export const poolSize = () => travelerMap.size;

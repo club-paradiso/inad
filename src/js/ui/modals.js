@@ -44,7 +44,9 @@ export function showModal(title, html, { size = '', dismissible = true } = {}) {
   byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html; byId('modalBody').scrollTop = 0; m.querySelector('.modal').scrollTop = 0;
   m.querySelector('.modal').dataset.size = size;
   m.dataset.dismissible = String(dismissible); byId('modalClose').hidden = !dismissible;
-  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); syncBackgroundInert(); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';
+  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); syncBackgroundInert();
+  // Menus and the guided tour sit above dialogs in the stacking order; they close when a dialog takes over.
+  document.dispatchEvent(new CustomEvent('inad:dialogopen')); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';
   setTimeout(() => { if (isModalOpen()) initialFocus(m); }, 0);
 }
 // Programmatic close (a dialog's own action buttons). User dismissal goes through requestCloseModal().

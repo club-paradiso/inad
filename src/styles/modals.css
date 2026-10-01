@@ -323,7 +323,6 @@
 .sys-import-kpis div { padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--r-1); background: var(--surface); }
 .sys-import-kpis span { display: block; font-size: var(--fs-meta); color: var(--text-3); }
 .sys-import-kpis b { display: block; font: 700 15px/1.3 var(--mono); }
-.doc-modal-wrap .docsheet { font-size: var(--fs-compact); }
 
 @media (max-width: 1100px) {
   .rulegrid, .help-grid, .record-board-grid, .sys-release-head, .sys-check-list, .shortcut-grid { grid-template-columns: 1fr; }

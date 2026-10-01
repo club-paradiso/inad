@@ -5,6 +5,7 @@ import { WORK_GUIDES, workGuideById } from '../../data/work-guides.js';
 import { sourceById } from '../../data/legal-sources.js';
 import { showModal } from '../ui/modals.js';
 import { byId, esc } from '../ui/dom.js';
+import { setReferenceView } from '../ui/views/reference.js';
 
 const isEn = () => document.documentElement.lang === 'en' || document.documentElement.dataset.locale === 'en';
 const t = (ko, en) => isEn() ? en : ko;
@@ -50,9 +51,6 @@ function openSourceSummary() {
   const back = byId('manualBack'); if (back) back.onclick = () => openWorkManual(lastQuery);
 }
 
-function syncMenuLabel() {
-  const b = byId('ruleBtn'); if (b) b.textContent = t('업무지침', 'Work Manual');
-}
 async function copySourceUrl(button) {
   const url = button?.dataset?.sourceUrl; if (!url) return;
   try {
@@ -64,17 +62,6 @@ async function copySourceUrl(button) {
     button.textContent = url;
   }
 }
-function intercept(e) {
-  const copy = e.target.closest?.('.manual-copy-source');
-  if (copy) { e.preventDefault(); e.stopImmediatePropagation(); copySourceUrl(copy); return; }
-  const target = e.target.closest?.('#ruleBtn, #helpRules');
-  if (!target) return;
-  e.preventDefault(); e.stopImmediatePropagation();
-  // stopImmediatePropagation also stops the 메뉴's own close handler: close it here
-  const menu = document.getElementById('moreMenu'); if (menu && !menu.hidden) { menu.hidden = true; document.getElementById('moreBtn')?.setAttribute('aria-expanded', 'false'); }
-  openWorkManual();
-}
-
-document.addEventListener('click', intercept, true);
-document.addEventListener('inad:localechange', syncMenuLabel);
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncMenuLabel); else syncMenuLabel();
+// Source rows offer a copy-URL button (no navigation: the app makes no external requests).
+document.addEventListener('click', (e) => { const copy = e.target.closest?.('.manual-copy-source'); if (copy) { e.preventDefault(); copySourceUrl(copy); } });
+setReferenceView(() => openWorkManual());

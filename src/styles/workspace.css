@@ -22,7 +22,6 @@
 .panel-judgment { grid-template-rows: auto minmax(0, 1fr); }
 .panel-decision { grid-template-rows: auto auto; }
 .wb-pane { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
-.wb-pane[hidden] { display: none; }
 
 /* ---- compact desktop (1024–1279) ---- */
 @media (max-width: 1279px) {

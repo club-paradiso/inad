@@ -40,16 +40,16 @@
 .proc-behavior-item span { display: flex; justify-content: space-between; font-size: var(--fs-meta); color: var(--text-2); }
 .proc-behavior-item span em { font-style: normal; }
 .proc-behavior-item i { display: block; height: 4px; background: var(--border-subtle); position: relative; overflow: hidden; }
-.proc-behavior-item i::after { content: ""; position: absolute; inset: 0; width: var(--v); background: var(--info); }
-.proc-behavior-item i[data-tone="stress"]::after { background: var(--warning); }
+.proc-behavior-item i::after { content: ""; position: absolute; inset: 0; width: var(--v); background: var(--text-3); }
 .proc-language-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .proc-language-grid span { display: block; font-size: var(--fs-meta); color: var(--text-3); }
 .proc-language-grid b { display: block; font-size: var(--fs-meta); }
 .proc-language-note { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.45; }
+/* warn = a 제48조제6항 procedural requirement (interpreter before the investigation), not a judgement of the person */
 .proc-language-note.warn { color: var(--warning-text); }
 .proc-interpreter-btn { height: 30px; border: 1px solid var(--info); color: var(--info); border-radius: var(--r-1); background: var(--info-soft); font-size: var(--fs-label); font-weight: 600; }
 .party-proc { border-left: 3px solid var(--info); }
-.party-proc-head small { font-family: var(--mono); color: var(--text-2); }
+.party-proc-head small { font-size: var(--fs-meta); font-family: var(--mono); color: var(--text-2); }
 .party-proc-members { display: flex; gap: 6px; flex-wrap: wrap; }
 .party-proc-chip { display: flex; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); }
 .party-proc-chip img { width: 24px; height: 24px; object-fit: cover; border-radius: 2px; }

@@ -4,7 +4,6 @@
 import { $$, byId } from './dom.js';
 
 export const TASKS = ['passenger', 'interview', 'evidence', 'assessment'];
-const LABEL = { passenger: '승객', interview: '인터뷰', evidence: '자료', assessment: '판단' };
 // Keep in sync with the phone/stacked media queries in src/styles/*.css. Short landscape phones (≤500px tall)
 // use the phone layout: the tablet layout's chrome would leave them no room to work.
 export const PHONE_QUERY = '(max-width: 767px), (max-height: 500px) and (max-width: 1023px)';
@@ -66,4 +65,3 @@ export function bindTaskNav({ onChange } = {}) {
   showTask(currentTask());
 }
 
-export function taskLabel(name) { return LABEL[name] || name; }

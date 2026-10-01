@@ -18,10 +18,8 @@ export function difficultyName(k) { return DIFFICULTY_CONFIG?.[k]?.label || ({ t
 
 // Compatibility exports keep call sites readable while the calculation itself stays in a pure,
 // independently tested module.
-export function rawLiveLoadFactor(snapshot, targetArrivals) { return calculateLiveLoadFactor(snapshot, targetArrivals); }
 export function boundedLiveLoadFactor(raw = state?.liveOps?.factor, difficulty = state?.difficulty || 'standard') { return capLiveLoadFactor(raw, difficulty); }
 export function liveLoadFactor() { return state?.liveOps?.live ? boundedLiveLoadFactor(state.liveOps.factor) : 1; }
-export function liveLoadPressure(factor = state?.liveOps?.factor || 1) { return classifyLiveLoad(factor); }
 export function appliedLiveLoad() { return { ...state.liveOps, appliedFactor: liveLoadFactor() }; }
 
 function settleAfterStart(ap) {

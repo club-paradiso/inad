@@ -33,7 +33,7 @@ import { renderActions, guardDecision, disarm } from './ui/decision-desk.js';
 import { bindTaskNav, showTask, revealZone } from './ui/task-nav.js';
 import { openProcedureScreen, closeProcedureScreen, renderProcedureScreen, isProcedureOpen } from './ui/procedure-screen.js';
 import { bindStartScreen, hideStartOverlay, briefingHTML, syncOptionButtons, renderPersistenceStatus } from './ui/start-screen.js';
-import { applyPreferences, showSettings, openRules, showHelp, showGuidedGuard, tutorial } from './ui/views/reference.js';
+import { applyPreferences, showSettings, openReference, showHelp, showGuidedGuard, tutorial } from './ui/views/reference.js';
 import { showRecordsCenter, showPlayerProfile, showDailyMissions, showChallengeBoard, showChallengeDetail, showOperationsLog, renderDailyStart } from './ui/views/records.js';
 import { showCampaignDetail, showCampaignArchive, requestAbandonCampaign, showStoryDossier, showPartyDossier } from './ui/views/campaign.js';
 import { showSystemCenter, ensureImportInput, showDiagnostics } from './ui/views/system-center.js';
@@ -142,7 +142,7 @@ function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true, by
 
 // ---- chrome bindings ---------------------------------------------------------------------------
 function bindChrome() {
-  byId('helpBtn').onclick = helpFlow; byId('ruleBtn').onclick = openRules; byId('dailyBtn').onclick = showDailyMissions; byId('recordsBtn').onclick = recordsFlow; byId('profileBtn').onclick = showPlayerProfile; byId('settingsBtn').onclick = showSettings; byId('systemBtn').onclick = showSystemCenter; byId('sourcesBtn').onclick = showSourceRegistry;
+  byId('helpBtn').onclick = helpFlow; byId('ruleBtn').onclick = openReference; byId('dailyBtn').onclick = showDailyMissions; byId('recordsBtn').onclick = recordsFlow; byId('profileBtn').onclick = showPlayerProfile; byId('settingsBtn').onclick = showSettings; byId('systemBtn').onclick = showSystemCenter; byId('sourcesBtn').onclick = showSourceRegistry;
   byId('audioBtn').onclick = () => { state.audio = !state.audio; saveAudioPreference(state.audio); if (state.audio) { ensureAudio(); cues.toggle(true); showAnnouncement('음향 시스템', '효과음과 안내방송 차임을 사용합니다.', 'AUDIO', 1600); } else showAnnouncement('음향 시스템', '음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'MUTED', 1600); renderAudioButton(); };
   byId('procClose').onclick = closeProcedureScreen;
   // Touch devices arm a decision on the first tap and execute on the second (decision-desk.js); pointer/keyboard flows are direct.
@@ -162,6 +162,7 @@ function bindChrome() {
     else if (e.key === 'Tab') setOpen(false);
   });
   more.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' && menu.hidden) { e.preventDefault(); setOpen(true); } });
+  document.addEventListener('inad:dialogopen', () => { if (!menu.hidden) { menu.hidden = true; more.setAttribute('aria-expanded', 'false'); } });
   byId('footerTag').textContent = `법령 기준 ${RELEASE.legalBaseline} · DATA v${RELEASE.dataVersion}`; byId('legalBaselineTag').textContent = `${RELEASE.legalBaseline} 공개 기준 시뮬레이션`;
 }
 function storyDossierFlow() { showStoryDossier((id) => { const r = caseEngine.storyAction(id); if (r.ok) { renderStoryStrip(); storyDossierFlow(); } }); }

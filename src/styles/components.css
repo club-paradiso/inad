@@ -16,23 +16,20 @@
 .subject-grid b { display: block; font-size: var(--fs-compact); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .subject-aux { display: grid; border-top: 1px solid var(--border-subtle); min-height: 0; }
 .aux-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 5px 12px; font-size: var(--fs-label); color: var(--text-2); border-bottom: 1px solid var(--border-subtle); min-width: 0; }
-.aux-row:last-child { border-bottom: 0; }
 .aux-key { color: var(--text-3); flex: none; }
 .aux-row > b { color: var(--text); font-weight: 600; }
-.attitude.calm { color: var(--success-text); }
-.attitude.tense { color: var(--warning-text); }
-.attitude.upset { color: var(--danger-text); }
+/* Demeanour, tension, cooperation and language ability are not decision grounds: neutral greys only, never the
+   admit / secondary / refuse semantic colours (CLAUDE.md, design-system.md). The '판정근거 아님' label stays. */
+.attitude { color: var(--text); }
 .aux-bar { display: inline-flex; align-items: center; gap: 5px; }
 .aux-bar .track { display: inline-block; width: 36px; height: 4px; background: var(--border-subtle); overflow: hidden; }
-.aux-bar .track i { display: block; height: 100%; width: 0; background: var(--info); transition: width var(--t-slow) var(--ease); }
-#stressFill { background: var(--warning); }
+.aux-bar .track i { display: block; height: 100%; width: 0; background: var(--text-3); transition: width var(--t-slow) var(--ease); }
 .aux-note { margin-left: auto; font-size: var(--fs-meta); color: var(--text-3); }
 .aux-detail { display: none; padding: 6px 12px; font-size: var(--fs-meta); color: var(--text-3); line-height: 1.45; border-bottom: 1px solid var(--border-subtle); }
 .party-summary { display: none; }
 .party-summary.on { display: grid; gap: 6px; padding: 8px 12px; border-left: 3px solid var(--info); background: var(--info-soft); font-size: var(--fs-label); }
 .party-head { display: flex; justify-content: space-between; gap: 8px; }
-.party-head small { font-size: var(--fs-meta); }
-.party-head small { color: var(--text-2); font-family: var(--mono); }
+.party-head small { font-size: var(--fs-meta); color: var(--text-2); font-family: var(--mono); }
 .party-members { display: flex; gap: 6px; }
 .party-member { width: 64px; text-align: center; position: relative; }
 .party-member img { width: 32px; height: 32px; margin: 0 auto; object-fit: cover; border-radius: var(--r-1); border: 1px solid var(--border); }
@@ -58,9 +55,6 @@
 .msg.alert { border-left: 3px solid var(--danger); padding-left: 8px; }
 .msg.alert .msgtext { color: var(--danger-text); font-size: var(--fs-label); }
 .behavior-event, .language-event { margin-left: 6px; padding: 0 5px; border-radius: 2px; background: var(--neutral-soft); color: var(--text-2); font-weight: 500; }
-.msg.behavior-tense .behavior-event { background: var(--warning-soft); color: var(--warning-text); }
-.msg.behavior-upset .behavior-event { background: var(--danger-soft); color: var(--danger-text); }
-.msg.behavior-calm .behavior-event { background: var(--success-soft); color: var(--success-text); }
 
 /* ---- 인터뷰: question composer ---- */
 .composer { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; max-height: min(340px, 44vh); max-height: min(340px, 44dvh); border-top: 1px solid var(--border); background: var(--surface); }
@@ -68,9 +62,8 @@
 .language-current { min-width: 0; display: grid; }
 .language-current strong { font-size: var(--fs-label); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .language-status { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.4; }
-.language-status.good { color: var(--success-text); }
-.language-status.warn { color: var(--warning-text); }
-.language-status.bad { color: var(--danger-text); }
+/* communication status is procedural guidance (when to call an interpreter), not a judgement: emphasis, not colour */
+.language-status.warn, .language-status.bad { color: var(--text); font-weight: 600; }
 .language-actions { display: flex; gap: 4px; flex: none; }
 .lang-btn { height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .lang-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -279,7 +272,7 @@
 
 /* ---- touch targets: coarse pointers and every phone-width layout ---- */
 @media (pointer: coarse), (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
-  .lang-btn, .lookup-tabs button, .wb-tab, .qtab, .basis-registry-btn, .party-open, .lookup-tabs button { min-height: 40px; }
+  .lang-btn, .lookup-tabs button, .wb-tab, .qtab, .basis-registry-btn, .party-open { min-height: var(--size-touch); }
   .qbtn, .docitem { min-height: var(--size-touch); }
   .act { min-height: 52px; }
 }
@@ -305,7 +298,7 @@
   .casework { grid-template-columns: minmax(0, 1fr); }
   .doclist { grid-auto-flow: column; grid-auto-columns: minmax(150px, max-content); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border); scrollbar-width: none; }
   .doclist::-webkit-scrollbar { display: none; }
-  .docitem { border-bottom: 0; border-left: 0; border-bottom: 3px solid transparent; padding: 10px 12px; }
+  .docitem { border-left: 0; border-bottom: 3px solid transparent; padding: 10px 12px; }
   .docitem.on { border-bottom-color: var(--accent); }
   .docitem.alert { border-bottom-color: var(--danger); }
   .docitem.on.alert { border-bottom-color: var(--accent); }

@@ -58,7 +58,6 @@ export function migrateMeta(m) {
   syncDailyMeta(m);
   return m;
 }
-export const normalizeMeta = migrateMeta;
 export function emptyMeta() { return migrateMeta({ version: META_VERSION, sessions: [], best: { training: null, standard: null, realistic: null }, career: careerTemplate() }); }
 export function loadMeta() { return migrateMeta(jsonGet(META_KEY, null)); }
 export function saveMeta(m) { if (isFutureSave(META_KEY, META_VERSION)) { careerWriteFailed = true; bus.emit('persistence', { ok: false, reason: 'future-save' }); return false; } m = migrateMeta(m); m.sessions = (m.sessions || []).slice(0, 12); const ok = jsonSet(META_KEY, m); careerWriteFailed = !ok; if (!ok) bus.emit('persistence', { ok: false, reason: 'write-failed' }); return ok; }
