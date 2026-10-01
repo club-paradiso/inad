@@ -266,6 +266,8 @@ table { border-collapse: collapse; }
 .pa-banner { position: fixed; top: calc(var(--h-topbar) + var(--safe-top)); left: 12px; z-index: 92; width: min(600px, calc(100vw - 24px)); height: var(--h-opsbar); display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--elevated); border: 1px solid var(--border); border-top: 0; border-left: 3px solid var(--accent); border-radius: 0 0 var(--r-2) var(--r-2); box-shadow: var(--shadow-2); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease); }
 /* PA captions sit on the operations row (same kind of information) instead of over the case header or a procedure title */
 .pa-banner.on { opacity: 1; transform: none; }
+/* a procedure screen covers the operations row: captions go to the bottom edge instead of over its title */
+body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px + var(--safe-bottom)); border-top: 1px solid var(--border); border-radius: var(--r-2); }
 .pa-icon { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); flex: none; }
 .pa-icon svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pa-copy { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
@@ -373,6 +375,7 @@ table { border-collapse: collapse; }
   .tasknav button[data-task="passenger"], .tasknav button[data-task="assessment"] { display: grid; }
   .pa-banner { left: 8px; right: 8px; width: auto; height: auto; min-height: 32px; top: calc(var(--h-mobile-header) + var(--h-casebar) + var(--safe-top)); border-top: 1px solid var(--border); border-radius: 0 0 var(--r-2) var(--r-2); }
   .pa-tag { display: none; }
+  body.has-procedure .pa-banner { top: auto; bottom: calc(8px + var(--safe-bottom)); }
   .event-toast { top: calc(var(--h-mobile-header) + 8px + var(--safe-top)); left: 16px; right: 16px; width: auto; }
   .toast { bottom: calc(var(--h-tasknav) + 12px + var(--safe-bottom)); }
 }
@@ -776,6 +779,14 @@ table { border-collapse: collapse; }
   .party-summary.on { gap: 4px; padding: 6px 10px; }
 }
 
+/* ---- short landscape phones: the decision desk takes one row so the assessment keeps room ---- */
+@media (max-height: 500px) and (max-width: 1023px) {
+  .actions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px 12px calc(6px + var(--safe-bottom)); }
+  .act { min-height: 48px; padding: 4px 8px 4px 8px; }
+  .act small { display: none; }
+  .act.armed > .arm-hint { font-size: var(--fs-meta); }
+}
+
 /* styles/documents.css */
 /* Physical-document surfaces: every document type keeps its own visual grammar on a paper surface.
    The paper keeps its own layout (MRZ, stubs, stickers); on phones the sheet fills the width and fields stack. */
@@ -940,7 +951,13 @@ table { border-collapse: collapse; }
 .proc-close { flex: none; height: 32px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, .3); border-radius: var(--r-1); color: #fff; font-weight: 600; font-size: var(--fs-compact); background: rgba(255, 255, 255, .08); }
 .proc-close:hover { background: rgba(255, 255, 255, .16); }
 .proc-body { min-height: 0; padding: var(--s-3) var(--s-4); }
-.proc-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 320px; gap: var(--s-3); align-items: start; }
+/* Every procedure renders three cards in the same order: 1 대상자 · 2 procedure content · 3 worklist + actions.
+   v9: content gets the width; the action rail (3) sits top-right and stays in view; the traveller summary (1)
+   goes under the rail. Phones stack content → actions → traveller. */
+.proc-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "main rail" "main person"; gap: var(--s-3); align-items: start; max-width: 1360px; margin: 0 auto; }
+.proc-grid > .proc-card:nth-child(1) { grid-area: person; }
+.proc-grid > .proc-card:nth-child(2) { grid-area: main; }
+.proc-grid > .proc-card:nth-child(3) { grid-area: rail; position: sticky; top: 0; z-index: 1; }
 .proc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-1); overflow: hidden; }
 .proc-card-h { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; background: var(--panel-head); border-bottom: 1px solid var(--border); font-size: var(--fs-section); font-weight: 700; }
 .proc-card-h small { font-size: var(--fs-meta); letter-spacing: .04em; color: var(--text-3); font-family: var(--mono); }
@@ -1027,24 +1044,25 @@ table { border-collapse: collapse; }
 .arrest-check input { margin: 2px 0 0; width: 16px; height: 16px; accent-color: var(--danger); flex: none; }
 
 @media (max-width: 1279px) {
-  .proc-grid { grid-template-columns: 260px minmax(0, 1fr) 280px; gap: 8px; }
+  .proc-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 8px; }
   .proc-body { padding: 8px 10px; }
 }
 @media (max-width: 1023px) {
   .procedure-screen { top: var(--h-topbar); }
   .proc-grid { grid-template-columns: minmax(0, 1fr) 280px; }
-  .proc-grid > .proc-card:first-child { grid-column: 1 / -1; }
   .proc-person { grid-template-columns: 56px minmax(0, 1fr); }
   .proc-person img { width: 56px; height: 68px; }
 }
+/* a rail taller than a short window must scroll with the page, not stick */
+@media (max-height: 700px) { .proc-grid > .proc-card:nth-child(3) { position: static; } }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .procedure-screen { top: calc(var(--h-mobile-header) + var(--safe-top)); bottom: 0; left: var(--safe-left); right: var(--safe-right); }
   .proc-head { padding: 8px 12px; }
   .proc-title h2 { font-size: var(--fs-section); }
   .proc-kicker { display: none; }
   .proc-body { padding: 8px 8px calc(8px + var(--safe-bottom)); }
-  .proc-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .proc-grid > .proc-card:first-child { order: 3; }
+  .proc-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "rail" "person"; gap: 8px; }
+  .proc-grid > .proc-card:nth-child(3) { position: static; }
   .statement-pair { grid-template-columns: 1fr; }
   .statement-arrow { display: none; }
   .proc-actions { grid-template-columns: 1fr; }

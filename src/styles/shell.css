@@ -135,6 +135,8 @@
 .pa-banner { position: fixed; top: calc(var(--h-topbar) + var(--safe-top)); left: 12px; z-index: 92; width: min(600px, calc(100vw - 24px)); height: var(--h-opsbar); display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--elevated); border: 1px solid var(--border); border-top: 0; border-left: 3px solid var(--accent); border-radius: 0 0 var(--r-2) var(--r-2); box-shadow: var(--shadow-2); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease); }
 /* PA captions sit on the operations row (same kind of information) instead of over the case header or a procedure title */
 .pa-banner.on { opacity: 1; transform: none; }
+/* a procedure screen covers the operations row: captions go to the bottom edge instead of over its title */
+body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px + var(--safe-bottom)); border-top: 1px solid var(--border); border-radius: var(--r-2); }
 .pa-icon { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); flex: none; }
 .pa-icon svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .pa-copy { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; }
@@ -242,6 +244,7 @@
   .tasknav button[data-task="passenger"], .tasknav button[data-task="assessment"] { display: grid; }
   .pa-banner { left: 8px; right: 8px; width: auto; height: auto; min-height: 32px; top: calc(var(--h-mobile-header) + var(--h-casebar) + var(--safe-top)); border-top: 1px solid var(--border); border-radius: 0 0 var(--r-2) var(--r-2); }
   .pa-tag { display: none; }
+  body.has-procedure .pa-banner { top: auto; bottom: calc(8px + var(--safe-bottom)); }
   .event-toast { top: calc(var(--h-mobile-header) + 8px + var(--safe-top)); left: 16px; right: 16px; width: auto; }
   .toast { bottom: calc(var(--h-tasknav) + 12px + var(--safe-bottom)); }
 }
