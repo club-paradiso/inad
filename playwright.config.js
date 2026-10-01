@@ -38,5 +38,7 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 20_000
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }]
+  // INAD_CHROMIUM_PATH lets sandboxes with a preinstalled Chromium of a different revision run
+  // the suite without `playwright install`; CI leaves it unset and uses the bundled browser.
+  projects: [{ name: 'chromium', use: { browserName: 'chromium', ...(process.env.INAD_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.INAD_CHROMIUM_PATH } } : {}) } }]
 });
