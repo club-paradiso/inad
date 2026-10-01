@@ -27,8 +27,13 @@ test.describe('UI 언어 전환', () => {
     await page.locator('#uiLanguageBtn').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('#stepper')).toContainText('Follow-up');
+    // language of parts: Korean case data under lang=en is marked lang=ko; English UI copy is not
+    await expect(page.locator('#log .msg.alien .msgtext').last()).toHaveAttribute('lang', 'ko');
+    await expect(page.locator('#clearBtn strong')).not.toHaveAttribute('lang', 'ko');
+    await expect(page.locator('#uiLanguageBtn')).toHaveAttribute('lang', 'ko');
     await page.locator('#uiLanguageBtn').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
+    await expect(page.locator('[data-i18n-lang]')).toHaveCount(0);
     expect(await textOf(page, '#app')).toBe(appKo);
     // controls still bound after two full translation passes
     await H.lookup(page, 'history');

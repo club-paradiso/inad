@@ -565,6 +565,27 @@ function applyAttributes(el) {
   }
 }
 
+// Language of parts (WCAG 3.1.2): in the English UI, case data stays Korean (statements, names, records).
+// An element whose text is Korean with no English words is marked lang="ko" so screen readers voice it as Korean;
+// the mark is dropped when English appears in it or the UI returns to Korean.
+const LATIN_WORD = /[A-Za-z]{2,}/;
+function markLang(el) {
+  if (!el || el.nodeType !== Node.ELEMENT_NODE || ignored(el)) return;
+  const ours = el.dataset.i18nLang === 'ko';
+  if (locale !== 'en') { if (ours) { el.removeAttribute('lang'); delete el.dataset.i18nLang; } return; }
+  const text = el.textContent || '', korean = hasHangul(text) && !LATIN_WORD.test(text);
+  if (korean && !el.hasAttribute('lang')) { el.setAttribute('lang', 'ko'); el.dataset.i18nLang = 'ko'; }
+  else if (!korean && ours) { el.removeAttribute('lang'); delete el.dataset.i18nLang; }
+}
+function markLangWithin(root) {
+  const el = root?.nodeType === Node.TEXT_NODE ? root.parentElement : root;
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
+  if (locale !== 'en') { el.querySelectorAll('[data-i18n-lang]').forEach(markLang); markLang(el); return; }
+  const parents = new Set(); const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (hasHangul(n.data) && n.parentElement) parents.add(n.parentElement);
+  parents.forEach(markLang); markLang(el);
+}
+
 function walk(root) {
   if (!root) return;
   if (root.nodeType === Node.TEXT_NODE) { applyTextNode(root); return; }
@@ -615,6 +636,8 @@ function syncControls() {
     if (button.textContent !== text) button.textContent = text;
     if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
     if (button.title !== label) button.title = label;
+    // the button names the other language in that language
+    if (button.lang !== (english ? 'ko' : 'en')) button.lang = english ? 'ko' : 'en';
   }
 }
 
@@ -628,7 +651,7 @@ export function setLocale(value) {
   document.documentElement.lang = locale;
   document.documentElement.dataset.locale = locale;
   document.title = locale === 'en' ? 'INAD: Article 12' : 'INAD: 제12조';
-  if (document.body) walk(document.body);
+  if (document.body) { walk(document.body); markLangWithin(document.body); }
   syncControls();
   document.dispatchEvent(new CustomEvent('inad:localechange', { detail: { locale } }));
   return locale;
@@ -638,9 +661,9 @@ function mutationHandler(records) {
   for (const record of records) {
     const target = record.target?.nodeType === Node.ELEMENT_NODE ? record.target : record.target?.parentElement;
     if (target?.closest?.('[data-i18n-control]')) continue;
-    if (record.type === 'characterData') applyTextNode(record.target);
+    if (record.type === 'characterData') { applyTextNode(record.target); markLang(target); }
     else if (record.type === 'attributes') applyAttributes(record.target);
-    else for (const node of record.addedNodes) walk(node);
+    else { for (const node of record.addedNodes) { walk(node); markLangWithin(node); } markLang(target); }
   }
   ensureControls();
   syncControls();
