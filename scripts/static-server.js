@@ -20,7 +20,6 @@ export function createStaticServer(dir, port, { quiet = false } = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname === '/api/airport-load') {
-      req.query = Object.fromEntries(url.searchParams);
       Promise.resolve(airportLoad(req, res)).catch(() => {
         if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'airport-load-failed' }));

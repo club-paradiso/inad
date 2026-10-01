@@ -14,7 +14,7 @@ import { buildSession, current, caseForQueueItem, screeningNo } from './engines/
 import { getTraveler } from './engines/traveler-engine.js';
 import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
-import { generateEventSchedule, applyScenarioStart, takeScheduledBreak, difficultyCfg, eventEffectText } from './engines/operation-engine.js';
+import { generateEventSchedule, applyScenarioStart, takeScheduledBreak, difficultyCfg, eventEffectText, appliedLiveLoad } from './engines/operation-engine.js';
 import { setInterviewLanguage, requestInterpreter, languageProfileFor } from './engines/language-engine.js';
 import { applyChallengeStart } from './engines/achievement-engine.js';
 import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, makeBundle, validateBundle, applyBundle } from './engines/save-engine.js';
@@ -202,7 +202,8 @@ function installHooks() {
     jump: (i) => { state.caseIndex = i; beginCase(true); },
     languageFor: (i) => { const l = languageProfileFor(caseForQueueItem(session.queue[i])); return { mode: l.mode, korean: l.korean, english: l.english }; },
     partyFor: (i) => { const p = session.partyByTraveler.get(session.queue[i].travelerId); return p ? { id: p.id, mode: p.mode, members: p.members.map((m) => m.queueIndex) } : null; },
-    campaignSave: () => loadCampaign(), progressSave: () => loadProgressSave(), meta: () => loadMeta(), version: () => RELEASE.version
+    campaignSave: () => loadCampaign(), progressSave: () => loadProgressSave(), meta: () => loadMeta(), version: () => RELEASE.version,
+    liveOps: () => ({ ...appliedLiveLoad() })
   };
 }
 

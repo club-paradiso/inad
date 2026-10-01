@@ -8,7 +8,7 @@ import { calculateLiveLoadFactor, capLiveLoadFactor, classifyLiveLoad } from './
 import { behaviorAfterWork } from './behavior-engine.js';
 import { bus, notify } from '../services/bus.js';
 import { storeSet } from '../services/storage.js';
-import { fetchAirportLiveLoad } from '../services/airport-live.js';
+import { fetchAirportLiveLoad, failureReason } from '../services/airport-live.js';
 import { addLog } from './log.js';
 
 export function difficultyCfg() { return DIFFICULTY_CONFIG[state?.difficulty || 'standard'] || DIFFICULTY_CONFIG.standard; }
@@ -24,6 +24,10 @@ export function liveLoadFactor() { return state?.liveOps?.live ? boundedLiveLoad
 export function liveLoadPressure(factor = state?.liveOps?.factor || 1) { return classifyLiveLoad(factor); }
 export function appliedLiveLoad() { return { ...state.liveOps, appliedFactor: liveLoadFactor() }; }
 
+function settleAfterStart(ap) {
+  if (state.liveOps?.status === 'loading') { state.liveOps = { ...emptyLiveOps('fallback'), airport: ap.code, reason: 'shift-started-before-response' }; bus.emit('airportLive', state.liveOps); bus.emit('ops'); }
+  return appliedLiveLoad();
+}
 export async function refreshAirportLiveLoad({ force = false } = {}) {
   if (state.started) return appliedLiveLoad();
   const ap = airportCfg(), requestedId = ap.id;
@@ -32,6 +36,9 @@ export async function refreshAirportLiveLoad({ force = false } = {}) {
   try {
     const data = await fetchAirportLiveLoad(ap.code, { force });
     if (state.airportId !== requestedId) return appliedLiveLoad();
+    // The snapshot is a setup-time input. A response that lands after the shift started must not change the
+    // workload mid-shift; the shift keeps the static preset it started with.
+    if (state.started) return settleAfterStart(ap);
     if (!data?.live || !data?.available) {
       state.liveOps = {
         ...emptyLiveOps('fallback'), airport: ap.code, stale: !!data?.stale,
@@ -49,7 +56,8 @@ export async function refreshAirportLiveLoad({ force = false } = {}) {
       };
     }
   } catch (error) {
-    if (state.airportId === requestedId) state.liveOps = { ...emptyLiveOps('fallback'), airport: ap.code, reason: error?.name === 'AbortError' ? 'timeout' : 'network-error' };
+    if (state.started) return settleAfterStart(ap);
+    if (state.airportId === requestedId) state.liveOps = { ...emptyLiveOps('fallback'), airport: ap.code, reason: failureReason(error) };
   }
   bus.emit('airportLive', state.liveOps); bus.emit('ops');
   return appliedLiveLoad();

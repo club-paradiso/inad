@@ -105,8 +105,12 @@ export function bindStartScreen({ onStart, onResume, onRecords, onProfile, onSet
   byId('setupAdvancedToggle').onclick = () => setAdvanced(byId('setupAdvancedPanel').hidden);
   byId('setupReset').onclick = async () => { setAirport('icn-t2'); setDifficulty('training'); setScenario('normal'); setCampaign('none'); setChallenge('none'); setGuidance('guided'); syncOptionButtons(); await refreshAirportLiveLoad(); syncOptionButtons(); };
   byId('startBtn').onclick = async () => {
-    const btn = byId('startBtn'); btn.disabled = true;
-    await refreshAirportLiveLoad({ force: true }); syncOptionButtons(); btn.disabled = false; onStart();
+    // The live snapshot is refreshed once more before the shift; the wait is bounded by the client timeout
+    // (airport-live.js) and is visible, so the start button never looks frozen.
+    const btn = byId('startBtn'); if (btn.disabled) return; const label = btn.textContent;
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = t('운항정보 확인 중…', 'Checking flight data…');
+    try { await refreshAirportLiveLoad({ force: true }); } finally { btn.textContent = label; btn.removeAttribute('aria-busy'); btn.disabled = false; }
+    syncOptionButtons(); onStart();
   };
   byId('resumeBtn').onclick = onResume; byId('recordsStartBtn').onclick = onRecords; byId('profileStartBtn').onclick = onProfile; byId('startSettingsBtn').onclick = onSettings; byId('startSystemBtn').onclick = onSystem; byId('rerollBtn').onclick = onReroll;
   byId('campaignArchiveBtn').onclick = onCampaignArchive; byId('campaignAbandonBtn').onclick = onCampaignAbandon;
