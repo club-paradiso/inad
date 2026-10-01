@@ -3,11 +3,12 @@
 .skip-link { position: fixed; top: -60px; left: 12px; z-index: 500; padding: 8px 12px; background: var(--chrome); color: #fff; border-radius: var(--r-1); font-weight: 600; transition: top var(--t-fast) var(--ease); }
 .skip-link:focus { top: 10px; }
 
-/* shortcut hints: keyboard-only affordance, never on touch layouts */
-body.show-hotkeys button[data-hotkey] { position: relative; }
-body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); position: absolute; top: 2px; right: 3px; font: 600 var(--fs-meta)/1 var(--mono); letter-spacing: .02em; padding: 1px 3px; border-radius: 2px; background: rgba(20, 35, 47, .12); color: inherit; opacity: .75; pointer-events: none; }
-body.show-hotkeys .topbar button[data-hotkey]::after { background: rgba(255, 255, 255, .18); }
-@media (pointer: coarse), (max-width: 767px) { body.show-hotkeys button[data-hotkey]::after { display: none; } }
+/* shortcut hints (설정 → 단축키 표시, off by default): an inline key cap after the label, never on top of it.
+   Keyboard-only affordance, so never on touch or phone layouts. */
+body.show-hotkeys button[data-hotkey]::after { content: attr(data-hotkey); display: inline-block; margin-left: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: var(--r-1); font: 600 var(--fs-meta)/1.5 var(--mono); letter-spacing: 0; opacity: .6; vertical-align: 1px; pointer-events: none; }
+body.show-hotkeys .act[data-hotkey] { position: relative; padding-right: 56px; }
+body.show-hotkeys .act[data-hotkey]::after { position: absolute; top: 50%; right: 10px; margin: 0; transform: translateY(-50%); }
+@media (pointer: coarse), (max-width: 767px), (max-height: 500px) and (max-width: 1023px) { body.show-hotkeys button[data-hotkey]::after { display: none; } body.show-hotkeys .act[data-hotkey] { padding-right: 12px; } }
 
 /* large text: scale the body type only (chrome keeps its fixed rhythm) */
 body.pref-font-large { --fs-section: 14.5px; --fs-body: 14.5px; --fs-compact: 13.5px; --fs-label: 12.5px; --fs-meta: 11.5px; }

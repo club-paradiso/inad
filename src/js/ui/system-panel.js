@@ -51,7 +51,6 @@ export function renderMatrix() {
   let hint = r.pct >= 95 ? '필요한 확인이 충분합니다. 전체 사실관계와 법적 근거를 종합해 판단하십시오.' : `필수 절차 ${r.hit}/${r.needed}${c.clues ? ` · 핵심 단서 ${cs.keyGot.length}/${cs.keys.length}` : ''} · 질문·조회로 사실관계를 더 확인하십시오.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
-  const cr = byId('caseReady'); if (cr) { cr.textContent = r.pct + '%'; cr.className = 'mono' + (r.pct >= 95 ? ' good' : ''); }
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
   const done = state.performed.map((x) => ACTION_NAMES[x] || x.replace('QUESTION_', '문답:').replace('LOOKUP_', '조회:'));
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';

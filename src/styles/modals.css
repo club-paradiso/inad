@@ -326,7 +326,7 @@
   .mission-list, .campaign-results, .story-timeline, .difficulty-records { grid-template-columns: 1fr 1fr; }
   .sys-data-actions { grid-template-columns: 1fr; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .modalback { padding: 0; place-items: end stretch; }
   .modal, .modal[data-size="wide"] { width: 100%; max-height: calc(100dvh - 24px - var(--safe-top)); border-radius: var(--r-3) var(--r-3) 0 0; border-left: 0; border-right: 0; border-bottom: 0; }
   .mh { padding: 12px 16px; position: sticky; top: 0; }

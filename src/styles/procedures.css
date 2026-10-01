@@ -113,8 +113,8 @@
   .proc-person { grid-template-columns: 56px minmax(0, 1fr); }
   .proc-person img { width: 56px; height: 68px; }
 }
-@media (max-width: 767px) {
-  .procedure-screen { top: calc(var(--h-mobile-header) + var(--safe-top)); bottom: 0; }
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+  .procedure-screen { top: calc(var(--h-mobile-header) + var(--safe-top)); bottom: 0; left: var(--safe-left); right: var(--safe-right); }
   .proc-head { padding: 8px 12px; }
   .proc-title h2 { font-size: var(--fs-section); }
   .proc-kicker { display: none; }

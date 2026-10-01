@@ -137,7 +137,15 @@ function bindChrome() {
   [['#clearBtn', '입국 허가'], ['#secondaryBtn', '입국재심 인계'], ['#refuseBtn', '입국 불허가 사유 선택'], ['#sjpBtn', '출입국사범 절차'], ['#audioBtn', '음향 켜기 또는 끄기'], ['#helpBtn', '도움말 열기'], ['#recordsBtn', '근무기록 열기'], ['#dailyBtn', '오늘의 미션 열기'], ['#profileBtn', '심사관 프로필 열기'], ['#settingsBtn', '접근성 및 조작 설정 열기']].forEach(([sel, label]) => { const el = $(sel); if (el) el.setAttribute('aria-label', label); });
   // more menu
   const more = byId('moreBtn'), menu = byId('moreMenu'); const setOpen = (o) => { menu.hidden = !o; more.setAttribute('aria-expanded', String(o)); if (o) menu.querySelector('button')?.focus(); };
-  more.onclick = (e) => { e.stopPropagation(); setOpen(menu.hidden); }; menu.addEventListener('click', () => setOpen(false)); document.addEventListener('click', (e) => { if (!more.parentElement.contains(e.target)) setOpen(false); }); menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); setOpen(false); more.focus(); } });
+  more.onclick = (e) => { e.stopPropagation(); setOpen(menu.hidden); }; menu.addEventListener('click', () => setOpen(false)); document.addEventListener('click', (e) => { if (!more.parentElement.contains(e.target)) setOpen(false); }); menu.addEventListener('keydown', (e) => {
+    // role="menu" keyboard model: arrows/Home/End move between items, Escape returns to the button, Tab leaves and closes.
+    const items = $$('#moreMenu button').filter((b) => b.offsetParent !== null), i = items.indexOf(document.activeElement), n = items.length;
+    if (e.key === 'Escape') { e.preventDefault(); setOpen(false); more.focus(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]?.focus(); }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : n - 1]?.focus(); }
+    else if (e.key === 'Tab') setOpen(false);
+  });
+  more.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' && menu.hidden) { e.preventDefault(); setOpen(true); } });
   byId('footerTag').textContent = `법령 기준 ${RELEASE.legalBaseline} · DATA v${RELEASE.dataVersion}`; byId('legalBaselineTag').textContent = `${RELEASE.legalBaseline} 공개 기준 시뮬레이션`;
 }
 function storyDossierFlow() { showStoryDossier((id) => { const r = caseEngine.storyAction(id); if (r.ok) { renderStoryStrip(); storyDossierFlow(); } }); }

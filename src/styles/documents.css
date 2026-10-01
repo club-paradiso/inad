@@ -124,7 +124,7 @@
   .doc-ticket { grid-template-columns: 1fr 96px; }
   .doc-grid-fields { grid-template-columns: 1fr; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .doc-stage { padding: 12px 16px; }
   .docsheet { max-width: none; }
   .doc-zoom { min-height: 36px; }

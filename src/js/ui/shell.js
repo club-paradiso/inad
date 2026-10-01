@@ -46,7 +46,7 @@ export function renderTop() {
   setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
   $$('.strike').forEach((e) => { const i = [...e.parentElement.querySelectorAll('.strike')].indexOf(e); e.classList.toggle('on', i < state.strikes); });
   renderAudioButton();
-  setText('stProcessed', state.stats.processed); setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
+  setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();
 }
 export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-active', state.audio); b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }

@@ -90,7 +90,7 @@
 @media (max-width: 1023px) {
   .start-body { grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .startover { padding: 0; place-items: start stretch; }
   .startcard { width: 100%; max-height: none; min-height: 100%; border: 0; border-radius: 0; box-shadow: none; padding: calc(20px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); gap: 16px; }
   .start-title { font-size: 26px; }

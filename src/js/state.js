@@ -51,5 +51,6 @@ export const preferences = {
   font: storeGet('inad-font', 'standard'),
   contrast: storeGet('inad-contrast', '0') === '1',
   reduceMotion: storeGet('inad-reduce-motion', '0') === '1',
-  shortcutHints: storeGet('inad-shortcut-hints', '1') === '1'
+  // Shortcut hints are an opt-in keyboard aid (설정); on by default they cluttered every control label.
+  shortcutHints: storeGet('inad-shortcut-hints', '0') === '1'
 };
