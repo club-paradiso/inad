@@ -22,7 +22,7 @@ import { loadCampaign } from './engines/campaign-engine.js';
 import { syncCampaignState, prepareCampaignForStart, applyCampaignDayCarry, currentCampaignSave, clearCampaign } from './engines/campaign-engine.js';
 import { travelPartyFor } from './engines/companion-engine.js';
 import { $, $$, byId } from './ui/dom.js';
-import { showModal, closeModal, isModalOpen, bindModalChrome } from './ui/modals.js';
+import { showModal, closeModal, requestCloseModal, isModalOpen, bindModalChrome } from './ui/modals.js';
 import { initNotices, toast, showAnnouncement, announceA11y, showFieldEventToast } from './ui/toast.js';
 import { renderTop, renderQueue, renderWorkloadOnly, renderEventBar, renderChallengeHud, renderCampaignHud, renderStoryStrip, renderAudioButton, preloadQueueImages, startClock, showCallout } from './ui/shell.js';
 import { renderPassenger, renderBehavior, renderParty } from './ui/passenger-panel.js';
@@ -137,7 +137,7 @@ function bindChrome() {
   [['#clearBtn', '입국 허가'], ['#secondaryBtn', '입국재심 인계'], ['#refuseBtn', '입국 불허가 사유 선택'], ['#sjpBtn', '출입국사범 절차'], ['#audioBtn', '음향 켜기 또는 끄기'], ['#helpBtn', '도움말 열기'], ['#recordsBtn', '근무기록 열기'], ['#dailyBtn', '오늘의 미션 열기'], ['#profileBtn', '심사관 프로필 열기'], ['#settingsBtn', '접근성 및 조작 설정 열기']].forEach(([sel, label]) => { const el = $(sel); if (el) el.setAttribute('aria-label', label); });
   // more menu
   const more = byId('moreBtn'), menu = byId('moreMenu'); const setOpen = (o) => { menu.hidden = !o; more.setAttribute('aria-expanded', String(o)); if (o) menu.querySelector('button')?.focus(); };
-  more.onclick = (e) => { e.stopPropagation(); setOpen(menu.hidden); }; menu.addEventListener('click', () => setOpen(false)); document.addEventListener('click', (e) => { if (!more.parentElement.contains(e.target)) setOpen(false); }); menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { setOpen(false); more.focus(); } });
+  more.onclick = (e) => { e.stopPropagation(); setOpen(menu.hidden); }; menu.addEventListener('click', () => setOpen(false)); document.addEventListener('click', (e) => { if (!more.parentElement.contains(e.target)) setOpen(false); }); menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); setOpen(false); more.focus(); } });
   byId('footerTag').textContent = `법령 기준 ${RELEASE.legalBaseline} · DATA v${RELEASE.dataVersion}`; byId('legalBaselineTag').textContent = `${RELEASE.legalBaseline} 공개 기준 시뮬레이션`;
 }
 function storyDossierFlow() { showStoryDossier((id) => { const r = caseEngine.storyAction(id); if (r.ok) { renderStoryStrip(); storyDossierFlow(); } }); }
@@ -146,17 +146,21 @@ function storyDossierFlow() { showStoryDossier((id) => { const r = caseEngine.st
 function shortcutBlocked(e) { const t = e.target; return !!(t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)); }
 function bindKeyboard() {
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (tutorial.isOpen()) tutorial.end(true); else if (isModalOpen()) closeModal(); else closeProcedureScreen(); return; }
+    // Menus and sheets consume their own Escape (preventDefault) so it never also closes the procedure screen.
+    if (e.key === 'Escape') { if (e.defaultPrevented) return; if (tutorial.isOpen()) tutorial.end(true); else if (isModalOpen()) requestCloseModal(); else closeProcedureScreen(); return; }
     if (shortcutBlocked(e)) return;
     const plain = !e.altKey && !e.ctrlKey && !e.metaKey;
-    if (e.key === 'F1' || e.key === '?') { e.preventDefault(); helpFlow(); return; }
     const k = e.key.toLowerCase();
+    if (plain && k === 'm') { e.preventDefault(); byId('audioBtn').click(); return; }
+    // A dialog-opening shortcut must never replace an open dialog: that would drop a refusal-reason choice
+    // or a decision notice whose action carries the case forward.
+    if (isModalOpen() || tutorial.isOpen()) return;
+    if (e.key === 'F1' || e.key === '?') { e.preventDefault(); helpFlow(); return; }
     if (plain && k === 's') { e.preventDefault(); showSettings(); return; }
     if (plain && k === 'l') { e.preventDefault(); recordsFlow(); return; }
     if (plain && k === 'u') { e.preventDefault(); showPlayerProfile(); return; }
     if (plain && k === 'b') { e.preventDefault(); showDailyMissions(); return; }
-    if (plain && k === 'm') { e.preventDefault(); byId('audioBtn').click(); return; }
-    if (isModalOpen() || tutorial.isOpen() || !byId('startOverlay').classList.contains('hide')) return;
+    if (!byId('startOverlay').classList.contains('hide')) return;
     if (e.altKey && !e.ctrlKey && !e.metaKey) { const map = { a: '#clearBtn', r: '#secondaryBtn', x: '#refuseBtn', j: '#sjpBtn' }; if (map[k]) { e.preventDefault(); const b = $(map[k]); if (b && !b.disabled) { b.focus(); b.click(); } return; } }
     if (!plain) return;
     if (/^Digit[1-6]$/.test(e.code)) { e.preventDefault(); showTask('interview'); chooseQuestionCategory(Number(e.code.slice(-1)) - 1, announceA11y); return; }

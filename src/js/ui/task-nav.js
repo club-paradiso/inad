@@ -40,7 +40,7 @@ export function bindTaskNav({ onChange } = {}) {
     const set = (open) => { app.classList.toggle('ops-open', open); toggle.setAttribute('aria-expanded', String(open)); };
     toggle.onclick = (e) => { e.stopPropagation(); set(!app.classList.contains('ops-open')); };
     document.addEventListener('click', (e) => { if (app.classList.contains('ops-open') && !e.target.closest('#eventBar') && e.target !== toggle) set(false); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && app.classList.contains('ops-open')) set(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && app.classList.contains('ops-open')) { e.preventDefault(); set(false); toggle.focus(); } });
   }
   showTask(currentTask());
 }
