@@ -109,4 +109,70 @@ test.describe('대화상자 무결성', () => {
     await expect(page.locator('#restart')).toBeVisible();
     await H.expectNoErrors(errors);
   });
+
+  test('closing a procedure screen never strands the case: repatriation and secondary can be reopened', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-011');
+    await H.startShift(page);
+    await H.jumpTo(page, idx);
+    await H.ensureCommunication(page);
+    for (const q of ['bio', 'exempt', 'age', 'official', 'explain']) await H.ask(page, q);
+    await page.locator('#refuseBtn').click();
+    await page.locator('.reason[data-code="SIM-BIO-REF"]').click();
+    await H.continueDoc(page);
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'repatriation');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#procedureScreen')).not.toHaveClass(/on/);
+    await expect(page.locator('#specialBtn')).toBeVisible();
+    await expect(page.locator('#specialTitle')).toHaveText('송환 절차 계속');
+    await page.locator('#specialBtn').click();
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'repatriation');
+    await H.procAct(page, 'repat-order'); await H.continueDoc(page);
+    await H.procAct(page, 'waiting-room');
+    await H.procAct(page, 'finish-refusal');
+    await H.expectResult(page, '입국 불허');
+    await H.nextCase(page); await H.afterNext(page);
+    // secondary: 일반 심사대 보기 → reopen from the decision desk without re-running the referral
+    await page.locator('#secondaryBtn').click();
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'secondary');
+    const performed = (await H.getState(page)).performed.slice();
+    await H.procAct(page, 'back');
+    await expect(page.locator('#specialTitle')).toHaveText('입국재심 화면 다시 열기');
+    await page.locator('#specialBtn').click();
+    await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'secondary');
+    expect((await H.getState(page)).performed).toEqual(performed);
+    await H.expectNoErrors(errors);
+  });
+
+  test('workspace shortcuts do not act behind an open procedure screen; the screen stays current', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    await H.startShift(page);
+    await page.locator('#secondaryBtn').click();
+    await expect(page.locator('#procedureScreen')).toHaveClass(/on/);
+    await page.keyboard.press('KeyH');
+    await page.keyboard.press('Digit2');
+    const st = await H.getState(page);
+    expect(st.looked).toEqual([]);
+    expect(await page.evaluate(() => !!document.activeElement.closest('#procedureScreen') || document.activeElement === document.body)).toBe(true);
+    await page.locator('#procBody [data-proc-lu="history"]').click();
+    await expect(page.locator('#procBody [data-proc-lu="history"]')).toHaveText('재조회');
+    await H.expectNoErrors(errors);
+  });
+
+  test('double-clicking a decision does not confirm the notice it opens', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const errors = await H.openGame(page);
+    await H.setSeed(page, SEED);
+    await H.startShift(page);
+    await H.ensureCommunication(page);
+    const c = await H.currentCase(page);
+    for (const r of c.required) { if (r.startsWith('QUESTION_')) await H.ask(page, r.slice(9)); else if (r.startsWith('LOOKUP_')) await H.lookup(page, r.slice(7)); }
+    await page.locator('#clearBtn').dblclick();
+    await expect(page.locator('#modalTitle')).toHaveText('입국심사 완료');
+    await H.continueDoc(page);
+    await expect(page.locator('#modalTitle')).toHaveText('심사 처리 결과');
+    await H.expectNoErrors(errors);
+  });
 });

@@ -231,7 +231,7 @@ const EXACT = new Map([
   ['새 근무 배치를 생성했습니다.', 'A new duty roster was generated.'],
   ['이어할 저장된 근무가 없습니다.', 'There is no saved duty to resume.'],
   ['저장된 근무를 복원했습니다.', 'Saved duty restored.'],
-  ['근무 시작', 'Duty started'],
+  ['근무 시작', 'Start duty'],
   ['제1근무조 입국심사를 시작합니다.', 'Shift 1 immigration inspection is now starting.'],
   ['자동저장 복원', 'Autosave restored'],
   ['승객 호출', 'Traveler call'],
@@ -240,11 +240,30 @@ const EXACT = new Map([
   ['대기 승객', 'Waiting traveler'],
   ['음향 시스템', 'Audio system'],
   ['효과음과 안내방송 차임을 사용합니다.', 'Sound effects and announcement chimes are enabled.'],
-  ['음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'Audio is off. On-screen captions remain available.']
+  ['음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'Audio is off. On-screen captions remain available.'],
+  ['심사결정', 'Decision'],
+  ['후속절차', 'Follow-up'],
+  ['확대', 'Zoom'],
+  ['제출자료', 'Submitted'],
+  ['추가 확인 필요', 'Needs further check'],
+  ['송환 절차 계속', 'Continue repatriation'],
+  ['송환지시 · 출국대기실 · 사건 종결', 'Repatriation order · waiting room · close case'],
+  ['입국재심 화면 다시 열기', 'Reopen secondary inspection'],
+  ['재심 인계 사유 · 진술 비교 · 추가 확인', 'Referral reasons · statement comparison · follow-up'],
+  ['기본사항', 'Basics'],
+  ['여행·체류', 'Travel & stay'],
+  ['추가소명', 'Further explanation'],
+  ['통역 연결됨', 'Interpreter connected'],
+  ['다음 승객 호출', 'Call next traveler'],
+  ['운항정보 확인 중…', 'Checking flight data…'],
+  ['저장소 사용 불가 · 이 브라우저에서는 진행이 저장되지 않습니다', 'Storage unavailable · progress is not saved in this browser'],
+  ['근무 중에는 저장된 근무를 불러올 수 없습니다.', 'A saved duty cannot be loaded during a shift.'],
+  ['근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.', 'Start a duty to replay the screen guide.'],
+  ['브라우저 저장소에 쓸 수 없어 진행이 저장되지 않았습니다.', 'Browser storage refused the write; progress was not saved.']
 ]);
 
 const PATTERNS = [
-  [/^심사번호\s+(.+)$/, 'Inspection no. $1'],
+  [/^심사번호\s+([A-Z]?\d+)$/, 'Inspection no. $1'],
   [/^제1근무조 · 기초 심사$/, 'Shift 1 · Basic inspection'],
   [/^제2근무조 · 재심·목적 확인$/, 'Shift 2 · Secondary / purpose review'],
   [/^제3근무조 · 특수사건$/, 'Shift 3 · Special cases'],
@@ -257,8 +276,8 @@ const PATTERNS = [
   [/^SESSION (.+) · (\d+)명 처리 지점부터 근무를 이어갑니다\.$/, 'SESSION $1 · resuming from $2 travelers processed.'],
   [/^연계사건 · (.+)$/, 'Linked case · $1'],
   [/^도전 (.+) · 시나리오 (.+) · 일반승객 (\d+)명 · 동행여행 (\d+)팀 · 추가확인 변형 (\d+)명 · 핵심사건 (\d+)건$/, 'Challenge $1 · Scenario $2 · $3 regular travelers · $4 parties · $5 review variants · $6 key cases'],
-  [/^(.+)회$/, '$1 times'],
-  [/^(.+)건$/, '$1 cases']
+  [/^(\d+)회$/, '$1 times'],
+  [/^(\d+)건$/, '$1 cases']
 ];
 
 function normalizeLocale(value) { return value === 'en' ? 'en' : 'ko'; }
@@ -270,7 +289,10 @@ export function translateString(value) {
   const exact = EXACT.get(trimmed);
   if (exact) return value.replace(trimmed, exact);
   for (const [pattern, replacement] of PATTERNS) {
-    if (pattern.test(trimmed)) return value.replace(trimmed, trimmed.replace(pattern, replacement));
+    if (!pattern.test(trimmed)) continue;
+    const out = trimmed.replace(pattern, replacement);
+    // a half-translated string (Korean left inside) is worse than the original: keep the original
+    return hasHangul(out) ? value : value.replace(trimmed, out);
   }
   return value;
 }
@@ -280,17 +302,22 @@ function ignored(node) {
   return !!parent?.closest?.('[data-i18n-control], script, style, code, pre');
 }
 
+// `written` remembers what this layer itself put into a node/attribute. Our own write fires a mutation; without
+// this check the translation would be stored as the "original" and switching back to Korean kept English.
+const writtenText = new WeakMap();
 function applyTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE || ignored(node)) return;
+  const ours = writtenText.has(node) && writtenText.get(node) === node.data;
   if (locale === 'ko') {
     const original = originalText.get(node);
-    if (original !== undefined && node.data !== original) node.data = original;
+    if (ours && original !== undefined) { node.data = original; }
+    writtenText.delete(node);
     return;
   }
-  if (!hasHangul(node.data)) return;
+  if (ours || !hasHangul(node.data)) return;
   originalText.set(node, node.data);
   const translated = translateString(node.data);
-  if (translated !== node.data) node.data = translated;
+  if (translated !== node.data) { writtenText.set(node, translated); node.data = translated; }
 }
 
 function attrMapFor(el) {
@@ -299,19 +326,23 @@ function attrMapFor(el) {
   return map;
 }
 
+const writtenAttrs = new WeakMap();
 function applyAttributes(el) {
   if (!el || el.nodeType !== Node.ELEMENT_NODE || ignored(el)) return;
   const map = attrMapFor(el);
+  let written = writtenAttrs.get(el); if (!written) { written = new Map(); writtenAttrs.set(el, written); }
   for (const attr of ATTRS) {
     const value = el.getAttribute(attr);
+    const ours = written.has(attr) && written.get(attr) === value;
     if (locale === 'ko') {
-      if (map.has(attr) && value !== map.get(attr)) el.setAttribute(attr, map.get(attr));
+      if (ours && map.has(attr)) el.setAttribute(attr, map.get(attr));
+      written.delete(attr);
       continue;
     }
-    if (!value || !hasHangul(value)) continue;
+    if (ours || !value || !hasHangul(value)) continue;
     map.set(attr, value);
     const translated = translateString(value);
-    if (translated !== value) el.setAttribute(attr, translated);
+    if (translated !== value) { written.set(attr, translated); el.setAttribute(attr, translated); }
   }
 }
 

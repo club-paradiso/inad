@@ -1,5 +1,5 @@
 // Dedicated procedure workspaces: 입국재심 · 난민 회부심사 · 출입국사범 조사 · 입국불허 후 송환.
-import { $, $$, byId, esc } from './dom.js';
+import { $, $$, byId, esc, focusKey, restoreFocus } from './dom.js';
 import { state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -68,7 +68,7 @@ export function renderProcedureScreen(handlers) {
   byId('procTitle').textContent = meta[0]; byId('procKicker').textContent = meta[1]; byId('procSubtitle').textContent = meta[2];
   const body = state.procedureMode === 'secondary' ? renderSecondaryProcedure(c, t) : state.procedureMode === 'refugee' ? renderRefugeeProcedure(c, t) : state.procedureMode === 'sjp' ? renderSjpProcedure(c, t) : renderRepatriationProcedure(c, t);
   // Re-rendering (after a question or lookup inside the screen) must not silently clear requirement ticks.
-  const ticked = $$('#procBody .proc-ar').map((x) => x.checked);
+  const ticked = $$('#procBody .proc-ar').map((x) => x.checked), focus = focusKey();
   byId('procBody').innerHTML = body;
   $$('#procBody .proc-ar').forEach((x, i) => { if (ticked[i]) x.checked = true; });
   if (!handlers) return;
@@ -78,4 +78,5 @@ export function renderProcedureScreen(handlers) {
     const act = b.dataset.procAct, run = () => handlers.act(act, { checked: $$('#procBody .proc-ar:checked').length });
     b.onclick = NAVIGATION_ACTS.has(act) ? run : guardDecision(run);
   });
+  restoreFocus(focus);
 }

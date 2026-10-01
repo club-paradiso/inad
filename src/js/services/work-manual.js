@@ -70,6 +70,8 @@ function intercept(e) {
   const target = e.target.closest?.('#ruleBtn, #helpRules');
   if (!target) return;
   e.preventDefault(); e.stopImmediatePropagation();
+  // stopImmediatePropagation also stops the 메뉴's own close handler: close it here
+  const menu = document.getElementById('moreMenu'); if (menu && !menu.hidden) { menu.hidden = true; document.getElementById('moreBtn')?.setAttribute('aria-expanded', 'false'); }
   openWorkManual();
 }
 

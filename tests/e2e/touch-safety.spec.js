@@ -117,7 +117,11 @@ for (const device of DEVICES) {
       await H.ask(page, 'trueName');
       await H.ask(page, 'purchase');
       await task(page, 'assessment');
-      await armThenRun(page, page.locator('#specialBtn'));
+      // reopening the SJP screen is navigation (no legal step): one tap
+      const before = await H.getState(page);
+      await page.locator('#specialBtn').tap();
+      await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'sjp');
+      expect((await H.getState(page)).stage).toBe(before.stage);
       await armThenRun(page, proc(page, 'arrest-review'));
       expect((await H.getState(page)).stage).toBe('ARREST_REVIEW');
       const boxes = page.locator('#procBody .proc-ar');

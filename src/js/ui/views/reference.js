@@ -5,6 +5,7 @@ import { state, preferences } from '../../state.js';
 import { TUTORIAL_STEPS } from '../../../data/tutorial.js';
 import { savePreferences, markTutorialSeen } from '../../engines/save-engine.js';
 import { toast } from '../toast.js';
+import { revealZone } from '../task-nav.js';
 
 export const SHORTCUT_ROWS = [['1–6', '질문 카테고리 선택'], ['K / E / I', '한국어 / 영어 / 통역'], ['[ / ]', '이전 / 다음 제출서류'], ['H / V / P', '출입국기록 / 사증 / PNR'], ['C / G / O', '국내관계 / 동행인 / 공개정보'], ['Alt+R', '입국재심 인계'], ['Alt+A', '입국 허가'], ['Alt+X', '입국불허 사유 열기'], ['Alt+J', '출입국사범 절차'], ['M', '음향 켜기/끄기'], ['? 또는 F1', '도움말'], ['L', '근무기록'], ['B', '오늘의 미션'], ['U', '심사관 프로필'], ['S', '설정'], ['Esc', '현재 대화상자/절차 닫기']];
 
@@ -35,10 +36,12 @@ export function showGuidedGuard(message) { showModal('초보 심사관 보호 �
 // ---- Tutorial (guided mode spotlight) ---------------------------------------------------------
 export const tutorial = {
   isOpen() { return byId('tutorialLayer')?.classList.contains('on'); },
-  targetRect(step) { const el = document.querySelector(step.sel); if (!el) return null; const r = el.getBoundingClientRect(); return { left: Math.max(6, r.left - 5), top: Math.max(6, r.top - 5), width: Math.min(innerWidth - 12, r.width + 10), height: Math.min(innerHeight - 12, r.height + 10) }; },
+  // On stacked layouts the step's zone may be hidden: open that task first, then measure.
+  targetRect(step) { const el = document.querySelector(step.sel); if (!el) return null; revealZone(el); const r = el.getBoundingClientRect(); if (!r.width && !r.height) return null; return { left: Math.max(6, r.left - 5), top: Math.max(6, r.top - 5), width: Math.min(innerWidth - 12, r.width + 10), height: Math.min(innerHeight - 12, r.height + 10) }; },
   position() { const step = TUTORIAL_STEPS[state.tutorialIndex], layer = byId('tutorialLayer'); if (!layer.classList.contains('on')) return; const rr = tutorial.targetRect(step); if (!rr) return tutorial.end(false); const f = byId('tutorialFocus'), card = byId('tutorialCard'); Object.assign(f.style, { left: rr.left + 'px', top: rr.top + 'px', width: rr.width + 'px', height: rr.height + 'px' }); const cw = Math.min(400, innerWidth - 28), ch = card.offsetHeight || 190; let left = rr.left + rr.width + 14, top = rr.top; if (left + cw > innerWidth - 10) left = Math.max(10, rr.left - cw - 14); if (top + ch > innerHeight - 10) top = Math.max(10, innerHeight - ch - 10); Object.assign(card.style, { left: left + 'px', top: top + 'px' }); },
   render() { const step = TUTORIAL_STEPS[state.tutorialIndex]; byId('tutorialProgress').textContent = `화면 안내 ${state.tutorialIndex + 1} / ${TUTORIAL_STEPS.length}`; byId('tutorialTitle').textContent = step.title; byId('tutorialText').textContent = step.text; byId('tutorialLegal').textContent = step.legal; byId('tutorialPrev').disabled = state.tutorialIndex === 0; byId('tutorialNext').textContent = state.tutorialIndex === TUTORIAL_STEPS.length - 1 ? '심사 시작' : '다음'; requestAnimationFrame(tutorial.position); },
-  start(force = false) { if (!state.started && !force) return; closeModal(); const l = byId('tutorialLayer'); l.classList.add('on'); l.setAttribute('aria-hidden', 'false'); state.tutorialIndex = 0; tutorial.render(); setTimeout(() => byId('tutorialNext')?.focus(), 30); },
+  // Never over the start overlay (it would spotlight the workspace hidden behind it).
+  start(force = false) { if ((!state.started && !force) || !byId('startOverlay')?.classList.contains('hide')) return false; closeModal(); const l = byId('tutorialLayer'); l.classList.add('on'); l.setAttribute('aria-hidden', 'false'); state.tutorialIndex = 0; tutorial.render(); setTimeout(() => byId('tutorialNext')?.focus(), 30); },
   end(remember = true) { const l = byId('tutorialLayer'); l.classList.remove('on'); l.setAttribute('aria-hidden', 'true'); if (remember) markTutorialSeen(); },
   next() { if (state.tutorialIndex < TUTORIAL_STEPS.length - 1) { state.tutorialIndex++; tutorial.render(); } else tutorial.end(true); },
   prev() { if (state.tutorialIndex > 0) { state.tutorialIndex--; tutorial.render(); } },

@@ -27,7 +27,7 @@ export function showModal(title, html, { size = '', dismissible = true } = {}) {
   byId('modalTitle').textContent = title; byId('modalBody').innerHTML = html; byId('modalBody').scrollTop = 0;
   m.querySelector('.modal').dataset.size = size;
   m.dataset.dismissible = String(dismissible); byId('modalClose').hidden = !dismissible;
-  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); setBackgroundInert(true);
+  m.classList.add('on'); m.setAttribute('aria-hidden', 'false'); document.body.classList.add('has-modal'); setBackgroundInert(true); m.dataset.openedAt = String(performance.now()); m.dataset.clicks = '0';
   setTimeout(() => { if (isModalOpen()) initialFocus(m); }, 0);
 }
 // Programmatic close (a dialog's own action buttons). User dismissal goes through requestCloseModal().
@@ -54,6 +54,13 @@ export function requestCloseModal() {
   closeModal(); return true;
 }
 export function bindModalChrome() {
+  // The second click of a double-click that opened this dialog must not land on the dialog's own button
+  // (e.g. confirm a decision notice unseen). Only multi-click events (detail > 1) right after opening are dropped.
+  // Only the very first click after opening can be that continuation; later quick taps are deliberate.
+  byId('modal').addEventListener('click', (e) => {
+    const m = byId('modal'), n = Number(m.dataset.clicks || 0); m.dataset.clicks = String(n + 1);
+    if (n === 0 && e.detail > 1 && performance.now() - Number(m.dataset.openedAt || 0) < 600) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
   byId('modalClose').onclick = requestCloseModal;
   byId('modal').onclick = (e) => { if (e.target === byId('modal')) requestCloseModal(); };
   // focus trap

@@ -1,7 +1,8 @@
 // Start overlay: airport + mission + duty configuration summary, progressive disclosure, start/resume.
-import { $, $$, byId, esc } from './dom.js';
+import { $, $$, byId, esc, withFocus } from './dom.js';
 import { state, session } from '../state.js';
 import { AIRPORTS } from '../../data/airports.js';
+import { storageWritable } from '../services/storage.js';
 import { setAirport, airportCfg, setDifficulty, setScenario, difficultyCfg, scenarioCfg, refreshAirportLiveLoad, appliedLiveLoad } from '../engines/operation-engine.js';
 import { setChallenge, challengeCfg } from '../engines/achievement-engine.js';
 import { setCampaign } from '../engines/campaign-engine.js';
@@ -80,11 +81,18 @@ function renderAirportChrome() {
   if (byId('airportLabel')) byId('airportLabel').textContent = `${ap.code} · ${isEn() ? ap.nameEn.replace(' International Airport', '') : ap.nameKo.replace('국제공항', '')}`;
 }
 
-export function renderPersistenceStatus() { const p = loadProgressSave(), btn = byId('resumeBtn'), st = byId('saveStatus'); if (btn) { btn.hidden = !p; btn.textContent = p ? `이전 근무 이어하기 · ${Math.min(p.nextIndex, 36)}/36` : '이전 근무 이어하기'; } if (st) st.textContent = p ? `자동저장 있음 · SESSION ${p.seed} · ${Math.min(p.nextIndex, 36)}/36 처리` : '자동저장 · 승객 처리 완료 시 체크포인트 생성'; }
+export function renderPersistenceStatus() {
+  const p = loadProgressSave(), btn = byId('resumeBtn'), st = byId('saveStatus'), writable = storageWritable();
+  if (btn) { btn.hidden = !p; btn.textContent = p ? `이전 근무 이어하기 · ${Math.min(p.nextIndex, 36)}/36` : '이전 근무 이어하기'; }
+  if (!st) return;
+  // Never claim autosave when the browser refuses storage (private mode, quota, disabled site data).
+  st.classList.toggle('warn', !writable);
+  st.textContent = !writable ? '저장소 사용 불가 · 이 브라우저에서는 진행이 저장되지 않습니다' : p ? `자동저장 있음 · SESSION ${p.seed} · ${Math.min(p.nextIndex, 36)}/36 처리` : '자동저장 · 승객 처리 완료 시 체크포인트 생성';
+}
 export function renderSetupSummary() { const ap = airportCfg(); const parts = [`${ap.code} ${isEn() ? ap.nameEn : ap.nameKo}`, txt('.diff-btn.on b', t('훈련', 'Training')), txt('.scenario-btn.on b', t('기본 근무', 'Normal duty')), txt('.campaign-btn.on b', t('단일 근무', 'Single shift')), txt('.guide-btn.on b', t('처음 근무', 'Guided')), txt('.challenge-btn.on b', t('일반 근무', 'No challenge'))]; const el = byId('setupSummary'); if (el) el.textContent = parts.join(' · '); }
 export function setAdvanced(on) { const adv = byId('setupAdvancedPanel'), el = byId('setupAdvancedToggle'); if (!adv) return; adv.classList.toggle('open', on); adv.hidden = !on; if (el) { el.setAttribute('aria-expanded', String(on)); el.textContent = on ? t('세부 설정 접기', 'Hide advanced settings') : t('세부 설정', 'Advanced settings'); } }
 export function syncOptionButtons() {
-  renderAirportOptions();
+  withFocus(renderAirportOptions);
   $$('.airport-btn').forEach((b) => { const on = b.dataset.airport === state.airportId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   $$('.diff-btn').forEach((b) => { const on = b.dataset.difficulty === state.difficulty; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   $$('.scenario-btn').forEach((b) => { const on = b.dataset.scenario === state.scenarioId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });

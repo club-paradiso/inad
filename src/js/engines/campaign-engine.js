@@ -5,15 +5,17 @@ import { SCENARIOS } from '../../data/operations.js';
 import { session, state } from '../state.js';
 import { hashSeed, localDateKey } from './rng.js';
 import { jsonGet, jsonSet, storeRemove } from '../services/storage.js';
-import { CAMPAIGN_KEY, loadMeta, saveMeta } from './save-engine.js';
+import { CAMPAIGN_KEY, CAMPAIGN_VERSION, loadMeta, saveMeta, migrateCampaign, isFutureSave, loadProgressSave, clearProgressSave } from './save-engine.js';
 import { evaluateAchievements } from './achievement-engine.js';
 import { bus, notify } from '../services/bus.js';
 
 export { CAMPAIGNS, CAMPAIGN_ARCS };
 export function campaignCfg(id = state?.campaignId || 'none') { return CAMPAIGNS[id] || CAMPAIGNS.none; }
 export function freshCampaign(id) { return { version: 1, id, active: true, failed: false, day: 0, baseSeed: session.seed, startedAt: Date.now(), simStart: localDateKey(), results: [], carryBacklog: 0, carryFatigue: 0 }; }
-export function loadCampaign() { const c = jsonGet(CAMPAIGN_KEY, null); return c && c.version === 1 && CAMPAIGNS[c.id] ? c : null; }
-export function saveCampaign(c) { return jsonSet(CAMPAIGN_KEY, c); }
+// Shape-validated (save-engine.migrateCampaign): an out-of-range day, unknown/'none'/prototype id or a
+// damaged story can no longer throw in syncCampaignState during boot.
+export function loadCampaign() { return migrateCampaign(jsonGet(CAMPAIGN_KEY, null)); }
+export function saveCampaign(c) { if (isFutureSave(CAMPAIGN_KEY, CAMPAIGN_VERSION)) { bus.emit('persistence', { ok: false, reason: 'future-save' }); return false; } return jsonSet(CAMPAIGN_KEY, c); }
 export function clearCampaign() { storeRemove(CAMPAIGN_KEY); }
 export function campaignDaySeed(c) { return 100000 + (hashSeed(`${c.baseSeed}|CAMPAIGN|${c.id}|DAY|${c.day}`) % 900000); }
 export function currentCampaignSave() { const c = loadCampaign(); return c && c.active ? c : null; }
@@ -41,6 +43,8 @@ export function prepareCampaignForStart() {
 export function applyCampaignDayCarry() { if (state.campaignId === 'none' || state.campaignApplied) return; const c = currentCampaignSave(); if (!c || c.id !== state.campaignId) return; state.backlogOffset += (c.carryBacklog || 0); state.fatigue = Math.max(state.fatigue, c.carryFatigue || 0); state.peakFatigue = Math.max(state.peakFatigue, state.fatigue); state.campaignApplied = true; state.eventHistory.push({ at: 0, type: 'CAMPAIGN', title: `캠페인 DAY ${c.day + 1} · ${CAMPAIGNS[c.id].name}`, effect: `이월 대기 ${c.carryBacklog >= 0 ? '+' : ''}${c.carryBacklog} · 시작 피로 ${c.carryFatigue}`, status: '연속근무' }); bus.emit('ops'); bus.emit('campaign'); }
 export function abandonCampaign() {
   const c = currentCampaignSave(); if (!c) return false; const meta = loadMeta(); meta.campaignHistory = meta.campaignHistory || []; meta.campaignHistory.unshift({ id: c.id, name: CAMPAIGNS[c.id].name, startedDate: c.simStart, completed: false, results: c.results, avgOverall: c.results.length ? Math.round(c.results.reduce((a, r) => a + r.overall, 0) / c.results.length) : 0, bonusXP: 0 }); meta.campaignHistory = meta.campaignHistory.slice(0, 8); saveMeta(meta); clearCampaign();
+  // a checkpoint taken inside the abandoned campaign would resume into a campaign that no longer exists
+  if (loadProgressSave()?.campaignId === c.id) clearProgressSave();
   state.campaignId = 'none'; state.campaignDay = 0; state.campaignApplied = false; state.scenarioId = 'normal'; state.scenarioApplied = false; bus.emit('campaign'); bus.emit('ops'); return true;
 }
 export function advanceCampaign(session_) {
@@ -62,11 +66,12 @@ export function advanceCampaign(session_) {
 export function campaignArc() { return CAMPAIGN_ARCS[state.campaignId] || null; }
 export function ensureCampaignStory(c = currentCampaignSave()) { if (!c || !CAMPAIGN_ARCS[c.id]) return null; if (!c.story) c.story = { version: 1, arcId: c.id, chapters: {} }; return c.story; }
 export function storyChapterDef() { const arc = campaignArc(); if (!arc) return null; return arc.chapters[state.campaignDay] || null; }
-export function storyIsAnchor(c) { const d = storyChapterDef(); return !!(d && c && c.id === d.anchor); }
+// Anchor only while the campaign save that owns the story exists (an abandoned campaign has no story to record into).
+export function storyIsAnchor(c) { const d = storyChapterDef(); if (!(d && c && c.id === d.anchor)) return false; return currentCampaignSave()?.id === state.campaignId; }
 export function storyChapterSave(c = currentCampaignSave(), day = state.campaignDay) { const story = ensureCampaignStory(c); if (!story) return null; if (!story.chapters[day]) story.chapters[day] = { actions: [], status: 'pending', caseLabel: null, summary: null, updatedAt: Date.now() }; return story.chapters[day]; }
 export function storyPrevContext() { const c = currentCampaignSave(); if (!c || state.campaignDay <= 0) return '첫날 기준자료를 만드는 단계입니다. 이전 근무의 선입견 없이 원자료부터 확인하십시오.'; const st = ensureCampaignStory(c), p = st?.chapters?.[state.campaignDay - 1]; if (!p) return '전일 연계기록이 없습니다. 현재 자료를 독립적으로 확인하십시오.'; if (p.status === 'complete') return `전일 연계검토 완료 · ${p.summary || '비교 기준선 확보'}`; if (p.status === 'partial') return `전일 기록 부분검토 · 누락된 원자료는 현재 사건에서 다시 확인하십시오.`; return '전일 연계기록이 미완료입니다. 이전 인상을 사실로 전제하지 말고 원자료를 다시 검증하십시오.'; }
 export function storyStatusInfo() { const ch = storyChapterSave(); const n = ch?.actions?.length || 0; return n >= 3 ? ['complete', '연계검토 완료'] : n > 0 ? ['partial', `부분검토 ${n}/3`] : ['pending', '미검토']; }
 // Records a linked-record check; returns the action definition or null (already done / not anchor).
-export function recordStoryAction(c, id) { if (!storyIsAnchor(c)) return { ok: false }; const d = storyChapterDef(), a = d.actions.find((x) => x[0] === id); if (!a) return { ok: false }; const save = currentCampaignSave(), ch = storyChapterSave(save); if (ch.actions.includes(id)) return { ok: false, already: true }; ch.actions.push(id); ch.updatedAt = Date.now(); saveCampaign(save); return { ok: true, action: a }; }
-export function finalizeStoryForCase(c, label) { if (!storyIsAnchor(c)) return null; const save = currentCampaignSave(), d = storyChapterDef(), ch = storyChapterSave(save), n = ch.actions.length; ch.status = n >= 3 ? 'complete' : n > 0 ? 'partial' : 'missed'; ch.caseLabel = label; ch.summary = n >= 3 ? `${d.title} · 3개 원자료 교차검증 완료` : n > 0 ? `${d.title} · ${n}/3 부분검토` : `${d.title} · 연계기록 미검토`; ch.updatedAt = Date.now(); saveCampaign(save); return { ...ch, title: d.title }; }
+export function recordStoryAction(c, id) { if (!storyIsAnchor(c)) return { ok: false }; const d = storyChapterDef(), a = d.actions.find((x) => x[0] === id); if (!a) return { ok: false }; const save = currentCampaignSave(), ch = storyChapterSave(save); if (!save || !ch) return { ok: false }; if (ch.actions.includes(id)) return { ok: false, already: true }; ch.actions.push(id); ch.updatedAt = Date.now(); saveCampaign(save); return { ok: true, action: a }; }
+export function finalizeStoryForCase(c, label) { if (!storyIsAnchor(c)) return null; const save = currentCampaignSave(), d = storyChapterDef(), ch = storyChapterSave(save); if (!save || !ch) return null; const n = ch.actions.length; ch.status = n >= 3 ? 'complete' : n > 0 ? 'partial' : 'missed'; ch.caseLabel = label; ch.summary = n >= 3 ? `${d.title} · 3개 원자료 교차검증 완료` : n > 0 ? `${d.title} · ${n}/3 부분검토` : `${d.title} · 연계기록 미검토`; ch.updatedAt = Date.now(); saveCampaign(save); return { ...ch, title: d.title }; }
 export const scenarioNameFor = (id) => SCENARIOS[id]?.name || id;

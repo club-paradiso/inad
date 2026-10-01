@@ -31,16 +31,21 @@ export async function buildSingleHtml({ minify = true } = {}) {
   const portraits = portraitDataModule();
   const result = await build({
     entryPoints: [path.join(src, 'js/app.js')],
+    // strict mode in the release bundle, like the native ES modules in src/ (otherwise a write to a
+    // primitive from damaged save data throws in src but is silently ignored in dist, and E2E misses it)
+    banner: { js: '"use strict";' },
     bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], write: false, minify, legalComments: 'none', charset: 'utf8',
     plugins: [{ name: 'inline-portraits', setup(b) { b.onLoad({ filter: /services[\\/]portrait-data\.js$/ }, () => ({ contents: portraits.code, loader: 'js' })); } }]
   });
   const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+  // Replacer functions, not replacement strings: a replacement string expands `$&`, `$1`, `$\`` … so any
+  // such sequence inside the CSS or the bundle (a regex helper, a price label) would corrupt the release.
   let out = html
     .replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '')
-    .replace('</head>', `<style>\n${css}\n</style>\n</head>`)
-    .replace(/<script type="module" src="js\/app\.js"><\/script>/, `<script>\n${js}\n</script>`);
+    .replace('</head>', () => `<style>\n${css}\n</style>\n</head>`)
+    .replace(/<script type="module" src="js\/app\.js"><\/script>/, () => `<script>\n${js}\n</script>`);
   const banner = `<!--\n  INAD: 제12조 v${release} — GENERATED FILE, DO NOT EDIT DIRECTLY.\n  Source of truth: src/ (build with \`npm run build\`).\n  Single-file release: inline CSS + JS + ${portraits.count} WebP portraits, no external resources.\n-->\n`;
-  out = out.replace('<!doctype html>\n', '<!doctype html>\n' + banner);
+  out = out.replace('<!doctype html>\n', () => '<!doctype html>\n' + banner);
   fs.mkdirSync(dist, { recursive: true });
   fs.writeFileSync(path.join(dist, 'index.html'), out);
   fs.writeFileSync(path.join(root, 'index.html'), out); // deployment mirror (Vercel serves root index.html)

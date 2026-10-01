@@ -105,3 +105,5 @@
   .session-row b { font-size: 14px; }
   .tutorial-card { left: 14px !important; right: 14px; width: auto; }
 }
+
+.save-status.warn { color: var(--warning-text); font-weight: 600; }
