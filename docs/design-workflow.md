@@ -80,7 +80,7 @@ Figma 파일: **INAD — Adaptive Workstation Design System** · https://www.fig
 
 - [ ] `docs/ux-audit-v8.md` 또는 이 문서에 근거 기록
 - [ ] Figma `[Approved]` 프레임 링크(또는 코드 선행이면 `[Implemented]` 프레임 링크)
-- [ ] `tokens.css` ↔ Variables 값 일치
-- [ ] `npm run qa` 통과(lint · unit · build · integrity · e2e dist+legacy · adaptive)
+- [ ] `tokens.css` ↔ Variables 값 일치(코드가 먼저 바뀌어 Figma를 바로 고칠 수 없으면 `docs/figma-workspace-spec.md`에 정확한 값 표로 남긴다 — 예: §9)
+- [ ] `npm run qa` 통과(lint · unit · build · integrity · e2e dist, adaptive 포함) + `INAD_TARGET=legacy npm run test:e2e`(qa에는 legacy가 들어 있지 않다; CI는 둘 다 실행)
 - [ ] 1440·1024·768·390 스크린샷 첨부, 가로 오버플로 0, 콘솔 오류 0
 - [ ] `CLAUDE.md`와 `AGENTS.md` 동일하게 갱신(규칙 변경 시)

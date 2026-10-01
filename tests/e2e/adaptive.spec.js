@@ -57,11 +57,12 @@ async function startShift(page) {
   await expect(page.locator('#log .msg').first()).toBeAttached();
 }
 async function inViewport(page, selectors) { for (const s of selectors) await expect(page.locator(s), s).toBeInViewport(); }
-async function touchTargets(page, selectors, min = 40) {
+// CLAUDE.md: touch targets are at least 44px. Every visible match is measured, not just the first.
+async function touchTargets(page, selectors, min = 44) {
   for (const s of selectors) {
-    const box = await page.locator(s).first().boundingBox();
-    expect(box, s).not.toBeNull();
-    expect(box.height, `${s} hit height`).toBeGreaterThanOrEqual(min);
+    const boxes = await page.locator(s).evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ w: r.width, h: r.height })));
+    expect(boxes.length, s).toBeGreaterThan(0);
+    for (const b of boxes) { expect(b.h, `${s} hit height`).toBeGreaterThanOrEqual(min - 0.5); expect(b.w, `${s} hit width`).toBeGreaterThanOrEqual(min - 0.5); }
   }
 }
 

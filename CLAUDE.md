@@ -13,7 +13,7 @@
 - `src/data/*` 데이터 → `src/js/engines/*` 규칙/상태 변경 → `src/js/ui/*` 렌더링 → `src/js/app.js` 흐름 연결.
 - 엔진은 DOM에 접근하지 않습니다(`npm run lint`가 검사). UI는 상태를 직접 변경하지 않고 엔진 함수를 호출합니다.
 - 상태 트리는 `src/js/state.js` 하나(`state`, `session`, `preferences`). 전역 변수 추가 금지.
-- 엔진 → UI 통지는 `src/js/services/bus.js` 이벤트(`changed`, `log`, `ops`, `airportLive`, `toast`, `announce`, `sound`, `pulse`).
+- 엔진 → UI 통지는 `src/js/services/bus.js` 이벤트(`changed`, `log`, `ops`, `airportLive`, `behavior`, `fieldEvent`, `persistence`, `campaign`, `procedure:close`, `toast`, `announce`, `sound`, `pulse`).
 - 저장 스키마: `inad-meta-v54`(v2), `inad-progress-v54`(v1), `inad-campaign-v58`(v1), 번들 `INAD_SAVE_BUNDLE` schema 1. 변경 시 `save-engine.js`의 migrate 함수에 마이그레이션을 추가하고 키 이름은 유지.
 - 실시간 공항 운항정보는 운영 시뮬레이션 보조자료입니다. 승객 유입·대기열·현장 이벤트 압박에만 제한적으로 사용하며 법적 입국요건, 위험도, 허가·불허 판정에는 사용 금지. API 실패·키 미설정 시 정적 공항 프리셋으로 fail-safe 합니다.
 
@@ -32,6 +32,7 @@
 - DOM은 하나. 작업대는 네 구역(`.zone-person · .zone-interview · .zone-evidence · .zone-assessment`)이고 `body[data-task]`는 `src/js/ui/task-nav.js`만 바꾼다. `.desktop-app/.mobile-app` 같은 중복 트리, 3000줄짜리 mobile.css 금지 — CSS는 책임별 파일(shell·workspace·components·documents·procedures·modals·start·accessibility)에 둔다.
 - 브레이크포인트: ≥1280 3구역(320·유동·360) · 1024–1279 3구역(288·유동·320) · 768–1023 작업 영역 + 인스펙터 · <768 과업 1개 + 하단 과업 내비게이션. 페이지 가로 스크롤 금지(`tests/e2e/adaptive.spec.js` 불변식).
 - 터치: 조작 대상 44px 이상, iOS safe-area·`dvh` 반영. 결정 버튼은 터치에서 첫 탭 무장 → 두 번째 탭 실행(`decision-desk.js`); 단일 탭으로 법적 단계를 바꾸지 않는다.
+- 의미색(success·warning·danger·sjp)은 법적·절차적 상태와 결정 데스크 전용. 결정 데스크 밖 계속 버튼은 `.act.primary`, 파괴적 확인은 `.act.danger`(`tests/e2e/design-invariants.spec.js`).
 - 금지: 사이버펑크/네온/글로우, 의미 없는 그라디언트, 카드 안의 카드, 배지·아이콘 나열, 가짜 통계, 장식 마이크로카피, 터미널 클리셰, 선택한 UI 언어와 무관한 이중언어를 과도하게 섞어 시각 위계를 흐리는 구성, 판정 근거가 아닌 값(긴장도·협조도·언어능력·동행)을 판정처럼 보이게 하는 시각.
 
 ## 디자인 변경 워크플로 (Figma ↔ 코드)
@@ -46,7 +47,7 @@
 - `npm run lint` — 문법·엔진 DOM 접근·외부 URL·승인되지 않은 네트워크 호출·console.log 검사.
 - `npm run test:unit` — 엔진 단위·불변식 테스트(node:test).
 - `npm run test:integrity` — 빌드 산출물 정적 검사.
-- `npm run test:e2e` — Playwright(dist 기준). `INAD_TARGET=legacy|src`로 대상 전환. `tests/e2e/adaptive.spec.js`는 390·430·768·1024·1440 뷰포트 전체 흐름·가로 오버플로·터치 크기를 검사(legacy에서는 자동 생략).
+- `npm run test:e2e` — Playwright(dist 기준). `INAD_TARGET=legacy|src`로 대상 전환. `tests/e2e/adaptive.spec.js`는 320·390·430·844×390·768·1024·1366·1440 뷰포트 전체 흐름·가로 오버플로·터치 크기(가로·세로 44px)를 검사(legacy에서는 자동 생략). `INAD_CHROMIUM_PATH`(설치된 Chromium), `INAD_PORT`(포트) 지원.
 - `npm test` / `npm run qa` — 전체.
 
 ## 금지사항
