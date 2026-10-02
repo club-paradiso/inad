@@ -16,7 +16,7 @@
 | `npm run lint` | 81 modules OK · 53 tooling files parse |
 | `npm run test:unit` | **130/130** (106 v9 + 15 dialogue + 6 `/api/npc` + 3 daily) |
 | `npm run test:integrity` | 10/10 (network invariant now: only `/api/airport-load` and `/api/npc`) |
-| `npm run test:e2e` (dist) | **101/101** (83 v9 incl. the 8-viewport adaptive sweep + 9 live interview + 2 quick shift + 7 case of the day) |
+| `npm run test:e2e` (dist) | **103/103** (83 v9 incl. the 8-viewport adaptive sweep + 9 live interview + 2 quick shift + 7 case of the day + 2 English UI) · legacy parity 19 passed |
 | `npm run eval:dialogue` | tuned 152 lines 100 % (0 wrong routes) · held-out rounds 2 · 4 · 6: 62 lines, 75.8 % placed or offered as a candidate, 6 wrong routes |
 v9 tests changed: `tests/e2e/helpers.js ask()` now also waits until the passenger's reply is shown (the record is held
 for the reaction time); `tests/integration/dist-integrity.test.js` allows the second approved same-origin endpoint and
@@ -62,8 +62,18 @@ asserts every fetch targets an approved one. No test was removed or loosened oth
 | 2 · avatar 2× | mouth gap read as lipstick | darker, narrower gap, lower amplitude |
 | 3 · debrief | dialog opened scrolled to the bottom (autofocus on the last button) | pinned action bar; opens at the decision basis |
 | 3 · start | "약 5분" was not measured | removed |
-Open visual notes: the evidence strip truncates long document names at 1280–1439 (scrollable, faded edge);
-v9 result-dialog labels are still Korean in the English UI (pre-existing).
+Open visual notes: the evidence strip truncates long document names at 1280–1439 (scrollable, faded edge).
+
+English UI audit (2026-10-02, scripted walk of start → live interview → secondary → refusal → debrief → Quick Shift
+with `inad-locale=en`): UI vocabulary that still rendered in Korean — language names and levels, demeanor and
+temperament labels, question categories, the clue board, the readiness hint, decision-basis domain/confidence/headline
+labels, the debrief report labels and heading, the first-traveler safeguard, the start-screen notice and daily
+missions, announcement lines, dialog/tab aria-labels — is now translated (`src/js/services/i18n.js`; language names
+come from `src/data/language.js`, which already carried them). Fixed a mistranslation: the status pattern `현재 …`
+turned the question "현재 체재비와 결제수단은 얼마입니까?" into "Now: 체재비…"; it now applies only to known labels.
+Left in Korean by design: case data (statements, question texts, names, document fields, evidence-matrix notes,
+statute texts and source titles). `tests/e2e/i18n.spec.js` (2 new tests) fails on the previous translation table.
+
 
 ## 5. Performance (Chromium, release build, 1440×900; `scripts/measure-performance.js`)
 | Metric | Budget | Normal CPU | 4× throttled |
