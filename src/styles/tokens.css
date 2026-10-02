@@ -47,6 +47,13 @@
   --sjp-soft: #ede8f3;
   --neutral-soft: #eceff3;
 
+  /* v10 interview booth — the human layer (Figma color/booth/* · size/booth-width, synced: docs/figma-workspace-spec.md §10) */
+  --booth: #111b21;           /* window behind the passenger */
+  --booth-2: #18252c;         /* plate under the portrait */
+  --booth-line: #283840;
+  --booth-text: #e9eef1;
+  --booth-muted: #a3b3bd;     /* ≥4.5:1 on --booth and --booth-2 */
+
   /* procedure accent (set per data-mode) */
   --proc: var(--accent);
 
@@ -81,11 +88,12 @@
 
   /* layout — Figma size/* */
   --h-topbar: 48px; --h-opsbar: 32px; --h-casebar: 44px; --h-statusbar: 24px; --h-tasknav: 56px; --h-mobile-header: 56px;
-  --w-left: 320px; --w-right: 360px; --w-inspector: 300px;
+  --w-left: 320px; --w-right: 360px; --w-inspector: 300px; --w-booth: 304px;
   --size-touch: 44px;
   --focus-ring: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
   --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); --safe-right: env(safe-area-inset-right, 0px);
 }
+@media (max-width: 1439px) { :root { --w-booth: 280px; --w-right: 330px; } }
 @media (max-width: 1279px) { :root { --w-left: 288px; --w-right: 320px; } }
 @media (max-height: 820px) { :root { --h-topbar: 44px; --h-opsbar: 30px; --h-casebar: 40px; } }
 /* short landscape phones run the phone layout (task-nav.js PHONE_QUERY) with tighter chrome */

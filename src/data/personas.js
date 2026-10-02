@@ -1,0 +1,150 @@
+// INAD v10 passenger personas — presentation content for the dialogue layer (docs/v10-live-interview-spec.md §4).
+// A persona never adds a case fact. It may only say:
+//   · the canonical answer from src/data/cases.js (recorded through case-engine ask(), unchanged), optionally led by
+//     a non-factual discourse marker (`lead`), with a delivery mood the avatar acts out;
+//   · `withheld` lines for questions whose disclosure condition is not met yet — restating only what is already
+//     public (the initial statement, submitted documents). tests/unit/dialogue.test.js checks this for every line;
+//   · clarification / greeting / hand-over lines with no case content.
+// Moods are acting directions (motion-grammar.js), never evidence: a hesitant delivery is not a sign of anything.
+
+export const GENERIC_PERSONA = {
+  clarify: ['죄송합니다. 질문을 다시 한 번 말씀해 주시겠습니까?', '무엇을 물으시는지 잘 모르겠습니다. 다시 여쭤봐 주시겠어요?'],
+  greeting: ['안녕하세요.'],
+  thanks: ['네.'],
+  handover: ['네, 여기 있습니다.'],
+  wait: ['네.'],
+  // {initial} is the passenger's own opening statement (public).
+  withheldDefault: '아까 말씀드린 대로입니다. {initial}',
+  offTopic: ['그건 이번 입국과 관련된 질문인가요? 다시 말씀해 주시겠어요?'],
+  // free text that most likely repeats a question already answered: confirm before the (v9-costed) re-ask
+  repeatCheck: ['앞서 말씀드린 것과 같은 질문이신가요?']
+};
+
+export const PERSONAS = {
+  'ICN-S2-005': {
+    voice: { lang: 'ko', register: 'polite-short', rate: 0.96, pitch: 1.0 },
+    note: 'First trip abroad. Answers briefly and politely; slows down when money, the contact or work comes up. Never volunteers.',
+    en: {
+      purpose: 'What exactly will you do in Korea?',
+      return: "Why don't you have a return ticket?",
+      funds: 'How much money do you have for the stay and how will you pay?',
+      contact: 'Who is your contact in Korea, the number 010-0000-0202?',
+      phone: 'Would you voluntarily show me phone records for your return flight, lodging or host?',
+      occupation: 'What do you do in Vietnam now and what is your income?',
+      addressOwner: 'Who lives at the house in Guro that you declared?',
+      jobOffer: 'Have you looked for a job or a job interview in Korea?',
+      returnMoney: 'How will you get the money for the return ticket later?',
+      host: 'How did you first get to know your contact in Korea?'
+    },
+    delivery: {
+      purpose: { mood: 'plain' },
+      return: { mood: 'considered', lead: '아…' },
+      funds: { mood: 'considered', lead: '음,' },
+      contact: { mood: 'hesitant', lead: '그 번호는요…' },
+      phone: { mood: 'hesitant', lead: '그건…' },
+      occupation: { mood: 'considered' },
+      addressOwner: { mood: 'hesitant', lead: '아…' },
+      jobOffer: { mood: 'hesitant', lead: '…솔직히 말씀드리면,' },
+      returnMoney: { mood: 'hesitant', lead: '그게…' },
+      host: { mood: 'considered' }
+    },
+    // Disclosure conditions are the case's own `requires` lists. Until they are met the passenger answers with
+    // what is already on record (initial statement · E-ARRIVAL · PNR) and the question stays open.
+    withheld: {
+      occupation: '관광하러 왔습니다. 명동에서 쇼핑하고 한 달 정도 머물 예정입니다.',
+      addressOwner: '체류지는 구로구 개인주택입니다.',
+      jobOffer: '관광하러 왔습니다. 명동에서 쇼핑하고 한 달 정도 머물 예정입니다.',
+      returnMoney: '귀국편은 없습니다.',
+      host: '연락처는 010-0000-0202입니다.'
+    },
+    clarify: ['죄송합니다. 다시 한 번 천천히 말씀해 주시겠어요?', '…무슨 뜻인지 잘 모르겠습니다.'],
+    greeting: ['안녕하세요.'],
+    handover: ['네, 여기 있습니다.']
+  },
+  'ICN-S1-001': {
+    voice: { lang: 'ko', register: 'business-relaxed', rate: 1.0, pitch: 1.0 },
+    note: 'Seasoned business traveller, jet-lagged, answers fully and quickly. Nothing to hide; mildly impatient with repeats.',
+    en: {
+      purpose: 'What is the purpose of your visit, in detail?', hotel: 'Where are you staying in Korea?', return: 'When is your return flight?',
+      funds: 'Do you have enough money and means of payment for the stay?', agenda: 'What is your conference and meeting schedule?',
+      pay: 'Will you receive any pay or salary from a Korean company?', samples: 'Do you have work equipment or samples in your luggage?',
+      sponsor: 'Who pays for the flight and the hotel?'
+    },
+    delivery: { purpose: { mood: 'plain' }, agenda: { mood: 'considered' }, pay: { mood: 'plain', lead: '아,' }, samples: { mood: 'considered', lead: '음,' }, sponsor: { mood: 'plain' } },
+    withheld: {
+      agenda: '서울에서 3일간 열리는 반도체 컨퍼런스에 참석합니다.',
+      pay: '서울에서 3일간 열리는 반도체 컨퍼런스에 참석합니다.',
+      samples: '컨퍼런스 참석입니다.',
+      sponsor: '호텔과 귀국편은 확정되어 있습니다.'
+    }
+  },
+  'ICN-S1-002': {
+    voice: { lang: 'ko', register: 'polite-light', rate: 1.02, pitch: 1.05 },
+    note: 'First trip with a university friend; a little shy, cheerful, answers short. Campaign holiday-arc anchor (recurring presence).',
+    en: {
+      purpose: 'What is the purpose of this trip?', hotel: 'Where are you staying?', return: 'When are you going back to Japan?',
+      companion: 'Who is the friend you travel with, and do you share the schedule?', friendKorea: 'Will you meet anyone you know in Korea?',
+      budget: 'How did you prepare your travel money?', study: 'Do you plan to take classes or stay long in Korea?'
+    },
+    delivery: { purpose: { mood: 'plain' }, companion: { mood: 'plain' }, friendKorea: { mood: 'considered', lead: '아,' }, budget: { mood: 'plain' }, study: { mood: 'considered', lead: '음,' } },
+    withheld: {
+      companion: '친구와 서울 여행을 왔습니다.',
+      friendKorea: '홍대와 성수에 갈 예정입니다.',
+      budget: '체류지는 Myeongdong Hotel입니다.',
+      study: '출국은 OZ102입니다.'
+    }
+  },
+  'ICN-S2-006': {
+    voice: { lang: 'ko', register: 'polite-careful', rate: 0.98, pitch: 1.02 },
+    note: 'Looks suspicious on paper (booked by a friend) and knows it; slightly anxious, eager to show the bookings. Explained after secondary.',
+    en: {
+      hotel: 'Why is the hotel not booked in your name?', friend: 'What is your companion’s name and arrival flight?', return: 'Please show me your return ticket.',
+      funds: 'How did you prepare your travel money?', bookingName: 'Who is the lead name on the hotel booking?',
+      separateFunds: 'Do you have your own money, separate from your friend?', itinerary: 'What is your Seoul–Busan itinerary?',
+      work: 'Do you plan to work or be paid in Korea?'
+    },
+    delivery: { hotel: { mood: 'considered', lead: '아,' }, bookingName: { mood: 'plain' }, separateFunds: { mood: 'plain', lead: '네,' }, itinerary: { mood: 'plain' }, work: { mood: 'plain' } },
+    withheld: {
+      bookingName: '호텔은 친구가 대신 예약해 줬습니다.',
+      separateFunds: '서울과 부산을 여행합니다.',
+      itinerary: '서울과 부산을 여행합니다.',
+      work: '서울과 부산을 여행합니다.'
+    }
+  },
+  'ICN-S3-010': {
+    voice: { lang: 'ko', register: 'tired-plain', rate: 0.94, pitch: 0.98 },
+    note: 'Exhausted, money worries; says openly that he wants work. The refugee procedure follows the law whatever his delivery; never play it for sympathy or suspicion.',
+    en: {
+      purpose: 'Explain your sightseeing schedule and where you will stay.', funds: 'How much money do you have for the stay?',
+      refugee: 'Are you saying you face persecution if you return?', persecution: 'Who would harm you at home, and why?',
+      family: 'Does your family live in your home country now?', route: 'Did you ask for protection in another country before coming?',
+      workPlan: 'What work did you want to do in Korea?', claimTiming: 'When did you start thinking of applying for refugee status?'
+    },
+    delivery: { purpose: { mood: 'considered' }, funds: { mood: 'hesitant', lead: '그게…' }, refugee: { mood: 'considered' }, persecution: { mood: 'considered', lead: '음,' }, workPlan: { mood: 'hesitant' }, claimTiming: { mood: 'hesitant', lead: '…' } },
+    withheld: {
+      persecution: '서울 관광을 하려고 왔습니다.',
+      family: '서울 관광을 하려고 왔습니다.',
+      route: '서울 관광을 하려고 왔습니다.',
+      workPlan: '돈은 많지 않습니다.',
+      claimTiming: '서울 관광을 하려고 왔습니다.'
+    }
+  },
+  'ICN-S3-011': {
+    voice: { lang: 'ko', register: 'firm-quiet', rate: 0.96, pitch: 0.98 },
+    note: 'Calm and firm: everything else is in order, he simply refuses fingerprints. Not hostile; listens to the explanation and keeps his position.',
+    en: {
+      bio: 'Will you complete the biometric procedure required for entry?', exempt: 'Do you claim any ground for exemption from biometrics?',
+      age: 'Are you under 17?', official: 'Are you on official government or international-organisation business?',
+      explain: 'I have explained the legal procedure and the consequences. Will you comply now?', otherDocs: 'Your passport, flight and address are fine — is it only the biometrics you refuse?'
+    },
+    delivery: { bio: { mood: 'considered' }, exempt: { mood: 'plain' }, explain: { mood: 'considered', lead: '음,' }, otherDocs: { mood: 'plain', lead: '네,' } },
+    withheld: {
+      age: '한국에 사는 사촌을 만나러 왔습니다.',
+      official: '한국에 사는 사촌을 만나러 왔습니다.',
+      explain: '지문은 제공하고 싶지 않습니다.',
+      otherDocs: '한국에 사는 사촌을 만나러 왔습니다.'
+    }
+  }
+};
+
+export function personaFor(caseId) { return { ...GENERIC_PERSONA, ...(PERSONAS[caseId] || {}) }; }

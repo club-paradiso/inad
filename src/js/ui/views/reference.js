@@ -11,6 +11,7 @@ export const SHORTCUT_ROWS = [['1–6', '질문 카테고리 선택'], ['K / E /
 
 export function applyPreferences() {
   document.body.classList.toggle('pref-font-large', preferences.font === 'large'); document.body.classList.toggle('pref-contrast', preferences.contrast); document.body.classList.toggle('pref-reduce-motion', preferences.reduceMotion); document.body.classList.toggle('show-hotkeys', preferences.shortcutHints); document.body.classList.toggle('shortcuts-off', !preferences.shortcuts);
+  document.dispatchEvent(new CustomEvent('inad:prefs'));
   const live = byId('a11yLive'); if (live) live.textContent = `화면 설정 적용: 글자 ${preferences.font === 'large' ? '크게' : '기본'}, ${preferences.contrast ? '고대비' : '기본 대비'}, ${preferences.reduceMotion ? '동작 감소' : '기본 동작'}`;
 }
 const toggleWord = (k) => (k === 'shortcutHints' ? (preferences[k] ? '표시 중' : '숨김') : (preferences[k] ? '사용 중' : '사용 안 함'));

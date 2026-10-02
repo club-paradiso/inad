@@ -25,11 +25,13 @@ test('release artifact is standalone: no external URLs, no module imports, inlin
   assert.equal((stripped.match(/\b(src|href|action)=["']https?:/g) || []).length, 0, 'no external src/href/action');
   assert.equal((stripped.match(/url\(\s*["']?https?:/g) || []).length, 0, 'no external CSS urls');
   assert.equal((stripped.match(/@import/g) || []).length, 0, 'no CSS imports');
-  // The only permitted browser network call is the same-origin airport-load proxy (see CLAUDE.md).
+  // The only permitted browser network calls are the same-origin airport-load proxy and the optional v10
+  // inference boundary /api/npc (see CLAUDE.md); every fetch call site must target one of them.
   assert.equal((stripped.match(/\b(XMLHttpRequest|sendBeacon|WebSocket|EventSource)\s*\(/g) || []).length, 0, 'no network APIs');
   const fetches = stripped.match(/\bfetch\s*\([^)]*/g) || [];
-  assert.equal(fetches.length, 1, 'exactly one fetch call site (airport-load proxy client)');
-  assert.ok(/fetch\s*\(\s*`\/api\/airport-load\?/.test(fetches[0]), 'fetch targets only same-origin /api/airport-load');
+  assert.equal(fetches.length, 3, 'three fetch call sites: airport-load proxy client, npc availability, npc classify');
+  for (const f of fetches) assert.ok(/fetch\s*\(\s*(`\/api\/airport-load\?|["']\/api\/npc["'])/.test(f), `fetch targets only an approved same-origin endpoint: ${f.slice(0, 60)}`);
+  assert.equal(fetches.filter((f) => /airport-load/.test(f)).length, 1, 'one airport-load call site');
   assert.equal((stripped.match(/fetch\s*\(\s*["'`]https?:/g) || []).length, 0, 'no absolute-URL fetch');
   // Optional UI modules must be bundled, not requested at runtime from a non-existent path.
   assert.ok(!/\bimport\s*\(/.test(stripped), 'no dynamic imports');

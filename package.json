@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "test:e2e:legacy": "INAD_TARGET=legacy playwright test",
     "lint": "node scripts/lint.js",
-    "qa": "npm run lint && npm test"
+    "qa": "npm run lint && npm test",
+    "eval:dialogue": "node scripts/eval-dialogue.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

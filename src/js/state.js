@@ -38,6 +38,8 @@ export const state = {
   eventsSeen: 0, activeEvent: null, eventSchedule: [], eventHistory: [], backlogOffset: 0,
   refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, procedureMode: null,
   discoveredClues: new Set(), behavior: null, language: null, party: null,
+  sessionMode: 'shift',     // 'shift' (36-passenger duty) | 'case' (v10 single live interview) | 'quick' (v10 6-passenger first run) | 'daily' (v10 case of the day); only 'shift' saves checkpoints or career
+  interview: null,          // v10 dialogue record for the current case (engines/interview-engine.js); presentation + analytics only, never saved
   started: false, stats: emptyStats(), reports: [], mistakes: [], sessionSaved: false, newAchievements: [], newDailyRewards: []
 };
 
@@ -60,5 +62,12 @@ export const preferences = {
   // Shortcut hints are an opt-in keyboard aid (설정); on by default they cluttered every control label.
   shortcutHints: storeGet('inad-shortcut-hints', '0') === '1',
   // Single-key shortcuts (K, H, 1–6, M …) can be turned off (WCAG 2.1.4); Alt combinations, F1 and Esc stay.
-  shortcuts: storeGet('inad-shortcuts', '1') !== '0'
+  shortcuts: storeGet('inad-shortcuts', '1') !== '0',
+  // v10 interview assistance (suggestion density) — never changes rules or score. '' = follow the 안내 모드.
+  assist: oneOf(storeGet('inad-assist', ''), ['', 'guided', 'standard', 'professional', 'immersive'], ''),
+  // Voice: 'off' until the examiner turns it on; 'local' = on-device recognition only; 'browser' = the browser's
+  // own service may process audio (explicit consent). Spoken replies (TTS) are separate and off by default.
+  voice: oneOf(storeGet('inad-voice', 'off'), ['off', 'local', 'browser'], 'off'),
+  tts: storeGet('inad-tts', '0') === '1'
 };
+export function assistLevel() { return preferences.assist || (state.guidance === 'guided' ? 'guided' : 'standard'); }

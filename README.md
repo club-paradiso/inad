@@ -3,6 +3,12 @@
 Fictional immigration-inspection simulation (Korean UI with a selectable English UI, vanilla HTML/CSS/JS, single-file release). One DOM adapts from 320px phones to 1440px+ workstations (승객 · 인터뷰 · 자료 · 판단 task navigation on phones, workspace + inspector on tablets, three-zone desk on desktop).
 Production: https://inad-gray.vercel.app
 
+**v10 Live Interview (vertical slice, in review):** talk to the passenger by typing, push-to-talk or suggestions; the
+deterministic engines still decide every fact and verdict. Start screen → 라이브 인터뷰. Docs: `docs/v10-product-vision.md`,
+`docs/v10-live-interview-spec.md`, `docs/v10-ai-architecture.md`, `docs/v10-avatar-system.md`, `docs/v10-privacy.md`,
+`docs/v10-art-direction.md` (+ `design/v10/`), `docs/v10-qa.md`. Optional model: set `INAD_LLM_BASE_URL`,
+`INAD_LLM_MODEL` (and `INAD_LLM_API_KEY`) on the server; `npm run eval:dialogue` evaluates intent routing.
+
 - Source of truth: `src/` · release artifact: `dist/index.html` (root `index.html` is the generated mirror)
 - Docs: `CLAUDE.md` / `AGENTS.md` (working rules), `docs/architecture.md`, `docs/design-system.md`, `docs/design-workflow.md` (Figma ↔ code), `docs/figma-workspace-spec.md`, `docs/legal-baseline.md`, `docs/legal-review.md`, QA `docs/qa-v9.md` (current) · `docs/qa-v8.md` · `docs/qa-v7.md`, release notes `RELEASE_NOTES_v9.0.md` (current) · `RELEASE_NOTES_v7.0.md` (v7.0–v7.2)
 - Figma: [INAD — Adaptive Workstation Design System](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8)

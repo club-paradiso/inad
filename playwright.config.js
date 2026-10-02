@@ -34,7 +34,7 @@ export default defineConfig({
     command: `node scripts/static-server.js ${dirs[target]} ${port}`,
     // E2E must be deterministic: never let a developer's public-data key reach the local
     // airport-load proxy, so the game always takes its static-preset fallback path.
-    env: { ...process.env, DATA_GO_KR_SERVICE_KEY: '', AIRPORT_DATA_API_KEY: '', PUBLIC_DATA_API_KEY: '' },
+    env: { ...process.env, DATA_GO_KR_SERVICE_KEY: '', AIRPORT_DATA_API_KEY: '', PUBLIC_DATA_API_KEY: '', INAD_LLM_BASE_URL: '', INAD_LLM_MODEL: '', INAD_LLM_API_KEY: '' },
     url: `http://127.0.0.1:${port}${files[target] === 'index.html' ? '/' : '/' + files[target]}`,
     // Never silently reuse a running server: `npm run dev` may hold a live public-data key (see env above).
     reuseExistingServer: !!process.env.INAD_REUSE_SERVER,

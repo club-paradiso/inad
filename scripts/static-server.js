@@ -2,12 +2,13 @@
 // Usage: node scripts/static-server.js <dir> <port>
 //
 // `/api/airport-load` is routed to the same server function Vercel runs (`api/airport-load.js`)
-// so local play and E2E exercise the real same-origin proxy. Without a configured public-data
+// so local play and E2E exercise the real same-origin proxy (the v10 `/api/npc` inference boundary likewise). Without a configured public-data
 // key the function answers with its static-preset fallback, exactly like production.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import airportLoad from '../api/airport-load.js';
+import npc from '../api/npc.js';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -23,6 +24,13 @@ export function createStaticServer(dir, port, { quiet = false } = {}) {
       Promise.resolve(airportLoad(req, res)).catch(() => {
         if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'airport-load-failed' }));
+      });
+      return;
+    }
+    if (url.pathname === '/api/npc') {
+      Promise.resolve(npc(req, res)).catch(() => {
+        if (!res.headersSent) res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'npc-failed' }));
       });
       return;
     }
