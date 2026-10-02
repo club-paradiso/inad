@@ -446,6 +446,9 @@ const EXACT = new Map([
   ['말하기', 'Speak'],
   ['라이브 인터뷰', 'Live interview'],
   ['승객과 직접 대화합니다 · 설정 없이 바로 시작 · 저장되지 않음', 'Talk directly with travelers · no setup · nothing is saved'],
+  ['오늘의 사건', 'Case of the day'],
+  ['결과 복사', 'Copy result'],
+  ['복사했습니다', 'Copied'],
   ['승객 1명', '1 traveler'],
   ['짧은 근무 · 6명', 'Short shift · 6 travelers'],
   ['짧은 근무', 'Short shift'],
@@ -541,6 +544,7 @@ const PATTERNS = [
   [/^현재 (.+)$/, (m, x) => `Now: ${EXACT.get(x) || x}`, true],
   [/^(.+) 통역 호출$/, (m, lang) => `Call interpreter (${EXACT.get(lang) || lang})`, true], // the language name is data, not UI copy
   // v10 live interview: strings assembled from a fixed UI part and a data part (question text, names, labels stay Korean)
+  [/^오늘의 사건 · 완료 (\d+)\/(\d+)$/, (m, a, b) => `Case of the day · done ${a}/${b}`],
   [/^질문 도움 · (안내|표준|전문|몰입)$/, (m, x) => `Question help · ${EXACT.get(x)}`],
   [/^지금: (안내|기본|전문|몰입)$/, (m, x) => `Now: ${EXACT.get(x)}`],
   [/^(.+) 통역 연결$/, (m, lang) => `Connect interpreter (${EXACT.get(lang) || lang})`, true],

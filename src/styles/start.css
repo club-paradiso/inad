@@ -69,7 +69,7 @@
 .start-live-actions button { min-height: var(--size-touch); padding: 0 14px; border: 1px solid var(--booth-muted); border-radius: var(--r-1); background: transparent; color: var(--booth-text); font-size: var(--fs-compact); font-weight: 700; white-space: nowrap; transition: background var(--t-fast) var(--ease); }
 .start-live-actions button:hover { background: var(--booth-2); }
 .start-live-actions button:first-child { background: var(--booth-text); color: var(--booth); border-color: var(--booth-text); }
-@media (max-width: 767px) { .start-live { grid-template-columns: minmax(0, 1fr); } .start-live-actions button { flex: 1; } }
+@media (max-width: 1279px) { .start-live { grid-template-columns: minmax(0, 1fr); } .start-live-actions { flex-wrap: wrap; } .start-live-actions button { flex: 1 1 auto; } }
 .start-settings { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-compact); font-weight: 600; color: var(--text-2); }
 .start-settings.resume-start { height: 48px; border-color: var(--success); color: var(--success-text); }
 .start-links { display: grid; gap: 6px; }

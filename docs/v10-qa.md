@@ -13,10 +13,10 @@
 ## 2. Automated results (final run on the branch head)
 | Suite | Result |
 |---|---|
-| `npm run lint` | 80 modules OK · 50 tooling files parse |
-| `npm run test:unit` | **125/125** (106 v9 + 13 dialogue + 6 `/api/npc`) |
+| `npm run lint` | 81 modules OK · 53 tooling files parse |
+| `npm run test:unit` | **129/129** (106 v9 + 14 dialogue + 6 `/api/npc` + 3 daily) |
 | `npm run test:integrity` | 10/10 (network invariant now: only `/api/airport-load` and `/api/npc`) |
-| `npm run test:e2e` (dist) | **92/92** (83 v9 incl. the 8-viewport adaptive sweep + 9 live-interview) |
+| `npm run test:e2e` (dist) | **95/95** (83 v9 incl. the 8-viewport adaptive sweep + 9 live interview + 2 quick shift + 1 case of the day) |
 | `npm run eval:dialogue` | tuned 100 % (0 wrong routes) · held-out round 2 76.5 % (13/17, 1 wrong route) |
 v9 tests changed: `tests/e2e/helpers.js ask()` now also waits until the passenger's reply is shown (the record is held
 for the reaction time); `tests/integration/dist-integrity.test.js` allows the second approved same-origin endpoint and

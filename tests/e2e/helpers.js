@@ -167,6 +167,29 @@ export async function solveNormalCase(page) {
   await expectResult(page, '입국 허가');
 }
 
+// Satisfy every required action of a CLEAR case through the UI, admit, and check the debrief.
+// v10 single-case modes (live · quick · daily): same as solveNormalCase, but the result is the debrief dialog.
+export async function solveClearDebrief(page) {
+  const c = await currentCase(page);
+  const st = await getState(page);
+  if (st.language && !st.language.interpreterActive && (st.language.mode === 'none' || Math.max(st.language.korean, st.language.english) < 3)) await page.locator('#langInterp').click();
+  const asked = new Set();
+  async function askWithDeps(qid) {
+    if (asked.has(qid)) return; const q = c.questions.find((x) => x.id === qid);
+    for (const dep of q.requires || []) { if (dep.startsWith('QUESTION_')) await askWithDeps(dep.slice(9)); else if (dep.startsWith('LOOKUP_')) await lookup(page, dep.slice(7)); }
+    await ask(page, qid); asked.add(qid);
+  }
+  for (const r of c.required) {
+    if (r === 'SECONDARY') { await page.locator('#secondaryBtn').click(); await expect(page.locator('#procedureScreen')).toHaveClass(/on/); await procAct(page, 'back'); }
+    else if (r.startsWith('QUESTION_')) await askWithDeps(r.slice(9));
+    else if (r.startsWith('LOOKUP_')) await lookup(page, r.slice(7));
+  }
+  await page.locator('#clearBtn').click();
+  await continueDoc(page);
+  await expect(page.locator('#modalTitle')).toHaveText('심사 처리 결과 · 디브리핑');
+  await expect(page.locator('#modalBody')).toContainText('입국 허가');
+}
+
 export async function afterNext(page) {
   // After "다음 승객 호출" a shift transition briefing may appear.
   const begin = page.locator('#beginShift');

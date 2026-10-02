@@ -40,3 +40,5 @@ terms match this; self-hosting keeps the text inside the operator's infrastructu
 
 ## 7. Stored keys added in v10
 `inad-assist`, `inad-voice`, `inad-tts` — preferences only, carried in the portable save bundle like other preferences.
+`inad-daily-v10` — Case-of-the-Day results (date, case id, decision, procedure %, key-clue counts, question count,
+turn counts by input surface, procedural path); no text, kept 30 days, local only, not in the bundle.

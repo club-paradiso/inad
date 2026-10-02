@@ -34,13 +34,19 @@ export function debriefHTML(d, { full = true, lesson = full } = {}) {
   ${src ? `<p class="debrief-meta">${esc(src)} — 입력 방식은 점수와 판정에 반영되지 않습니다.</p>` : ''}</section>`;
 }
 
-export function showCaseResult(r, onNext, { mode = 'shift', onRetry = null, onExit = null, onSummary = null, onNext: onQuickNext = null } = {}) {
+export function showCaseResult(r, onNext, { mode = 'shift', onRetry = null, onExit = null, onSummary = null, onNext: onQuickNext = null, daily = null } = {}) {
   const { c, t, label, seconds, procedure, effEval, caseEff, last, pressure, backlog, clue, party, challenge, storyResult } = r; const timeClass = caseEff >= 90 ? 'good' : caseEff >= 75 ? 'warn' : 'bad';
-  if (mode === 'case' || mode === 'quick') {
-    const actions = mode === 'quick'
+  if (mode === 'case' || mode === 'quick' || mode === 'daily') {
+    const actions = mode === 'daily'
+      ? `<div class="daily-result"><b>오늘의 결과${daily.first ? '' : ' · 이미 기록된 날입니다 (첫 결과만 저장)'}</b><pre id="dailyShare">${esc(daily.share)}</pre></div><button type="button" class="act primary" id="dailyCopy" data-autofocus><strong>결과 복사</strong></button><button type="button" class="act" id="liveExit"><strong>시작 화면으로</strong></button>`
+      : mode === 'quick'
       ? `<button type="button" class="act primary" id="${last ? 'quickSummary' : 'quickNext'}" data-autofocus><strong>${last ? '근무 요약 보기' : '다음 승객 호출'}</strong></button>`
       : '<button type="button" class="act primary" id="liveRetry" data-autofocus><strong>같은 승객 다시 인터뷰</strong></button><button type="button" class="act" id="liveExit"><strong>시작 화면으로</strong></button>';
     showModal('심사 처리 결과 · 디브리핑', `<div class="report-person"><img src="${t.portrait}" alt=""><div><div class="report-name">${esc(t.name.korean)}</div><div class="report-sub mono">${esc(t.name.latin)} · ${esc(t.nationality.korean)}</div><div class="report"><div class="r"><span>최종결정</span><b>${esc(label)}</b></div><div class="r"><span>절차 준수</span><b>${procedure}%</b></div><div class="r"><span>조회·질문</span><b>${state.asked.size + state.looked.size}</b></div><div class="r"><span>가상 처리시간</span><b>${fmtClock(seconds)}</b></div></div></div></div>${debriefHTML(r.debrief, { full: true })}${basisSectionHTML(c, state)}<div class="voice-actions debrief-actions">${actions}</div>`, { dismissible: false });
+    if (mode === 'daily') {
+      byId('dailyCopy').onclick = async () => { let ok = false; try { await navigator.clipboard.writeText(daily.share); ok = true; } catch (e) { ok = false; } byId('dailyCopy').querySelector('strong').textContent = ok ? '복사했습니다' : '복사할 수 없습니다 · 위 글을 직접 선택하십시오'; };
+      byId('liveExit').onclick = () => { closeModal(); onExit?.(); }; return;
+    }
     if (mode === 'quick') { byId(last ? 'quickSummary' : 'quickNext').onclick = () => { closeModal(); (last ? onSummary : onQuickNext)?.(); }; return; }
     byId('liveRetry').onclick = () => { closeModal(); onRetry?.(); }; byId('liveExit').onclick = () => { closeModal(); onExit?.(); };
     return;

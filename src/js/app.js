@@ -43,6 +43,7 @@ import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } f
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
 import { interviewSummary } from './engines/interview-engine.js';
+import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
 const LIVE_CASE = { caseId: 'ICN-S2-005', seed: 271828 };
@@ -139,6 +140,12 @@ function finishFlow(label) {
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record);
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') { showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() }); return; }
+  if (state.sessionMode === 'daily') {
+    const d = dailyCase(); const result = dailyResult(d.dateKey, r.c, r.report, r.debrief, record.interview); const first = saveDailyResult(result);
+    bus.emit('analytics', { name: 'daily_complete', label });
+    showCaseResult(r, null, { mode: 'daily', daily: { result, first, share: shareText(result) }, onExit: () => location.reload() });
+    return;
+  }
   if (state.sessionMode === 'quick') {
     showCaseResult(r, null, { mode: 'quick', onNext: () => { caseEngine.advanceQueue(); beginCase(); }, onSummary: () => showQuickSummary(state.reports, { onRetry: () => quickShiftFlow(true), onExit: () => location.reload() }) });
     return;
@@ -176,6 +183,18 @@ function quickShiftFlow(retry = false) {
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'quick_retry' : 'quick_start' });
   showAnnouncement('짧은 근무', `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
 }
+// Case of the Day: the same case and seed for everyone on a Korean calendar day; standard rules, no coaching.
+function dailyFlow() {
+  if (state.started) return;
+  const d = dailyCase();
+  Object.assign(state, { sessionMode: 'daily', difficulty: 'standard', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: 'expert' });
+  regenerate(d.seed); state.eventSchedule = [];
+  if (!singleCaseSession(d.caseId)) { toast('오늘의 사건을 찾지 못했습니다.'); return; }
+  state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
+  hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: 'daily_start' });
+  showAnnouncement('오늘의 사건', `${d.dateKey} · 모두에게 같은 승객입니다.`, 'DAILY', 2000); beginCase();
+}
+function renderDailyCaseButton() { const b = byId('dailyCaseBtn'); if (!b) return; const r = loadDailyResults()[dailyCase().dateKey]; b.textContent = r ? `오늘의 사건 · 완료 ${r.keyClues.found}/${r.keyClues.total}` : '오늘의 사건'; }
 function recordsFlow() { showRecordsCenter({ onResume: state.started ? null : resumeFlow, onProfile: showPlayerProfile, onBoard: showChallengeBoard, onDaily: showDailyMissions }); }
 function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true, byId('helpBtn')) === false) toast('근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.'); }, onRecords: recordsFlow, onProfile: showPlayerProfile, onChallenge: showChallengeDetail }); }
 
@@ -277,7 +296,9 @@ function installHooks() {
     say: (text, source = 'text') => submitTurn({ text, source }),
     interview: () => ({ ...interviewSummary(), lastKind: state.interview?.lastKind || null, mode: state.sessionMode }),
     live: () => liveInterviewFlow(),
-    quick: () => quickShiftFlow()
+    quick: () => quickShiftFlow(),
+    daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
+    startDaily: () => dailyFlow()
   };
 }
 
@@ -287,7 +308,7 @@ function boot() {
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
-  byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow();
+  byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
