@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           test -s index.html
           test "$(wc -c < index.html)" -gt 100000
-          grep -Fq '<title>INAD: 제12조</title>' index.html
+          grep -Fq '<title>INAD</title>' index.html
           grep -Fq 'GENERATED FILE, DO NOT EDIT' index.html
           grep -Fq '2026-09-07' index.html
           grep -Fq 'INAD_SAVE_BUNDLE' index.html

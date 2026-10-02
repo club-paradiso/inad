@@ -1,6 +1,6 @@
 # 디자인 변경 워크플로 — Figma ↔ 코드
 
-이 문서는 INAD: 제12조의 화면·컴포넌트·토큰을 바꿀 때 사람과 자동화(Claude / Codex)가 지켜야 하는 절차다.
+이 문서는 INAD의 화면·컴포넌트·토큰을 바꿀 때 사람과 자동화(Claude / Codex)가 지켜야 하는 절차다.
 파일 구조 사양은 `docs/figma-workspace-spec.md`, UX 진단·IA 결정은 `docs/ux-audit-v8.md`, 시각 규칙은 `docs/design-system.md`에 있다.
 
 ## 1. 소스 오브 트루스

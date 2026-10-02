@@ -1,4 +1,4 @@
-// INAD: 제12조 — application controller.
+// INAD — application controller.
 // Wires engines (state + rules) to the UI layer. Flows that open dialogs/screens live here;
 // engines stay DOM-free and UI modules stay logic-free.
 // The boot watchdog is the first module evaluated so a failure anywhere below still surfaces.
