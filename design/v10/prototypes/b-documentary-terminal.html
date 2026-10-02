@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B · Documentary Terminal</title>
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font:13px/1.5 var(--font);color:#dfe6ea;background:#0d1418;height:100dvh;display:grid;grid-template-rows:56dvh 1fr}
+.cam{position:relative;display:grid;place-items:center;background:#121b20;border-bottom:1px solid #26333b;overflow:hidden}
+.cam .lp{position:relative;height:100%;aspect-ratio:4/5;overflow:hidden}.lp canvas,.lp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.lp-live img{visibility:hidden}.lp-fallback canvas{display:none}
+.cam .meta{position:absolute;left:24px;top:20px;font:600 11px var(--mono);color:#8ea0aa;line-height:1.7}.cam .meta b{display:block;font:700 20px var(--font);color:#f1f4f6}
+.cam .rec{position:absolute;right:24px;top:20px;font:600 11px var(--mono);color:#8ea0aa}
+#caption{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:min(760px,90%);margin:0;text-align:center;font-size:18px;line-height:1.5;color:#fff;text-shadow:0 1px 2px #000}
+.desk{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 340px;min-height:0}
+.col{border-right:1px solid #26333b;display:grid;grid-template-rows:auto 1fr auto;min-height:0}.col h3{margin:0;padding:10px 16px;font:600 11px var(--mono);color:#8ea0aa;border-bottom:1px solid #26333b}
+#transcript{overflow:auto;padding:12px 16px;display:grid;gap:8px;align-content:start;font-size:13px}.ln{display:grid;grid-template-columns:64px 1fr;gap:8px}.who{color:#7f919b;font-size:11px}.ln p{margin:0}.ln.alien p{color:#fff}.ln.officer p{color:#b8c5cc}.ln.system p{color:#93a5af;font-size:12px}
+.compose{padding:12px 16px;display:grid;gap:8px;border-top:1px solid #26333b}#suggest{display:flex;flex-wrap:wrap;gap:6px}#suggest button{font:12px var(--font);color:#cfd9de;background:transparent;border:1px solid #34444d;border-radius:var(--r-2);padding:6px 10px;text-align:left}
+#composer{display:flex;gap:8px}#ask{flex:1;background:#151f25;color:#fff;border:1px solid #3a4a53;border-radius:var(--r-2);padding:10px 12px;font:14px var(--font);min-height:44px}#composer button{min-height:44px;min-width:44px;background:#1c2a32;color:#e4ebee;border:1px solid #3a4a53;border-radius:var(--r-2)}#composer .send{background:var(--accent);border-color:var(--accent)}
+#docs{overflow:auto;padding:12px 16px;display:grid;gap:8px;align-content:start}.doc{background:#f4f1e8;color:#1b2732;padding:10px 12px}.doc h4{margin:0 0 4px;font-size:12px}.doc dl{display:grid;grid-template-columns:80px 1fr;margin:0;font-size:11.5px}.doc dd{margin:0;font-family:var(--mono)}.doc dt{color:#5b6b74}
+#lookups{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid #26333b}#lookups button{font:12px var(--font);color:#cfd9de;background:transparent;border:1px solid #34444d;padding:6px 10px}
+.dec{display:grid;gap:6px;padding:12px 16px;align-content:start}.dec button{text-align:left;padding:12px;background:#152027;color:#fff;border:1px solid #2c3b44;border-left:4px solid;font:700 13px var(--font)}
+.c{border-left-color:var(--success)!important}.s{border-left-color:var(--warning)!important}.r{border-left-color:var(--danger)!important}.j{border-left-color:var(--sjp)!important}
+@media (max-width:767px){body{grid-template-rows:52dvh auto}.desk{display:block}.col:nth-child(2),.dec{display:none}#caption{font-size:15px}}
+</style></head><body>
+<section class="cam"><div class="meta">A024 · 12번 심사대<b>쩐 반 민</b>TRAN VAN MINH · VNM · C-3-9 · 30일</div><span class="rec">00:42 · 일반심사</span><div id="stage"></div><p id="caption" aria-live="polite"></p></section>
+<section class="desk">
+<div class="col"><h3>인터뷰 기록</h3><div id="transcript" role="log"></div><div class="compose"><div id="suggest"></div><form id="composer"><input id="ask" placeholder="질문을 입력하거나 말하십시오"><button type="button">말하기</button><button class="send">질문</button></form></div></div>
+<div class="col"><h3>제출 서류 · 전산 조회</h3><div id="docs"></div><div id="lookups"></div></div>
+<div class="dec"><button class="c">입국 허가</button><button class="s">입국재심 인계</button><button class="r">입국 불허가</button><button class="j">사범 절차</button></div>
+</section>
+<script type="module" src="proto.js"></script></body></html>

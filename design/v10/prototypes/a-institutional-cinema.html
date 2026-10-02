@@ -1,0 +1,35 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A · Institutional Cinema</title>
+<link rel="stylesheet" href="../../../src/styles/tokens.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font:13px/1.5 var(--font);color:var(--text);background:var(--canvas);height:100dvh;display:grid;grid-template-rows:44px 1fr}
+.bar{background:var(--chrome);color:var(--chrome-text);display:flex;align-items:center;gap:16px;padding:0 16px}.bar b{font-size:14px}.bar .no{font:600 12px var(--mono);color:var(--chrome-muted)}.bar ol{display:flex;gap:16px;margin:0 auto;padding:0;list-style:none;color:var(--chrome-muted);font-size:12px}.bar ol .on{color:#fff;font-weight:700}.bar .t{font:600 13px var(--mono)}
+main{display:grid;grid-template-columns:440px minmax(0,1fr) 400px;gap:1px;background:var(--border);min-height:0}
+.booth{background:#101a20;color:#e9eef1;display:grid;grid-template-rows:auto 1fr;min-height:0}
+.lp{position:relative;aspect-ratio:4/5;width:100%;overflow:hidden;background:#1a252c}.lp canvas,.lp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.lp-live img{visibility:hidden}.lp-fallback canvas{display:none}
+.cap{position:absolute;left:0;right:0;bottom:0;padding:28px 24px 16px;background:linear-gradient(transparent,rgba(8,14,18,.86));font-size:15px;line-height:1.55;text-wrap:pretty}
+.plate{padding:16px 24px;border-top:1px solid #24323a;display:grid;gap:4px}.plate h2{margin:0;font-size:22px;letter-spacing:-.01em}.plate .lat{font:600 12px var(--mono);color:#9fb0bb}.plate dl{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:12px}.plate dt{color:#8fa1ac}.plate dd{margin:0}
+.conv{background:var(--surface);display:grid;grid-template-rows:auto 1fr auto;min-height:0}
+.ph{display:flex;align-items:baseline;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border-subtle)}.ph h3{margin:0;font-size:13px}.ph small{color:var(--text-3)}
+#transcript{overflow:auto;padding:16px 24px;display:grid;gap:12px;align-content:start}
+.ln{display:grid;grid-template-columns:72px 1fr;gap:12px}.ln .who{font-size:11px;color:var(--text-3);padding-top:2px}.ln p{margin:0}.ln.officer p{color:var(--text-2)}.ln.alien p{font-size:15px;color:var(--text)}.ln.system p{font-size:12px;color:var(--text-3);border-left:2px solid var(--border);padding-left:8px}.ln.tension .who::after{content:" · 진술 간 확인 필요";color:var(--warning-text)}
+.compose{border-top:1px solid var(--border-subtle);padding:12px 24px 16px;display:grid;gap:8px;background:var(--surface-2)}
+#suggest{display:flex;flex-wrap:wrap;gap:6px}#suggest::before{content:"이어서 물어볼 만한 질문";width:100%;font-size:11px;color:var(--text-3)}
+#suggest button{font:12px var(--font);text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-2);padding:6px 10px;color:var(--text-2);cursor:pointer;max-width:100%}
+#composer{display:flex;gap:8px}#ask{flex:1;font:14px var(--font);padding:10px 12px;border:1px solid var(--border-strong);border-radius:var(--r-2);min-height:44px}#composer button{min-width:44px;min-height:44px;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-2);font:600 12px var(--font)}#composer .send{background:var(--accent);color:#fff;border-color:var(--accent);padding:0 16px}
+.ev{background:var(--surface);display:grid;grid-template-rows:auto 1fr auto auto;min-height:0}
+#docs{overflow:auto;padding:12px 16px;display:grid;gap:12px;align-content:start;background:var(--surface-2)}.doc{background:var(--document);border:1px solid var(--border-subtle);padding:12px 16px}.doc h4{margin:0 0 8px;font-size:12px}.doc dl{display:grid;grid-template-columns:88px 1fr;gap:2px 8px;margin:0;font-size:12px}.doc dt{color:var(--text-3)}.doc dd{margin:0;font-family:var(--mono)}
+#lookups{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;border-top:1px solid var(--border-subtle)}#lookups button{font:12px var(--font);border:1px solid var(--border);background:var(--surface);padding:6px 10px;border-radius:var(--r-2)}#lookups .on{border-color:var(--accent);color:var(--accent-text)}
+.desk{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 16px;border-top:1px solid var(--border)}.desk button{text-align:left;padding:10px 12px;border:1px solid var(--border);border-left:4px solid;background:var(--surface);border-radius:var(--r-2);font:700 13px var(--font)}.desk small{display:block;font-weight:400;color:var(--text-3);font-size:11px}
+.c{border-left-color:var(--success)!important}.s{border-left-color:var(--warning)!important}.r{border-left-color:var(--danger)!important}.j{border-left-color:var(--sjp)!important}
+@media (max-width:767px){body{grid-template-rows:44px auto}main{display:block}.booth{display:block}.lp{aspect-ratio:auto;height:46dvh}.plate dl{display:none}.ev{display:none}.conv{min-height:50dvh}.bar ol{display:none}}
+</style></head><body>
+<header class="bar"><b>INAD</b><span class="no">A024</span><ol><li class="on">일반심사</li><li>입국재심</li><li>심사결정</li><li>후속절차</li></ol><span class="t">00:42</span></header>
+<main>
+<section class="booth"><div><div id="stage"></div><p class="cap" id="caption" aria-live="polite"></p></div>
+<div class="plate"><h2>쩐 반 민</h2><span class="lat">TRAN VAN MINH · VNM</span><dl><dt>신청 체류</dt><dd>30일</dd><dt>입국기반</dt><dd>C-3-9 단수</dd><dt>입국편</dt><dd>VN416</dd><dt>귀국편</dt><dd>없음</dd></dl></div></section>
+<section class="conv"><div class="ph"><h3>인터뷰</h3><small>직접 질문하거나 제안을 고르십시오</small></div><div id="transcript" role="log" aria-live="polite"></div>
+<div class="compose"><div id="suggest"></div><form id="composer"><input id="ask" placeholder="질문을 입력하거나 말하십시오" autocomplete="off"><button type="button" aria-label="음성 질문">말하기</button><button class="send">질문</button></form></div></section>
+<section class="ev"><div class="ph"><h3>자료</h3><small>제출 서류 4 · 전산 조회</small></div><div id="docs"></div><div id="lookups"></div><div class="desk"><button class="c">입국 허가<small>제12조</small></button><button class="s">입국재심 인계<small>추가 확인</small></button><button class="r">입국 불허가<small>제12조제4항</small></button><button class="j">사범 절차<small>조사·체포요건</small></button></div></section>
+</main>
+<script type="module" src="proto.js"></script></body></html>
