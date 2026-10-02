@@ -34,11 +34,12 @@ function reducedMotion() {
   try { return document.body.classList.contains('pref-reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
 }
 
-export function createLivingPortrait(host, { onState } = {}) {
+// `img` (optional) is an existing <img> inside `host` that stays the accessible, fallback image.
+export function createLivingPortrait(host, { onState, img: existing = null } = {}) {
   host.classList.add('lp');
-  const img = document.createElement('img'); img.className = 'lp-still'; img.alt = ''; img.decoding = 'async';
+  const img = existing || document.createElement('img'); img.classList.add('lp-still'); if (!existing) { img.alt = ''; img.decoding = 'async'; }
   const canvas = document.createElement('canvas'); canvas.className = 'lp-canvas'; canvas.setAttribute('aria-hidden', 'true');
-  host.replaceChildren(canvas, img);
+  if (existing) host.insertBefore(canvas, host.firstChild); else host.replaceChildren(canvas, img);
   const ctx = canvas.getContext ? canvas.getContext('2d') : null;
   const work = document.createElement('canvas'); const wctx = work.getContext ? work.getContext('2d') : null;
 
@@ -131,7 +132,9 @@ export function createLivingPortrait(host, { onState } = {}) {
 
   const api = {
     setSource(src, nextRig, alt = '') {
-      ready = false; rig = nextRig || null; img.alt = alt; speech?.done?.(); speech = null;
+      if (alt) img.alt = alt;
+      if (src && img.getAttribute('src') === src && rig === (nextRig || null) && (ready || host.classList.contains('lp-fallback'))) return;
+      ready = false; rig = nextRig || null; speech?.done?.(); speech = null;
       const usable = !!(rig && ctx && wctx);
       host.classList.toggle('lp-live', usable); host.classList.toggle('lp-fallback', !usable);
       img.onload = () => {
@@ -141,7 +144,7 @@ export function createLivingPortrait(host, { onState } = {}) {
         if (reducedMotion()) still(); else { draw(performance.now()); kick(); }
       };
       img.onerror = () => { host.classList.remove('lp-live'); host.classList.add('lp-fallback'); };
-      img.src = src || '';
+      if (src && img.getAttribute('src') === src && img.complete && img.naturalWidth) img.onload(); else img.src = src || '';
     },
     setState(name) {
       if (!STATES.has(name) || name === state) return; state = name; target = MOTION.pose[name];

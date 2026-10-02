@@ -21,7 +21,7 @@ export const CAMPAIGN_VERSION = 1;
 export const SHIFT_LENGTH = 36;         // 24 seeded normal passengers + 12 core cases (queue-engine)
 // Preferences added after v6.1. SAVE_KEYS stays byte-identical for bundle compatibility; these extra
 // keys travel in the bundle as well and are covered by the 'all' reset.
-export const PREFERENCE_EXTRA_KEYS = ['inad-airport', 'inad-locale', 'inad-audio', 'inad-shortcuts'];
+export const PREFERENCE_EXTRA_KEYS = ['inad-airport', 'inad-locale', 'inad-audio', 'inad-shortcuts', 'inad-assist', 'inad-voice', 'inad-tts'];
 export const BUNDLE_KEYS = [...SAVE_KEYS, ...PREFERENCE_EXTRA_KEYS];
 const MAX_BUNDLE_CHARS = 4_500_000;     // below the ~5M-char localStorage quota of current browsers
 export { SAVE_KEYS, RELEASE };
@@ -100,7 +100,7 @@ export function progressSnapshot(nextIndex = state.caseIndex) {
   return { version: PROGRESS_VERSION, savedAt: Date.now(), seed: session.seed, airportId: state.airportId, liveOps: state.liveOps, difficulty: state.difficulty, challengeId: state.challengeId, challengeApplied: state.challengeApplied, scenarioId: state.scenarioId, scenarioApplied: state.scenarioApplied, guidance: state.guidance, nextIndex, score: state.score, efficiency: state.efficiency, proportionality: state.proportionality, strikes: state.strikes, totalCaseSeconds: state.totalCaseSeconds, simSeconds: state.simSeconds, overSecondary: state.overSecondary, repeatedLookups: state.repeatedLookups, repeatedQuestions: state.repeatedQuestions, rushed: state.rushed, pressurePeak: state.pressurePeak, fatigue: state.fatigue, peakFatigue: state.peakFatigue, breaksTaken: state.breaksTaken, eventsSeen: state.eventsSeen, activeEvent: state.activeEvent, eventSchedule: state.eventSchedule, eventHistory: state.eventHistory, backlogOffset: state.backlogOffset, stats: state.stats, reports: state.reports, mistakes: state.mistakes, partyArchive: [...session.partyArchive.entries()],
     campaignId: state.campaignId, campaignDay: state.campaignDay, campaignApplied: state.campaignApplied, campaignCarryBacklog: state.campaignCarryBacklog, campaignCarryFatigue: state.campaignCarryFatigue };
 }
-export function saveProgressSnapshot(nextIndex = state.caseIndex) { if (!state.started) return false; if (isFutureSave(PROGRESS_KEY, PROGRESS_VERSION)) { bus.emit('persistence', { ok: false, reason: 'future-save' }); return false; } const ok = jsonSet(PROGRESS_KEY, progressSnapshot(nextIndex)); bus.emit('persistence', ok ? { ok: true } : { ok: false, reason: 'write-failed' }); return ok; }
+export function saveProgressSnapshot(nextIndex = state.caseIndex) { if (!state.started || state.sessionMode === 'case') return false; if (isFutureSave(PROGRESS_KEY, PROGRESS_VERSION)) { bus.emit('persistence', { ok: false, reason: 'future-save' }); return false; } const ok = jsonSet(PROGRESS_KEY, progressSnapshot(nextIndex)); bus.emit('persistence', ok ? { ok: true } : { ok: false, reason: 'write-failed' }); return ok; }
 // Applies a checkpoint to `state` (the caller regenerates the roster for p.seed first).
 export function applyProgressToState(p) {
   const savedAirport = p.airportId ? airportById(p.airportId) : null;
@@ -119,6 +119,7 @@ export function applyProgressToState(p) {
 // ---- Preferences ---------------------------------------------------------------------------
 export function saveAudioPreference(on) { storeSet('inad-audio', on ? '1' : '0'); }
 export function savePreferences() { storeSet('inad-font', preferences.font); storeSet('inad-contrast', preferences.contrast ? '1' : '0'); storeSet('inad-reduce-motion', preferences.reduceMotion ? '1' : '0'); storeSet('inad-shortcut-hints', preferences.shortcutHints ? '1' : '0'); storeSet('inad-shortcuts', preferences.shortcuts ? '1' : '0'); }
+export function saveInterviewPreferences() { storeSet('inad-assist', preferences.assist || ''); storeSet('inad-voice', preferences.voice); storeSet('inad-tts', preferences.tts ? '1' : '0'); }
 export function saveGuidance(mode) { storeSet('inad-guidance', mode); }
 export function saveBestGrade(grade) { storeSet('inadBest', grade); }
 export function markTutorialSeen() { storeSet('inad-tutorial-seen', '1'); }

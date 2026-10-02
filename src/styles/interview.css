@@ -1,0 +1,164 @@
+/* v10 Live Interview — the human layer of the workstation (design/v10/UI_CONSTITUTION.md).
+   ≥1280: four columns — booth (passenger) · conversation · evidence · assessment.
+   1024–1279 and tablets keep the v9 arrangement with a compact booth; phones get a full-width booth on 승객.
+   The booth is the only dark surface in the workstation: it is a window onto a person, not a panel of data. */
+
+/* ---- desktop composition (≥1280) ---- */
+@media (min-width: 1280px) and (min-height: 501px) {
+  .main { grid-template-columns: var(--w-booth) minmax(0, 1fr) minmax(0, 1.04fr) var(--w-right); grid-template-rows: minmax(0, 1fr); }
+  .zone-person { grid-column: 1; grid-row: 1; }
+  .zone-interview { grid-column: 2; grid-row: 1; }
+  .zone-evidence { grid-column: 3; grid-row: 1; grid-template-rows: minmax(0, 1fr) minmax(150px, 34%); }
+  .zone-assessment { grid-column: 4; grid-row: 1; }
+  /* evidence column is narrower than in v9: the document list becomes a strip above the paper */
+  .zone-evidence .casework { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .zone-evidence .doclist { grid-auto-flow: column; grid-auto-columns: minmax(96px, max-content); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border-subtle); scrollbar-width: none; }
+  .zone-evidence .doclist::-webkit-scrollbar { display: none; }
+  .zone-evidence .lookup-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ---- booth ---- */
+.panel-subject.booth { background: var(--booth); border-color: var(--booth); color: var(--booth-text); grid-template-rows: auto auto auto minmax(0, 1fr); }
+.booth .ph { background: var(--booth); border-bottom-color: var(--booth-line); }
+.booth .ph h2 { color: var(--booth-text); }
+.booth .ph small { color: var(--booth-muted); }
+.booth-stage { position: relative; background: #0c1418; overflow: clip; } /* clip, not hidden: a scroll container would let the grid squeeze the portrait */
+.stage-portrait.portrait { position: relative; width: 100%; height: auto; aspect-ratio: 4 / 5; border: 0; border-radius: 0; background: #1a262d; }
+.stage-portrait img, .stage-portrait canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; }
+.lp-live img { visibility: hidden; }
+.lp-fallback canvas { display: none; }
+.lp canvas { transform-origin: 50% 92%; will-change: transform; }
+/* subtitle of the passenger's latest line, the way a camera feed would caption it */
+.stage-caption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 32px 16px 12px; font-size: var(--fs-body); line-height: 1.5; color: #fff; background: linear-gradient(to bottom, rgba(12, 20, 24, 0), rgba(12, 20, 24, .88) 44%); text-wrap: pretty; word-break: keep-all; min-height: 0; opacity: 0; transition: opacity var(--t-slow) var(--ease); }
+.stage-caption.on { opacity: 1; }
+.stage-caption .lead { color: var(--booth-muted); margin-right: 4px; }
+.stage-state::after { content: attr(data-label); } /* generated text: acting state is decoration, not page content */
+.stage-state { position: absolute; left: 12px; top: 10px; font-size: var(--fs-meta); color: var(--booth-muted); letter-spacing: .02em; }
+.booth .subject { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 10px; background: var(--booth-2); border-top: 1px solid var(--booth-line); }
+.booth .sname { color: #fff; font-size: 20px; }
+.booth .sroman, .booth .snat { color: var(--booth-muted); }
+.booth .subject-grid .lbl { color: var(--booth-muted); }
+.booth .subject-grid b { color: var(--booth-text); }
+.booth .subject-aux { background: var(--booth-2); border-top-color: var(--booth-line); color: var(--booth-text); overflow: auto; align-content: start; }
+.booth .aux-row { border-bottom-color: var(--booth-line); }
+.booth .aux-key, .booth .aux-note, .booth .aux-detail, .booth .aux-bar span { color: var(--booth-muted); }
+.booth .aux-row b, .booth .attitude { color: var(--booth-text); background: transparent; }
+.booth .track { background: var(--booth-line); }
+.booth .track i { background: var(--booth-muted); }
+.booth .party-summary { color: var(--booth-text); }
+
+/* compact booth (1024–1279 · tablets): the portrait sits beside the name, as in v9, but stays alive */
+@media (max-width: 1279px), (max-height: 500px) {
+  .panel-subject.booth { grid-template-columns: 100px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  .booth .ph { grid-column: 1 / -1; }
+  .booth .booth-stage { grid-column: 1; grid-row: 2; align-self: start; margin: 10px 0 10px 12px; border-radius: var(--r-1); }
+  .booth .stage-caption, .booth .stage-state { display: none; }
+  .booth .subject { grid-column: 2; grid-row: 2; padding: 10px 12px; border-top: 0; background: transparent; }
+  .booth .subject-aux { grid-column: 1 / -1; grid-row: 3; }
+  .booth .sname { font-size: 17px; }
+}
+
+/* ---- conversation ---- */
+.ph-tools { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.assist-btn { height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.assist-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+.panel-interview { grid-template-rows: auto minmax(96px, 1fr) auto minmax(auto, 1.1fr); }
+/* official interview record: speaker column + statement, the passenger's words set larger than the examiner's */
+.log .msg.alien .msgtext { font-size: 14px; color: var(--text); }
+.log .msg.officer .msgtext { color: var(--text-2); }
+.msg .heard { display: block; margin-top: 2px; font-size: var(--fs-meta); color: var(--text-3); }
+.msg .lead { color: var(--text-3); margin-right: 4px; }
+.msg.off-record .msgtext { color: var(--text-2); }
+.msg.off-record b::after { content: " · 기록 외 발화"; font-weight: 400; color: var(--text-3); }
+.msg.pending .msgtext { color: var(--text-3); }
+.msg.pending .msgtext::after { content: " …"; }
+.ask-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface); }
+.ask-bar input { min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--r-2); background: var(--elevated); font: inherit; font-size: var(--fs-body); color: var(--text); }
+.ask-bar input::placeholder { color: var(--text-3); }
+.ask-bar input:focus { outline: none; box-shadow: var(--focus-ring); }
+.mic-btn, .ask-send { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--elevated); font-size: var(--fs-compact); font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.mic-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); background: var(--accent-soft); }
+.mic-btn[aria-pressed="true"]::before { content: "● "; color: var(--danger); }
+.mic-btn[hidden] { display: none; }
+.ask-send { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
+.ask-send:hover { background: var(--accent-hover); }
+.ask-status { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--fs-label); color: var(--text-3); min-height: 0; }
+.ask-status:empty { display: none; }
+.ask-status button { min-height: 28px; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--elevated); font-size: var(--fs-compact); color: var(--text); text-align: left; }
+.ask-status button:hover { border-color: var(--accent); }
+/* suggestions are a quieter list than the full question catalogue */
+.qtab.qtab-suggest { font-weight: 700; }
+.qbtn.suggest { border-left-color: transparent; }
+.qbtn.suggest em { color: var(--text-3); }
+.qbtn.suggest.followup { border-left-color: var(--info); }
+.qbtn.action { color: var(--accent-text); font-weight: 600; }
+.qs-empty { padding: 10px 12px; font-size: var(--fs-label); color: var(--text-3); }
+
+/* ---- phone ---- */
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+  .panel-subject.booth { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; }
+  .booth .booth-stage { grid-column: 1; grid-row: 2; margin: 0; border-radius: 0; }
+  .booth .stage-caption, .booth .stage-state { display: block; }
+  .booth .booth-stage .stage-portrait { aspect-ratio: auto; height: min(50dvh, 440px); }
+  .booth .subject { grid-column: 1; grid-row: 3; grid-template-columns: minmax(0, 1fr); background: var(--booth-2); border-top: 1px solid var(--booth-line); }
+  .booth .subject-aux { grid-row: 4; }
+  .ask-bar { padding: 8px 16px; }
+  .ask-bar input, .mic-btn, .ask-send { height: var(--size-touch); }
+  .mic-btn, .ask-send { min-width: var(--size-touch); }
+  .assist-btn { height: var(--size-touch); min-width: var(--size-touch); }
+  .ask-status button { min-height: var(--size-touch); }
+  .stage-caption { font-size: 15px; }
+}
+/* landscape phones: portrait beside the identity, both inside the short viewport */
+@media (max-height: 500px) and (max-width: 1023px) {
+  .panel-subject.booth { grid-template-columns: minmax(0, 42%) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  .booth .booth-stage { grid-column: 1; grid-row: 2 / 4; }
+  .booth .booth-stage .stage-portrait { height: min(62dvh, 300px); }
+  .booth .subject { grid-column: 2; grid-row: 2; }
+  .booth .subject-aux { grid-column: 2; grid-row: 3; }
+  /* conversation | questions side by side: the short viewport cannot stack record, question box and list */
+  .panel-interview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+  .panel-interview > .ph { grid-column: 1 / -1; }
+  .panel-interview > .log { grid-column: 1; grid-row: 2; }
+  .panel-interview > .ask-bar { grid-column: 1; grid-row: 3; }
+  .panel-interview > .composer { grid-column: 2; grid-row: 2 / 4; max-height: none; border-top: 0; border-left: 1px solid var(--border); }
+}
+/* compact desktops (1024–1279, short screens): the conversation needs the height more than the side notes */
+@media (min-width: 1024px) and (max-width: 1279px) and (max-height: 820px) {
+  .booth .aux-detail { display: none; }
+  .language-toolbar .language-status { display: none; }
+  .ask-bar { padding: 6px 10px; }
+  .ask-bar input, .mic-btn, .ask-send { height: 32px; }
+  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(auto, 1.45fr); }
+}
+@media (prefers-reduced-motion: reduce) { .stage-caption { transition: none; } }
+body.pref-reduce-motion .stage-caption { transition: none; }
+
+/* ---- single-case live interview (body.mode-case): no queue, no duty KPIs ---- */
+body.mode-case .app { grid-template-rows: var(--h-topbar) 0 auto var(--h-casebar) minmax(0, 1fr) var(--h-statusbar); }
+body.mode-case .opsbar, body.mode-case .workload, body.mode-case .ops-toggle, body.mode-case #dailyBtn { display: none; }
+@media (max-width: 1023px) { body.mode-case .app { grid-template-rows: var(--h-topbar) 0 auto var(--h-casebar) auto minmax(0, 1fr) var(--h-statusbar); } }
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) { body.mode-case .app { grid-template-rows: calc(var(--h-mobile-header) + var(--safe-top)) auto var(--h-casebar) minmax(0, 1fr) calc(var(--h-tasknav) + var(--safe-bottom)); } }
+
+/* ---- debrief (case result) ---- */
+.debrief { display: grid; gap: 12px; margin-top: 12px; }
+.debrief h3 { margin: 0 0 4px; font-size: var(--fs-section); }
+.debrief-basis { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); }
+.debrief-basis b { display: block; font-size: var(--fs-body); }
+.debrief-basis span { font-size: var(--fs-label); color: var(--text-2); }
+.debrief-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.debrief ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.debrief li { font-size: var(--fs-compact); line-height: 1.45; padding-left: 12px; position: relative; }
+.debrief li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 1px; background: var(--text-3); }
+.debrief li small { display: block; color: var(--text-3); font-size: var(--fs-meta); }
+.debrief .missed li b { color: var(--text); }
+.debrief-lesson { font-size: var(--fs-compact); color: var(--text-2); margin: 0; }
+.debrief-meta { font-size: var(--fs-label); color: var(--text-3); margin: 0; }
+@media (max-width: 767px) { .debrief-cols { grid-template-columns: minmax(0, 1fr); } }
+.voice-consent-list { margin: 8px 0; padding-left: 18px; display: grid; gap: 4px; font-size: var(--fs-compact); }
+.voice-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.assist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.assist-opt { display: grid; gap: 2px; padding: 10px 12px; text-align: left; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); min-height: var(--size-touch); }
+.assist-opt b { font-size: var(--fs-compact); }
+.assist-opt span { font-size: var(--fs-label); color: var(--text-3); }
+.assist-opt.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }

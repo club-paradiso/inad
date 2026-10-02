@@ -95,6 +95,8 @@ export async function ask(page, qid) {
   const btn = page.locator('#questions .qbtn', { hasText: q.q });
   await expect(btn).toBeEnabled();
   await btn.click();
+  // v10: the passenger takes a moment before answering (motion grammar); the record is complete once no reply is held.
+  await expect(page.locator('#log .msg.pending')).toHaveCount(0);
   return q;
 }
 

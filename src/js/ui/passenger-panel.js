@@ -7,12 +7,13 @@ import { behaviorBand } from '../engines/behavior-engine.js';
 import { languageLabel, languageModeLabel, currentLanguageLevel } from '../engines/language-engine.js';
 import { stageText } from '../engines/legal-engine.js';
 import { travelPartyFor, partyStatusForTraveler } from '../engines/companion-engine.js';
+import { syncStage } from './passenger-stage.js';
 
 export function renderPassenger() {
   const c = current(), t = getTraveler(c.travelerId);
   byId('caseId').innerHTML = `심사번호 <span class="mono">${esc(screeningNo())}</span>`; byId('pName').textContent = t.name.korean; byId('pRoman').textContent = t.name.latin; byId('pNat').textContent = `${t.nationality.korean} · ${t.nationality.code}`;
   byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = c.purpose; byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
-  const img = byId('pPortrait'); if (img.getAttribute('src') !== t.portrait) img.src = t.portrait; img.alt = `${t.name.korean} 가상 여행객 초상`;
+  syncStage(t);
   renderBehavior(); renderLanguage(); renderParty();
   renderCaseBar(c, t);
 }

@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="styles/shell.css">
 <link rel="stylesheet" href="styles/workspace.css">
 <link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/interview.css">
 <link rel="stylesheet" href="styles/documents.css">
 <link rel="stylesheet" href="styles/procedures.css">
 <link rel="stylesheet" href="styles/modals.css">
@@ -42,13 +43,15 @@
 </section>
 <main class="main" id="mainContent" tabindex="-1">
 <section class="zone zone-person" data-zone="passenger" aria-label="대상자">
-  <div class="panel panel-subject"><div class="ph"><h2>대상자</h2><small>가상 인물</small></div>
-    <div class="subject"><div class="portrait"><img id="pPortrait" alt="현재 피심사인 초상"><span class="portrait-tag mono">LIVE</span></div><div class="subject-body"><div class="sname" id="pName">—</div><div class="sroman mono" id="pRoman">—</div><div class="snat" id="pNat">—</div><div class="subject-grid"><div><span class="lbl">여권번호</span><b id="pPass" class="mono">—</b></div><div><span class="lbl">신청 체류</span><b id="pStay">—</b></div><div><span class="lbl">입국목적</span><b id="pPurpose">—</b></div><div><span class="lbl">입국편</span><b id="pFlight" class="mono">—</b></div><div class="wide"><span class="lbl">입국기반</span><b id="pBasis">—</b></div></div></div></div>
+  <div class="panel panel-subject booth"><div class="ph"><h2>대상자</h2><small>가상 인물</small></div>
+    <div class="booth-stage" id="passengerStage"><div class="portrait stage-portrait" id="stagePortrait"><img id="pPortrait" alt="현재 피심사인 초상"></div><p class="stage-caption" id="stageCaption" aria-hidden="true"></p><span class="stage-state" id="stageState" aria-hidden="true"></span></div>
+    <div class="subject"><div class="subject-body"><div class="sname" id="pName">—</div><div class="sroman mono" id="pRoman">—</div><div class="snat" id="pNat">—</div><div class="subject-grid"><div><span class="lbl">여권번호</span><b id="pPass" class="mono">—</b></div><div><span class="lbl">신청 체류</span><b id="pStay">—</b></div><div><span class="lbl">입국목적</span><b id="pPurpose">—</b></div><div><span class="lbl">입국편</span><b id="pFlight" class="mono">—</b></div><div class="wide"><span class="lbl">입국기반</span><b id="pBasis">—</b></div></div></div></div>
     <div class="subject-aux"><div class="aux-row" id="behaviorBox"><span class="aux-key">태도</span><b class="attitude" id="pAttitude">협조적</b><span class="aux-bar"><span>긴장</span><i class="track" aria-hidden="true"><i id="stressFill"></i></i><b id="stressValue" class="mono">20</b></span><span class="aux-bar"><span>협조</span><i class="track" aria-hidden="true"><i id="rapportFill"></i></i><b id="rapportValue" class="mono">80</b></span><small class="aux-note">판정근거 아님</small></div><div class="aux-row" id="languageBox"><span class="aux-key">언어</span><b id="primaryLang">-</b><span>한국어 <b id="koLevel">-</b></span><span>영어 <b id="enLevel">-</b></span><small class="aux-note">판정근거 아님</small></div><p class="aux-detail" id="behaviorNote"></p><div class="party-summary" id="partyBox"></div></div></div>
 </section>
 <section class="zone zone-interview" data-zone="interview" aria-label="인터뷰">
-  <div class="panel panel-interview panel-questions"><div class="ph"><h2>인터뷰</h2><small id="logCount">0건</small></div>
-    <div class="log scroll" id="log" role="log" aria-live="polite"></div>
+  <div class="panel panel-interview panel-questions"><div class="ph"><h2>인터뷰</h2><div class="ph-tools"><button type="button" class="assist-btn" id="assistBtn" aria-haspopup="dialog">질문 도움</button><small id="logCount">0건</small></div></div>
+    <div class="log scroll" id="log" role="log" aria-live="polite" aria-label="인터뷰 진술 기록"></div>
+    <form class="ask-bar" id="askForm" autocomplete="off" novalidate><label class="sr-only" for="askInput">승객에게 직접 질문</label><input type="text" id="askInput" maxlength="240" enterkeyhint="send" placeholder="직접 질문하십시오" aria-describedby="askStatus"><button type="button" class="mic-btn" id="micBtn" aria-pressed="false">말하기</button><button type="submit" class="ask-send" id="askSend">질문</button><div class="ask-status" id="askStatus" aria-live="polite"></div></form>
     <div class="composer"><div class="language-toolbar"><div class="language-current"><strong id="languageMode">의사소통 확인</strong><small id="languageStatus" class="language-status">질문 언어 또는 통역을 선택하십시오.</small></div><div class="language-actions" role="group" aria-label="질문 언어"><button type="button" class="lang-btn" id="langKo" data-hotkey="K">한국어</button><button type="button" class="lang-btn" id="langEn" data-hotkey="E">영어</button><button type="button" class="lang-btn interpreter" id="langInterp" data-hotkey="I">통역 호출</button></div></div><div class="qtabs" id="qtabs" role="tablist" aria-label="질문 카테고리"></div><div class="qs scroll" id="questions" role="tabpanel"></div></div></div>
 </section>
 <section class="zone zone-evidence" data-zone="evidence" aria-label="자료">
@@ -80,6 +83,7 @@
   <div class="guidance-box option-box"><h3>안내 모드</h3><p class="option-note">게임 규칙과 법률상 정답은 동일합니다.</p><div class="guidance-grid option-grid"><button class="guide-btn on" data-guidance="guided" type="button"><b>처음 근무</b><span>첫 승객에서 화면 안내 · 실수 방지 힌트 제공</span></button><button class="guide-btn" data-guidance="expert" type="button"><b>숙련</b><span>튜토리얼 없이 바로 심사 · 도움말은 언제든 호출 가능</span></button></div></div>
   <div class="challenge-box option-box"><h3>특별 근무 도전</h3><p class="option-note">선택 사항 · 법률상 정답은 바뀌지 않습니다.</p><div class="challenge-grid option-grid"><button class="challenge-btn on" data-challenge="none" type="button"><b>일반 근무</b><span>추가 목표 없이 현재 난이도와 사건 구성을 그대로 플레이합니다.</span><em>보너스 없음</em></button><button class="challenge-btn" data-challenge="proportion" type="button"><b>비례심사</b><span>불필요한 재심 없이 필요한 확인만 수행해 조치의 비례성을 지키십시오.</span><em>성공 +55 XP</em></button><button class="challenge-btn special" data-challenge="congestion" type="button"><b>혼잡 대응</b><span>시작 대기열이 크게 증가합니다. 혼잡 속에서도 정확성과 운영 안정성을 유지하십시오.</span><em>성공 +70 XP</em></button><button class="challenge-btn" data-challenge="interpreter" type="button"><b>통역 지원 집중</b><span>통역을 실제 사용한 종결 사건 3건 이상을 정확하게 처리하십시오.</span><em>성공 +65 XP</em></button><button class="challenge-btn special" data-challenge="specialist" type="button"><b>특수절차 집중</b><span>난민 회부심사와 특사경 사건을 모두 절차 100%·오류 0으로 완결하십시오.</span><em>성공 +90 XP</em></button><button class="challenge-btn" data-challenge="perfect" type="button"><b>무오판 근무</b><span>36명 전체를 감찰성 오류 없이 법률·절차 100으로 마무리하십시오.</span><em>성공 +80 XP</em></button></div></div>
 </div>
+<button type="button" class="start-live" id="liveStartBtn"><b>라이브 인터뷰</b><span>승객 한 명과 직접 대화하는 단일 사건 · 약 5분 · 설정 없이 바로 시작</span></button>
 <div class="start-actions-row"><button type="button" class="startbtn" id="startBtn">근무 시작</button><button type="button" class="start-settings resume-start" id="resumeBtn" hidden>이전 근무 이어하기</button></div>
 <div class="save-status" id="saveStatus">자동저장 · 승객 처리 완료 시 체크포인트 생성</div>
 </div>
