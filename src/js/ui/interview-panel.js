@@ -8,6 +8,7 @@ import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
 import { questionUnlocked } from '../engines/clue-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
+import { liveRecord } from '../engines/interview-engine.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -29,7 +30,7 @@ const msgHTML = (x, t, i, pending = false) => {
   if (pending) body = '답변을 준비하고 있습니다';
   else if (x.type === 'officer' && x.utterance && x.utterance !== x.text && !x.offRecord) body = `${esc(x.utterance)}<span class="heard">기록 질문 · ${esc(x.text)}</span>`;
   else body = `${x.lead ? `<span class="lead">${esc(x.lead)}</span> ` : ''}${esc(x.type === 'officer' && x.offRecord && x.utterance ? x.utterance : x.text)}`;
-  return `<div class="msg ${x.type} ${x.type === 'alien' ? (x.behaviorClass || '') : ''}${off}${pending ? ' pending' : ''}" data-i="${i}">${avatar}${label}<div class="msgtext">${body}</div></div>`;
+  return `<div class="msg ${x.type} ${x.type === 'alien' ? (x.behaviorClass || '') : ''}${off}${pending ? ' pending' : ''}" data-i="${i}"${pending ? ' aria-hidden="true"' : ''}>${avatar}${label}<div class="msgtext">${body}</div></div>`;
 };
 export function renderLog() {
   const e = byId('log'), c = current(), t = c ? getTraveler(c.travelerId) : null, logs = state.logs;
@@ -52,7 +53,7 @@ export function renderLog() {
 let view = SUGGEST, viewCase = null;
 export function currentSuggestions() {
   const c = current(); if (!c) return [];
-  return suggestQuestions(c, { performed: state.performed, asked: state.asked, level: assistLevel(), lastKind: state.interview?.lastKind || null, interpreterActive: !!state.language?.interpreterActive, languageMiss: state.interview?.languageMiss || 0, ended: state.ended });
+  return suggestQuestions(c, { performed: state.performed, asked: state.asked, level: assistLevel(), lastKind: liveRecord()?.lastKind || null, interpreterActive: !!state.language?.interpreterActive, languageMiss: liveRecord()?.languageMiss || 0, ended: state.ended });
 }
 const REASON = { followup: '이어서 확인', open: '' };
 export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} } = {}) {

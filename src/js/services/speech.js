@@ -11,7 +11,8 @@ const Recognition = () => (typeof window !== 'undefined' && (window.SpeechRecogn
 export function sttSupport(mode = 'local') {
   const R = Recognition(); if (!R) return { available: false, reason: 'unsupported' };
   if (typeof window !== 'undefined' && window.isSecureContext === false) return { available: false, reason: 'insecure' };
-  const localCapable = 'processLocally' in (R.prototype || {}) || typeof R.available === 'function';
+  // local-only needs the engine to accept processLocally; availability checks alone are not a guarantee
+  const localCapable = 'processLocally' in (R.prototype || {});
   if (mode === 'local' && !localCapable) return { available: false, reason: 'no-on-device' };
   return { available: true, local: mode === 'local' };
 }
@@ -31,7 +32,8 @@ export function createRecognizer({ lang = 'ko-KR', mode = 'local', onInterim, on
   const R = Recognition(); if (!R) return null;
   let rec; try { rec = new R(); } catch (e) { return null; }
   rec.lang = lang; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
-  if (mode === 'local' && 'processLocally' in rec) { try { rec.processLocally = true; } catch (e) { /* older engine */ } }
+  // the consent promise: local-only never silently falls back to the browser's server recognition
+  if (mode === 'local') { if (!('processLocally' in rec)) return null; try { rec.processLocally = true; } catch (e) { return null; } if (rec.processLocally !== true) return null; }
   let finalText = '', active = false;
   rec.onresult = (ev) => {
     let interim = ''; finalText = '';

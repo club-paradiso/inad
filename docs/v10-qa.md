@@ -73,7 +73,19 @@ Round 2 (after fixes): first-timer 0 strikes, gamer 1 unmatched of 15, English t
 falls back with a message, keyboard reaches the question box in 2 Tab presses, phone flow intact. No page errors.
 **Not done**: a human playtest. Scripted personas find mechanical friction, not whether it *feels* like an interview.
 
-## 7. Accessibility checks
+## 7. Code review round (independent reviewer, 2026-10-02)
+13 findings (3 medium, 10 low), no high. Fixed: per-case interview record could leak into the next case's suggestions
+and debrief (reset on `case:init` + readers check the log array); a model-classified re-ask skipped the confirmation
+(now confirmed like lexicon matches, so a configured model cannot change cost); local-only voice could fall back to
+server recognition on engines without `processLocally` (now refuses and explains); held replies announced twice
+(placeholder `aria-hidden`); stale model classifications and stage timers across turns/retries (turn generation +
+acting sequence); double microphone start; latent career write on the fatal path in single-case mode; `/api/npc`
+same-origin requirement, spoof-proof client IP, bounded rate-limit map, malformed pre-parsed body → 400; debrief label
+("알아듣지 못한 질문"); 44 px question-bar targets on coarse pointers; lint rule now requires every npc-client fetch to
+be the literal `/api/npc`. Kept by design: a typed "다시 말씀해 주세요" replays the last line of the record at no cost —
+it reads the record back (as scrolling does) and has no button equivalent; re-asking a question still costs as in v9.
+
+## 8. Accessibility checks
 Question box labelled (`sr-only` label, `aria-describedby` status), Enter sends, single-key shortcuts never fire while
 typing (E2E), reply announced once by the record's live region, state label and subtitle `aria-hidden` (the record
 carries the text), mic is a toggle button with `aria-pressed`, consent and settings are standard dialogs (focus trap,

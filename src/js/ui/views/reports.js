@@ -24,7 +24,7 @@ export function showDoc(title, rows, foot, onContinue) {
 const li = (items, fn) => (items.length ? `<ul>${items.map(fn).join('')}</ul>` : '<p class="debrief-meta">기록 없음</p>');
 export function debriefHTML(d, { full = true, lesson = full } = {}) {
   if (!d) return '';
-  const iv = d.interview; const src = iv ? `대화 ${iv.turns}회 · 직접 입력 ${iv.counts.text} · 음성 ${iv.counts.voice} · 제안 ${iv.counts.suggestion + iv.counts.clarify} · 목록 ${iv.counts.list}${iv.unmatched ? ` · 다시 물은 질문 ${iv.unmatched}` : ''}` : '';
+  const iv = d.interview; const src = iv ? `대화 ${iv.turns}회 · 직접 입력 ${iv.counts.text} · 음성 ${iv.counts.voice} · 제안 ${iv.counts.suggestion + iv.counts.clarify} · 목록 ${iv.counts.list}${iv.unmatched ? ` · 알아듣지 못한 질문 ${iv.unmatched}` : ''}` : '';
   const missedSteps = [...d.questions.missed.map((x) => ({ t: x.q, s: x.gated.length ? `먼저 필요: ${x.gated.join(' · ')}` : '' })), ...d.procedure.missing.map((x) => ({ t: x, s: '절차' }))];
   return `<section class="debrief" aria-label="사건 디브리핑"><div class="debrief-basis"><b>결정 근거 · ${esc(d.basis.label)}</b><span>${esc(d.basis.law)}${d.basis.code ? ` · ${esc(d.basis.code)}` : ''}</span></div>
   ${d.evidence.found.length || d.evidence.missed.length ? `<div class="debrief-cols"><div><h3>확보한 단서 ${d.evidence.found.length}</h3>${li(d.evidence.found, (x) => `<li>${esc(x.title)}<small>${esc(x.via)}</small></li>`)}</div><div class="missed"><h3>놓친 핵심 단서 ${d.evidence.missed.length}</h3>${li(d.evidence.missed, (x) => `<li><b>${esc(x.title)}</b> — ${esc(x.text)}<small>${esc(x.via)}</small></li>`)}</div></div>` : ''}

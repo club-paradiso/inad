@@ -19,7 +19,7 @@ for (const f of files) {
   const approvedNpcClient = posixRel === 'src/js/services/npc-client.js';
   if (hasNetworkApi && !approvedProxyClient && !approvedNpcClient) { problems++; console.error('network API in source:', rel); }
   // v10: the optional inference client may call only the same-origin /api/npc function.
-  if (approvedNpcClient && ([...text.matchAll(/fetch\(\s*(['"`])([^'"`]*)\1/g)].some((m) => m[2] !== '/api/npc') || /fetch\(\s*["'`]https?:/i.test(text))) { problems++; console.error('npc client must use only same-origin /api/npc:', rel); }
+  if (approvedNpcClient && (text.match(/\bfetch\s*\(/g) || []).length !== (text.match(/\bfetch\s*\(\s*'\/api\/npc'/g) || []).length) { problems++; console.error('npc client must use only same-origin /api/npc:', rel); }
   if (approvedProxyClient && (!text.includes('fetch(`/api/airport-load?') || /fetch\(\s*["']https?:/i.test(text))) { problems++; console.error('airport live client must use only same-origin /api/airport-load:', rel); }
   if (/console\.(log|debug)\(/.test(text)) { problems++; console.error('console.log left in source:', rel); }
 }

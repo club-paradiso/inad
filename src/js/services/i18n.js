@@ -469,7 +469,6 @@ const EXACT = new Map([
   ['음성 인식이 중단되었습니다. 직접 입력은 계속 사용할 수 있습니다.', 'Speech recognition stopped. You can still type.'],
   ['인식된 문장을 확인·수정한 뒤 [질문]을 누르십시오.', 'Check or edit the transcribed sentence, then press [Ask].'],
   ['음성 인식을 시작하지 못했습니다. 직접 입력을 사용하십시오.', 'Speech recognition could not start. Type your question instead.'],
-  ['음성 질문 듣는 중', 'Listening for a voice question'],
   ['말씀하십시오. 다시 누르면 멈춥니다.', 'Speak now. Press again to stop.'],
   ['음성 질문 사용', 'Use voice questions'],
   ['이 브라우저에서는 기기 안에서만 처리하는 음성 인식을 사용할 수 없습니다.', 'On-device-only speech recognition is not available in this browser.'],
@@ -541,7 +540,7 @@ const PATTERNS = [
   [/^결정 근거 · (.+)$/, 'Basis for decision · $1', true],
   [/^확보한 단서 (\d+)$/, 'Clues found $1'], [/^놓친 핵심 단서 (\d+)$/, 'Key clues missed $1'],
   [/^먼저 필요: (.+)$/, 'Needed first: $1', true],
-  [/^대화 (\d+)회 · 직접 입력 (\d+) · 음성 (\d+) · 제안 (\d+) · 목록 (\d+)(?: · 다시 물은 질문 (\d+))? — 입력 방식은 점수와 판정에 반영되지 않습니다\.$/, (m, n, typed, voice, sugg, list, again) => `${n} turns · typed ${typed} · voice ${voice} · suggested ${sugg} · list ${list}${again ? ` · re-asked ${again}` : ''} — input method does not affect scoring or decisions.`],
+  [/^대화 (\d+)회 · 직접 입력 (\d+) · 음성 (\d+) · 제안 (\d+) · 목록 (\d+)(?: · 알아듣지 못한 질문 (\d+))? — 입력 방식은 점수와 판정에 반영되지 않습니다\.$/, (m, n, typed, voice, sugg, list, again) => `${n} turns · typed ${typed} · voice ${voice} · suggested ${sugg} · list ${list}${again ? ` · not understood ${again}` : ''} — input method does not affect scoring or decisions.`],
   [/^(\d+)회$/, '$1 times'],
   [/^(\d+)건$/, '$1 cases']
 ];

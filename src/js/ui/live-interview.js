@@ -10,13 +10,13 @@ import { checkModel, modelReady, classifyRemote } from '../services/npc-client.j
 import { questionUnlocked } from '../engines/clue-engine.js';
 import { saveInterviewPreferences } from '../engines/save-engine.js';
 import { holdReplies, releaseReplies } from './interview-panel.js';
-import { setStageState, reactionDelay, actLine, stopActing } from './passenger-stage.js';
+import { setStageState, reactionDelay, actLine, stopActing, resetStage } from './passenger-stage.js';
 import { showModal, closeModal } from './modals.js';
-import { toast, announceA11y } from './toast.js';
+import { toast } from './toast.js';
 import { sttSupport, createRecognizer, onDeviceStatus, installOnDevice, speakLine, stopSpeaking, ttsSupport } from '../services/speech.js';
 import { storeGet } from '../services/storage.js';
 
-let pendingTimer = 0, recognizer = null, onRender = () => {};
+let pendingTimer = 0, recognizer = null, onRender = () => {}, turnGen = 0, starting = false;
 const reduced = () => document.body.classList.contains('pref-reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ASSIST_TEXT = { guided: '안내', standard: '표준', professional: '전문', immersive: '몰입' };
 
@@ -28,11 +28,16 @@ function flush() { if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer 
 export function submitTurn(opts = {}) {
   const { text = '', questionId = null, source = 'text' } = opts;
   const c = current(); if (!c || state.ended) return null;
+  const gen = ++turnGen; // a newer turn, a new case or a retry makes any pending classification stale
   if (!questionId && (source === 'text' || source === 'voice') && modelReady()) {
     const local = resolveUtterance(text, c);
     if (local.kind === 'unknown' || local.kind === 'ambiguous') {
       flush(); setStageState('thinking'); setStatus('질문을 해석하고 있습니다…');
-      classifyRemote(c.id, text).then((m) => { setStatus(''); if (current() !== c || state.ended) return; runTurn({ text, source, questionId: m.questionId || null, via: m.questionId ? 'model' : null }); });
+      classifyRemote(c.id, text).then((m) => {
+        if (gen !== turnGen) return;
+        setStatus(''); if (current() !== c || state.ended) { setStageState('idle'); return; }
+        runTurn({ text, source, questionId: m.questionId || null, via: m.questionId ? 'model' : null });
+      });
       return { kind: 'pending' };
     }
   }
@@ -85,6 +90,10 @@ function sttLang() { const l = state.language; if (l && l.mode === 'en' && !l.in
 function setMic(on) { const b = byId('micBtn'); if (!b) return; b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '듣는 중' : '말하기'; }
 function stopListening() { recognizer?.stop(); }
 async function startListening() {
+  if (starting || recognizer?.active) return; starting = true;
+  try { await beginListening(); } finally { starting = false; }
+}
+async function beginListening() {
   const support = sttSupport(preferences.voice);
   if (!support.available) {
     if (support.reason === 'no-on-device') { showVoiceConsent('no-on-device'); return; }
@@ -105,8 +114,9 @@ async function startListening() {
     onError: (code) => { setMic(false); setStatus(code === 'not-allowed' || code === 'service-not-allowed' ? '마이크 권한이 없어 음성 질문을 사용할 수 없습니다. 직접 입력은 계속 사용할 수 있습니다.' : code === 'no-speech' ? '음성이 들리지 않았습니다. 다시 말하거나 직접 입력하십시오.' : '음성 인식이 중단되었습니다. 직접 입력은 계속 사용할 수 있습니다.'); setStageState('idle'); },
     onEnd: () => { setMic(false); recognizer = null; if (input.value.trim()) { setStatus('인식된 문장을 확인·수정한 뒤 [질문]을 누르십시오.'); input.focus(); input.dataset.source = 'voice'; } setStageState('idle'); }
   });
-  if (!recognizer || !recognizer.start()) { setMic(false); toast('음성 인식을 시작하지 못했습니다. 직접 입력을 사용하십시오.'); return; }
-  setMic(true); setStageState('listening'); announceA11y('음성 질문 듣는 중'); setStatus('말씀하십시오. 다시 누르면 멈춥니다.');
+  if (!recognizer && preferences.voice === 'local') { showVoiceConsent('no-on-device'); return; }
+  if (!recognizer || !recognizer.start()) { recognizer = null; setMic(false); toast('음성 인식을 시작하지 못했습니다. 직접 입력을 사용하십시오.'); return; }
+  setMic(true); setStageState('listening'); setStatus('말씀하십시오. 다시 누르면 멈춥니다.'); // #askStatus is the one live announcement
 }
 function showVoiceConsent(reason = '') {
   const noLocal = reason === 'no-on-device' || !sttSupport('local').available;
@@ -151,4 +161,4 @@ export function bindLiveInterview({ render } = {}) {
   byId('assistBtn').onclick = showInterviewSettings; syncAssistButton();
   checkModel();
 }
-export function resetLiveInterview() { flush(); stopSpeaking(); recognizer?.abort(); recognizer = null; setMic(false); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }
+export function resetLiveInterview() { turnGen++; flush(); resetStage(); stopSpeaking(); recognizer?.abort(); recognizer = null; setMic(false); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }

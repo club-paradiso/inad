@@ -7,7 +7,7 @@ import { CASES } from '../../src/data/cases.js';
 
 const ENV = { INAD_LLM_BASE_URL: 'https://llm.test/v1', INAD_LLM_MODEL: 'test-model', INAD_LLM_API_KEY: 'secret-key' };
 function mockRes() { const r = { statusCode: 0, headers: {}, body: '', setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, end(b) { this.body = b || ''; } }; return r; }
-function req(method, body, headers = { 'content-type': 'application/json' }, ip = '10.0.0.1') { return { method, headers: { ...headers, 'x-forwarded-for': ip }, body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body) }; }
+function req(method, body, headers = { 'content-type': 'application/json' }, ip = '10.0.0.1') { return { method, headers: { origin: 'https://inad.test', host: 'inad.test', ...headers, 'x-real-ip': ip }, body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body) }; }
 async function call(r, opts) { const res = mockRes(); await handler(r, res, opts); return { status: res.statusCode, json: res.body ? JSON.parse(res.body) : null, res }; }
 const providerAnswer = (content, { status = 200 } = {}) => { const calls = []; const f = async (url, init) => { calls.push({ url, init }); return { ok: status === 200, status, json: async () => ({ choices: [{ message: { content } }] }) }; }; f.calls = calls; return f; };
 
@@ -29,6 +29,10 @@ test('request validation', async () => {
   assert.equal((await call(req('POST', { ...body, task: 'write-dialogue' }), { env: ENV })).status, 400);
   assert.equal((await call(req('POST', { ...body, utterance: '   ' }), { env: ENV })).status, 400);
   assert.equal((await call(req('POST', 'x'.repeat(MAX_BODY + 1)), { env: ENV })).status, 413);
+  assert.equal((await call(req('POST', body, { 'content-type': 'application/json', origin: 'https://evil.test' }), { env: ENV })).status, 403, 'cross-origin');
+  assert.equal((await call({ ...req('POST', body), headers: { 'content-type': 'application/json', host: 'inad.test' } }, { env: ENV })).status, 403, 'no Origin');
+  const throwing = req('POST'); Object.defineProperty(throwing, 'body', { get() { throw new SyntaxError('Unexpected token'); } });
+  assert.equal((await call(throwing, { env: ENV })).status, 400, 'malformed pre-parsed body');
   const off = await call(req('POST', body), { env: {} });
   assert.deepEqual(off.json, { ok: false, questionId: null, reason: 'model-not-configured' });
 });
@@ -78,4 +82,7 @@ test('rate limited per client', async () => {
   for (let i = 0; i < 20; i++) assert.equal((await call(req('POST', body, undefined, '1.1.1.1'), { env: ENV, fetchImpl })).status, 200);
   assert.equal((await call(req('POST', body, undefined, '1.1.1.1'), { env: ENV, fetchImpl })).status, 429);
   assert.equal((await call(req('POST', body, undefined, '2.2.2.2'), { env: ENV, fetchImpl })).status, 200);
+  // a spoofed x-forwarded-for does not buy a new quota
+  const spoof = req('POST', body, { 'content-type': 'application/json', 'x-forwarded-for': '9.9.9.9' }, '1.1.1.1');
+  assert.equal((await call(spoof, { env: ENV, fetchImpl })).status, 429);
 });

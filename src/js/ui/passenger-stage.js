@@ -6,7 +6,7 @@ import { createLivingPortrait } from './avatar/living-portrait.js';
 import { PORTRAIT_RIGS } from '../../data/portrait-rigs.js';
 import { MOTION } from '../../data/motion-grammar.js';
 
-let lp = null, idleTimer = 0, captionTimer = 0, currentId = null;
+let lp = null, idleTimer = 0, captionTimer = 0, currentId = null, actSeq = 0;
 const STATE_TEXT = { listening: '듣는 중', thinking: '생각하는 중', speaking: '말하는 중', hesitant: '머뭇거리는 중', confused: '되묻는 중', document: '서류를 보는 중', relieved: '', idle: '' };
 
 export function ensureStage() {
@@ -34,10 +34,13 @@ export function showCaption(text, lead = '') {
 }
 // Act a line: speaking (or hesitant) with jaw motion for its length, then back to idle.
 export async function actLine(text, { mood = 'plain', lead = '', lang = 'ko' } = {}) {
-  const s = ensureStage(); showCaption(text, lead); if (!s) return;
+  const s = ensureStage(); showCaption(text, lead); if (!s) return; const my = ++actSeq;
   clearTimeout(idleTimer); s.setState(mood === 'hesitant' || mood === 'withheld' ? 'hesitant' : mood === 'confused' ? 'confused' : mood === 'document' ? 'document' : mood === 'relieved' ? 'relieved' : 'speaking');
   await s.speak((lead ? lead + ' ' : '') + text, lang);
+  if (my !== actSeq) return; // a newer line or turn took over the stage
   idleTimer = setTimeout(() => s.setState('idle'), 600);
 }
-export function stopActing() { lp?.stopSpeaking(); }
+export function stopActing() { actSeq++; lp?.stopSpeaking(); }
+// new case or retry of the same passenger: no leftover subtitle, timers or acting
+export function resetStage() { actSeq++; clearTimeout(idleTimer); clearCaption(); lp?.stopSpeaking(); lp?.setState('idle'); }
 export function refreshStageMotion() { lp?.refreshMotionPreference(); }

@@ -99,6 +99,12 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
 .qbtn.action { color: var(--accent-text); font-weight: 600; }
 .qs-empty { padding: 10px 12px; font-size: var(--fs-label); color: var(--text-3); }
 
+/* ---- touch tablets: the question bar keeps 44 px targets wherever the pointer is coarse ---- */
+@media (pointer: coarse) {
+  .ask-bar input, .mic-btn, .ask-send, .assist-btn, .ask-status button { min-height: var(--size-touch); }
+  .mic-btn, .ask-send, .assist-btn { min-width: var(--size-touch); }
+}
+
 /* ---- phone ---- */
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .panel-subject.booth { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; }

@@ -121,7 +121,7 @@ function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open)
 function runProcedureAction(a, ctx = {}) {
   const r = caseEngine.procedureAction(a, ctx);
   if (r.gameOver) { gameOverFlow(); return; }
-  if (r.fatal) { closeProcedureScreen(); caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
+  if (r.fatal) { closeProcedureScreen(); if (state.sessionMode !== 'case') caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
   if (r.close) closeProcedureScreen();
   if (r.decide === 'clear') { decideClearFlow(); return; }
   if (r.decide === 'refuse') { openRefusalFlow(); return; }

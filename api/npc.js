@@ -41,14 +41,24 @@ export function providerConfig(env = process.env) {
   return { base, model, key: String(env.INAD_LLM_API_KEY || '').trim() };
 }
 
+// Vercel sets x-vercel-forwarded-for / x-real-ip itself; elsewhere (local server) fall back to the socket address.
 function clientIp(req) {
-  const fwd = String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim();
-  return fwd || req.socket?.remoteAddress || 'unknown';
+  const h = req.headers || {};
+  return String(h['x-vercel-forwarded-for'] || h['x-real-ip'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
 }
+const MAX_TRACKED = 5000;
 export function rateLimited(ip, now = Date.now()) {
+  if (hits.size > MAX_TRACKED) for (const [k, v] of hits) { if (!v.length || now - v[v.length - 1] >= RATE.windowMs) hits.delete(k); }
+  if (hits.size > MAX_TRACKED) hits.clear(); // still full of active clients: start over rather than grow without bound
   const list = (hits.get(ip) || []).filter((t) => now - t < RATE.windowMs);
   if (list.length >= RATE.max) { hits.set(ip, list); return true; }
   list.push(now); hits.set(ip, list); return false;
+}
+// The classifier is for this page only: a browser POST carries Origin, and it must be this deployment's host.
+export function sameOrigin(req) {
+  const origin = String(req.headers?.origin || ''); const host = String(req.headers?.['x-forwarded-host'] || req.headers?.host || '');
+  if (!origin || !host) return false;
+  try { return new URL(origin).host === host; } catch (e) { return false; }
 }
 
 export function cleanUtterance(text) {
@@ -102,8 +112,10 @@ export async function classifyWithProvider(cfg, menu, utterance, { fetchImpl = f
 }
 
 async function readBody(req) {
-  if (req.body && typeof req.body === 'object') return JSON.stringify(req.body);
-  if (typeof req.body === 'string') return req.body;
+  let pre; try { pre = req.body; } catch (e) { throw new Error('bad-json'); } // Vercel's parsed-body getter throws on malformed JSON
+  if (pre && typeof pre === 'object' && !Buffer.isBuffer(pre)) return JSON.stringify(pre);
+  if (typeof pre === 'string') return pre;
+  if (Buffer.isBuffer(pre)) return pre.toString('utf8');
   return await new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
     req.on('data', (c) => { size += c.length; if (size > MAX_BODY) { reject(new Error('too-large')); req.destroy?.(); } else chunks.push(c); });
@@ -117,7 +129,8 @@ export default async function handler(req, res, { env = process.env, fetchImpl =
   if (method === 'GET' || method === 'HEAD') return send(res, 200, { available: !!cfg, task: 'classify' });
   if (method !== 'POST') { res.setHeader('Allow', 'GET, HEAD, POST'); return send(res, 405, { error: 'method-not-allowed' }); }
   const ctype = String(req.headers?.['content-type'] || ''); if (!ctype.includes('application/json')) return send(res, 415, { error: 'json-only' });
-  let raw; try { raw = await readBody(req); } catch (e) { return send(res, 413, { error: 'too-large' }); }
+  if (!sameOrigin(req)) return send(res, 403, { error: 'same-origin-only' });
+  let raw; try { raw = await readBody(req); } catch (e) { return e?.message === 'bad-json' ? send(res, 400, { error: 'bad-json' }) : send(res, 413, { error: 'too-large' }); }
   if (raw.length > MAX_BODY) return send(res, 413, { error: 'too-large' });
   let body; try { body = JSON.parse(raw); } catch (e) { return send(res, 400, { error: 'bad-json' }); }
   if (!body || typeof body !== 'object' || body.task !== 'classify' || typeof body.caseId !== 'string' || typeof body.utterance !== 'string') return send(res, 400, { error: 'bad-request' });

@@ -37,6 +37,10 @@ export function publicAnswer(c, topic) {
 }
 
 // Per-case record. A new case gets a new state.logs array, which resets it.
+// A new case starts a new record (case-engine emits 'case:init' from initCase); readers also check the log array.
+bus.on('case:init', () => { state.interview = null; });
+export function liveRecord() { return state.interview && state.interview.logs === state.logs ? state.interview : null; }
+
 export function interviewRecord() {
   const c = current();
   if (!state.interview || state.interview.logs !== state.logs) {
@@ -76,7 +80,9 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   if (route.kind === 'question') {
     const q = c.questions.find((x) => x.id === route.questionId);
     const typed = !!raw && normalizeUtterance(raw) !== normalizeUtterance(q.q);
-    if (!questionId && state.asked.has(q.id) && (route.score ?? 1) < REPEAT_CONFIRM_BELOW) {
+    // a model-classified question is treated like a lexicon match: an already-answered one is confirmed first
+    const loose = via === 'model' || (!questionId && (route.score ?? 1) < REPEAT_CONFIRM_BELOW);
+    if (loose && state.asked.has(q.id)) {
       heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
       sayOffRecord(pick(persona.repeatCheck, n), 'confused', c, rec); bus.emit('changed');
       result = { kind: 'repeatCheck', candidates: [q.id], mood: 'confused' };
@@ -89,7 +95,8 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
       result = { kind: 'withheld', questionId: q.id, mood: 'withheld' };
     } else {
       const repeat = state.asked.has(q.id); const d = persona.delivery?.[q.id] || {};
-      const mood = d.mood || (q.contradiction ? 'hesitant' : 'plain'); const understood = communicationReady(q).ok;
+      // acting comes from the persona only (never from case ground-truth fields such as `contradiction`)
+      const mood = d.mood || 'plain'; const understood = communicationReady(q).ok;
       rec.pending = { officer: typed ? { utterance: raw, source: src, matched: q.id } : { source: src }, alien: understood ? { mood: repeat ? 'plain' : mood, lead: repeat ? '' : (d.lead || ''), canonical: q.a } : { mood: 'confused' } };
       const r = ask(q, repeat); rec.pending = null;
       if (r.language) { rec.languageMiss++; result = { kind: 'language', questionId: q.id, mood: 'confused' }; }
@@ -133,7 +140,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   return result;
 }
 
-export function interviewSummary(rec = state.interview) {
+export function interviewSummary(rec = liveRecord()) {
   if (!rec) return { turns: 0, counts: { suggestion: 0, list: 0, text: 0, voice: 0, clarify: 0 }, unmatched: 0, withheld: 0 };
   return { turns: rec.turns.length, counts: { ...rec.counts }, unmatched: rec.unmatched, withheld: rec.withheld };
 }
