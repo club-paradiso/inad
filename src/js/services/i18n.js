@@ -444,7 +444,7 @@ const EXACT = new Map([
   ['직접 질문하십시오', 'Ask your own question'],
   ['말하기', 'Speak'],
   ['라이브 인터뷰', 'Live interview'],
-  ['승객 한 명과 직접 대화하는 단일 사건 · 약 5분 · 설정 없이 바로 시작', 'Talk directly with one traveler · single case · about 5 minutes · starts with no setup'],
+  ['승객 한 명과 직접 대화하는 단일 사건 · 설정 없이 바로 시작', 'Talk directly with one traveler · single case · starts with no setup'],
   ['라이브 인터뷰 사건을 찾지 못했습니다.', 'The live interview case could not be found.'],
   ['통역 지원', 'Interpreter support'],
   ['답변을 준비하고 있습니다', 'Preparing a reply'],
