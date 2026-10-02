@@ -31,7 +31,7 @@ test('pre-boot HTML placeholders show the current version (no stale label before
 
 test('built artifact banner and the README / release notes name this release', () => {
   const dist = path.join(root, 'dist/index.html');
-  if (fs.existsSync(dist)) assert.ok(fs.readFileSync(dist, 'utf8').includes(`INAD: 제12조 v${pkg.version} — GENERATED FILE`), 'dist banner');
+  if (fs.existsSync(dist)) assert.ok(fs.readFileSync(dist, 'utf8').includes(`INAD v${pkg.version} — GENERATED FILE`), 'dist banner');
   assert.ok(read('README.md').includes(`v${short}`), 'README mentions the current release');
   assert.ok(fs.existsSync(path.join(root, `RELEASE_NOTES_v${short}.md`)), `RELEASE_NOTES_v${short}.md exists`);
   assert.ok(read(`RELEASE_NOTES_v${short}.md`).includes(pkg.version), 'release notes carry the full version');

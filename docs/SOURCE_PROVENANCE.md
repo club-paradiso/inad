@@ -1,4 +1,4 @@
-# INAD Article 12 source provenance
+# INAD source provenance
 
 Status: IMPORTED — canonical artifact committed byte-exact as `legacy/v6.1/INAD_Article12_v6_1_KR.html` (also the former root `index.html` of the recovery merge). Root `index.html` is now the generated v7 release mirror built from `src/` (`npm run build`); CI verifies both the legacy SHA-256 and the generated entry point.
 

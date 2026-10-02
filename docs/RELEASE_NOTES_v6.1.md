@@ -1,4 +1,4 @@
-# INAD: 제12조 v6.1 Release Notes
+# INAD v6.1 Release Notes
 
 ## Release hardening
 

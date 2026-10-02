@@ -1,4 +1,4 @@
-# INAD: 제12조 — 작업 규칙 (Claude / Codex 공용)
+# INAD — 작업 규칙 (Claude / Codex 공용)
 
 `AGENTS.md`는 이 파일의 사본입니다. 두 파일을 함께 갱신하십시오.
 

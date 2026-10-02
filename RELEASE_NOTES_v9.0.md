@@ -1,4 +1,4 @@
-# INAD: 제12조 v9.0 — Stability & Product Quality Overhaul
+# INAD v9.0 — Stability & Product Quality Overhaul
 
 Release 9.0.0 · build 2026.10.01 · legal baseline 2026-09-07 (unchanged) · data v6.1 (unchanged) · save bundle schema 1 (unchanged)
 

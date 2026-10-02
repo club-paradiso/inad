@@ -47,7 +47,6 @@ const EXACT = new Map([
   ['현재 사건 요약 및 심사 단계', 'Current case summary and inspection stage'],
   ['판단 및 결정', 'Assessment and decision'],
   ['본문 바로가기', 'Skip to main content'],
-  ['INAD: 제12조', 'INAD: Article 12'],
   ['인천공항 제2여객터미널 · 입국심사 시뮬레이션', 'Incheon Airport Terminal 2 · Immigration Inspection Simulation'],
   ['근무조', 'Duty shift'],
   ['근무 현황', 'Duty status'],
@@ -710,7 +709,7 @@ export function setLocale(value) {
   ensureControls();
   document.documentElement.lang = locale;
   document.documentElement.dataset.locale = locale;
-  document.title = locale === 'en' ? 'INAD: Article 12' : 'INAD: 제12조';
+  document.title = 'INAD';
   if (document.body) { walk(document.body); markLangWithin(document.body); }
   syncControls();
   document.dispatchEvent(new CustomEvent('inad:localechange', { detail: { locale } }));
