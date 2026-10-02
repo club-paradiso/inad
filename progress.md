@@ -1,6 +1,12 @@
 # progress.md — INAD
 
-## 현재 상태 (2026-10-01 · v9.0)
+## 현재 상태 (2026-10-02 · v10 Live Interview 수직 슬라이스, 브랜치 `claude/relaxed-edison-iux1mv`)
+- 범위: 사건 1건(ICN-S2-005) 라이브 인터뷰 — 부스 초상(살아 있는 초상), 자유 입력·푸시투토크·제안 질문, 결정적 공개(선행조건 전 회피 답변), 디브리핑, 단일 사건 모드. 판정 로직·사건 데이터·저장 스키마 무변경(새 선호 키 3개만 번들에 추가).
+- QA: lint 80 · unit 125/125 · integration 10/10 · E2E 92/92 · 의도 평가 tuned 100% / held-out 76.5% · 성능 `docs/v10-qa.md` §5.
+- 막힌 항목(환경 네트워크 정책): Higgsfield(생성 0건, `design/v10/GENERATION_LOG.md`), 오픈 웨이트 모델 벤치마크(하네스만 준비), 운영 사이트 직접 확인.
+- 다음: Higgsfield 허용 후 파일럿 5명 생성·검수(TRV-0005 우선) → 모델 후보 실측(`docs/v10-ai-architecture.md` §5) → 사람 플레이테스트 → Quick Shift·오늘의 사건 → Figma 동기화(`docs/figma-workspace-spec.md` §10) → 버전 10.0.0.
+
+## 이전 상태 (2026-10-01 · v9.0)
 - v9.0 안정성·제품 품질 개편: 브랜치 `claude/gracious-bell-ev8lcm`(기준 `main` `c922399`), 결과·검증은 `RELEASE_NOTES_v9.0.md`, `docs/qa-v9.md`.
 - 판정 로직(`legal-engine.js`, `case-engine.js`, `src/data/cases.js`)·저장 스키마·`legacy/` 무변경.
 - 열린 항목:
