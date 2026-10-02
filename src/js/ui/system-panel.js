@@ -47,7 +47,7 @@ const rank = (t) => t === '정상' ? 0 : t === '주의' ? 1 : t === '경고' ? 2
 export function renderClueBoard() {
   const el = byId('clueBoard'); if (!el) return; const c = current(); if (!c.clues) { el.innerHTML = ''; return; } const st = clueStats(c);
   const cards = st.got.slice().reverse().slice(0, 4).map((x) => `<div class="clue ${esc(x.kind || 'context')}"><strong>${esc(x.title)}${x.key ? '<span class="cluekey">핵심</span>' : ''}</strong><p>${esc(x.text)}</p></div>`).join('');
-  el.innerHTML = `<div class="cluehead"><span>단서</span><b>핵심 ${st.keyGot.length}/${st.keys.length} · 전체 ${st.got.length}/${st.all.length}</b></div><div class="cluecards">${cards || '<div class="clueempty">질문·전산조회·서류 확인을 통해 단서가 연결됩니다.</div>'}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
+  el.innerHTML = `<div class="cluehead"><span>단서</span><b>핵심 ${st.keyGot.length}/${st.keys.length} · 전체 ${st.got.length}/${st.all.length}</b></div><div class="cluecards">${cards || '<div class="clueempty">질문·전산조회·서류 확인으로 단서가 이어집니다.</div>'}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
 }
 export function renderMatrix() {
   const c = current(); const e = evidenceNow(c, state);
