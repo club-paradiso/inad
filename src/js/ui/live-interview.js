@@ -53,6 +53,7 @@ function runTurn({ text = '', questionId = null, source = 'text', via = null } =
   if (!reduced()) setStageState('thinking');
   const r = submitUtterance({ text, questionId, source, via });
   if (!r || r.kind === 'empty' || r.kind === 'ended' || r.kind === 'none') { releaseReplies(); setStageState('idle'); return r; }
+  if (r.kind === 'confirm') { releaseReplies(); setStageState('listening'); offerConfirm(r.candidates[0], r.text, source); return r; }
   const delay = reduced() ? 0 : reactionDelay(r.mood || 'plain');
   holdReplies(from, delay); // the engine's own 'changed' already rendered the record with the reply held
   const finish = () => {
@@ -77,6 +78,14 @@ function offerCandidates(ids) {
   if (!qs.length) { setStatus('다른 말로 다시 질문하거나 아래 질문 목록을 사용하십시오.'); return; }
   setStatus(`<span>혹시 이 질문입니까?</span>${qs.map((q) => `<button type="button" data-cand="${esc(q.id)}">${esc(q.q)}</button>`).join('')}`);
   byId('askStatus').querySelectorAll('[data-cand]').forEach((b) => { b.onclick = () => { submitTurn({ questionId: b.dataset.cand, source: 'clarify' }); byId('askInput')?.focus(); }; });
+}
+
+// Low-confidence interpretation: show what would be recorded; the examiner's words stay in the box to edit.
+function offerConfirm(id, text, source) {
+  const q = current()?.questions.find((x) => x.id === id); if (!q) return;
+  const input = byId('askInput'); if (input && !input.value) { input.value = text; if (source === 'voice') input.dataset.source = 'voice'; }
+  setStatus(`<span>이렇게 기록할까요?</span><button type="button" data-confirm="${esc(q.id)}">${esc(q.q)}</button><span>아니면 질문을 고쳐 다시 보내십시오.</span>`);
+  byId('askStatus').querySelector('[data-confirm]').onclick = () => { const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } submitTurn({ questionId: q.id, text, source }); i?.focus(); };
 }
 
 function offerRepeat(id) {

@@ -436,6 +436,8 @@ const EXACT = new Map([
   ['근무 중에는 저장된 근무를 불러올 수 없습니다.', 'A saved duty cannot be loaded during a shift.'],
   ['근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.', 'Start a duty to replay the screen guide.'],
   ['브라우저 저장소에 쓸 수 없어 진행이 저장되지 않았습니다.', 'Browser storage refused the write; progress was not saved.'],
+  ['이렇게 기록할까요?', 'Record it as this?'],
+  ['아니면 질문을 고쳐 다시 보내십시오.', 'Or edit your question and send it again.'],
   ['기록 없음', 'None recorded'],
   // v10 live interview
   ['질문 도움', 'Question help'],

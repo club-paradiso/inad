@@ -17,6 +17,9 @@ async function say(page, text) {
   const input = page.locator('#askInput');
   await input.fill(text);
   await input.press('Enter');
+  // a low-confidence interpretation is offered for confirmation first, as a player would accept it
+  const confirm = page.locator('#askStatus [data-confirm]');
+  if (await confirm.count()) await confirm.click();
   await expect(page.locator('#log .msg.pending')).toHaveCount(0);
 }
 const lastPassengerLine = (page) => page.locator('#log .msg.alien .msgtext').last();

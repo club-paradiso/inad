@@ -23,6 +23,9 @@ export const SOURCES = ['suggestion', 'list', 'text', 'voice', 'clarify'];
 // Below this confidence a typed/spoken match to an already-answered question is confirmed first (a re-ask costs
 // efficiency under the v9 rule, and the examiner may have meant something else).
 export const REPEAT_CONFIRM_BELOW = 0.62;
+// Same bar for first-time questions (measured trade-off in docs/v10-qa.md §3: catches 4 of 6 wrong routes in the
+// fixture, adds one confirmation to 26 of 120 correct ones).
+export const CONFIRM_BELOW = 0.62;
 
 const docField = (c, keys, names) => { for (const d of c.docs || []) if (keys.includes(d.k)) for (const [k, v] of d.fields || []) if (names.includes(k)) return v; return null; };
 // A line answering a common question from the submitted documents only, or null when the case has nothing public.
@@ -71,6 +74,13 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   if (questionId) route = (c.questions || []).some((q) => q.id === questionId) ? { kind: 'question', questionId } : { kind: 'unknown', candidates: [] };
   else route = resolveUtterance(raw, c);
   if (route.kind === 'empty') return { kind: 'empty' };
+  // A loose typed/spoken match to an open, not-yet-asked question is confirmed before anything is recorded:
+  // a wrong route would put a question the examiner did not ask into the official record. Nothing happens yet —
+  // no line, no cost, no turn; the UI offers the question and resubmits it with the examiner's own words.
+  if (route.kind === 'question' && !questionId && (route.score ?? 1) < CONFIRM_BELOW) {
+    const q = c.questions.find((x) => x.id === route.questionId);
+    if (q && questionUnlocked(q) && !state.asked.has(q.id)) { bus.emit('analytics', { name: 'interview_confirm', source: src }); return { kind: 'confirm', candidates: [q.id], text: raw }; }
+  }
   rec.counts[src]++;
   const turn = { at: state.caseWorkSeconds, source: src, kind: route.kind, questionId: route.questionId || null, via: via === 'model' ? 'model' : questionId ? 'button' : 'lexicon' };
   rec.turns.push(turn);

@@ -133,5 +133,59 @@ export const INTENT_CASES = {
     ['그 분이랑은 어떻게 연락하게 됐어요?', 'host'],
     ['배고프지 않으세요?', 'unknown'],
     ['What time is it?', 'unknown']
+  ],
+  // Round 3 (pilot cases): first run 17/24 (70.8 %, 2 wrong routes; ICN-S3-011 2/8 — no age/official/exemption/consent
+  // concepts). Used for tuning afterwards, so it is training data now; round 4 below is the held-out set.
+  'ICN-S1-002#round3': [
+    ['이번에 한국 온 목적이 뭐예요?', 'purpose'],
+    ['어느 호텔에 묵으세요?', 'hotel'],
+    ['일본에는 언제 돌아가요?', 'return'],
+    ['같이 온 친구는 누구예요?', 'companion'],
+    ['한국에 아는 사람 만날 거예요?', 'friendKorea'],
+    ['여행 경비는 어떻게 준비했어요?', 'budget'],
+    ['Are you going to study in Korea?', 'study'],
+    ['좋아하는 한국 음식 있어요?', 'unknown']
+  ],
+  'ICN-S3-010#round3': [
+    ['어디서 지내실 거예요? 일정은요?', 'purpose'],
+    ['돈은 얼마나 있어요?', 'funds'],
+    ['돌아가면 위험하다는 뜻인가요?', 'refugee'],
+    ['누가 왜 해를 끼친다는 거죠?', 'persecution'],
+    ['가족은 지금 이집트에 있어요?', 'family'],
+    ['다른 나라에서 보호 요청한 적 있어요?', 'route'],
+    ['한국에서 무슨 일을 하고 싶었어요?', 'workPlan'],
+    ['난민 신청은 언제부터 생각했어요?', 'claimTiming']
+  ],
+  'ICN-S3-011#round3': [
+    ['지문 찍는 거 하실 거죠?', 'bio'],
+    ['면제받을 이유가 있나요?', 'exempt'],
+    ['나이가 17세 미만이에요?', 'age'],
+    ['정부 공무로 오셨어요?', 'official'],
+    ['안내 들으셨죠, 이제 응하시겠어요?', 'explain'],
+    ['다른 서류는 다 괜찮은데 생체정보만 거부하시는 거죠?', 'otherDocs'],
+    ['Will you give your fingerprints?', 'bio'],
+    ['사촌은 어디 살아요?', 'unknown']
+  ],
+  // Held-out round 4 (written before any run against it, after the round-3 tuning). Do not tune on it.
+  'ICN-S3-011#heldout4': [
+    ['얼굴 사진이랑 지문 등록 절차 진행해도 될까요?', 'bio'],
+    ['혹시 생체정보를 안 해도 되는 사유가 있으세요?', 'exempt'],
+    ['미성년자는 아니시죠?', 'age'],
+    ['외교관이나 국제기구 업무로 오신 건가요?', 'official'],
+    ['설명 들으셨으니 지금이라도 협조하시겠어요?', 'explain']
+  ],
+  'ICN-S1-001#heldout4': [
+    ['출장 오신 거죠? 무슨 일로요?', 'purpose'],
+    ['미팅 일정은 어떻게 돼요?', 'agenda'],
+    ['한국 회사가 돈 주나요?', 'pay'],
+    ['짐에 판매용 물건 있어요?', 'samples'],
+    ['출장비는 회사가 내요?', 'sponsor']
+  ],
+  'ICN-S2-006#heldout4': [
+    ['왜 친구 이름으로 예약돼 있어요?', 'hotel'],
+    ['같이 온 분 이름이 뭐예요?', 'friend'],
+    ['부산은 언제 가요?', 'itinerary'],
+    ['본인 카드도 따로 있어요?', 'separateFunds'],
+    ['여기서 돈 벌 생각 있어요?', 'work']
   ]
 };

@@ -28,7 +28,7 @@ async function session(name, { viewport = { width: 1440, height: 900 }, init, lo
   await ctx.close();
 }
 const settle = (page) => page.waitForFunction(() => !document.querySelector('#log .msg.pending'), null, { timeout: 5000 }).catch(() => {});
-async function say(page, text) { await page.fill('#askInput', text); await page.press('#askInput', 'Enter'); await settle(page); }
+async function say(page, text) { await page.fill('#askInput', text); await page.press('#askInput', 'Enter'); const c = page.locator('#askStatus [data-confirm]'); if (await c.count()) await c.click(); await settle(page); }
 const passengerLast = (page) => page.locator('#log .msg.alien .msgtext').last().innerText();
 
 // 1 · first-time player, buttons only: follows suggestions, then tries to decide

@@ -24,6 +24,8 @@ function open(id, { interpreter = true } = {}) {
   if (interpreter) state.language = { ...state.language, interpreterActive: true };
   return current();
 }
+// A player confirms a low-confidence interpretation with one click (the chip resubmits the question with their words).
+function say(text, source) { const r = submitUtterance({ text, source }); return r.kind === 'confirm' ? submitUtterance({ text, questionId: r.candidates[0], source }) : r; }
 const snapshot = () => JSON.stringify({ performed: state.performed, asked: [...state.asked].sort(), clues: [...state.discoveredClues].sort(), score: state.score, efficiency: state.efficiency, proportionality: state.proportionality, work: state.caseWorkSeconds, strikes: state.strikes, stage: state.stage, stress: state.behavior.stress, rapport: state.behavior.rapport });
 
 test('intent engine: labelled utterances route to the right question, never to a wrong one on the tuned sets', () => {
@@ -46,10 +48,10 @@ test('every input surface reaches the same evidence with the same work time and 
   assert.equal(snapshot(), viaList, 'suggestion = list');
   open('ICN-S2-005');
   const typed = { purpose: '한국에서 30일 동안 뭐 할 거예요?', return: '귀국 항공권 있습니까', funds: '돈은 얼마나 가지고 왔어요?', contact: '국내 연락처는 누구입니까' };
-  for (const id of plan) { const r = submitUtterance({ text: typed[id], source: 'text' }); assert.equal(r.questionId, id); }
+  for (const id of plan) { const r = say(typed[id], 'text'); assert.equal(r.questionId, id); }
   assert.equal(snapshot(), viaList, 'typed = list');
   open('ICN-S2-005');
-  for (const id of plan) submitUtterance({ text: typed[id], source: 'voice' });
+  for (const id of plan) say(typed[id], 'voice');
   assert.equal(snapshot(), viaList, 'voice = list');
   assert.equal(c.id, 'ICN-S2-005');
 });
@@ -98,6 +100,18 @@ test('the single-case roster keeps the case and its rules, with no companions', 
   assert.equal(session.queue.length, 1); assert.deepEqual(session.queue[0], before); assert.equal(session.parties.length, 0);
   assert.equal(singleCaseSession('NOPE'), false);
   buildSession(271828);
+});
+
+test('a loose first-time match is confirmed before anything is recorded', () => {
+  open('ICN-S2-005');
+  const before = snapshot(); const n = state.logs.length;
+  const r = submitUtterance({ text: '귀국 항공권 있습니까', source: 'text' });
+  assert.equal(r.kind, 'confirm'); assert.deepEqual(r.candidates, ['return']);
+  assert.equal(snapshot(), before); assert.equal(state.logs.length, n, 'nothing is said or recorded');
+  assert.equal(interviewSummary().turns, 0);
+  const ok = submitUtterance({ text: '귀국 항공권 있습니까', questionId: 'return', source: 'text' });
+  assert.equal(ok.kind, 'answer');
+  assert.equal(state.logs.filter((x) => x.type === 'officer').pop().utterance, '귀국 항공권 있습니까', 'the record keeps the examiner\'s words');
 });
 
 test('a question the case does not ask but the documents answer gets the public record, nothing else', () => {

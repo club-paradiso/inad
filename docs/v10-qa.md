@@ -29,6 +29,15 @@ asserts every fetch targets an approved one. No test was removed or loosened oth
   any run and has not been tuned on: 13/17. Misses: `생활비는 어떻게 쓰실 생각이세요?` (unknown), `신고서에 쓴 연락처
   분은 어떤 분이세요?` (→ host, wrong route), `혹시 한국에서 일하실 생각 있으세요?` (unknown), `그 분이랑은 어떻게
   연락하게 됐어요?` (unknown). Unknowns cost nothing and offer open candidates; this is where the optional model is used.
+- Round 3 (pilot cases ICN-S1-002 / ICN-S3-010 / ICN-S3-011, written before running): 17/24 (70.8 %), 2 wrong routes;
+  ICN-S3-011 scored 2/8 (no age / official / exemption / consent concepts). Tuned afterwards → training data.
+- Round 4 (ICN-S3-011 / ICN-S1-001 / ICN-S2-006, written after the round-3 tuning, before running): **10/15 (66.7 %),
+  4 wrong routes** (exempt→bio, pay→funds, sponsor→samples, hotel→bookingName). Untuned.
+- Conclusion: on unseen phrasing the deterministic matcher places 67–77 % correctly and misroutes 6–27 %. Response:
+  **low-confidence confirmation** — a first-time match scoring < 0.62 is shown as "이렇게 기록할까요?" with the
+  examiner's words kept in the box; nothing is said, recorded or charged until confirmed. On the fixture this stops 4
+  of 6 wrong routes and adds one click to 26 of 120 correct routes (22 %). The optional model is the intended fix for
+  the remaining gap.
 - Model benchmark: not run (no reachable provider). Harness: `INAD_LLM_BASE_URL=… INAD_LLM_MODEL=… npm run eval:dialogue -- --provider`.
 
 ## 4. Visual QA rounds (UI constitution checklist)
