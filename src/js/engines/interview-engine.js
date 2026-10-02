@@ -40,7 +40,7 @@ function heard(raw, source, rec, extra = {}) {
 
 // The single dispatcher. `questionId` is given by buttons; `text` by typing or speech. Returns a plain result the
 // UI turns into avatar acting and focus; every visible line is already in state.logs.
-export function submitUtterance({ text = '', questionId = null, source = 'text' } = {}) {
+export function submitUtterance({ text = '', questionId = null, source = 'text', via = null } = {}) {
   const c = current(); if (!c) return { kind: 'none' };
   const rec = interviewRecord();
   if (state.ended) return { kind: 'ended' };
@@ -52,14 +52,14 @@ export function submitUtterance({ text = '', questionId = null, source = 'text' 
   else route = resolveUtterance(raw, c);
   if (route.kind === 'empty') return { kind: 'empty' };
   rec.counts[src]++;
-  const turn = { at: state.caseWorkSeconds, source: src, kind: route.kind, questionId: route.questionId || null };
+  const turn = { at: state.caseWorkSeconds, source: src, kind: route.kind, questionId: route.questionId || null, via: via === 'model' ? 'model' : questionId ? 'button' : 'lexicon' };
   rec.turns.push(turn);
   const n = rec.turns.length;
   let result;
 
   if (route.kind === 'question') {
     const q = c.questions.find((x) => x.id === route.questionId);
-    const typed = !questionId && normalizeUtterance(raw) !== normalizeUtterance(q.q);
+    const typed = !!raw && normalizeUtterance(raw) !== normalizeUtterance(q.q);
     if (!questionUnlocked(q)) {
       // Disclosure condition not met: the passenger stays with what is on record. Nothing is marked asked.
       rec.withheld++; heard(raw || q.q, src, rec, { matched: q.id, offRecord: true }); addLog('officer', raw || q.q); rec.pending = null;
@@ -102,7 +102,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text' 
   turn.kind = result.kind;
   rec.lastKind = result.kind;
   bus.emit('interview', { ...result, source: src });
-  bus.emit('analytics', { name: 'interview_turn', source: src, kind: result.kind });
+  bus.emit('analytics', { name: 'interview_turn', source: src, kind: result.kind, mode: turn.via });
   return result;
 }
 

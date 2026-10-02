@@ -5,6 +5,8 @@ import { $, byId, esc } from './dom.js';
 import { state, preferences, assistLevel } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { submitUtterance } from '../engines/interview-engine.js';
+import { resolveUtterance } from '../engines/intent-engine.js';
+import { checkModel, modelReady, classifyRemote } from '../services/npc-client.js';
 import { questionUnlocked } from '../engines/clue-engine.js';
 import { saveInterviewPreferences } from '../engines/save-engine.js';
 import { holdReplies, releaseReplies } from './interview-panel.js';
@@ -21,14 +23,30 @@ const ASSIST_TEXT = { guided: '안내', standard: '표준', professional: '전�
 function setStatus(html) { const el = byId('askStatus'); if (el) el.innerHTML = html; }
 function flush() { if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = 0; releaseReplies(); } }
 
-// One turn: engine first (state is final at once), then the passenger thinks, answers and is captioned.
-export function submitTurn({ text = '', questionId = null, source = 'text' } = {}) {
+// One turn. When the optional model is available and the deterministic matcher could not place a typed/spoken
+// question, the model is asked which existing question it was (ids only); its answer is handled like a click.
+export function submitTurn(opts = {}) {
+  const { text = '', questionId = null, source = 'text' } = opts;
+  const c = current(); if (!c || state.ended) return null;
+  if (!questionId && (source === 'text' || source === 'voice') && modelReady()) {
+    const local = resolveUtterance(text, c);
+    if (local.kind === 'unknown' || local.kind === 'ambiguous') {
+      flush(); setStageState('thinking'); setStatus('질문을 해석하고 있습니다…');
+      classifyRemote(c.id, text).then((m) => { setStatus(''); if (current() !== c || state.ended) return; runTurn({ text, source, questionId: m.questionId || null, via: m.questionId ? 'model' : null }); });
+      return { kind: 'pending' };
+    }
+  }
+  return runTurn(opts);
+}
+
+// Engine first (state is final at once), then the passenger thinks, answers and is captioned.
+function runTurn({ text = '', questionId = null, source = 'text', via = null } = {}) {
   const c = current(); if (!c || state.ended) return null;
   flush(); stopSpeaking(); stopActing(); setStatus('');
   const from = state.logs.length;
   holdReplies(from, reduced() ? 0 : 1500);
   if (!reduced()) setStageState('thinking');
-  const r = submitUtterance({ text, questionId, source });
+  const r = submitUtterance({ text, questionId, source, via });
   if (!r || r.kind === 'empty' || r.kind === 'ended' || r.kind === 'none') { releaseReplies(); setStageState('idle'); return r; }
   const delay = reduced() ? 0 : reactionDelay(r.mood || 'plain');
   holdReplies(from, delay); onRender();
@@ -124,5 +142,6 @@ export function bindLiveInterview({ render } = {}) {
   if (!sttSupport('browser').available) mic.hidden = true;
   mic.onclick = () => { if (recognizer?.active) { stopListening(); return; } if (preferences.voice === 'off') showVoiceConsent(); else startListening(); };
   byId('assistBtn').onclick = showInterviewSettings; syncAssistButton();
+  checkModel();
 }
 export function resetLiveInterview() { flush(); stopSpeaking(); recognizer?.abort(); recognizer = null; setMic(false); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }
