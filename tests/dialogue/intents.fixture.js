@@ -187,5 +187,100 @@ export const INTENT_CASES = {
     ['부산은 언제 가요?', 'itinerary'],
     ['본인 카드도 따로 있어요?', 'separateFunds'],
     ['여기서 돈 벌 생각 있어요?', 'work']
+  ],
+  // Round 5 (2026-10-02, the six cases that had no persona; written before any run against them). Case of the Day
+  // draws from all twelve cases. First run 20/37 (54.1 %, 2 wrong routes, 15 not placed); used for tuning afterwards,
+  // so it is training data now. Round 6 below is the held-out set for these cases.
+  'ICN-S1-003#round5': [
+    ['외국인등록증 좀 보여주세요', 'residence'],
+    ['지금 어디 사세요?', 'address'],
+    ['체류기간 언제까지예요?', 'expiry'],
+    ['캐나다는 왜 다녀오셨어요?', 'trip'],
+    ['한국에서 무슨 일 하세요?', 'job'],
+    ['Why no K-ETA?', 'keta']
+  ],
+  'ICN-S1-004#round5': [
+    ['ABTC 카드랑 여권 정보 같아요?', 'abtc'],
+    ['어느 회사 만나러 오셨어요?', 'business'],
+    ['언제 출국하세요?', 'return'],
+    ['미팅 담당자가 누구예요?', 'agenda'],
+    ['한국 회사에서 돈 받아요?', 'pay'],
+    ['Do you have product samples with you?', 'samples']
+  ],
+  'ICN-S2-007#round5': [
+    ['호텔 예약한 거 있어요?', 'hotel'],
+    ['같이 온 친구 이름이 뭐예요?', 'friend'],
+    ['필리핀에서는 무슨 일 해요?', 'work'],
+    ['돈 얼마 가져왔어요?', 'funds'],
+    ['마사지샵에서 뭘 도와준다는 거예요?', 'massage'],
+    ['Alex는 어떻게 알게 됐어요?', 'alex'],
+    ['한국에서 지내는 비용은 누가 내요?', 'sponsor']
+  ],
+  'ICN-S2-008#round5': [
+    ['초청한 회사가 어디예요?', 'company'],
+    ['한국에서 직접 일하세요?', 'purpose'],
+    ['초청장 보여주세요', 'invite'],
+    ['검수할 때 직접 조립하거나 수리해요?', 'inspection'],
+    ['공구 가져왔어요?', 'tools'],
+    ['What is your schedule for the six days?', 'schedule']
+  ],
+  'ICN-S3-009#round5': [
+    ['본명이 뭐예요?', 'identity'],
+    ['어디 거쳐서 왔어요?', 'route'],
+    ['예약 화면 보여줄 수 있어요?', 'phone'],
+    ['이 여권 어디서 받았어요?', 'purchase'],
+    ['같은 예약에 있는 사람 알아요?', 'companion'],
+    ['메시지 왜 지우려고 했어요?', 'destroy']
+  ],
+  'ICN-S3-012#round5': [
+    ['예전에 한국에서 추방된 적 있어요?', 'history'],
+    ['관광 목적 맞아요?', 'purpose'],
+    ['그때 언제 출국했어요?', 'date'],
+    ['입국 금지 풀렸다는 통지 받았어요?', 'permission'],
+    ['호텔이랑 귀국편 예약했어요?', 'hotel'],
+    ['Did you know it was a deportation order?', 'order']
+  ],
+  // Held-out round 6 (written after the round-5 tuning, before any run against it). Do not tune on it.
+  'ICN-S1-003#heldout6': [
+    ['등록증 갖고 계세요?', 'residence'],
+    ['한국 주소가 바뀐 건 없죠?', 'address'],
+    ['등록증 유효기간 좀 볼게요', 'expiry'],
+    ['What were you doing in Canada?', 'trip'],
+    ['회사 다니세요?', 'job']
+  ],
+  'ICN-S1-004#heldout6': [
+    ['ABTC에 한국 승인 들어가 있어요?', 'kor'],
+    ['돌아가는 날이 언제예요?', 'return'],
+    ['거래처랑 무슨 업무 하세요?', 'business'],
+    ['Will you do any paid work for the Korean company?', 'pay'],
+    ['미팅 스케줄이 어떻게 돼요?', 'agenda']
+  ],
+  'ICN-S2-007#heldout6': [
+    ['호텔 이름이 정확히 뭐예요?', 'hotelName'],
+    ['Alex랑은 무슨 사이예요?', 'alex'],
+    ['한국에서 일할 거예요?', 'massage'],
+    ['비행기표대로 돌아갈 거예요?', 'returnPlan'],
+    ['How much cash do you have?', 'funds']
+  ],
+  'ICN-S2-008#heldout6': [
+    ['담당자 이름이 뭐예요?', 'company'],
+    ['한국 회사에서 급여 받으세요?', 'pay'],
+    ['공장에서 설비 설치하세요?', 'inspection'],
+    ['측정 장비 같은 거 가져왔어요?', 'tools'],
+    ['언제 어디 방문하는지 일정 말해 주세요', 'schedule']
+  ],
+  'ICN-S3-009#heldout6': [
+    ['다른 이름 쓴 적 있어요?', 'trueName'],
+    ['환승은 어디서 했어요?', 'route'],
+    ['여권 누구한테 샀어요?', 'purchase'],
+    ['새 이름으로 통과라는 문자 무슨 뜻이에요?', 'messages'],
+    ['Are you really a German citizen?', 'identity']
+  ],
+  'ICN-S3-012#heldout6': [
+    ['한국에서 강제퇴거 당한 적 있죠?', 'history'],
+    ['출국명령이랑 강제퇴거 차이 알았어요?', 'order'],
+    ['재입국 허가 받은 적 있어요?', 'permission'],
+    ['며칠 있다 가세요?', 'purpose'],
+    ['When did you leave Korea last time?', 'date']
   ]
 };

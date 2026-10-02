@@ -35,9 +35,9 @@ green. v10 keeps every rule, case and score of v9 and changes the *contact surfa
 - **Meta game** — start screen, debrief, records: editorial typography, case-file language.
 
 ## 5. What v10 deliberately did not build yet (§42 "do not overbuild")
-Regenerating 105 travelers, rewriting campaigns, multiple AI providers, an avatar fleet, Quick Shift, Case of the Day,
-progression unlocks, camera interaction. Each has a design note in `docs/v10-live-interview-spec.md` §9 and waits for
-the slice to be validated by real players.
+Regenerating 105 travelers, rewriting campaigns, multiple AI providers, an avatar fleet, progression unlocks, camera
+interaction. Each has a design note in `docs/v10-live-interview-spec.md` §9 and waits for the slice to be validated by
+real players. Quick Shift, Case of the Day and personas for all twelve core cases were built on 2026-10-02 (§9 there).
 
 ## 6. Gates
 | Gate | State (2026-10-02) | Evidence |

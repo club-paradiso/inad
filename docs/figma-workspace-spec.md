@@ -386,10 +386,10 @@ v9.0은 코드가 먼저 바뀌었다(작업 지시: 안정성·제품 품질 �
   `Size` 컬렉션에 `size/booth-width` = 304(설명: 1280–1439는 280, `var(--w-booth)`). 범위는 같은 그룹의 기존 변수와 동일
   (배경 FRAME_FILL·SHAPE_FILL, 선 STROKE_COLOR, 글자 TEXT_FILL, 너비 WIDTH_HEIGHT). 기존 변수 이름 변경·삭제 없음.
   변수 ID `VariableID:192:2`–`192:7`.
-- **완료 · 섹션(06 — Desktop)**: `[Review] v10 Live Interview — 코드 구현 캡처 (PR #13 병합 대기)` (`194:2021`) — 시작 화면,
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] v10 Live Interview — 코드 구현 캡처 (PR #13 병합 2026-10-02)` (`194:2021`) — 시작 화면,
   인터뷰 1440·1280·1024, 낮은 확신 확인, 인터뷰 설정 시트, 음성 동의 시트, 디브리핑, 빠른 근무, 390 승객·인터뷰, 844×390.
   `[Exploration] v10 Live Interview — 방향 A/B/C` (`194:2061`) — A(채택)·A 390·B·C·v9 기준선.
-  PR 병합 후 `[Review]` 섹션 이름을 `[Implemented]`로 바꾼다(자동화가 만든 노드).
+  PR #13 병합 후 `[Review]` → `[Implemented]`로 승격 완료(자동화가 만든 노드).
 - **미완료 · 이미지**: 각 프레임은 실제 크기의 빈 프레임과 저장소 경로 메모(`source-note`)만 있다. 이미지 업로드 경로
   `mcp.figma.com`이 작업 환경의 네트워크 정책에서 403으로 차단됐다. 원본: `design/v10/review/figma-sync/*.webp`(현재 빌드
   캡처), `design/v10/review/proto-*.webp`, `v9-before-1440.webp`. 허용 후 같은 프레임 ID에 채우기로 넣는다.

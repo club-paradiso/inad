@@ -25,3 +25,33 @@ test('오늘의 사건: one case for the day, a debrief, a spoiler-free result k
   await expect(page.locator('#dailyCaseBtn')).toContainText('오늘의 사건 · 완료');
   await H.expectNoErrors(errors);
 });
+
+// Every day's passenger is voiced: the six cases that used to fall back to the generic persona now hold back a gated
+// answer with their own public-record line, and answer an open question normally (persona coverage, round 5).
+const DAYS = [
+  ['2026-10-02', 'ICN-S3-012', 'date', 'history'], ['2026-10-05', 'ICN-S1-003', 'expiry', 'residence'],
+  ['2026-10-06', 'ICN-S1-004', 'kor', 'abtc'], ['2026-10-14', 'ICN-S3-009', 'trueName', 'route'],
+  ['2026-10-15', 'ICN-S2-008', 'inspection', 'company'], ['2026-10-16', 'ICN-S2-007', 'hotelName', 'hotel']
+];
+for (const [day, caseId, gated, open] of DAYS) {
+  test(`오늘의 사건 ${day} (${caseId}): the passenger's own withheld line, then a normal answer`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date(`${day}T03:00:00Z`));
+    const errors = await H.openGame(page);
+    expect((await H.hook(page, (T) => T.daily())).caseId).toBe(caseId);
+    await page.locator('#dailyCaseBtn').click();
+    const c = await H.currentCase(page);
+    const st = await H.getState(page);
+    if (st.language && !st.language.interpreterActive && (st.language.mode === 'none' || Math.max(st.language.korean, st.language.english) < 3)) await page.locator('#langInterp').click();
+    const text = (id) => c.questions.find((q) => q.id === id).q;
+    const say = async (t) => { await page.fill('#askInput', t); await page.press('#askInput', 'Enter'); const k = page.locator('#askStatus [data-confirm]'); if (await k.count()) await k.click(); await expect(page.locator('#log .msg.pending')).toHaveCount(0); };
+    await say(text(gated));
+    expect((await H.hook(page, (T) => T.interview())).lastKind).toBe('withheld');
+    const line = await page.locator('#log .msg.alien .msgtext').last().innerText();
+    expect(line).not.toContain('아까 말씀드린 대로입니다'); // the generic fallback
+    expect((await H.getState(page)).asked).not.toContain(gated);
+    await say(text(open));
+    expect((await H.hook(page, (T) => T.interview())).lastKind).toBe('answer');
+    expect((await H.getState(page)).asked).toContain(open);
+    await H.expectNoErrors(errors);
+  });
+}

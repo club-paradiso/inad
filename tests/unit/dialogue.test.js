@@ -155,6 +155,18 @@ test('persona lines carry no fact that is not already on record (all core cases,
   assert.ok(GENERIC_PERSONA.clarify.length > 0);
 });
 
+test('every core case has a persona: an English gloss per question and a withheld line per gated question', () => {
+  // Case of the Day draws from all twelve cases, so none may fall back to the generic persona.
+  for (const c of CASES) {
+    const p = PERSONAS[c.id]; assert.ok(p, `${c.id}: persona`);
+    for (const q of c.questions) {
+      assert.ok(p.en?.[q.id], `${c.id}.${q.id}: English gloss`);
+      if ((q.requires || []).length) assert.ok(p.withheld?.[q.id], `${c.id}.${q.id}: withheld line (requires ${q.requires.join(', ')})`);
+    }
+    for (const k of Object.keys({ ...p.withheld, ...p.delivery, ...p.en })) assert.ok(c.questions.some((q) => q.id === k), `${c.id}: ${k} is a question of the case`);
+  }
+});
+
 test('the guard rejects a line that would add a case fact', () => {
   const c = CASES.find((x) => x.id === 'ICN-S2-005');
   assert.equal(checkLine('사실 공장 일을 알아봤습니다.', c).ok, false);

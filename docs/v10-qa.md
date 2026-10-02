@@ -14,10 +14,10 @@
 | Suite | Result |
 |---|---|
 | `npm run lint` | 81 modules OK · 53 tooling files parse |
-| `npm run test:unit` | **129/129** (106 v9 + 14 dialogue + 6 `/api/npc` + 3 daily) |
+| `npm run test:unit` | **130/130** (106 v9 + 15 dialogue + 6 `/api/npc` + 3 daily) |
 | `npm run test:integrity` | 10/10 (network invariant now: only `/api/airport-load` and `/api/npc`) |
-| `npm run test:e2e` (dist) | **95/95** (83 v9 incl. the 8-viewport adaptive sweep + 9 live interview + 2 quick shift + 1 case of the day) |
-| `npm run eval:dialogue` | tuned 100 % (0 wrong routes) · held-out round 2 76.5 % (13/17, 1 wrong route) |
+| `npm run test:e2e` (dist) | **101/101** (83 v9 incl. the 8-viewport adaptive sweep + 9 live interview + 2 quick shift + 7 case of the day) |
+| `npm run eval:dialogue` | tuned 152 lines 100 % (0 wrong routes) · held-out rounds 2 · 4 · 6: 62 lines, 75.8 % placed or offered as a candidate, 6 wrong routes |
 v9 tests changed: `tests/e2e/helpers.js ask()` now also waits until the passenger's reply is shown (the record is held
 for the reaction time); `tests/integration/dist-integrity.test.js` allows the second approved same-origin endpoint and
 asserts every fetch targets an approved one. No test was removed or loosened otherwise.
@@ -38,6 +38,18 @@ asserts every fetch targets an approved one. No test was removed or loosened oth
   examiner's words kept in the box; nothing is said, recorded or charged until confirmed. On the fixture this stops 4
   of 6 wrong routes and adds one click to 26 of 120 correct routes (22 %). The optional model is the intended fix for
   the remaining gap.
+- Round 5 (2026-10-02, the six cases that still used the generic persona: ICN-S1-003, S1-004, S2-007, S2-008,
+  S3-009, S3-012; written before running): **20/37 (54.1 %), 2 wrong routes, 15 not placed**. Case of the Day draws
+  from all twelve cases (each about 1 day in 12; 2026-10-02 itself is ICN-S3-012), so half the days met this level.
+  Tuned afterwards (concepts MATCH, COMPANY, MEET, PROOF, NAME, PERSON_NAME, HANDS_ON, INSPECT, DEPARTED, LIFTED,
+  KNEW; stems for residence, transit, deletion, consent) → training data (36/37 exact).
+- Round 6 (written after the round-5 tuning, before running; untuned): **17/30 (56.7 %) exact, 2 wrong routes —
+  both below 0.62, so both stop at the confirmation step**. After the six personas' English glosses were added
+  (straight translations of the question texts, which also feed the matcher): 19/30, the same 2 wrong routes, both
+  still confirmed first. Rounds 2 and 4 are unchanged by this tuning (13/17 · 10/15 under the harness metric).
+- Reading: on unseen phrasing for cases without tuning the matcher places a little over half exactly; most of the
+  rest are offered as candidates or asked again, and every wrong route measured on rounds 4–6 scores below the
+  confirmation threshold. Unknowns cost nothing. The optional model remains the intended fix.
 - Model benchmark: not run (no reachable provider). Harness: `INAD_LLM_BASE_URL=… INAD_LLM_MODEL=… npm run eval:dialogue -- --provider`.
 
 ## 4. Visual QA rounds (UI constitution checklist)
