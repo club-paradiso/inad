@@ -87,7 +87,7 @@ leave a message and the text path. Spoken replies (TTS) are a separate opt-in, p
 | landscape phones | booth beside identity; record + question bar beside the question tabs |
 Desktop chrome in single-case mode drops the operations bar, duty KPIs and daily missions.
 
-## 9. Built after the slice (2026-10-03) and still designed only
+## 9. Built after the slice (2026-10-02) and still designed only
 - **Quick Shift (first run) — built**: start screen → 짧은 근무 · 6명 (`sessionMode 'quick'`, `queue-engine.rosterSession`). Roster: ICN-S1-001 · one routine-clear generated passenger · ICN-S1-002 · ICN-S2-006 · ICN-S2-005 · ICN-S3-011; 안내 coaching throughout, debrief after each, summary table at the end, nothing saved. Original design note: 6 travelers — 2 ordinary (TRV-0001-type CLEAR), 1 language barrier, 1 suspicious-but-
   explained (ICN-S2-006 hotel booked by a friend — the brief's "who paid" example), 1 contradiction (this slice), 1
   special procedure. Target 5–10 minutes; the per-case pace has to be measured in a human playtest first.
@@ -96,6 +96,9 @@ Desktop chrome in single-case mode drops the operations bar, duty KPIs and daily
   `{ dateKey, caseId, decision, reasonCode, evidenceFound[], keyMissed[], questionsAsked, turnsBySource, procedurePath[] }`
   — already produced by `buildDebrief` + `interviewSummary`; an aggregate endpoint can later accept it without any
   personal data.
+- **Personas for all twelve core cases — built (2026-10-02)**: Case of the Day can draw any core case, so none falls
+  back to the generic persona any more (`tests/unit/dialogue.test.js` requires an English gloss per question and a
+  withheld line per gated question; `tests/e2e/daily-case.spec.js` plays one day per new persona).
 - **Campaign continuity / recurring characters**: personas keyed by traveler id would let a traveler return in a
   later, legally independent case; the campaign engine already links reservations and dossiers.
 - **Progression**: cosmetic booth themes, qualification records, case archive — never a legal advantage.

@@ -144,6 +144,109 @@ export const PERSONAS = {
       explain: '지문은 제공하고 싶지 않습니다.',
       otherDocs: '한국에 사는 사촌을 만나러 왔습니다.'
     }
+  },
+  'ICN-S1-003': {
+    voice: { lang: 'ko', register: 'resident-easy', rate: 1.02, pitch: 1.0 },
+    note: 'Registered resident coming home from a family visit; relaxed, answers plainly, a little surprised to be asked about K-ETA.',
+    en: {
+      residence: 'Please show your status of stay and registration card.', address: 'What is your current address in Korea?',
+      expiry: 'I will check your registration card and the expiry of your period of stay.', trip: 'What was the purpose of your trip to Canada?',
+      job: 'What is your current activity and job in Korea?', keta: 'Do you know why you did not submit a K-ETA?'
+    },
+    delivery: { residence: { mood: 'plain', lead: '네,' }, address: { mood: 'plain' }, expiry: { mood: 'plain' }, trip: { mood: 'plain' }, job: { mood: 'plain' }, keta: { mood: 'considered', lead: '아,' } },
+    withheld: {
+      expiry: '등록증은 F-2 외국인등록증입니다.',
+      trip: '캐나다에 가족 방문을 다녀왔습니다.',
+      job: '서울 집으로 돌아가는 길입니다.',
+      keta: '서울 집으로 돌아가는 길입니다.'
+    }
+  },
+  'ICN-S1-004': {
+    voice: { lang: 'ko', register: 'business-precise', rate: 1.0, pitch: 1.02 },
+    note: 'Purchasing manager on a short supplier trip; organised, answers with names and dates. Nothing to hide.',
+    en: {
+      abtc: 'Do your ABTC and passport details match?', business: 'Please describe the Korean company you will visit and the work.',
+      return: 'When do you leave Korea?', kor: 'I will check the KOR approval and the validity of your ABTC.',
+      agenda: 'Please describe the meeting schedule and your contact person.', pay: 'Will you receive salary or allowances from a Korean company, or do on-site work?',
+      samples: 'Do you have product samples in your luggage?'
+    },
+    delivery: { abtc: { mood: 'plain', lead: '네.' }, business: { mood: 'plain' }, agenda: { mood: 'considered' }, pay: { mood: 'plain', lead: '아,' }, samples: { mood: 'considered', lead: '음,' } },
+    withheld: {
+      kor: 'ABTC 유효기간은 2028-01-22입니다.',
+      agenda: '한국 거래처와 신규 공급계약 미팅을 위해 왔습니다.',
+      pay: '한국 거래처와 신규 공급계약 미팅을 위해 왔습니다.',
+      samples: '한국 거래처와 신규 공급계약 미팅을 위해 왔습니다.'
+    }
+  },
+  'ICN-S2-007': {
+    voice: { lang: 'ko', register: 'casual-vague', rate: 1.0, pitch: 1.04 },
+    note: 'Easy-going and vague about details she left to others. The vagueness is acting only; the facts are in the answers and the lookups, never in her manner.',
+    en: {
+      hotel: 'Please show the Gangnam hotel booking confirmation.', friend: 'What is your friend’s name and contact number?',
+      work: 'What do you do in your home country now?', funds: 'How much money do you have for the trip?',
+      hotelName: 'Tell me the exact name and address of the hotel you say is booked.', alex: 'Explain Alex’s name, nationality, relationship and how you got in touch.',
+      massage: 'What does “helping out” at a massage shop mean?', returnPlan: 'You have a return ticket — will you leave as planned?',
+      sponsor: 'Who pays for your stay in Korea?'
+    },
+    delivery: { hotel: { mood: 'considered', lead: '아,' }, friend: { mood: 'considered' }, work: { mood: 'plain' }, hotelName: { mood: 'considered', lead: '음,' }, alex: { mood: 'hesitant' }, massage: { mood: 'hesitant', lead: '그게…' }, returnPlan: { mood: 'considered' }, sponsor: { mood: 'considered' } },
+    withheld: {
+      hotelName: '강남 호텔에 묵습니다.',
+      alex: '친구와 관광하러 왔습니다.',
+      massage: '친구와 관광하러 왔습니다.',
+      returnPlan: 'PR469로 출국합니다.',
+      sponsor: '친구와 관광하러 왔습니다.'
+    }
+  },
+  'ICN-S2-008': {
+    voice: { lang: 'ko', register: 'engineer-plain', rate: 0.98, pitch: 0.98 },
+    note: 'Quality engineer sent by head office; precise, slightly formal, careful to separate inspection from hands-on work.',
+    en: {
+      company: 'Tell me the inviting company and the contact person.', purpose: 'Will you do production work or any employment in Korea yourself?',
+      invite: 'Please present the invitation letter and the schedule.', inspection: 'During the inspection, will you assemble, install or repair anything yourself?',
+      pay: 'Will you receive wages or payment for work from the Korean company?', tools: 'Do you have tools or measuring equipment in your luggage?',
+      schedule: 'Describe the site visits and meetings during the six days.'
+    },
+    delivery: { company: { mood: 'plain' }, purpose: { mood: 'plain', lead: '아,' }, invite: { mood: 'plain', lead: '네,' }, inspection: { mood: 'considered' }, pay: { mood: 'plain' }, tools: { mood: 'considered', lead: '음,' }, schedule: { mood: 'considered' } },
+    withheld: {
+      inspection: '인천과 화성의 거래처에서 제품 검수와 회의를 합니다.',
+      pay: '인천과 화성의 거래처에서 제품 검수와 회의를 합니다.',
+      tools: '인천과 화성의 거래처에서 제품 검수와 회의를 합니다.',
+      schedule: '인천과 화성의 거래처에서 제품 검수와 회의를 합니다.'
+    }
+  },
+  'ICN-S3-009': {
+    voice: { lang: 'ko', register: 'composed-insistent', rate: 0.98, pitch: 1.0 },
+    note: 'Composed and insistent that the passport is hers. Her calm or tension is acting only: identity is decided by the forensic and biometric results and the procedure, never by demeanour.',
+    en: {
+      identity: 'I will check your passport details against your actual identity.', route: 'Describe your recent route and transit points.',
+      phone: 'With your consent, will you show booking records and identity-related messages?', trueName: 'Your biometrics do not match the passport. Have you used another identity?',
+      purchase: 'When and where was this passport issued to you?', companion: 'Are you related to the other passenger on the same booking?',
+      messages: 'The booking screen you showed has a message saying “pass with the new name”. Explain it.', destroy: 'Why did you try to delete phone messages before the investigation?'
+    },
+    delivery: { identity: { mood: 'plain' }, route: { mood: 'plain' }, phone: { mood: 'considered', lead: '음,' }, trueName: { mood: 'considered' }, purchase: { mood: 'hesitant', lead: '그건…' }, companion: { mood: 'plain' }, messages: { mood: 'hesitant' }, destroy: { mood: 'hesitant', lead: '…' } },
+    withheld: {
+      trueName: 'ELENA ROSTOVA입니다. 독일에서 왔습니다.',
+      purchase: '여권에 문제가 있다는 말을 이해할 수 없습니다.',
+      companion: '일주일 동안 서울을 여행합니다.',
+      messages: '여권에 문제가 있다는 말을 이해할 수 없습니다.',
+      destroy: '여권에 문제가 있다는 말을 이해할 수 없습니다.'
+    }
+  },
+  'ICN-S3-012': {
+    voice: { lang: 'ko', register: 'polite-unaware', rate: 0.98, pitch: 1.0 },
+    note: 'Polite weekend tourist who honestly believes the old matter is closed. The entry ban follows from the record and the law, not from his sincerity.',
+    en: {
+      history: 'Have you ever been deported from Korea?', purpose: 'Is the purpose of this entry tourism?',
+      date: 'Do you remember the date you left Korea under the deportation order?', order: 'Did you know at the time that it was a deportation order, not a simple departure order?',
+      permission: 'Since then, have you received separate entry permission or notice that the restriction was lifted?', hotel: 'Did you book the hotel and return flight for this trip as usual?'
+    },
+    delivery: { history: { mood: 'considered', lead: '아,' }, purpose: { mood: 'plain', lead: '네.' }, date: { mood: 'considered' }, order: { mood: 'hesitant', lead: '음,' }, permission: { mood: 'considered' }, hotel: { mood: 'plain' } },
+    withheld: {
+      date: '예전 한국 체류 문제는 이미 끝난 것으로 알고 있습니다.',
+      order: '예전 한국 체류 문제는 이미 끝난 것으로 알고 있습니다.',
+      permission: '예전 한국 체류 문제는 이미 끝난 것으로 알고 있습니다.',
+      hotel: '주말 동안 서울 관광을 왔습니다.'
+    }
   }
 };
 

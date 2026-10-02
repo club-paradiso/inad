@@ -57,3 +57,44 @@ test.describe('UI 언어 전환', () => {
     await H.expectNoErrors(errors);
   });
 });
+
+// v10 English-mode audit: the live interview, the debrief and Quick Shift show no Korean UI vocabulary. Case data
+// (statements, question texts, names, document fields, statute texts) is content and stays in its language.
+test.describe('English UI · v10 paths', () => {
+  test.skip(target === 'legacy', 'v10 only');
+  const koreanIn = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((el) => el.offsetParent !== null || el.getClientRects().length).map((el) => el.innerText.replace(/\s+/g, ' ').trim()).filter((t) => /[가-힣]/.test(t)), sel);
+  const say = async (page, t) => { await page.fill('#askInput', t); await page.press('#askInput', 'Enter'); const k = page.locator('#askStatus [data-confirm]'); if (await k.count()) await k.click(); await expect(page.locator('#log .msg.pending')).toHaveCount(0); };
+
+  test('live interview chrome and the debrief are English; a question starting with 현재 is not mistranslated', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inad-locale', 'en'));
+    const errors = await H.openGame(page);
+    await page.locator('#liveStartBtn').click();
+    await page.locator('#langInterp').click();
+    for (const t of ['What will you do in Korea for a month?', "Why don't you have a return ticket?", 'How much money do you have?', 'Who is the contact number on your form?']) await say(page, t);
+    const chrome = '#caseNote .case-depth-note, #koLevel, #enLevel, #primaryLang, #pAttitude, #qtabs, #readyHint, #clueBoard .cluehead b, #clueBoard .legend, #clueBoard .cluekey, #languageMode, #languageStatus, #askStatus, #basisBoard .basis-domain, #basisBoard .basis-conf, #paTitle, #langInterp';
+    expect(await koreanIn(page, chrome)).toEqual([]);
+    await H.lookup(page, 'contact'); await H.lookup(page, 'pnr');
+    for (const t of ['What do you do for a living?', 'Who lives at the house in Guro?', 'Have you looked for a job in Korea?']) await say(page, t);
+    await page.locator('#secondaryBtn').click();
+    await H.procAct(page, 'refuse');
+    await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
+    await H.continueDoc(page); await H.procAct(page, 'repat-order'); await H.continueDoc(page); await H.procAct(page, 'waiting-room'); await H.procAct(page, 'finish-refusal');
+    await expect(page.locator('#modalTitle')).toHaveText('Inspection result · debrief');
+    expect(await koreanIn(page, '#modalTitle, #modalBody .report .r > span, #modalBody h3, #modalBody .basis-domain, #modalBody .basis-conf, #modalBody button, #stageLabel')).toEqual([]);
+    // "현재 체재비와 결제수단은 얼마입니까?" is a question (data), not a status line: it must not become "Now: 체재비…"
+    expect(await page.locator('#modalBody').innerText()).not.toContain('Now: ');
+    await H.expectNoErrors(errors);
+  });
+
+  test('Quick Shift and the first-traveler safeguard are English', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inad-locale', 'en'));
+    const errors = await H.openGame(page);
+    expect(await koreanIn(page, '#startOverlay summary, #startOverlay .start-notice p, #dailyStart b, #dailyStart span, #dailyStartOpen')).toEqual([]);
+    await page.locator('#quickStartBtn').click();
+    expect(await koreanIn(page, '#koLevel, #enLevel, #pAttitude, #qtabs, #readyHint, #paText')).toEqual([]);
+    await page.locator('#clearBtn').click();
+    await expect(page.locator('#modalTitle')).toHaveText('New examiner hint');
+    expect(await koreanIn(page, '#modalBody b, #modalBody .modal-note')).toEqual([]);
+    await H.expectNoErrors(errors);
+  });
+});

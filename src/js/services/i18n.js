@@ -1,6 +1,7 @@
 // UI localization for INAD. Korean remains the source language and default locale.
 // This layer deliberately does not touch case/legal state: it only translates rendered UI text.
 import { storeGet, storeSet } from './storage.js';
+import { LANGUAGE_META, LANG_LEVEL } from '../../data/language.js';
 
 const LOCALE_KEY = 'inad-locale';
 const ATTRS = ['aria-label', 'title', 'placeholder', 'alt'];
@@ -513,8 +514,41 @@ const EXACT = new Map([
   ['절차', 'Procedure'],
   ['심사 처리 결과 · 디브리핑', 'Inspection result · debrief'],
   ['같은 승객 다시 인터뷰', 'Interview the same traveler again'],
-  ['시작 화면으로', 'Back to start screen']
+  ['시작 화면으로', 'Back to start screen'],
+  // v10 English-mode audit (2026-10-02): UI vocabulary still shown in Korean on the live, quick, daily and debrief paths.
+  // Labels only — case facts, statements, document fields and statute texts stay in their source language.
+  ['재정', 'Finances'], ['직업', 'Occupation'], ['난민', 'Refugee'], ['생체정보', 'Biometrics'], ['과거입국', 'Prior entries'],
+  ['협조적', 'Cooperative'], ['매우 긴장', 'Very tense'], ['경계적', 'Guarded'], ['신중', 'Careful'],
+  ['응답이 짧아짐', 'Short answers'], ['신중하게 응답', 'Answers carefully'], ['거리감 있는 응답', 'Distant answers'], ['차분하게 응답', 'Answers calmly'],
+  ['긴장하기 쉬움', 'Easily tense'], ['격식적', 'Formal'], ['대기 민감', 'Sensitive to waiting'], ['신중한 편', 'Cautious'], ['친화적', 'Friendly'], ['침착한 편', 'Calm'],
+  ['모순·중대', 'Contradiction / serious'], ['미해결', 'Unresolved'], ['관련성 낮음', 'Low relevance'], ['핵심', 'Key'],
+  ['질문·전산조회·서류 확인으로 단서가 이어집니다.', 'Clues connect as you ask, run lookups and check documents.'],
+  ['난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.', 'Refugee referral screening in progress. Complete that procedure first.'],
+  ['바로 심사', 'Start now'],
+  ['사건 심화 모드 · 핵심 단서와 주변 정보가 섞여 있습니다.', 'In-depth case · key clues are mixed with background information.'],
+  ['공개 법령·공식자료 확인', 'Verified in published law / official sources'], ['공개자료로부터 추론', 'Inferred from published sources'], ['시뮬레이션 요소', 'Simulation element'], ['공개 근거 미확인', 'No published basis found'],
+  ['여권·사증 유효성', 'Passport and visa validity'], ['입국 근거·사전여행허가', 'Entry basis · travel authorization'], ['입국신고(전자입국신고)', 'Arrival declaration (e-Arrival)'],
+  ['생체정보·본인확인', 'Biometrics · identity check'], ['입국목적과 체류자격의 부합', 'Purpose matches status of stay'], ['체류기간·체류계획', 'Period and plan of stay'],
+  ['입국금지·거부 대상 여부', 'Entry ban / refusal grounds'], ['추가 확인(재심·교차검증)', 'Further checks (secondary · cross-checks)'], ['출입국항 난민신청', 'Refugee application at the port'],
+  ['출입국사범 조사·긴급체포', 'Immigration offence investigation · emergency arrest'], ['송환·출국대기', 'Repatriation · departure waiting area'],
+  ['요건 미충족 항목 있음', 'Requirements not met'], ['추가 확인 필요', 'Further checks needed'], ['확인이 남은 항목 있음', 'Checks still open'], ['법정 요건 확인 완료', 'Statutory requirements verified'],
+  ['최종결정', 'Final decision'], ['절차 준수', 'Procedure compliance'], ['조회·질문', 'Lookups · questions'], ['가상 처리시간', 'Simulated handling time'],
+  ['입국 불허', 'Entry refused'], ['입국 불허가 결정을 기록했습니다.', 'Entry refusal recorded.'],
+  ['초보 심사관 보호 힌트', 'New examiner hint'], ['아직 결론을 내리기 이릅니다.', 'It is too early to decide.'],
+  ['첫 승객에서 한 번만 제공되는 실수 방지 안내입니다. 점수·감찰에는 반영되지 않았습니다. 사건기록과 입국요건 검토판을 다시 확인하십시오.', 'A one-time safeguard on your first traveler. It did not affect your score or audit. Review the case record and the entry-requirements board again.'],
+  ['공항 안내방송', 'Airport announcements'], ['안내방송 대기', 'No announcement'], ['자세히', 'Details'], ['심사번호', 'Inspection no.'],
+  ['가상 시뮬레이션·개인정보·판정원칙 안내', 'About this simulation · privacy · decision principles'],
+  ['정확한 심사 20건', '20 accurate inspections'], ['효율과 절차', 'Efficiency and procedure'], ['특수절차 완전처리', 'Special procedure, fully handled'],
+  ['대화상자 닫기', 'Close dialog'], ['심사 단계', 'Inspection steps'], ['질문 카테고리', 'Question categories'], ['저장 데이터 파일 선택', 'Choose a save file'], ['기계판독영역', 'Machine-readable zone'],
+  ['게임에 등장하는 모든 여행객의 얼굴·이름·여권번호·사건은 인공지능 및 시뮬레이션을 이용해 생성한 가상의 정보입니다. 실제 인물·사건과는 관련이 없습니다. 국적은 입국자격 산정에만 사용되며 위험도나 범죄 가능성을 뜻하지 않습니다. 가족·단체 동행 여부 역시 위험도와 연결되지 않습니다. 현장 이벤트·업무량·특별 근무 도전·시나리오 프리셋·3일 캠페인·일일 미션은 게임 밸런스와 메타 진행을 위한 가상 변수이며 입국요건이나 법률상 정답을 변경하지 않습니다.', 'Every traveler’s face, name, passport number and case in the game is fictional, generated with AI and simulation, and unrelated to real people or events. Nationality is used only to determine the basis of entry and never means risk or likelihood of crime. Travelling with family or a group is not linked to risk either. Field events, workload, special-duty challenges, scenario presets, the 3-day campaign and daily missions are fictional variables for game balance and meta progression; they never change entry requirements or the legally correct outcome.'],
+  ['Web Audio 효과음 및 안내방송 차임 사용 중', 'Web Audio sound effects and announcement chime on'], ['추가 목표 없이 기본 근무를 수행합니다.', 'Standard duty without extra objectives.']
 ]);
+
+// Language names and levels come from the language data (each entry already carries its English name).
+const LEVEL_EN = ['None', 'Very limited', 'Basic', 'Working', 'Fluent'];
+for (const [ko, en] of Object.values(LANGUAGE_META)) if (!EXACT.has(ko)) EXACT.set(ko, en);
+LANG_LEVEL.forEach((ko, i) => { if (!EXACT.has(ko)) EXACT.set(ko, LEVEL_EN[i]); });
+const label = (x) => EXACT.get(x) || x;
 
 const PATTERNS = [
   [/^심사번호\s+([A-Z]?\d+)$/, 'Inspection no. $1'],
@@ -524,6 +558,7 @@ const PATTERNS = [
   [/^남은\s+(\d+)건$/, '$1 cases remaining'],
   [/^(\d+)개 완료$/, '$1 completed'],
   [/^(\d+)건 · (\d+)종$/, '$1 queries · $2 kinds'],
+  [/^필수 절차 (\d+)\/(\d+)(?: · 핵심 단서 (\d+)\/(\d+))? · 질문·조회로 사실관계를 더 확인하십시오\.$/, (m, a, b, c, d) => `Required steps ${a}/${b}${c ? ` · key clues ${c}/${d}` : ''} · keep establishing the facts with questions and lookups.`],
   [/^필수 절차 (\d+)\/(\d+)(.*)$/, 'Required steps $1/$2$3'],
   [/^자동저장 있음 · SESSION (.+) · (\d+)\/36 처리$/, 'Autosave available · SESSION $1 · $2/36 processed'],
   [/^이전 근무 이어하기 · (\d+)\/36$/, 'Resume previous duty · $1/36'],
@@ -532,7 +567,7 @@ const PATTERNS = [
   [/^도전 (.+) · 시나리오 (.+) · 일반승객 (\d+)명 · 동행여행 (\d+)팀 · 추가확인 변형 (\d+)명 · 핵심사건 (\d+)건$/, 'Challenge $1 · Scenario $2 · $3 regular travelers · $4 parties · $5 review variants · $6 key cases'],
   [/^현재 (.+) · 복잡한 질문은 이해도에 따라 통역이 필요할 수 있습니다\.$/, (m, x) => `Now: ${EXACT.get(x) || x} · complex questions may need an interpreter`, true],
   [/^현재 (.+) 수준이 제한적입니다\. 복잡한 질문에는 통역이 필요할 수 있습니다\.$/, (m, x) => `${EXACT.get(x) || x} is limited · complex questions may need an interpreter`, true],
-  [/^(.+) ↔ 한국어 통역 중 · 유효 진술 확보 가능$/, 'Interpreting $1 ↔ Korean · statements are recordable', true],
+  [/^(.+) ↔ 한국어 통역 중 · 유효 진술 확보 가능$/, (m, x) => `Interpreting ${label(x)} ↔ Korean · statements are recordable`, true],
   [/^(\d+)\/(\d+) · (\d+) 가능$/, '$1/$2 · $3 open'],
   [/^(.+) · 재질문 · 반복 질문은 효율에 반영$/, (m, x) => `${EXACT.get(x) || x} · asked before · repeats cost efficiency`, true],
   [/^(\d{4}-\d{2}-\d{2}) 공개 기준 시뮬레이션$/, 'Simulation · published law as of $1'],
@@ -540,7 +575,8 @@ const PATTERNS = [
   [/^충족 (\d+)$/, 'Met $1'], [/^추가 확인 (\d+)$/, 'Review $1'], [/^미충족 (\d+)$/, 'Not met $1'], [/^미확인 (\d+)$/, 'Unchecked $1'],
   [/^문답:(.+)$/, 'Q: $1'], [/^조회:(.+)$/, 'Lookup: $1'],
   [/^(\d+)일$/, '$1 days'],
-  [/^현재 (.+)$/, (m, x) => `Now: ${EXACT.get(x) || x}`, true],
+  [/^현재 (.+) 통역$/, (m, x) => `Now: ${label(x)} interpreter`],
+  [/^현재 (.+)$/, (m, x) => (EXACT.has(x) ? `Now: ${EXACT.get(x)}` : m)], // a question that starts with 현재 is data, not a status
   [/^(.+) 통역 호출$/, (m, lang) => `Call interpreter (${EXACT.get(lang) || lang})`, true], // the language name is data, not UI copy
   // v10 live interview: strings assembled from a fixed UI part and a data part (question text, names, labels stay Korean)
   [/^오늘의 사건 · 완료 (\d+)\/(\d+)$/, (m, a, b) => `Case of the day · done ${a}/${b}`],
@@ -554,8 +590,24 @@ const PATTERNS = [
   [/^확보한 단서 (\d+)$/, 'Clues found $1'], [/^놓친 핵심 단서 (\d+)$/, 'Key clues missed $1'],
   [/^먼저 필요: (.+)$/, 'Needed first: $1', true],
   [/^대화 (\d+)회 · 직접 입력 (\d+) · 음성 (\d+) · 제안 (\d+) · 목록 (\d+)(?: · 알아듣지 못한 질문 (\d+))? — 입력 방식은 점수와 판정에 반영되지 않습니다\.$/, (m, n, typed, voice, sugg, list, again) => `${n} turns · typed ${typed} · voice ${voice} · suggested ${sugg} · list ${list}${again ? ` · not understood ${again}` : ''} — input method does not affect scoring or decisions.`],
+  [/^(.+) 통역 연결됨$/, (m, x) => `Interpreter connected (${label(x)})`, true],
+  [/^(.+) 통역$/, (m, x) => `${label(x)} interpreter`],
+  [/^([^·]+) · L(\d)$/, (m, x, n) => `${label(x)} · L${n}`],
+  [/^핵심 (\d+)\/(\d+) · 전체 (\d+)\/(\d+)$/, 'Key $1/$2 · all $3/$4'], [/^핵심 (\d+)\/(\d+)$/, 'Key $1/$2'],
+  [/^판단 근거 · (.+)$/, (m, x) => `Decision basis · ${label(x)}`, true],
+  [/^질문 · (.+)$/, 'Question · $1', true], [/^전산 조회 · (.+)$/, (m, x) => `Lookup · ${label(x)}`, true],
+  [/^필수 확인절차가 남아 있습니다: (.+)$/, 'Required checks remain: $1', true],
+  [/^오늘의 미션 · (\d{4}\.\d{2}\.\d{2})$/, 'Daily missions · $1'],
+  [/^(\d+)\/(\d+) 완료 · 전부 완료 보너스 \+(\d+) XP$/, '$1/$2 done · all-done bonus +$3 XP'],
+  [/^승객 (\d+)명을 심사합니다\.$/, 'Inspecting $1 travelers.'],
+  [/^심사번호 ([A-Z]?\d+), 12번 심사대로 오십시오\.$/, 'Inspection no. $1, please proceed to booth 12.'],
+  [/^(.+) 통역 지원이 연결되었습니다\.$/, (m, x) => `${label(x)} interpretation connected.`],
+  [/^화면 설정 적용: 글자 (크게|기본), (고대비|기본 대비), (동작 감소|기본 동작)$/, (m, f, c, r) => `Display settings applied: ${f === '크게' ? 'large' : 'default'} text, ${c === '고대비' ? 'high' : 'default'} contrast, ${r === '동작 감소' ? 'reduced' : 'default'} motion`],
+  [/^([A-Z]?\d+) 승객을 입국재심으로 인계합니다\.$/, 'Traveler $1 handed over to secondary inspection.'],
   [/^(\d+)회$/, '$1 times'],
-  [/^(\d+)건$/, '$1 cases']
+  [/^(\d+)건$/, '$1 cases'],
+  // last: two known labels joined by a middle dot (e.g. a demeanor and a temperament)
+  [/^([^·]+) · ([^·]+)$/, (m, a, b) => (EXACT.has(a) && EXACT.has(b) ? `${EXACT.get(a)} · ${EXACT.get(b)}` : m)]
 ];
 
 function normalizeLocale(value) { return value === 'en' ? 'en' : 'ko'; }
