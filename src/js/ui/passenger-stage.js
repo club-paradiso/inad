@@ -29,7 +29,7 @@ export function reactionDelay(mood) { return MOTION.reactionMs[mood] ?? MOTION.r
 function clearCaption() { const c = byId('stageCaption'); if (c) { c.classList.remove('on'); c.innerHTML = ''; } clearTimeout(captionTimer); }
 export function showCaption(text, lead = '') {
   const c = byId('stageCaption'); if (!c) return; clearTimeout(captionTimer);
-  c.innerHTML = `${lead ? `<span class="lead">${esc(lead)}</span>` : ''}${esc(text)}`; c.classList.add('on');
+  c.innerHTML = `${lead ? `<span class="lead">${esc(lead)}</span> ` : ''}${esc(text)}`; c.classList.add('on');
   captionTimer = setTimeout(() => c.classList.remove('on'), Math.max(4200, String(text).length * 140));
 }
 // Act a line: speaking (or hesitant) with jaw motion for its length, then back to idle.

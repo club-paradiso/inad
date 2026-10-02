@@ -5,9 +5,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import './setup.js';
 import { state, session } from '../../src/js/state.js';
-import { buildSession, current } from '../../src/js/engines/queue-engine.js';
+import { buildSession, current, singleCaseSession } from '../../src/js/engines/queue-engine.js';
 import * as caseEngine from '../../src/js/engines/case-engine.js';
-import { submitUtterance, interviewSummary } from '../../src/js/engines/interview-engine.js';
+import { submitUtterance, interviewSummary, publicAnswer } from '../../src/js/engines/interview-engine.js';
 import { resolveUtterance } from '../../src/js/engines/intent-engine.js';
 import { suggestQuestions } from '../../src/js/engines/suggestion-engine.js';
 import { checkLine, checkLead, hiddenTerms } from '../../src/js/engines/dialogue-guard.js';
@@ -86,7 +86,40 @@ test('deterministic disclosure: a hidden fact stays hidden until its own conditi
   assert.equal(officer.utterance, '한국에서 일자리 알아본 적 있어요?');
   assert.equal(officer.text, current().questions.find((q) => q.id === 'jobOffer').q, 'the record keeps the canonical question');
   const answer = state.logs.filter((x) => x.type === 'alien').pop();
-  assert.equal(answer.lead, '…솔직히 말씀드리면,'); assert.equal(answer.mood, 'hesitant'); assert.ok(!answer.offRecord);
+  // the persona lead-in is used only when the v9 behaviour layer did not already frame the answer
+  const canonical = current().questions.find((q) => q.id === 'jobOffer').a;
+  assert.equal(answer.lead, answer.text === canonical ? '…솔직히 말씀드리면,' : ''); assert.equal(answer.mood, 'hesitant'); assert.ok(!answer.offRecord);
+});
+
+test('the single-case roster keeps the case and its rules, with no companions', () => {
+  buildSession(271828);
+  const before = session.queue.find((q) => q.caseId === 'ICN-S2-005');
+  assert.equal(singleCaseSession('ICN-S2-005'), true);
+  assert.equal(session.queue.length, 1); assert.deepEqual(session.queue[0], before); assert.equal(session.parties.length, 0);
+  assert.equal(singleCaseSession('NOPE'), false);
+  buildSession(271828);
+});
+
+test('a question the case does not ask but the documents answer gets the public record, nothing else', () => {
+  open('ICN-S2-005');
+  const before = snapshot();
+  const r = submitUtterance({ text: 'Where are you staying?', source: 'text' });
+  assert.equal(r.kind, 'public'); assert.equal(r.topic, 'LODGING');
+  const said = state.logs.filter((x) => x.type === 'alien').pop();
+  assert.equal(said.text, '체류지는 구로구 개인주택입니다.'); assert.equal(said.offRecord, true);
+  assert.equal(snapshot(), before, 'no evidence, no cost');
+  for (const c of CASES) for (const topic of ['LODGING', 'DURATION', 'RETURN', 'CONTACT', 'PURPOSE']) { const line = publicAnswer(c, topic); if (line) assert.ok(checkLine(line, c).ok, `${c.id} ${topic}: ${line}`); }
+});
+
+test('a loose typed match to an answered question asks before re-asking (the re-ask itself costs as in v9)', () => {
+  open('ICN-S2-005');
+  submitUtterance({ questionId: 'purpose', source: 'list' });
+  const before = snapshot();
+  const r = submitUtterance({ text: '관광 일정 좀 자세히', source: 'text' });
+  assert.equal(r.kind, 'repeatCheck'); assert.deepEqual(r.candidates, ['purpose']);
+  assert.equal(snapshot(), before, 'confirmation costs nothing');
+  submitUtterance({ questionId: 'purpose', source: 'clarify' });
+  assert.equal(state.repeatedQuestions > 0, true, 'the confirmed re-ask follows the v9 repeat rule');
 });
 
 test('meta intents act through the same engine calls as the buttons', () => {
@@ -100,7 +133,7 @@ test('meta intents act through the same engine calls as the buttons', () => {
 test('persona lines carry no fact that is not already on record (all core cases, generic persona included)', () => {
   for (const c of CASES) {
     const p = personaFor(c.id);
-    const lines = [...(p.clarify || []), ...(p.greeting || []), ...(p.handover || []), ...(p.thanks || []), ...(p.wait || []), ...(p.offTopic || []), p.withheldDefault.replace('{initial}', c.initial), ...Object.values(p.withheld || {})];
+    const lines = [...(p.clarify || []), ...(p.greeting || []), ...(p.handover || []), ...(p.thanks || []), ...(p.wait || []), ...(p.offTopic || []), ...(p.repeatCheck || []), p.withheldDefault.replace('{initial}', c.initial), ...Object.values(p.withheld || {})];
     for (const l of lines) { const r = checkLine(l, c); assert.ok(r.ok, `${c.id}: "${l}" → ${r.stray.join(',')}`); }
     for (const d of Object.values(p.delivery || {})) assert.ok(checkLead(d.lead).ok, `${c.id}: lead "${d.lead}"`);
   }

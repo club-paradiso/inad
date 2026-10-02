@@ -13,12 +13,28 @@ import { current } from './queue-engine.js';
 import { ask, selectDocument } from './case-engine.js';
 import { questionUnlocked } from './clue-engine.js';
 import { requestInterpreter, setInterviewLanguage, communicationReady } from './language-engine.js';
-import { resolveUtterance, normalizeUtterance, MAX_UTTERANCE } from './intent-engine.js';
+import { resolveUtterance, normalizeUtterance, publicTopic, MAX_UTTERANCE } from './intent-engine.js';
+import { checkLine } from './dialogue-guard.js';
 import { personaFor } from '../../data/personas.js';
 import { addLog } from './log.js';
 import { bus } from '../services/bus.js';
 
 export const SOURCES = ['suggestion', 'list', 'text', 'voice', 'clarify'];
+// Below this confidence a typed/spoken match to an already-answered question is confirmed first (a re-ask costs
+// efficiency under the v9 rule, and the examiner may have meant something else).
+export const REPEAT_CONFIRM_BELOW = 0.62;
+
+const docField = (c, keys, names) => { for (const d of c.docs || []) if (keys.includes(d.k)) for (const [k, v] of d.fields || []) if (names.includes(k)) return v; return null; };
+// A line answering a common question from the submitted documents only, or null when the case has nothing public.
+export function publicAnswer(c, topic) {
+  let line = null;
+  if (topic === 'PURPOSE') line = c.initial;
+  else if (topic === 'LODGING') { const v = docField(c, ['E-ARRIVAL', 'HOTEL', 'STAY'], ['체류지', '숙소', '호텔', '숙박지']); if (v) line = `체류지는 ${v}입니다.`; }
+  else if (topic === 'DURATION' && c.stay) line = `${c.stay}입니다.`;
+  else if (topic === 'RETURN' && c.return) line = /없음|NONE/i.test(c.return) ? '귀국편은 없습니다.' : `귀국편은 ${c.return.split(' · ')[0]}입니다.`;
+  else if (topic === 'CONTACT') { const v = docField(c, ['E-ARRIVAL'], ['연락처', '국내연락처']); if (v) line = `연락처는 ${v}입니다.`; }
+  return line && checkLine(line, c).ok ? line : null;
+}
 
 // Per-case record. A new case gets a new state.logs array, which resets it.
 export function interviewRecord() {
@@ -60,7 +76,11 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   if (route.kind === 'question') {
     const q = c.questions.find((x) => x.id === route.questionId);
     const typed = !!raw && normalizeUtterance(raw) !== normalizeUtterance(q.q);
-    if (!questionUnlocked(q)) {
+    if (!questionId && state.asked.has(q.id) && (route.score ?? 1) < REPEAT_CONFIRM_BELOW) {
+      heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
+      sayOffRecord(pick(persona.repeatCheck, n), 'confused', c, rec); bus.emit('changed');
+      result = { kind: 'repeatCheck', candidates: [q.id], mood: 'confused' };
+    } else if (!questionUnlocked(q)) {
       // Disclosure condition not met: the passenger stays with what is on record. Nothing is marked asked.
       rec.withheld++; heard(raw || q.q, src, rec, { matched: q.id, offRecord: true }); addLog('officer', raw || q.q); rec.pending = null;
       sayOffRecord(persona.withheld?.[q.id] || persona.withheldDefault, 'withheld', c, rec);
@@ -70,7 +90,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
     } else {
       const repeat = state.asked.has(q.id); const d = persona.delivery?.[q.id] || {};
       const mood = d.mood || (q.contradiction ? 'hesitant' : 'plain'); const understood = communicationReady(q).ok;
-      rec.pending = { officer: typed ? { utterance: raw, source: src, matched: q.id } : { source: src }, alien: understood ? { mood: repeat ? 'plain' : mood, lead: repeat ? '' : (d.lead || '') } : { mood: 'confused' } };
+      rec.pending = { officer: typed ? { utterance: raw, source: src, matched: q.id } : { source: src }, alien: understood ? { mood: repeat ? 'plain' : mood, lead: repeat ? '' : (d.lead || ''), canonical: q.a } : { mood: 'confused' } };
       const r = ask(q, repeat); rec.pending = null;
       if (r.language) { rec.languageMiss++; result = { kind: 'language', questionId: q.id, mood: 'confused' }; }
       else if (!r.ok) result = { kind: 'locked', questionId: q.id, mood: 'withheld' };
@@ -92,6 +112,11 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
     sayOffRecord(pick(persona.handover, n), 'document', c, rec);
     selectDocument(route.index);
     result = { kind: 'document', index: route.index, mood: 'document' };
+  } else if (route.kind === 'unknown' && publicAnswer(c, publicTopic(raw))) {
+    // Not a question of this case, but the submitted documents answer it: say what is already on record.
+    heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
+    sayOffRecord(publicAnswer(c, publicTopic(raw)), 'plain', c, rec); bus.emit('changed');
+    result = { kind: 'public', topic: publicTopic(raw), mood: 'plain' };
   } else {
     // Not understood, or two questions fit equally: no fact is produced; the examiner rephrases or picks.
     rec.unmatched++; heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
@@ -101,6 +126,8 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   }
   turn.kind = result.kind;
   rec.lastKind = result.kind;
+  // suggestions read lastKind (interpreter after a misunderstanding): refresh once it is known
+  if (result.kind === 'language') bus.emit('changed');
   bus.emit('interview', { ...result, source: src });
   bus.emit('analytics', { name: 'interview_turn', source: src, kind: result.kind, mode: turn.via });
   return result;

@@ -28,7 +28,7 @@ const msgHTML = (x, t, i, pending = false) => {
   let body;
   if (pending) body = '답변을 준비하고 있습니다';
   else if (x.type === 'officer' && x.utterance && x.utterance !== x.text && !x.offRecord) body = `${esc(x.utterance)}<span class="heard">기록 질문 · ${esc(x.text)}</span>`;
-  else body = `${x.lead ? `<span class="lead">${esc(x.lead)}</span>` : ''}${esc(x.type === 'officer' && x.offRecord && x.utterance ? x.utterance : x.text)}`;
+  else body = `${x.lead ? `<span class="lead">${esc(x.lead)}</span> ` : ''}${esc(x.type === 'officer' && x.offRecord && x.utterance ? x.utterance : x.text)}`;
   return `<div class="msg ${x.type} ${x.type === 'alien' ? (x.behaviorClass || '') : ''}${off}${pending ? ' pending' : ''}" data-i="${i}">${avatar}${label}<div class="msgtext">${body}</div></div>`;
 };
 export function renderLog() {

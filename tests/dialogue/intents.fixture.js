@@ -57,7 +57,15 @@ export const INTENT_CASES = {
     ['비자 좀 볼 수 있을까요', 'doc:VISA'],
     ['좋아하는 음식이 뭐예요?', 'unknown'],
     ['오늘 날씨 좋네요', 'unknown'],
-    ['asdf qwer', 'unknown']
+    ['asdf qwer', 'unknown'],
+    // playtest 2026-10-02 (informal speech, spacing) — added after the persona run, so tuned data
+    ['왜 한국 왔어?', 'purpose'],
+    ['한 달이나 있으면서 일정이 없어?', 'purpose'],
+    ['집 주인 누구야', 'addressOwner'],
+    ['베트남에선 뭐 했는데', 'occupation'],
+    ['폰 좀 보자', 'phone'],
+    ['너 혹시 일하러 왔지?', 'jobOffer'],
+    ['그 사람 어떻게 알아', 'host']
   ],
   // Held-out round 1 (written after the first tuning pass): 13/18 on first run; its misses were then fixed,
   // so it is training data now. Round 2 below is the current held-out set.

@@ -58,6 +58,7 @@ function runTurn({ text = '', questionId = null, source = 'text', via = null } =
       if (preferences.tts && ttsSupport()) speakLine(`${line.lead ? line.lead + ' ' : ''}${line.text}`, { lang: 'ko-KR', rate: 0.98 });
     } else setStageState('idle');
     if (r.kind === 'ambiguous' || r.kind === 'unknown') offerCandidates(r.candidates || []);
+    if (r.kind === 'repeatCheck') offerRepeat(r.candidates[0]);
     if (r.kind === 'language') setStatus('질문이 충분히 전달되지 않았습니다. 질문 언어를 바꾸거나 통역을 연결하십시오.');
   };
   if (delay) pendingTimer = setTimeout(finish, delay); else finish();
@@ -71,6 +72,12 @@ function offerCandidates(ids) {
   if (!qs.length) { setStatus('다른 말로 다시 질문하거나 아래 질문 목록을 사용하십시오.'); return; }
   setStatus(`<span>혹시 이 질문입니까?</span>${qs.map((q) => `<button type="button" data-cand="${esc(q.id)}">${esc(q.q)}</button>`).join('')}`);
   byId('askStatus').querySelectorAll('[data-cand]').forEach((b) => { b.onclick = () => { submitTurn({ questionId: b.dataset.cand, source: 'clarify' }); byId('askInput')?.focus(); }; });
+}
+
+function offerRepeat(id) {
+  const q = current()?.questions.find((x) => x.id === id); if (!q) return;
+  setStatus(`<span>이미 답을 들은 질문입니다.</span><button type="button" data-repeat="${esc(q.id)}">다시 묻기 · ${esc(q.q)}</button>`);
+  byId('askStatus').querySelector('[data-repeat]').onclick = () => { submitTurn({ questionId: q.id, source: 'clarify' }); byId('askInput')?.focus(); };
 }
 
 // ---- voice ---------------------------------------------------------------------------------------------

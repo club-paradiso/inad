@@ -15,13 +15,15 @@ export function normalizeUtterance(text) {
     .toLowerCase().replace(/[“”"‘’`]/g, "'").replace(/\s+/g, ' ').trim();
 }
 
-const hasStem = (text, padded, stem) => {
+// Korean stems also match with the spaces removed ("집 주인" = "집주인", "왜 한국 왔어" ⊃ "왜왔" is NOT implied:
+// only the stem's own spacing is ignored, word order still matters).
+const hasStem = (text, padded, stem, squeezed) => {
   if (/^[\x20-\x7e]+$/.test(stem)) { const s = stem.trim(); if (!s) return false; const i = padded.indexOf(' ' + s); return i >= 0; }
-  return text.includes(stem);
+  return text.includes(stem) || squeezed.includes(stem.replace(/\s+/g, ''));
 };
 function stemsHit(text, entry) {
-  const padded = ' ' + text.replace(/[?!.,;:()]/g, ' ') + ' ';
-  return (entry.ko || []).some((s) => hasStem(text, padded, s)) || (entry.en || []).some((s) => hasStem(text, padded, s));
+  const padded = ' ' + text.replace(/[?!.,;:()]/g, ' ') + ' '; const squeezed = text.replace(/\s+/g, '');
+  return (entry.ko || []).some((s) => hasStem(text, padded, s, squeezed)) || (entry.en || []).some((s) => hasStem(text, padded, s, squeezed));
 }
 
 export function conceptsOf(text) {
@@ -94,3 +96,8 @@ export function resolveUtterance(text, c) {
   if (second && best.score - second.score < AMBIGUITY_MARGIN && second.score >= MATCH_THRESHOLD) return { kind: 'ambiguous', candidates: [best.q.id, second.q.id], score: best.score };
   return { kind: 'question', questionId: best.q.id, score: Math.round(best.score * 1000) / 1000 };
 }
+
+// Common questions the case catalogue does not ask but the submitted documents already answer. The passenger
+// answers from the public record only (dialogue-guard re-checks the line), and no evidence is created.
+export const PUBLIC_TOPICS = ['LODGING', 'DURATION', 'RETURN', 'CONTACT', 'PURPOSE'];
+export function publicTopic(text) { const cs = conceptsOf(text); return PUBLIC_TOPICS.find((k) => cs.has(k)) || null; }

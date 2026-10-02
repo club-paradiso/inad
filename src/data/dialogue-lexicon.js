@@ -6,7 +6,7 @@
 // written without them); English stems are matched at word starts.
 
 export const CONCEPTS = {
-  PURPOSE: { ko: ['목적', '왜 오', '왜 왔', '무슨 일로', '무엇을 할', '뭐 할', '뭐하', '뭘 할', '무엇을 하', '하실 예정', '할 예정', '오신 이유', '방문 이유', '방문하', '관광', '여행 목적', '계획'], en: ['purpose', 'why are you', 'why did you come', 'reason for', 'what brings', 'what will you do', 'what are you going to do', 'plan to do', 'visit', 'tourism', 'sightseeing'] },
+  PURPOSE: { ko: ['목적', '왜 오', '왜 왔', '무슨 일로', '무엇을 할', '뭐 할', '뭐하', '뭘 할', '무엇을 하', '하실 예정', '할 예정', '오신 이유', '방문 이유', '방문하', '관광', '여행 목적', '계획', '왜 한국', '뭐 하러', '무슨 일로', '왜 오셨', '일정이 없', '계획이 없', '한국 온 이유', '온 이유'], en: ['purpose', 'why are you', 'why did you come', 'reason for', 'what brings', 'what will you do', 'what are you going to do', 'plan to do', 'your plans', 'plans for', 'visit', 'tourism', 'sightseeing'] },
   DURATION: { ko: ['얼마나 머', '얼마 동안', '며칠', '기간', '체류 기간', '몇 일', '한 달 동안 머'], en: ['how long', 'how many days', 'duration', 'length of stay', 'days'] },
   LODGING: { ko: ['숙소', '숙박', '호텔', '묵', '머무는 곳', '머물 곳', '지낼 곳', '어디서 지내', '어디에서 지내', '어디에 머', '어디서 머', '어디서 자', '체류지', '체류합', '주소', '거처'], en: ['hotel', 'accommodation', 'where are you staying', 'where will you stay', 'where do you stay', 'lodging', 'address', 'sleep', 'place to stay'] },
   RETURN: { ko: ['귀국', '돌아가', '출국', '왕복', '리턴', '항공권', '비행기표', '티켓', '돌아갈', '다음 이동', '편도'], en: ['return', 'go back', 'going back', 'flight home', 'ticket', 'round trip', 'leave korea', 'leaving', 'departure', 'onward', 'one-way', 'one way', 'fly back', 'flight home'] },
@@ -16,12 +16,12 @@ export const CONCEPTS = {
   CONTACT: { ko: ['연락처', '전화번호', '번호', '010', '국내 연락', '연락하는'], en: ['contact', 'phone number', 'number', 'reach'] },
   RELATION: { ko: ['누구입', '누구예', '누구야', '누군', '관계', '아는 사람', '어떻게 알', '알게', '지인', '소개', '처음 만', '만난 적', '친구'], en: ['who is', 'who are', 'relationship', 'how do you know', 'how did you meet', 'know them', 'friend', 'introduced', 'met'] },
   HOW_MET: { ko: ['어떻게 알', '알게 되', '처음 어떻게', '어디서 알', '소개받', '만난 적', 'sns', '단체방', '온라인'], en: ['how do you know', 'how did you meet', 'how did you get to know', 'where did you meet', 'introduced', 'online'] },
-  JOB_HOME: { ko: ['직업', '하는 일', '무슨 일을 하', '어떤 일을 하', '일을 하', '소득', '수입', '직장', '회사', '그만', '생계', '본국에서', '베트남에서', '무슨 일 하', '어떤 일 하', '요즘 뭐 하', '하고 지내'], en: ['job', 'occupation', 'what do you do', 'work at home', 'back home', 'in vietnam', 'for work', 'income', 'employer', 'employed', 'quit', 'living', 'profession'] },
+  JOB_HOME: { ko: ['직업', '하는 일', '무슨 일을 하', '어떤 일을 하', '일을 하', '소득', '수입', '직장', '회사', '그만', '생계', '본국에서', '베트남에서', '무슨 일 하', '어떤 일 하', '요즘 뭐 하', '하고 지내', '뭐 했', '무슨 일 했', '어떤 일 했', '일 했', '일했'], en: ['job', 'occupation', 'what do you do', 'work at home', 'back home', 'in vietnam', 'for work', 'income', 'employer', 'employed', 'quit', 'living', 'profession'] },
   WORK_KOREA: { ko: ['일자리', '취업', '일할', '일하러', '면접', '구직', '공장', '알바', '아르바이트', '돈을 벌', '돈 벌', '돈벌', '일을 구', '일 구', '근무하', '근로', '보수', '급여', '임금', '월급', '돈을 받', '돈 받', '대가'], en: ['job in korea', 'work in korea', 'work here', 'employment', 'job interview', 'factory', 'earn', 'find work', 'looking for work', 'job offer', 'job here', 'jobs here', 'working here', 'offer you work', 'offered you', 'earn money', 'paid', 'salary', 'wage'] },
   WHO: { ko: ['누구', '누가', '누군'], en: ['who ', 'whom', 'whose'] },
   SEPARATE: { ko: ['따로', '별도', '본인 돈', '자기 돈', '혼자서'], en: ['own money', 'separately', 'your own', 'separate'] },
-  PHONE: { ko: ['휴대전화', '핸드폰', '휴대폰', '스마트폰', '폰 ', '폰을', '폰으로', '전화기'], en: ['phone', 'mobile', 'smartphone', 'cell'] },
-  SHOW: { ko: ['보여', '제시', '확인할 수 있', '보여줄', '보여 주', '보여주'], en: ['show', 'present', 'let me see', 'can i see', 'proof'] },
+  PHONE: { ko: ['휴대전화', '핸드폰', '휴대폰', '스마트폰', '폰 ', '폰을', '폰으로', '폰 좀', '전화기'], en: ['phone', 'mobile', 'smartphone', 'cell'] },
+  SHOW: { ko: ['보여', '제시', '확인할 수 있', '보여줄', '보여 주', '보여주', '보자', '볼게', '봐도', '확인할게', '확인해도'], en: ['show', 'present', 'let me see', 'can i see', 'proof'] },
   HOUSE_OWNER: { ko: ['거주자', '사는 사람', '사는 분', '집주인', '그 집', '주택', '누구 집', '누구네', '구로', '개인주택', '집에 사'], en: ['who lives', 'owner', 'house', 'whose place', 'whose home', 'residence there'] },
   SCHEDULE: { ko: ['일정', '스케줄', '계획', '어디 갈', '어디를 갈', '이동'], en: ['schedule', 'itinerary', 'agenda', 'plans', 'program'] },
   COMPANION: { ko: ['동행', '같이 온', '함께 온', '같이 여행', '함께 여행', '일행'], en: ['travel with', 'travelling with', 'traveling with', 'companion', 'with you', 'group'] },
@@ -69,4 +69,4 @@ export const DOC_REQUEST_VERBS = { ko: ['보여', '제시', '주시겠', '주십
 
 // Words with no interview meaning, dropped before the character-bigram comparison.
 export const STOPWORDS_KO = ['습니다', '십시오', '주십시오', '해주세요', '해 주세요', '주세요', '입니까', '합니까', '습니까', '니까', '인가요', '나요', '해요', '어요', '세요', '있습', '그리고', '그럼', '혹시', '좀', '제가', '당신', '본인', '귀하', '선생님', '말씀', '구체적으로', '설명해', '알려', '대해', '대한', '대하'];
-export const STOPWORDS_EN = ['the', 'a', 'an', 'to', 'of', 'in', 'is', 'are', 'you', 'your', 'do', 'does', 'did', 'please', 'can', 'could', 'would', 'me', 'i', 'and', 'or', 'for', 'on', 'at', 'it', 'this', 'that', 'what', 'tell', 'about'];
+export const STOPWORDS_EN = ['the', 'a', 'an', 'to', 'of', 'in', 'is', 'are', 'you', 'your', 'do', 'does', 'did', 'please', 'can', 'could', 'would', 'me', 'i', 'and', 'or', 'for', 'on', 'at', 'it', 'this', 'that', 'what', 'tell', 'about', 'will', 'have', 'has', 'been', 'was', 'were'];

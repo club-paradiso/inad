@@ -56,7 +56,7 @@ test.describe('라이브 인터뷰', () => {
     await H.lookup(page, 'contact');
     await say(page, '한국에서 일자리 알아본 적 있어요?');
     await expect(lastPassengerLine(page)).toContainText('공장 일');
-    await expect(page.locator('#log .msg.alien .lead').last()).toHaveText('…솔직히 말씀드리면,');
+    // the lead-in / behaviour framing rule is pinned in tests/unit/dialogue.test.js
     st = await H.getState(page);
     expect(st.asked).toEqual(expect.arrayContaining(['purpose', 'occupation', 'jobOffer']));
     const iv = await H.hook(page, (T) => T.interview());

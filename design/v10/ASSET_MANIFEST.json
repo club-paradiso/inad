@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "updated": "2026-10-02",
+  "policy": "Approved assets are never overwritten; a new version gets a new id. Provenance is required for every entry.",
+  "assets": [
+    { "id": "portraits-v9", "path": "src/assets/portraits/TRV-*.webp", "count": 105, "status": "production-fallback", "source": "v6.1 production build (recovered, docs/SOURCE_PROVENANCE.md)", "notes": "flagged in REJECTED_ASSETS.md R-001…R-009" },
+    { "id": "portrait-rigs-v1", "path": "src/data/portrait-rigs.js", "count": 105, "status": "approved", "source": "scripts/extract-portrait-rigs.py · MediaPipe Face Mesh (mediapipe 0.10.14, bundled model) · offline", "notes": "derived data; regenerate whenever a portrait changes" },
+    { "id": "motion-grammar-v1", "path": "src/data/motion-grammar.js", "status": "approved-provisional", "source": "authored (MOTION_BIBLE.md)", "notes": "to be re-tuned from Higgsfield motion studies" },
+    { "id": "pilot-1-tran-van-minh", "path": null, "status": "blocked", "source": "Higgsfield (official CLI)", "notes": "network policy denies higgsfield.ai; see GENERATION_LOG.md" },
+    { "id": "pilot-2-robert-vance", "path": null, "status": "planned", "source": "Higgsfield", "notes": "" },
+    { "id": "pilot-3-bikash-thapa", "path": null, "status": "planned", "source": "Higgsfield", "notes": "" },
+    { "id": "pilot-4-ahmed-al-mansoor", "path": null, "status": "planned", "source": "Higgsfield", "notes": "" },
+    { "id": "pilot-5-mio-tanaka", "path": null, "status": "planned", "source": "Higgsfield", "notes": "" }
+  ]
+}

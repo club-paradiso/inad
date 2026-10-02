@@ -9,7 +9,7 @@ export function addLog(type, text) {
   // was delivered (lead-in, mood) to the next officer / passenger line. Presentation data only.
   const pending = state.interview?.pending;
   if (pending && type === 'officer' && pending.officer) { Object.assign(meta, pending.officer); pending.officer = null; }
-  if (pending && type === 'alien' && pending.alien) { Object.assign(meta, pending.alien); pending.alien = null; }
+  if (pending && type === 'alien' && pending.alien) { const { canonical, ...a } = pending.alien; if (canonical && text !== canonical) a.lead = ''; Object.assign(meta, a); pending.alien = null; }
   state.logs.push({ type, text, ...meta });
   bus.emit('log');
 }

@@ -15,7 +15,9 @@ export const GENERIC_PERSONA = {
   wait: ['네.'],
   // {initial} is the passenger's own opening statement (public).
   withheldDefault: '아까 말씀드린 대로입니다. {initial}',
-  offTopic: ['그건 이번 입국과 관련된 질문인가요? 다시 말씀해 주시겠어요?']
+  offTopic: ['그건 이번 입국과 관련된 질문인가요? 다시 말씀해 주시겠어요?'],
+  // free text that most likely repeats a question already answered: confirm before the (v9-costed) re-ask
+  repeatCheck: ['앞서 말씀드린 것과 같은 질문이신가요?']
 };
 
 export const PERSONAS = {
@@ -23,7 +25,7 @@ export const PERSONAS = {
     voice: { lang: 'ko', register: 'polite-short', rate: 0.96, pitch: 1.0 },
     note: 'First trip abroad. Answers briefly and politely; slows down when money, the contact or work comes up. Never volunteers.',
     en: {
-      purpose: 'What exactly will you do during the 30 days?',
+      purpose: 'What exactly will you do in Korea?',
       return: "Why don't you have a return ticket?",
       funds: 'How much money do you have for the stay and how will you pay?',
       contact: 'Who is your contact in Korea, the number 010-0000-0202?',

@@ -10,7 +10,7 @@ import { installErrorCollectors, runDiagnostics, diagnosticText } from './servic
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
 import { newSessionSeed, displayDateKo } from './engines/rng.js';
-import { buildSession, current, caseForQueueItem, screeningNo } from './engines/queue-engine.js';
+import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession } from './engines/queue-engine.js';
 import { getTraveler } from './engines/traveler-engine.js';
 import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
@@ -154,8 +154,9 @@ function liveInterviewFlow(retry = false) {
   if (state.started && !retry) return;
   Object.assign(state, { sessionMode: 'case', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0 });
   regenerate(LIVE_CASE.seed); state.eventSchedule = [];
-  const idx = session.queue.findIndex((q) => q.caseId === LIVE_CASE.caseId); if (idx < 0) { toast('라이브 인터뷰 사건을 찾지 못했습니다.'); return; }
-  state.caseIndex = idx; state.started = true; document.body.classList.add('mode-case');
+  if (!singleCaseSession(LIVE_CASE.caseId)) { toast('라이브 인터뷰 사건을 찾지 못했습니다.'); return; }
+  // First passenger of the session: 안내 모드 coaching applies (no strikes, one guard), the v9 screen tour does not.
+  state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'live_retry' : 'live_start' });
   beginCase();
 }

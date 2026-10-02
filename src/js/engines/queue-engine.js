@@ -156,6 +156,12 @@ export function buildSessionQueue(seed, normalCases) {
   return out;
 }
 
+// v10 single-case live interview: a one-passenger roster (no companions, no queue) built from the seeded session,
+// so the case, the traveler's language profile and every rule are exactly those of the full duty.
+export function singleCaseSession(caseId) {
+  const item = session.queue.find((q) => q.caseId === caseId); if (!item) return false;
+  session.queue = [{ ...item }]; session.parties = []; session.partyByTraveler = new Map(); return true;
+}
 export function caseForQueueItem(q) { return q.caseId ? coreCaseMap.get(q.caseId) : session.normalCaseMap.get(q.normalId); }
 export function currentQueueItem() { return session.queue[state.caseIndex]; }
 export function current() { const q = currentQueueItem(); return q ? caseForQueueItem(q) : null; }
