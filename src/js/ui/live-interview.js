@@ -16,7 +16,7 @@ import { storeGet } from '../services/storage.js';
 
 let pendingTimer = 0, recognizer = null, onRender = () => {};
 const reduced = () => document.body.classList.contains('pref-reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ASSIST_TEXT = { guided: '안내', standard: '기본', professional: '전문', immersive: '몰입' };
+const ASSIST_TEXT = { guided: '안내', standard: '표준', professional: '전문', immersive: '몰입' };
 
 function setStatus(html) { const el = byId('askStatus'); if (el) el.innerHTML = html; }
 function flush() { if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = 0; releaseReplies(); } }
@@ -84,7 +84,7 @@ async function startListening() {
   setMic(true); setStageState('listening'); announceA11y('음성 질문 듣는 중'); setStatus('말씀하십시오. 다시 누르면 멈춥니다.');
 }
 function showVoiceConsent(reason = '') {
-  const noLocal = reason === 'no-on-device';
+  const noLocal = reason === 'no-on-device' || !sttSupport('local').available;
   showModal('음성 질문 사용', `<div class="voice-consent"><p>${noLocal ? '이 브라우저에서는 기기 안에서만 처리하는 음성 인식을 사용할 수 없습니다.' : '말한 질문을 브라우저 음성 인식으로 글자로 바꿉니다. 인식된 문장은 질문란에 먼저 표시되고, 확인·수정한 뒤 직접 보내야 합니다.'}</p>
   <ul class="voice-consent-list"><li><b>기기 내 처리만</b> — 음성이 이 기기를 떠나지 않습니다(지원 브라우저에서만).</li><li><b>브라우저 음성 인식 허용</b> — 브라우저 제공업체(예: Google, Apple)의 서버에서 음성이 처리될 수 있습니다.</li></ul>
   <p class="modal-note">INAD는 음성을 녹음·저장·전송하지 않습니다. 음성 사용 여부는 점수와 판정에 영향을 주지 않으며, 직접 입력과 질문 목록은 언제나 사용할 수 있습니다.</p>
@@ -99,7 +99,7 @@ export function showInterviewSettings() {
   const lvl = preferences.assist || '';
   const opt = (v, label, desc) => `<button type="button" class="assist-opt ${lvl === v ? 'on' : ''}" data-assist="${v}" aria-pressed="${lvl === v}"><b>${label}</b><span>${desc}</span></button>`;
   showModal('인터뷰 설정', `<div class="settings-grid"><section class="settings-section"><h3>질문 도움</h3><p>제안 질문의 양만 바뀝니다. 규칙·점수·정답은 같습니다.</p><div class="assist-grid">
-    ${opt('', '안내 모드 따름', `지금: ${ASSIST_TEXT[assistLevel()]}`)}${opt('guided', '안내', '이어서 확인할 질문까지 4개')}${opt('standard', '기본', '열린 질문 3개')}${opt('professional', '전문', '2개만')}${opt('immersive', '몰입', '제안 없음 · 직접 질문')}</div></section>
+    ${opt('', '안내 모드 따름', `지금: ${ASSIST_TEXT[assistLevel()]}`)}${opt('guided', '안내', '이어서 확인할 질문까지 4개')}${opt('standard', '표준', '열린 질문 3개')}${opt('professional', '전문', '2개만')}${opt('immersive', '몰입', '제안 없음 · 직접 질문')}</div></section>
     <section class="settings-section"><h3>음성</h3><p>음성 사용은 선택입니다. 점수와 판정에 영향을 주지 않습니다.</p>
     <div class="setting-row"><div class="setting-copy"><b>음성 질문</b><span>${preferences.voice === 'off' ? '사용 안 함' : preferences.voice === 'local' ? '기기 내 처리만' : '브라우저 음성 인식 허용'}</span></div><button type="button" class="act" id="voiceSettings">변경</button></div>
     <div class="setting-row"><div class="setting-copy"><b id="pref-tts-label">음성으로 답변 듣기</b><span id="pref-tts-desc">${ttsSupport() ? '승객의 답변을 기기 음성으로 읽어 줍니다. 자막과 기록은 항상 표시됩니다.' : '이 브라우저는 음성 합성을 지원하지 않습니다.'}</span></div><button class="setting-toggle" type="button" role="switch" id="ttsToggle" aria-checked="${preferences.tts}" aria-labelledby="pref-tts-label" aria-describedby="pref-tts-desc"${ttsSupport() ? '' : ' disabled'}><span aria-hidden="true">${preferences.tts ? '사용 중' : '사용 안 함'}</span></button></div></section></div>`);
@@ -117,7 +117,8 @@ export function bindLiveInterview({ render } = {}) {
     const source = input.dataset.source === 'voice' ? 'voice' : 'text'; delete input.dataset.source; input.value = '';
     submitTurn({ text, source }); input.focus();
   });
-  input.addEventListener('input', () => { if (!recognizer) delete input.dataset.source; setStageState(input.value ? 'listening' : 'idle'); });
+  // a corrected transcript is still a spoken question; clearing the box ends that
+  input.addEventListener('input', () => { if (!input.value) delete input.dataset.source; setStageState(input.value ? 'listening' : 'idle'); });
   input.addEventListener('blur', () => { if (!input.value) setStageState('idle'); });
   const mic = byId('micBtn');
   if (!sttSupport('browser').available) mic.hidden = true;

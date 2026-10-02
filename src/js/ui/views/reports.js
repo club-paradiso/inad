@@ -21,7 +21,7 @@ export function showDoc(title, rows, foot, onContinue) {
 }
 
 // v10 debrief: why the decision followed from the record, what was found, what an examiner could still have checked.
-const li = (items, fn) => (items.length ? `<ul>${items.map(fn).join('')}</ul>` : '<p class="debrief-meta">없음</p>');
+const li = (items, fn) => (items.length ? `<ul>${items.map(fn).join('')}</ul>` : '<p class="debrief-meta">기록 없음</p>');
 export function debriefHTML(d, { full = true, lesson = full } = {}) {
   if (!d) return '';
   const iv = d.interview; const src = iv ? `대화 ${iv.turns}회 · 직접 입력 ${iv.counts.text} · 음성 ${iv.counts.voice} · 제안 ${iv.counts.suggestion + iv.counts.clarify} · 목록 ${iv.counts.list}${iv.unmatched ? ` · 다시 물은 질문 ${iv.unmatched}` : ''}` : '';
