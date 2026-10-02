@@ -40,5 +40,5 @@ export function saveDailyResult(result) {
 
 // Share text never names the decision or the case: it must not spoil the day for anyone who has not played.
 export function shareText(r) {
-  return [`INAD: 제12조 · 오늘의 사건 ${r.dateKey}`, `핵심 단서 ${r.keyClues.found}/${r.keyClues.total} · 절차 준수 ${r.procedure}%`, `질문 ${r.questionsAsked} · 바로잡힌 시도 ${r.correctedAttempts}`].join('\n');
+  return [`INAD · 오늘의 사건 ${r.dateKey}`, `핵심 단서 ${r.keyClues.found}/${r.keyClues.total} · 절차 준수 ${r.procedure}%`, `질문 ${r.questionsAsked} · 바로잡힌 시도 ${r.correctedAttempts}`].join('\n');
 }

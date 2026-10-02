@@ -1,4 +1,4 @@
-# INAD: 제12조 — 입국심사관 시뮬레이션 (v9.0)
+# INAD — 입국심사관 시뮬레이션 (v9.0)
 
 Fictional immigration-inspection simulation (Korean UI with a selectable English UI, vanilla HTML/CSS/JS, single-file release). One DOM adapts from 320px phones to 1440px+ workstations (승객 · 인터뷰 · 자료 · 판단 task navigation on phones, workspace + inspector on tablets, three-zone desk on desktop).
 Production: https://inad-gray.vercel.app

@@ -48,7 +48,6 @@ const EXACT = new Map([
   ['현재 사건 요약 및 심사 단계', 'Current case summary and inspection stage'],
   ['판단 및 결정', 'Assessment and decision'],
   ['본문 바로가기', 'Skip to main content'],
-  ['INAD: 제12조', 'INAD: Article 12'],
   ['인천공항 제2여객터미널 · 입국심사 시뮬레이션', 'Incheon Airport Terminal 2 · Immigration Inspection Simulation'],
   ['근무조', 'Duty shift'],
   ['근무 현황', 'Duty status'],
@@ -523,7 +522,7 @@ const EXACT = new Map([
   ['응답이 짧아짐', 'Short answers'], ['신중하게 응답', 'Answers carefully'], ['거리감 있는 응답', 'Distant answers'], ['차분하게 응답', 'Answers calmly'],
   ['긴장하기 쉬움', 'Easily tense'], ['격식적', 'Formal'], ['대기 민감', 'Sensitive to waiting'], ['신중한 편', 'Cautious'], ['친화적', 'Friendly'], ['침착한 편', 'Calm'],
   ['모순·중대', 'Contradiction / serious'], ['미해결', 'Unresolved'], ['관련성 낮음', 'Low relevance'], ['핵심', 'Key'],
-  ['질문·전산조회·서류 확인을 통해 단서가 연결됩니다.', 'Clues connect as you ask, run lookups and check documents.'],
+  ['질문·전산조회·서류 확인으로 단서가 이어집니다.', 'Clues connect as you ask, run lookups and check documents.'],
   ['난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.', 'Refugee referral screening in progress. Complete that procedure first.'],
   ['바로 심사', 'Start now'],
   ['사건 심화 모드 · 핵심 단서와 주변 정보가 섞여 있습니다.', 'In-depth case · key clues are mixed with background information.'],
@@ -762,7 +761,7 @@ export function setLocale(value) {
   ensureControls();
   document.documentElement.lang = locale;
   document.documentElement.dataset.locale = locale;
-  document.title = locale === 'en' ? 'INAD: Article 12' : 'INAD: 제12조';
+  document.title = 'INAD';
   if (document.body) { walk(document.body); markLangWithin(document.body); }
   syncControls();
   document.dispatchEvent(new CustomEvent('inad:localechange', { detail: { locale } }));

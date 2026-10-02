@@ -1,4 +1,4 @@
-# INAD: Article 12 — Source Recovery Plan
+# INAD — Source Recovery Plan
 
 Status: RESOLVED (2026-09-11) — see "Recovery result" below
 Date established: 2026-09-11
