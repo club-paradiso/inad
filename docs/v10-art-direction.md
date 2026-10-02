@@ -15,6 +15,6 @@ functional compositions) · `lab/avatar-lab.html` (living-portrait frame inspect
 4. **Generated art is blocked, not skipped**: Higgsfield is unreachable from the build environment; the pipeline,
    briefs and acceptance criteria are written so the first authorised session can execute them in order.
 
-## Tokens added (Figma sync pending, `docs/figma-workspace-spec.md` §10)
+## Tokens added (Figma variables synced 2026-10-02; frames await image upload — `docs/figma-workspace-spec.md` §10)
 `--booth #111b21` · `--booth-2 #18252c` · `--booth-line #283840` · `--booth-text #e9eef1` · `--booth-muted #a3b3bd` ·
 `--w-booth 304px` (280 below 1440).

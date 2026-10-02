@@ -379,12 +379,19 @@ v9.0은 코드가 먼저 바뀌었다(작업 지시: 안정성·제품 품질 �
 §6.1–6.2의 Astra(`[Exploration]`)는 영역별로 비교했다. 채택: 판정 근거가 아닌 값의 중립 표기, 무장 상태 문구, 비활성 사유 문구, 한 화면 한 주요 행동. 보류(승인 필요): 결정 데스크 재배치(판정 쌍 + 절차 버튼), 판단 목록 단일화·정렬, 진술 기록의 초상 제거, 1279px 이하 문서 가로 탭, 운영 바 축소. 채택하지 않음: 초상·여권 사진 제거, 단일 질문 표시, 채움 빨강 긴급체포 버튼, 중복된 "일반 심사대 보기", KPI·운영 바 제거.
 
 
-## 10. v10 Live Interview 코드 → Figma 동기화 대기 (2026-10-02)
-코드가 먼저 바뀌었다(브랜치 `claude/relaxed-edison-iux1mv`). 다음을 `[Implemented]`로 동기화해야 한다.
-- 변수 추가 `color/booth/{bg, plate, line, text, muted}` = `--booth #111B21 · --booth-2 #18252C · --booth-line #283840 ·
-  --booth-text #E9EEF1 · --booth-muted #A3B3BD`, `size/booth-width` = 304(≥1440) · 280(1280–1439). 기존 변수 이름 변경 없음.
-- 프레임: 1440·1280 4열(부스 · 대화 · 자료 · 판단), 1024 소형 부스, 390 승객(부스 전면)·인터뷰, 844×390 가로 배치,
-  디브리핑 대화상자, 인터뷰 설정·음성 동의 시트. 참조 스크린샷 `design/v10/review/`.
-- 컴포넌트: 부스(초상 + 자막 + 상태), 질문 바(입력 · 말하기 · 질문 · 상태/후보 칩), 진술 기록 행(심사관 원문 + "기록 질문"
-  줄 · 기록 외 발화 · 답변 대기), 제안 탭 행(이어서 확인), 디브리핑 섹션.
-- 탐색안 A/B/C는 `[Exploration] v10 Live Interview`로 남기고 A를 `[Approved]` → 구현 후 `[Implemented]`.
+## 10. v10 Live Interview — 코드 → Figma 동기화 (2026-10-02)
+코드가 먼저 바뀌었다(브랜치 `claude/relaxed-edison-iux1mv`, PR #13).
+- **완료 · 변수**: `Color` 컬렉션에 `color/booth/{bg, plate, line, text, muted}` = `#111B21 · #18252C · #283840 · #E9EEF1 ·
+  #A3B3BD`(WEB 코드 구문 `var(--booth)` · `var(--booth-2)` · `var(--booth-line)` · `var(--booth-text)` · `var(--booth-muted)`),
+  `Size` 컬렉션에 `size/booth-width` = 304(설명: 1280–1439는 280, `var(--w-booth)`). 범위는 같은 그룹의 기존 변수와 동일
+  (배경 FRAME_FILL·SHAPE_FILL, 선 STROKE_COLOR, 글자 TEXT_FILL, 너비 WIDTH_HEIGHT). 기존 변수 이름 변경·삭제 없음.
+  변수 ID `VariableID:192:2`–`192:7`.
+- **완료 · 섹션(06 — Desktop)**: `[Review] v10 Live Interview — 코드 구현 캡처 (PR #13 병합 대기)` (`194:2021`) — 시작 화면,
+  인터뷰 1440·1280·1024, 낮은 확신 확인, 인터뷰 설정 시트, 음성 동의 시트, 디브리핑, 빠른 근무, 390 승객·인터뷰, 844×390.
+  `[Exploration] v10 Live Interview — 방향 A/B/C` (`194:2061`) — A(채택)·A 390·B·C·v9 기준선.
+  PR 병합 후 `[Review]` 섹션 이름을 `[Implemented]`로 바꾼다(자동화가 만든 노드).
+- **미완료 · 이미지**: 각 프레임은 실제 크기의 빈 프레임과 저장소 경로 메모(`source-note`)만 있다. 이미지 업로드 경로
+  `mcp.figma.com`이 작업 환경의 네트워크 정책에서 403으로 차단됐다. 원본: `design/v10/review/figma-sync/*.webp`(현재 빌드
+  캡처), `design/v10/review/proto-*.webp`, `v9-before-1440.webp`. 허용 후 같은 프레임 ID에 채우기로 넣는다.
+- **미완료 · 컴포넌트**: 부스(초상 + 자막 + 상태), 질문 바(입력 · 말하기 · 질문 · 상태/후보 칩), 진술 기록 행, 제안 탭 행,
+  디브리핑 섹션은 아직 Figma 컴포넌트가 아니다. 코드가 소스 오브 트루스이며 캡처가 시각 기준이다.
