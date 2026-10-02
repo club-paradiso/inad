@@ -49,7 +49,7 @@ function runTurn({ text = '', questionId = null, source = 'text', via = null } =
   const r = submitUtterance({ text, questionId, source, via });
   if (!r || r.kind === 'empty' || r.kind === 'ended' || r.kind === 'none') { releaseReplies(); setStageState('idle'); return r; }
   const delay = reduced() ? 0 : reactionDelay(r.mood || 'plain');
-  holdReplies(from, delay); onRender();
+  holdReplies(from, delay); // the engine's own 'changed' already rendered the record with the reply held
   const finish = () => {
     pendingTimer = 0; releaseReplies();
     const line = state.logs.slice(from).filter((x) => x.type === 'alien').pop();

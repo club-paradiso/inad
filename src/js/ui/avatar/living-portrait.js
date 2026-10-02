@@ -11,6 +11,7 @@ import { MOTION } from '../../../data/motion-grammar.js';
 const STATES = new Set(Object.keys(MOTION.pose));
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const ease = (a, b, k) => a + (b - a) * k;
+// MOTION.breath / MOTION.sway are realised as CSS keyframes (lp-breathe, lp-sway) with the same values.
 
 // Syllable timeline for a line of dialogue: Hangul blocks count one each; Latin words by vowel groups.
 export function syllableTimeline(text, lang = 'ko') {
@@ -44,10 +45,9 @@ export function createLivingPortrait(host, { onState, img: existing = null } = {
   const work = document.createElement('canvas'); const wctx = work.getContext ? work.getContext('2d') : null;
 
   let rig = null, W = 0, H = 0, ready = false, raf = 0, last = 0, visible = true, destroyed = false;
-  let state = 'idle', pose = { dy: 0, tilt: 0 }, target = MOTION.pose.idle;
+  let state = 'idle', target = MOTION.pose.idle;
   let blink = { next: 0, phase: 0, start: 0, double: false }, blinkAmt = 0, lidRest = 0;
-  let speech = null, jaw = 0, drawnKey = '';
-  const t0 = performance.now();
+  let speech = null, jaw = 0, drawnKey = '', sleepTimer = 0;
 
   function scheduleBlink(now) { const g = MOTION.blink; const rate = target.blinkRate || 1; blink.next = now + (g.meanGapMs + (Math.random() * 2 - 1) * g.jitterMs) / rate; blink.phase = 0; }
   function blinkValue(now) {
@@ -99,27 +99,30 @@ export function createLivingPortrait(host, { onState, img: existing = null } = {
     featherMask(wctx, rw / 2, px + srcH * 0.42, rw / 2, srcH * 0.62);
     ctx.drawImage(work, rx0, Math.floor(y));
   }
-  function draw(now) {
+  function draw() {
     const b = Math.max(blinkAmt, lidRest), key = `${b.toFixed(2)}|${jaw.toFixed(2)}`;
-    if (key !== drawnKey) {
-      drawnKey = key; ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
-      drawJaw(jaw); drawEye(rig.eyeL, rig.browL, b); drawEye(rig.eyeR, rig.browR, b);
-    }
-    const tt = now - t0, br = MOTION.breath, sw = MOTION.sway;
-    const breath = Math.sin(tt / br.periodMs * Math.PI * 2), sway = Math.sin(tt / sw.periodMs * Math.PI * 2);
-    pose.dy = ease(pose.dy, target.dy || 0, 0.08); pose.tilt = ease(pose.tilt, target.tilt || 0, 0.08);
-    const lift = -breath * br.liftPx + pose.dy * host.clientHeight, sc = 1 + (breath + 1) / 2 * br.scale;
-    canvas.style.transform = `translate3d(${(sway * sw.driftPx).toFixed(2)}px, ${lift.toFixed(2)}px, 0) rotate(${(pose.tilt + sway * sw.deg).toFixed(3)}deg) scale(${sc.toFixed(4)})`;
+    if (key === drawnKey) return;
+    drawnKey = key; ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
+    drawJaw(jaw); drawEye(rig.eyeL, rig.browL, b); drawEye(rig.eyeR, rig.browR, b);
   }
+  // Breathing and sway are CSS animations on the canvas (compositor only, src/styles/interview.css); the pose of a
+  // state is a CSS transition. The script wakes up only for a blink, a spoken line or lowering the eyes, and sleeps
+  // until the next scheduled blink otherwise — an idle passenger costs almost nothing.
+  const lidTarget = () => (target.gazeDown ? 0.32 : 0);
+  const canAnimate = () => ready && visible && !document.hidden && !destroyed && !reducedMotion();
   function frame(now) {
     raf = 0; if (destroyed || !ready) return;
     if (now - last >= 1000 / MOTION.fps - 1) {
       last = now; blinkAmt = blinkValue(now); jaw = jawValue(now);
-      lidRest = ease(lidRest, target.gazeDown ? 0.32 : 0, 0.12); draw(now);
+      const lt = lidTarget(); lidRest = Math.abs(lidRest - lt) < 0.01 ? lt : ease(lidRest, lt, 0.18); draw();
     }
-    if (visible && !document.hidden && !reducedMotion()) raf = requestAnimationFrame(frame);
+    if (!canAnimate()) return;
+    const busy = blink.phase || speech || lidRest !== lidTarget() || jaw > 0 || blinkAmt > 0;
+    if (busy) raf = requestAnimationFrame(frame);
+    else { clearTimeout(sleepTimer); sleepTimer = setTimeout(kick, Math.max(16, blink.next - performance.now())); }
   }
-  function kick() { if (!raf && ready && visible && !document.hidden && !destroyed && !reducedMotion()) raf = requestAnimationFrame(frame); }
+  function kick() { clearTimeout(sleepTimer); if (!raf && canAnimate()) raf = requestAnimationFrame(frame); }
+  function applyPose() { canvas.style.transform = reducedMotion() ? '' : `translateY(${((target.dy || 0) * 100).toFixed(2)}%) rotate(${(target.tilt || 0).toFixed(2)}deg)`; }
   function still() {
     if (!ready) return; drawnKey = ''; blinkAmt = 0; jaw = 0; lidRest = target.gazeDown ? 0.32 : 0; canvas.style.transform = '';
     ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H); if (lidRest) { drawEye(rig.eyeL, rig.browL, lidRest); drawEye(rig.eyeR, rig.browR, lidRest); }
@@ -141,14 +144,14 @@ export function createLivingPortrait(host, { onState, img: existing = null } = {
         if (!usable || destroyed) return;
         W = canvas.width = img.naturalWidth || rig.w; H = canvas.height = img.naturalHeight || rig.h;
         ready = true; drawnKey = ''; scheduleBlink(performance.now());
-        if (reducedMotion()) still(); else { draw(performance.now()); kick(); }
+        if (reducedMotion()) still(); else { draw(); applyPose(); kick(); }
       };
       img.onerror = () => { host.classList.remove('lp-live'); host.classList.add('lp-fallback'); };
       if (src && img.getAttribute('src') === src && img.complete && img.naturalWidth) img.onload(); else img.src = src || '';
     },
     setState(name) {
       if (!STATES.has(name) || name === state) return; state = name; target = MOTION.pose[name];
-      host.dataset.state = name; onState?.(name); if (reducedMotion()) still(); else kick();
+      host.dataset.state = name; onState?.(name); if (reducedMotion()) still(); else { applyPose(); kick(); }
     },
     get state() { return state; },
     // Animate the jaw for a line of dialogue; resolves when the line has been "said".
@@ -165,8 +168,8 @@ export function createLivingPortrait(host, { onState, img: existing = null } = {
       if (!ready) return false; if (raf) cancelAnimationFrame(raf); raf = 0; destroyed = true; canvas.style.transform = '';
       ctx.clearRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H); drawJaw(j); const v = Math.max(b, lid); drawEye(rig.eyeL, rig.browL, v); drawEye(rig.eyeR, rig.browR, v); return true;
     },
-    refreshMotionPreference() { if (reducedMotion()) { if (raf) cancelAnimationFrame(raf); raf = 0; still(); } else kick(); },
-    destroy() { destroyed = true; if (raf) cancelAnimationFrame(raf); io?.disconnect(); document.removeEventListener('visibilitychange', onVis); }
+    refreshMotionPreference() { if (reducedMotion()) { if (raf) cancelAnimationFrame(raf); raf = 0; clearTimeout(sleepTimer); still(); } else { applyPose(); kick(); } },
+    destroy() { destroyed = true; clearTimeout(sleepTimer); if (raf) cancelAnimationFrame(raf); io?.disconnect(); document.removeEventListener('visibilitychange', onVis); }
   };
   return api;
 }

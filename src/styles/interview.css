@@ -27,7 +27,12 @@
 .stage-portrait img, .stage-portrait canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; }
 .lp-live img { visibility: hidden; }
 .lp-fallback canvas { display: none; }
-.lp canvas { transform-origin: 50% 92%; will-change: transform; }
+.lp canvas { transform-origin: 50% 92%; transition: transform var(--t-slow) var(--ease); animation: lp-breathe 4.6s ease-in-out infinite alternate, lp-sway 9s ease-in-out infinite alternate; }
+/* motion grammar (src/data/motion-grammar.js): breath lift 0.7px / scale 0.35 %, sway ±0.22° — barely visible, never a bounce */
+@keyframes lp-breathe { from { translate: 0 0; scale: 1; } to { translate: 0 -0.7px; scale: 1.0035; } }
+@keyframes lp-sway { from { rotate: -0.22deg; } to { rotate: 0.22deg; } }
+@media (prefers-reduced-motion: reduce) { .lp canvas { animation: none; transition: none; } }
+body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
 /* subtitle of the passenger's latest line, the way a camera feed would caption it */
 .stage-caption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 32px 16px 12px; font-size: var(--fs-body); line-height: 1.5; color: #fff; background: linear-gradient(to bottom, rgba(12, 20, 24, 0), rgba(12, 20, 24, .88) 44%); text-wrap: pretty; word-break: keep-all; min-height: 0; opacity: 0; transition: opacity var(--t-slow) var(--ease); }
 .stage-caption.on { opacity: 1; }
