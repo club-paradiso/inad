@@ -158,9 +158,16 @@ export function buildSessionQueue(seed, normalCases) {
 
 // v10 single-case live interview: a one-passenger roster (no companions, no queue) built from the seeded session,
 // so the case, the traveler's language profile and every rule are exactly those of the full duty.
-export function singleCaseSession(caseId) {
-  const item = session.queue.find((q) => q.caseId === caseId); if (!item) return false;
-  session.queue = [{ ...item }]; session.parties = []; session.partyByTraveler = new Map(); return true;
+export function singleCaseSession(caseId) { return rosterSession([caseId]); }
+// Fixed short roster (v10 Quick Shift): core case ids, or 'normal' for the next ordinary generated passenger
+// (variant 'routine-clear'). One duty shift, no companions; every case keeps its own rules.
+export function rosterSession(entries) {
+  const used = new Set(); const out = [];
+  for (const e of entries) {
+    const item = e === 'normal' ? session.queue.find((q, i) => !q.caseId && !used.has(i) && session.normalCaseMap.get(q.normalId)?.sessionVariant === 'routine-clear') : session.queue.find((q) => q.caseId === e);
+    if (!item) return false; used.add(session.queue.indexOf(item)); out.push({ ...item, shift: 1 });
+  }
+  session.queue = out; session.parties = []; session.partyByTraveler = new Map(); return true;
 }
 export function caseForQueueItem(q) { return q.caseId ? coreCaseMap.get(q.caseId) : session.normalCaseMap.get(q.normalId); }
 export function currentQueueItem() { return session.queue[state.caseIndex]; }

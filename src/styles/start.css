@@ -61,10 +61,15 @@
 .startbtn { height: 48px; border-radius: var(--r-1); background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -.01em; transition: background var(--t-fast) var(--ease); }
 .startbtn:hover { background: var(--accent-hover); }
 /* v10: the quickest way to a real passenger — one case, no setup */
-.start-live { display: grid; gap: 2px; width: 100%; margin-bottom: 8px; padding: 12px 16px; text-align: left; border: 1px solid var(--booth); border-radius: var(--r-1); background: var(--booth); color: var(--booth-text); transition: background var(--t-fast) var(--ease); }
-.start-live:hover { background: var(--booth-2); }
+.start-live { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-bottom: 8px; padding: 12px 16px; border-radius: var(--r-1); background: var(--booth); color: var(--booth-text); }
+.start-live-copy { display: grid; gap: 2px; min-width: 0; }
 .start-live b { font-size: 15px; letter-spacing: -.01em; }
 .start-live span { font-size: var(--fs-label); color: var(--booth-muted); }
+.start-live-actions { display: flex; gap: 6px; }
+.start-live-actions button { min-height: var(--size-touch); padding: 0 14px; border: 1px solid var(--booth-muted); border-radius: var(--r-1); background: transparent; color: var(--booth-text); font-size: var(--fs-compact); font-weight: 700; white-space: nowrap; transition: background var(--t-fast) var(--ease); }
+.start-live-actions button:hover { background: var(--booth-2); }
+.start-live-actions button:first-child { background: var(--booth-text); color: var(--booth); border-color: var(--booth-text); }
+@media (max-width: 767px) { .start-live { grid-template-columns: minmax(0, 1fr); } .start-live-actions button { flex: 1; } }
 .start-settings { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-compact); font-weight: 600; color: var(--text-2); }
 .start-settings.resume-start { height: 48px; border-color: var(--success); color: var(--success-text); }
 .start-links { display: grid; gap: 6px; }

@@ -97,7 +97,7 @@ test('the single-case roster keeps the case and its rules, with no companions', 
   buildSession(271828);
   const before = session.queue.find((q) => q.caseId === 'ICN-S2-005');
   assert.equal(singleCaseSession('ICN-S2-005'), true);
-  assert.equal(session.queue.length, 1); assert.deepEqual(session.queue[0], before); assert.equal(session.parties.length, 0);
+  assert.equal(session.queue.length, 1); assert.deepEqual(session.queue[0], { ...before, shift: 1 }); assert.equal(session.parties.length, 0);
   assert.equal(singleCaseSession('NOPE'), false);
   buildSession(271828);
 });

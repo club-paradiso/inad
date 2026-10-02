@@ -38,7 +38,7 @@ export const state = {
   eventsSeen: 0, activeEvent: null, eventSchedule: [], eventHistory: [], backlogOffset: 0,
   refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, procedureMode: null,
   discoveredClues: new Set(), behavior: null, language: null, party: null,
-  sessionMode: 'shift',     // 'shift' (36-passenger duty) | 'case' (v10 single live-interview case: no checkpoint, no career)
+  sessionMode: 'shift',     // 'shift' (36-passenger duty) | 'case' (v10 single live interview) | 'quick' (v10 6-passenger first run); only 'shift' saves checkpoints or career
   interview: null,          // v10 dialogue record for the current case (engines/interview-engine.js); presentation + analytics only, never saved
   started: false, stats: emptyStats(), reports: [], mistakes: [], sessionSaved: false, newAchievements: [], newDailyRewards: []
 };

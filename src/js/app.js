@@ -10,7 +10,7 @@ import { installErrorCollectors, runDiagnostics, diagnosticText } from './servic
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
 import { newSessionSeed, displayDateKo } from './engines/rng.js';
-import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession } from './engines/queue-engine.js';
+import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession, rosterSession } from './engines/queue-engine.js';
 import { getTraveler } from './engines/traveler-engine.js';
 import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
@@ -38,7 +38,7 @@ import { showRecordsCenter, showPlayerProfile, showDailyMissions, showChallengeB
 import { showCampaignDetail, showCampaignArchive, requestAbandonCampaign, showStoryDossier, showPartyDossier } from './ui/views/campaign.js';
 import { showSystemCenter, ensureImportInput, showDiagnostics } from './ui/views/system-center.js';
 import { showSourceRegistry } from './ui/decision-basis.js';
-import { showDoc, showCaseResult, showShiftTransition, showShiftComplete, showGameOver, showFatalAbuse, showRefusalReasons } from './ui/views/reports.js';
+import { showDoc, showCaseResult, showShiftTransition, showShiftComplete, showGameOver, showFatalAbuse, showRefusalReasons, showQuickSummary } from './ui/views/reports.js';
 import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } from './ui/live-interview.js';
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
@@ -46,6 +46,8 @@ import { interviewSummary } from './engines/interview-engine.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
 const LIVE_CASE = { caseId: 'ICN-S2-005', seed: 271828 };
+// Quick Shift (first run): ordinary · ordinary · tourist pair · suspicious-but-explained · contradiction · biometric refusal.
+const QUICK_ROSTER = ['ICN-S1-001', 'normal', 'ICN-S1-002', 'ICN-S2-006', 'ICN-S2-005', 'ICN-S3-011'];
 
 // ---- rendering --------------------------------------------------------------------------------
 const procHandlers = {
@@ -121,7 +123,7 @@ function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open)
 function runProcedureAction(a, ctx = {}) {
   const r = caseEngine.procedureAction(a, ctx);
   if (r.gameOver) { gameOverFlow(); return; }
-  if (r.fatal) { closeProcedureScreen(); if (state.sessionMode !== 'case') caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
+  if (r.fatal) { closeProcedureScreen(); if (state.sessionMode === 'shift') caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
   if (r.close) closeProcedureScreen();
   if (r.decide === 'clear') { decideClearFlow(); return; }
   if (r.decide === 'refuse') { openRefusalFlow(); return; }
@@ -137,6 +139,10 @@ function finishFlow(label) {
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record);
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') { showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() }); return; }
+  if (state.sessionMode === 'quick') {
+    showCaseResult(r, null, { mode: 'quick', onNext: () => { caseEngine.advanceQueue(); beginCase(); }, onSummary: () => showQuickSummary(state.reports, { onRetry: () => quickShiftFlow(true), onExit: () => location.reload() }) });
+    return;
+  }
   showCaseResult(r, () => {
     if (r.last) { shiftCompleteFlow(); return; }
     const adv = caseEngine.advanceQueue();
@@ -148,7 +154,7 @@ function shiftCompleteFlow() {
   const r = caseEngine.shiftComplete();
   showShiftComplete(r, { onProfile: showPlayerProfile, onRecords: recordsFlow, onRestart: () => { const cr = r.campaignResult; if (cr && (cr.completed || cr.failed)) clearCampaign(); location.reload(); } });
 }
-function gameOverFlow() { if (state.sessionMode !== 'case') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
+function gameOverFlow() { if (state.sessionMode === 'shift') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 // Single-case live interview: reaches a real passenger in one click (first-run path) and never touches saves.
 function liveInterviewFlow(retry = false) {
   if (state.started && !retry) return;
@@ -159,6 +165,16 @@ function liveInterviewFlow(retry = false) {
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'live_retry' : 'live_start' });
   beginCase();
+}
+// Quick Shift: six passengers, 안내 coaching throughout (all within the first six), nothing saved.
+function quickShiftFlow(retry = false) {
+  if (state.started && !retry) return;
+  Object.assign(state, { sessionMode: 'quick', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: 'guided' });
+  regenerate(LIVE_CASE.seed); state.eventSchedule = [];
+  if (!rosterSession(QUICK_ROSTER)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
+  hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'quick_retry' : 'quick_start' });
+  showAnnouncement('짧은 근무', `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
 }
 function recordsFlow() { showRecordsCenter({ onResume: state.started ? null : resumeFlow, onProfile: showPlayerProfile, onBoard: showChallengeBoard, onDaily: showDailyMissions }); }
 function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true, byId('helpBtn')) === false) toast('근무를 시작한 뒤 화면 안내를 다시 볼 수 있습니다.'); }, onRecords: recordsFlow, onProfile: showPlayerProfile, onChallenge: showChallengeDetail }); }
@@ -260,7 +276,8 @@ function installHooks() {
     // v10: drive the interview the way a player would (text / voice transcript / suggestion), and read its record.
     say: (text, source = 'text') => submitTurn({ text, source }),
     interview: () => ({ ...interviewSummary(), lastKind: state.interview?.lastKind || null, mode: state.sessionMode }),
-    live: () => liveInterviewFlow()
+    live: () => liveInterviewFlow(),
+    quick: () => quickShiftFlow()
   };
 }
 
@@ -270,7 +287,7 @@ function boot() {
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
-  byId('liveStartBtn').onclick = () => liveInterviewFlow();
+  byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow();
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
