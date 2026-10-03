@@ -7,7 +7,7 @@ import { CONCEPTS, META_INTENTS, DOC_REQUESTS, DOC_REQUEST_VERBS, STOPWORDS_KO, 
 import { PERSONAS } from '../../data/personas.js';
 
 export const MATCH_THRESHOLD = 0.34;   // below: not understood
-export const AMBIGUITY_MARGIN = 0.06;  // best − second below this: ask which one was meant
+export const AMBIGUITY_MARGIN = 0.11;  // best − second below this: ask which one was meant
 export const MAX_UTTERANCE = 240;
 
 export function normalizeUtterance(text) {
