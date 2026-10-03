@@ -6,7 +6,42 @@ import { session } from '../../state.js';
 import { RELEASE, makeBundle, validateBundle, bundleSummary, applyBundle, resetData, META_KEY, PROGRESS_KEY } from '../../engines/save-engine.js';
 import { parseJSON, storageWritable, storeGetRaw } from '../../services/storage.js';
 import { runDiagnostics, diagnosticText, downloadBlob } from '../../services/diagnostics.js';
+import { analyticsSnapshot, resetAnalytics } from '../../services/analytics.js';
 import { toast } from '../toast.js';
+
+export function showAnalyticsModal() {
+  const snap = analyticsSnapshot();
+  const t = snap.totals, r = snap.rates;
+  showModal('플레이 통계·원격측정 (익명)', `
+    <div class="sys-shell">
+      <div class="sys-card">
+        <h3>세션 및 사건 처리 통계</h3>
+        <div class="sys-facts">
+          <div class="sys-fact"><span>진행 사건</span><b>${t.casesCompleted}건</b></div>
+          <div class="sys-fact"><span>총 질문 수</span><b>${t.questionsAsked}회</b></div>
+          <div class="sys-fact"><span>진술 대조 성공</span><b>${t.statementLocksSucceeded}건</b></div>
+          <div class="sys-fact"><span>대조 성공률</span><b>${r.statementLockSuccessRate}%</b></div>
+        </div>
+      </div>
+      <div class="sys-card">
+        <h3>질문 입력 방식 분포</h3>
+        <div class="sys-facts">
+          <div class="sys-fact"><span>추천 질문</span><b>${r.inputDistribution.suggestion}%</b></div>
+          <div class="sys-fact"><span>목록 선택</span><b>${r.inputDistribution.list}%</b></div>
+          <div class="sys-fact"><span>직접 입력</span><b>${r.inputDistribution.text}%</b></div>
+          <div class="sys-fact"><span>음성 입력</span><b>${r.inputDistribution.voice}%</b></div>
+        </div>
+      </div>
+      <div class="sys-card">
+        <p class="modal-note">개인 식별 정보, 음성 녹음, 입력 문장은 수집되지 않으며 모든 통계는 로컬 브라우저에만 익명으로 누적됩니다.</p>
+        <div class="sys-inline-actions">
+          <button type="button" id="sysResetAnalytics" class="danger">통계 초기화</button>
+        </div>
+      </div>
+    </div>
+  `, { size: 'wide' });
+  byId('sysResetAnalytics').onclick = () => { resetAnalytics(); toast('플레이 통계를 초기화했습니다.'); closeModal(); };
+}
 
 export function exportSave() { const b = makeBundle(); const stamp = new Date().toISOString().replace(/[:.]/g, '-'); downloadBlob(`INAD_save_v${RELEASE.version}_${stamp}.json`, JSON.stringify(b, null, 2)); toast('INAD 저장 데이터를 내보냈습니다.'); }
 export function importFile(file) {
@@ -20,8 +55,8 @@ export function showDiagnostics() { const c = runDiagnostics(), pass = c.filter(
 function lawRows() { return RELEASE.laws.map((x) => `<div class="sys-law-row"><b>${esc(x.name)}</b><span>시행 ${esc(x.effective)}</span><span>법령ID ${esc(x.lawId)}</span></div>`).join(''); }
 export function showSystemCenter() {
   const progress = parseJSON(storeGetRaw(PROGRESS_KEY)), meta = parseJSON(storeGetRaw(META_KEY));
-  showModal('시스템·데이터 관리', `<div class="sys-shell"><div class="sys-release-head"><div class="sys-card"><div class="sys-version">INAD v${RELEASE.version}</div><h3>Release build · Single-file HTML</h3><p>게임 로직·초상화·사운드가 파일 내부에 포함됩니다. 저장기록은 브라우저 로컬 저장소에만 기록되며 외부 서버로 전송하지 않습니다.</p><div class="sys-release-meta"><span class="sys-meta-chip">법령 기준 ${RELEASE.legalBaseline}</span><span class="sys-meta-chip">DATA v${RELEASE.dataVersion}</span><span class="sys-meta-chip">SAVE SCHEMA v${RELEASE.saveSchema}</span></div></div><div class="sys-card"><h3>현재 데이터</h3><div class="sys-facts"><div class="sys-fact"><span>완료 근무</span><b>${esc(Array.isArray(meta?.sessions) ? meta.sessions.length : 0)}</b></div><div class="sys-fact"><span>체크포인트</span><b>${progress ? `${esc(Math.min(progress.nextIndex || 0, 36))}/36` : '없음'}</b></div><div class="sys-fact"><span>SESSION</span><b>${session.seed || '-'}</b></div><div class="sys-fact"><span>저장소</span><b>${storageWritable() ? '정상' : '제한됨'}</b></div></div></div></div><div class="sys-card"><h3>법령·데이터 기준</h3><p>아래는 게임 로직 검증에 사용한 기준입니다. 기준일 이후 실제 법령 또는 공개 입국기준이 바뀔 수 있으므로 현실 업무에 이 게임만 사용해서는 안 됩니다.</p><div class="sys-law-table">${lawRows()}</div>${amendmentStatus().map((x) => `<div class="sys-law-warning"><b>${x.inForce ? '기준일 이후 시행된 개정' : '시행예정 개정'} · ${esc(x.law)} ${esc(x.effective)}</b><br>${esc(x.note)}</div>`).join('')}</div><div class="sys-card"><h3>저장 데이터 관리</h3><p>내보내기 파일에는 INAD의 근무기록·경력·체크포인트·접근성 설정만 포함됩니다. 여행객 이미지와 게임 소스는 포함되지 않습니다.</p><div class="sys-data-actions"><button type="button" id="sysExport">저장 데이터 내보내기</button><button type="button" id="sysImport">저장 데이터 불러오기</button><button type="button" class="danger" id="sysReset">데이터 초기화</button></div></div><div class="sys-card"><h3>릴리스 진단</h3><p>여행객 데이터, 사건 참조, 외부 에셋, 저장소, DOM, 런타임 오류 등을 현재 브라우저에서 검사합니다.</p><div class="sys-inline-actions"><button type="button" id="sysRunDiag">시스템 진단 실행</button><button type="button" id="sysExportDiag">진단 보고서 바로 저장</button></div></div></div>`, { size: 'wide' });
-  byId('sysExport').onclick = exportSave; byId('sysImport').onclick = () => byId('sysImportFile')?.click(); byId('sysReset').onclick = showResetOptions; byId('sysRunDiag').onclick = showDiagnostics; byId('sysExportDiag').onclick = () => downloadBlob(`INAD_diagnostics_v${RELEASE.version}.txt`, diagnosticText(), 'text/plain;charset=utf-8');
+  showModal('시스템·데이터 관리', `<div class="sys-shell"><div class="sys-release-head"><div class="sys-card"><div class="sys-version">INAD v${RELEASE.version}</div><h3>Release build · Single-file HTML</h3><p>게임 로직·초상화·사운드가 파일 내부에 포함됩니다. 저장기록은 브라우저 로컬 저장소에만 기록되며 외부 서버로 전송하지 않습니다.</p><div class="sys-release-meta"><span class="sys-meta-chip">법령 기준 ${RELEASE.legalBaseline}</span><span class="sys-meta-chip">DATA v${RELEASE.dataVersion}</span><span class="sys-meta-chip">SAVE SCHEMA v${RELEASE.saveSchema}</span></div></div><div class="sys-card"><h3>현재 데이터</h3><div class="sys-facts"><div class="sys-fact"><span>완료 근무</span><b>${esc(Array.isArray(meta?.sessions) ? meta.sessions.length : 0)}</b></div><div class="sys-fact"><span>체크포인트</span><b>${progress ? `${esc(Math.min(progress.nextIndex || 0, 36))}/36` : '없음'}</b></div><div class="sys-fact"><span>SESSION</span><b>${session.seed || '-'}</b></div><div class="sys-fact"><span>저장소</span><b>${storageWritable() ? '정상' : '제한됨'}</b></div></div></div></div><div class="sys-card"><h3>법령·데이터 기준</h3><p>아래는 게임 로직 검증에 사용한 기준입니다. 기준일 이후 실제 법령 또는 공개 입국기준이 바뀔 수 있으므로 현실 업무에 이 게임만 사용해서는 안 됩니다.</p><div class="sys-law-table">${lawRows()}</div>${amendmentStatus().map((x) => `<div class="sys-law-warning"><b>${x.inForce ? '기준일 이후 시행된 개정' : '시행예정 개정'} · ${esc(x.law)} ${esc(x.effective)}</b><br>${esc(x.note)}</div>`).join('')}</div><div class="sys-card"><h3>저장 데이터 관리</h3><p>내보내기 파일에는 INAD의 근무기록·경력·체크포인트·접근성 설정만 포함됩니다. 여행객 이미지와 게임 소스는 포함되지 않습니다.</p><div class="sys-data-actions"><button type="button" id="sysExport">저장 데이터 내보내기</button><button type="button" id="sysImport">저장 데이터 불러오기</button><button type="button" id="sysAnalyticsBtn">플레이 통계 확인</button><button type="button" class="danger" id="sysReset">데이터 초기화</button></div></div><div class="sys-card"><h3>릴리스 진단</h3><p>여행객 데이터, 사건 참조, 외부 에셋, 저장소, DOM, 런타임 오류 등을 현재 브라우저에서 검사합니다.</p><div class="sys-inline-actions"><button type="button" id="sysRunDiag">시스템 진단 실행</button><button type="button" id="sysExportDiag">진단 보고서 바로 저장</button></div></div></div>`, { size: 'wide' });
+  byId('sysExport').onclick = exportSave; byId('sysImport').onclick = () => byId('sysImportFile')?.click(); byId('sysAnalyticsBtn').onclick = showAnalyticsModal; byId('sysReset').onclick = showResetOptions; byId('sysRunDiag').onclick = showDiagnostics; byId('sysExportDiag').onclick = () => downloadBlob(`INAD_diagnostics_v${RELEASE.version}.txt`, diagnosticText(), 'text/plain;charset=utf-8');
 }
 export function showResetOptions() { showModal('데이터 초기화', `<div class="sys-card"><h3>초기화 범위 선택</h3><p>초기화 전 저장 데이터 내보내기를 권장합니다. 선택 후 다시 한 번 확인합니다.</p><div class="sys-data-actions"><button type="button" id="sysResetProgress">현재 근무 체크포인트</button><button type="button" id="sysResetCareer">근무기록·경력·캠페인</button><button type="button" class="danger" id="sysResetAll">INAD 데이터 전체</button></div></div>`); byId('sysResetProgress').onclick = () => confirmReset('progress'); byId('sysResetCareer').onclick = () => confirmReset('career'); byId('sysResetAll').onclick = () => confirmReset('all'); }
 export function confirmReset(mode) { const names = { progress: '현재 근무 체크포인트', career: '근무기록·경력·캠페인', all: '모든 INAD 기록·설정' }; showModal('초기화 확인', `<p class="modal-note"><b>${names[mode]}</b>을 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p><button type="button" class="act danger block" id="sysConfirmReset"><strong>삭제하고 새로고침</strong></button>`); byId('sysConfirmReset').onclick = () => { resetData(mode); setTimeout(() => location.reload(), 120); }; }
