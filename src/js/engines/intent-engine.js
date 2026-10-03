@@ -7,7 +7,7 @@ import { CONCEPTS, META_INTENTS, DOC_REQUESTS, DOC_REQUEST_VERBS, STOPWORDS_KO, 
 import { PERSONAS } from '../../data/personas.js';
 
 export const MATCH_THRESHOLD = 0.34;   // below: not understood
-export const AMBIGUITY_MARGIN = 0.06;  // best − second below this: ask which one was meant
+export const AMBIGUITY_MARGIN = 0.11;  // best − second below this: ask which one was meant
 export const MAX_UTTERANCE = 240;
 
 export function normalizeUtterance(text) {
@@ -68,7 +68,7 @@ export function scoreQuestion(utterance, q, caseId, c = null) {
   let conceptScore = 0, shared = 0; let uw = 0; for (const k of uc) uw += wt(k);
   for (const view of p.views) {
     let n = 0, hit = 0, total = 0; for (const k of view) total += wt(k); for (const k of uc) if (view.has(k)) { n++; hit += wt(k); }
-    if (n) { const v = 0.65 * (hit / total) + 0.35 * (hit / uw); if (v > conceptScore) { conceptScore = v; shared = n; } }
+    if (n) { const v = hit / Math.sqrt(total * (uw || total)); if (v > conceptScore) { conceptScore = v; shared = n; } }
   }
   const bi = overlap(koBigrams(utterance), p.bigrams), tok = overlap(enTokens(utterance), p.tokens);
   return 0.62 * conceptScore + 0.28 * bi + 0.22 * tok + (shared >= 2 ? 0.06 : 0);

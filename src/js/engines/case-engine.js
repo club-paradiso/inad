@@ -6,6 +6,7 @@ import { current, currentQueueItem, screeningNo } from './queue-engine.js';
 import { getTraveler } from './traveler-engine.js';
 import * as legal from './legal-engine.js';
 import { clampScore, overallScore, procedureAverage, operationalScore, gradeFor } from './score-engine.js';
+export { gradeFor };
 import { spendWork, maybeStartFieldEvent, advanceFieldEventAfterCase, simulatedBacklog, pressureInfo, difficultyCfg, scenarioCfg } from './operation-engine.js';
 import { makeBehavior, behaviorAdjust, behaviorOnQuestion, behaviorResponse } from './behavior-engine.js';
 import { languageProfileFor, handleLanguageBarrier, languageModeLabel, requestInterpreter } from './language-engine.js';
@@ -214,13 +215,17 @@ export function advanceQueue() {
 export function persistCompletedSession(grade, extra = {}) {
   if (state.sessionSaved) return null;
   const procedure = procedureAverage(), overall = overallScore(), ops = operationalScore(), avg = Math.round(state.totalCaseSeconds / Math.max(1, state.stats.processed)), challengeEval = challengeEvaluation(true), challenge = challengeCfg();
-  const sess = { id: `${Date.now()}-${session.seed}`, endedAt: Date.now(), seed: session.seed, difficulty: state.difficulty, grade, overall, score: state.score, procedure, efficiency: state.efficiency, proportionality: state.proportionality, ops, avgSeconds: avg, pressurePeak: state.pressurePeak, eventsSeen: state.eventsSeen, breaksTaken: state.breaksTaken, peakFatigue: Math.round(state.peakFatigue), overSecondary: state.overSecondary, repeatedQuestions: state.repeatedQuestions, rushed: state.rushed, challengeId: challenge.id, challengeName: challenge.name, challengeSuccess: challenge.id !== 'none' && challengeEval.success, challengeBonus: challenge.id !== 'none' && challengeEval.success ? challenge.bonus : 0, challengeDetail: challengeEval.detail, scenarioId: state.scenarioId, scenarioName: scenarioCfg().name, stats: { ...state.stats }, mistakes: state.mistakes.slice(), reports: state.reports.map((r) => ({ ...r, actions: Array.isArray(r.actions) ? r.actions : [] })), failed: !!extra.failed };
+  const mode = extra.mode || state.sessionMode || 'shift';
+  const sess = { id: `${Date.now()}-${session.seed}`, endedAt: Date.now(), seed: session.seed, difficulty: state.difficulty, grade, overall, score: state.score, procedure, efficiency: state.efficiency, proportionality: state.proportionality, ops, avgSeconds: avg, pressurePeak: state.pressurePeak, eventsSeen: state.eventsSeen, breaksTaken: state.breaksTaken, peakFatigue: Math.round(state.peakFatigue), overSecondary: state.overSecondary, repeatedQuestions: state.repeatedQuestions, rushed: state.rushed, challengeId: challenge.id, challengeName: challenge.name, challengeSuccess: challenge.id !== 'none' && challengeEval.success, challengeBonus: challenge.id !== 'none' && challengeEval.success ? challenge.bonus : 0, challengeDetail: challengeEval.detail, scenarioId: state.scenarioId, scenarioName: scenarioCfg().name, stats: { ...state.stats }, mistakes: state.mistakes.slice(), reports: state.reports.map((r) => ({ ...r, actions: Array.isArray(r.actions) ? r.actions : [] })), failed: !!extra.failed, mode };
   const meta = loadMeta(); applySessionCareer(meta.career, sess); state.newDailyRewards = applyDailyMissions(meta, sess); sess.dailyRewards = state.newDailyRewards.map((x) => ({ ...x })); state.newAchievements = evaluateAchievements(meta.career);
   meta.sessions.unshift(sess); meta.sessions = meta.sessions.slice(0, 12);
-  const prev = meta.best[state.difficulty]; if (!prev || gradeRank(grade) > gradeRank(prev.grade) || (grade === prev.grade && overall > prev.overall)) meta.best[state.difficulty] = { grade, overall, endedAt: sess.endedAt, seed: session.seed };
+  const isShift = mode === 'shift';
+  if (isShift) {
+    const prev = meta.best[state.difficulty]; if (!prev || gradeRank(grade) > gradeRank(prev.grade) || (grade === prev.grade && overall > prev.overall)) meta.best[state.difficulty] = { grade, overall, endedAt: sess.endedAt, seed: session.seed };
+  }
   saveMeta(meta); state.sessionSaved = true; clearProgressSave();
   state.newAchievements.forEach((id) => { const a = achievementById(id); if (a) notify.toast(`업적 해금 · ${a.name}`); });
-  if (state.campaignId !== 'none') advanceCampaign(sess);
+  if (isShift && state.campaignId !== 'none') advanceCampaign(sess);
   return sess;
 }
 

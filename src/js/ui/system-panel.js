@@ -35,7 +35,7 @@ export function renderTerminal() {
   const worst = {}; state.queries.forEach((q) => { if (!worst[q.kind] || rank(q.t) > rank(worst[q.kind])) worst[q.kind] = q.t; });
   document.querySelectorAll('.lookup-tabs button[data-lu]').forEach((b) => { const k = b.dataset.lu, t = worst[k]; b.classList.toggle('done', !!t && rank(t) < 2); b.classList.toggle('alert', !!t && rank(t) >= 2); b.setAttribute('aria-pressed', String(!!t)); });
   const cnt = byId('lookupCount'); if (cnt) cnt.textContent = state.queries.length ? `${state.queries.length}건 · ${state.looked.size}종` : '';
-  const list = state.queries, line = (q) => `<div class="line"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(q.t)}</b>${esc(q.text)}</span></div>`;
+  const list = state.queries, line = (q) => `<div class="line" data-lookup-kind="${esc(q.kind)}"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(q.t)}</b>${esc(q.text)}</span></div>`;
   if (!list.length) { el.innerHTML = `<div class="line empty">사건 조회 준비 완료 · 필요한 항목만 조회하십시오. 내부 규제코드·비공개 위험선별 알고리즘은 재현하지 않습니다.${c.special === 'forgery' ? ' 위변조 의심 시 출입국사범 절차에서 문서감식을 요청할 수 있습니다.' : ''}</div>`; shownQueries.list = null; return; }
   // #terminal is a live region: insert only new results so each lookup is announced once. The engine puts the
   // newest result first (queries.unshift), so new lines go to the top, in the same order a full render gives.

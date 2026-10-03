@@ -17,7 +17,7 @@ import * as legal from './engines/legal-engine.js';
 import { generateEventSchedule, applyScenarioStart, takeScheduledBreak, difficultyCfg, eventEffectText, appliedLiveLoad } from './engines/operation-engine.js';
 import { setInterviewLanguage, requestInterpreter, languageProfileFor } from './engines/language-engine.js';
 import { applyChallengeStart } from './engines/achievement-engine.js';
-import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
+import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, saveBestGrade, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
 import { loadCampaign } from './engines/campaign-engine.js';
 import { syncCampaignState, prepareCampaignForStart, applyCampaignDayCarry, currentCampaignSave, clearCampaign } from './engines/campaign-engine.js';
 import { travelPartyFor } from './engines/companion-engine.js';
@@ -43,6 +43,7 @@ import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } f
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
 import { interviewSummary } from './engines/interview-engine.js';
+import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
@@ -61,7 +62,7 @@ function renderAll() {
   if (!current()) return;
   const focus = focusKey();
   renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
-  renderMatrix(); renderEntry(); renderTerminal(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
+  renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
   restoreFocus(focus);
 }
 // Every question button goes through the v10 dispatcher (same engine call, plus the passenger's acting).
@@ -139,7 +140,10 @@ function finishFlow(label) {
   const record = { performed: state.performed.slice(), discoveredClues: [...state.discoveredClues], asked: [...state.asked], mistakes: state.mistakes.filter((m) => m.caseIndex === state.caseIndex), label, interview: interviewSummary() };
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record);
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
-  if (state.sessionMode === 'case') { showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() }); return; }
+  if (state.sessionMode === 'case') {
+    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() });
+    return;
+  }
   if (state.sessionMode === 'daily') {
     const d = dailyCase(); const result = dailyResult(d.dateKey, r.c, r.report, r.debrief, record.interview); const first = saveDailyResult(result);
     bus.emit('analytics', { name: 'daily_complete', label });
@@ -147,7 +151,20 @@ function finishFlow(label) {
     return;
   }
   if (state.sessionMode === 'quick') {
-    showCaseResult(r, null, { mode: 'quick', onNext: () => { caseEngine.advanceQueue(); beginCase(); }, onSummary: () => showQuickSummary(state.reports, { onRetry: () => quickShiftFlow(true), onExit: () => location.reload() }) });
+    showCaseResult(r, null, {
+      mode: 'quick',
+      onNext: () => { caseEngine.advanceQueue(); beginCase(); },
+      onSummary: () => {
+        const grade = caseEngine.gradeFor();
+        saveBestGrade(grade);
+        const sessionResult = caseEngine.persistCompletedSession(grade, { mode: 'quick' });
+        showQuickSummary(state.reports, {
+          sessionResult,
+          onRetry: () => quickShiftFlow(true),
+          onExit: () => location.reload()
+        });
+      }
+    });
     return;
   }
   showCaseResult(r, () => {
@@ -298,7 +315,11 @@ function installHooks() {
     live: () => liveInterviewFlow(),
     quick: () => quickShiftFlow(),
     daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
-    startDaily: () => dailyFlow()
+    startDaily: () => dailyFlow(),
+    // v11 Statement Lock test hooks
+    lock: (idx) => selectStatementForLock(idx),
+    compare: (target) => compareWithTarget(target),
+    activeLock: () => currentLockedStatement()
   };
 }
 
@@ -308,6 +329,7 @@ function boot() {
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
+  bindStatementLockListeners();
   byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });

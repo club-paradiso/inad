@@ -183,3 +183,47 @@ body.mode-case .opsbar, body.mode-case .workload, body.mode-case .ops-toggle, bo
 .assist-opt span { font-size: var(--fs-label); color: var(--text-3); }
 .assist-opt.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 @media (max-width: 767px) { .debrief-actions { bottom: calc(-16px - var(--safe-bottom)); margin: 0 -16px calc(-16px - var(--safe-bottom)); padding: 12px 16px calc(12px + var(--safe-bottom)); } }
+
+/* ---- v11 Statement Lock (진술 대조) ---- */
+.statement-lock-dock { margin: 0 0 8px; border-radius: var(--r-1); border: 1px solid var(--border); overflow: hidden; transition: all var(--t-fast) var(--ease); font-size: var(--fs-compact); }
+.statement-lock-dock[hidden] { display: none; }
+.statement-lock-dock.lock-active { background: var(--surface-2); border-color: var(--accent); }
+.statement-lock-dock.lock-matched { background: var(--warning-soft); border-color: var(--warning); }
+.statement-lock-dock.lock-unmatched { background: var(--surface); border-color: var(--border); }
+
+.lock-active-card { display: grid; gap: 6px; padding: 10px 12px; }
+.lock-active-source { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.lock-badge { font-size: var(--fs-meta); font-weight: 700; color: var(--accent-text); padding: 1px 6px; background: var(--accent-soft); border-radius: 2px; }
+.lock-quote { margin: 0; font-weight: 600; color: var(--text); font-style: italic; }
+.lock-active-guide { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: var(--fs-meta); color: var(--text-2); }
+.lock-cancel-btn { height: 24px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; cursor: pointer; color: var(--text-2); }
+.lock-cancel-btn:hover { color: var(--text); border-color: var(--text-3); }
+
+.lock-result-card { display: grid; gap: 4px; padding: 10px 12px; }
+.lock-result-head { display: flex; align-items: center; gap: 8px; }
+.lock-result-title { font-size: var(--fs-compact); font-weight: 700; color: var(--text); flex: 1; }
+.lock-result-body { margin: 0; font-size: var(--fs-label); color: var(--text-2); line-height: 1.45; }
+.lock-close-btn { width: 22px; height: 22px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; color: var(--text-3); font-size: 14px; border-radius: 2px; }
+.lock-close-btn:hover { background: var(--border-subtle); color: var(--text); }
+
+.lock-tag { font-size: var(--fs-meta); font-weight: 700; padding: 1px 6px; border-radius: 2px; letter-spacing: .02em; }
+.lock-tag.critical { background: var(--danger); color: #fff; }
+.lock-tag.conflict { background: var(--warning); color: #fff; }
+.lock-tag.success { background: var(--accent); color: #fff; }
+.lock-tag.neutral { background: var(--border); color: var(--text-2); }
+
+.msg-lock-btn { margin-left: auto; height: 22px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); color: var(--text-2); font-size: var(--fs-meta); font-weight: 600; cursor: pointer; transition: all var(--t-fast) var(--ease); opacity: .7; }
+.msg.alien:hover .msg-lock-btn, .msg-lock-btn:focus-visible, .msg-lock-btn.active { opacity: 1; }
+.msg-lock-btn:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-soft); }
+.msg-lock-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+.msg.lock-selected { border-left: 3px solid var(--accent); background: var(--surface-2); }
+
+@keyframes lockPulseAnim { 0% { box-shadow: 0 0 0 0 rgba(220, 100, 30, .4); } 70% { box-shadow: 0 0 0 8px rgba(220, 100, 30, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 100, 30, 0); } }
+.lock-pulse { animation: lockPulseAnim .6s ease-out; }
+
+/* Interactive targets when statement lock is armed */
+body.statement-lock-mode .doc-field[data-doc-key] { cursor: pointer; border-radius: 2px; }
+body.statement-lock-mode .doc-field[data-doc-key]:hover { outline: 1px dashed var(--accent); background: var(--accent-soft); }
+body.statement-lock-mode #terminal .line[data-lookup-kind] { cursor: pointer; }
+body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px dashed var(--accent); background: var(--accent-soft); }
+
