@@ -16,8 +16,8 @@ import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
 import { generateEventSchedule, applyScenarioStart, takeScheduledBreak, difficultyCfg, eventEffectText, appliedLiveLoad } from './engines/operation-engine.js';
 import { setInterviewLanguage, requestInterpreter, languageProfileFor } from './engines/language-engine.js';
-import { applyChallengeStart } from './engines/achievement-engine.js';
-import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
+import { applyChallengeStart, applyDailyMissions, evaluateAchievements, achievementById } from './engines/achievement-engine.js';
+import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, saveMeta, saveBestGrade, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
 import { loadCampaign } from './engines/campaign-engine.js';
 import { syncCampaignState, prepareCampaignForStart, applyCampaignDayCarry, currentCampaignSave, clearCampaign } from './engines/campaign-engine.js';
 import { travelPartyFor } from './engines/companion-engine.js';
@@ -140,15 +140,64 @@ function finishFlow(label) {
   const record = { performed: state.performed.slice(), discoveredClues: [...state.discoveredClues], asked: [...state.asked], mistakes: state.mistakes.filter((m) => m.caseIndex === state.caseIndex), label, interview: interviewSummary() };
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record);
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
-  if (state.sessionMode === 'case') { showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() }); return; }
+  if (state.sessionMode === 'case') {
+    const mistakes = state.mistakes.filter((m) => m.caseIndex === state.caseIndex);
+    const meta = loadMeta();
+    const clean = mistakes.length === 0;
+    meta.career.xp = (meta.career.xp || 0) + 20;
+    meta.career.totalPassengers = (meta.career.totalPassengers || 0) + 1;
+    if (clean) meta.career.cleanPassengers = (meta.career.cleanPassengers || 0) + 1;
+    const newly = evaluateAchievements(meta.career);
+    saveMeta(meta);
+    newly.forEach((id) => { const a = achievementById(id); if (a) notify.toast(`업적 해금 · ${a.name}`); });
+    r.earnedXP = 20;
+    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() });
+    return;
+  }
   if (state.sessionMode === 'daily') {
     const d = dailyCase(); const result = dailyResult(d.dateKey, r.c, r.report, r.debrief, record.interview); const first = saveDailyResult(result);
+    const mistakes = state.mistakes.filter((m) => m.caseIndex === state.caseIndex);
+    const meta = loadMeta();
+    const clean = mistakes.length === 0;
+    if (first) {
+      meta.career.xp = (meta.career.xp || 0) + 35;
+      meta.career.totalPassengers = (meta.career.totalPassengers || 0) + 1;
+      if (clean) meta.career.cleanPassengers = (meta.career.cleanPassengers || 0) + 1;
+    }
+    const pseudoSession = {
+      overall: r.report.procedure,
+      stats: { processed: 1 },
+      reports: [r.report],
+      mistakes,
+      difficulty: state.difficulty,
+      procedure: r.report.procedure,
+      efficiency: 100,
+      challengeSuccess: false
+    };
+    const dailyRewards = applyDailyMissions(meta, pseudoSession);
+    const newly = evaluateAchievements(meta.career);
+    saveMeta(meta);
+    newly.forEach((id) => { const a = achievementById(id); if (a) notify.toast(`업적 해금 · ${a.name}`); });
+    dailyRewards.forEach((x) => notify.toast(`미션 달성 · ${x.name} +${x.xp} XP`));
     bus.emit('analytics', { name: 'daily_complete', label });
-    showCaseResult(r, null, { mode: 'daily', daily: { result, first, share: shareText(result) }, onExit: () => location.reload() });
+    showCaseResult(r, null, { mode: 'daily', daily: { result, first, share: shareText(result), earnedXP: first ? 35 : 0 }, onExit: () => location.reload() });
     return;
   }
   if (state.sessionMode === 'quick') {
-    showCaseResult(r, null, { mode: 'quick', onNext: () => { caseEngine.advanceQueue(); beginCase(); }, onSummary: () => showQuickSummary(state.reports, { onRetry: () => quickShiftFlow(true), onExit: () => location.reload() }) });
+    showCaseResult(r, null, {
+      mode: 'quick',
+      onNext: () => { caseEngine.advanceQueue(); beginCase(); },
+      onSummary: () => {
+        const grade = caseEngine.gradeFor();
+        saveBestGrade(grade);
+        const sessionResult = caseEngine.persistCompletedSession(grade, { mode: 'quick' });
+        showQuickSummary(state.reports, {
+          sessionResult,
+          onRetry: () => quickShiftFlow(true),
+          onExit: () => location.reload()
+        });
+      }
+    });
     return;
   }
   showCaseResult(r, () => {

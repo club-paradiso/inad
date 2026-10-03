@@ -7,7 +7,8 @@ import { getTraveler } from '../../engines/traveler-engine.js';
 import { workloadClass, procedureAverage, overallScore, operationalScore } from '../../engines/score-engine.js';
 import { difficultyCfg, scenarioCfg, simulatedBacklog, pressureInfo, shiftStats, SHIFT_TARGETS } from '../../engines/operation-engine.js';
 import { languageModeLabel } from '../../engines/language-engine.js';
-import { challengeCfg, challengeEvaluation } from '../../engines/achievement-engine.js';
+import { challengeCfg, challengeEvaluation, sessionXP, levelInfo } from '../../engines/achievement-engine.js';
+import { loadMeta } from '../../engines/save-engine.js';
 import { campaignArc } from '../../engines/campaign-engine.js';
 import { basisSectionHTML } from '../decision-basis.js';
 import { guardDecision } from '../decision-desk.js';
@@ -55,11 +56,21 @@ export function showCaseResult(r, onNext, { mode = 'shift', onRetry = null, onEx
   byId('nextCase').onclick = () => { closeModal(); onNext(); };
 }
 
-// Quick Shift summary: each passenger's outcome, procedure compliance and corrected attempts. Nothing is saved.
-export function showQuickSummary(reports, { onRetry, onExit } = {}) {
+// Quick Shift summary: each passenger's outcome, procedure compliance and corrected attempts.
+export function showQuickSummary(reports, { onRetry, onExit, sessionResult = null } = {}) {
   const rows = reports.map((r, i) => `<tr><td class="mono">${i + 1}</td><th scope="row">${esc(r.name)}<small>${esc(r.nat)} · ${esc(r.purpose)}</small></th><td>${esc(r.label)}</td><td class="mono">${r.procedure}%</td><td class="mono">${(r.mistakes || []).length}</td></tr>`).join('');
   const avg = reports.length ? Math.round(reports.reduce((a, r) => a + r.procedure, 0) / reports.length) : 0;
-  showModal('짧은 근무 요약', `<p class="modal-note">승객 ${reports.length}명 · 평균 절차 준수 ${avg}% · 이 근무는 저장되지 않으며 경력·미션에 반영되지 않습니다.</p><table class="quick-summary"><thead><tr><th scope="col">#</th><th scope="col">승객</th><th scope="col">결정</th><th scope="col">절차 준수</th><th scope="col">바로잡힌 시도</th></tr></thead><tbody>${rows}</tbody></table><p class="modal-note">정식 근무는 승객 36명, 운영 압박·현장 이벤트·근무기록이 함께 진행됩니다.</p><div class="voice-actions debrief-actions"><button type="button" class="act primary" id="quickExit" data-autofocus><strong>정식 근무 준비</strong></button><button type="button" class="act" id="quickRetry"><strong>짧은 근무 다시</strong></button></div>`, { dismissible: false });
+  let rewardHTML = '';
+  if (sessionResult) {
+    const xp = sessionXP(sessionResult);
+    const meta = loadMeta();
+    const lv = levelInfo(meta.career?.xp || 0);
+    const dailyMissions = (sessionResult.dailyRewards || []).map((x) => `${esc(x.name)} +${x.xp} XP`).join(' · ');
+    rewardHTML = `<div class="balance-strip quick-summary-strip"><div class="balance-chip ${workloadClass(sessionResult.overall || 85)}"><span>근무평정</span><b>${esc(sessionResult.grade || '-')}</b></div><div class="balance-chip"><span>평균 절차</span><b>${avg}%</b></div><div class="balance-chip good"><span>획득 경력</span><b>+${xp} XP</b></div><div class="balance-chip"><span>현재 레벨</span><b>Lv.${lv.level}</b></div></div>${dailyMissions ? `<div class="daily-reward-strip"><b>오늘의 미션 달성</b><span>${dailyMissions}</span></div>` : ''}<p class="modal-note">승객 ${reports.length}명 심사 완료 · 평균 절차 준수 ${avg}% · 경력에 <strong>+${xp} XP</strong>가 반영되었습니다.</p>`;
+  } else {
+    rewardHTML = `<p class="modal-note">승객 ${reports.length}명 · 평균 절차 준수 ${avg}% · 정식 근무 준비를 위한 사전 점검입니다.</p>`;
+  }
+  showModal('짧은 근무 요약', `${rewardHTML}<table class="quick-summary"><thead><tr><th scope="col">#</th><th scope="col">승객</th><th scope="col">결정</th><th scope="col">절차 준수</th><th scope="col">바로잡힌 시도</th></tr></thead><tbody>${rows}</tbody></table><p class="modal-note">정식 근무는 승객 36명, 운영 압박·현장 이벤트·상세 근무기록이 함께 진행됩니다.</p><div class="voice-actions debrief-actions"><button type="button" class="act primary" id="quickExit" data-autofocus><strong>정식 근무 준비</strong></button><button type="button" class="act" id="quickRetry"><strong>짧은 근무 다시</strong></button></div>`, { dismissible: false });
   byId('quickExit').onclick = () => { closeModal(); onExit?.(); }; byId('quickRetry').onclick = () => { closeModal(); onRetry?.(); };
 }
 

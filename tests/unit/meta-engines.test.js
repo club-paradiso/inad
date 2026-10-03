@@ -47,6 +47,16 @@ test('career: XP, levels and achievements accumulate from completed sessions onl
   assert.equal(ACHIEVEMENTS.length, 18);
 });
 
+test('career: quick shift awards XP and passenger metrics without altering 36-passenger shift counts', () => {
+  const c = careerTemplate();
+  applySessionCareer(c, { mode: 'quick', grade: 'A', difficulty: 'training', overall: 90, stats: { processed: 6 }, reports: [{ label: '입국 허가', actions: ['SECONDARY'], mistakes: [] }], mistakes: [], overSecondary: 0, challengeId: 'none', scenarioId: 'normal' });
+  assert.equal(c.completedShifts, 0);
+  assert.equal(c.totalPassengers, 6);
+  assert.equal(c.cleanPassengers, 1);
+  assert.equal(c.secondaryClears, 1);
+  assert.ok(c.xp > 0);
+});
+
 test('challenge evaluation is game-only and only succeeds on final evaluation', () => {
   state.challengeId = 'perfect'; state.started = true; state.mistakes = []; state.strikes = 0; state.score = 100; state.reports = [];
   assert.equal(challengeCfg().id, 'perfect');
