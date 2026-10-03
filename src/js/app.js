@@ -61,7 +61,7 @@ function openProc(mode) { openProcedureScreen(mode, procHandlers); }
 function renderAll() {
   if (!current()) return;
   const focus = focusKey();
-  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
+  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); cues.paperOpen(); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
   renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
   restoreFocus(focus);
 }
@@ -72,8 +72,8 @@ function showWorkbenchTab(name) {
   $$('.wb-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
 }
 function bindWorkbenchTabs() {
-  $$('.wb-tab').forEach((b) => { b.onclick = () => showWorkbenchTab(b.dataset.wb); });
-  $('.wb-tabs').addEventListener('keydown', (e) => { const tabs = $$('.wb-tab'), i = tabs.indexOf(document.activeElement), next = tabKey(e.key, i, tabs.length); if (i < 0 || next === null) return; e.preventDefault(); showWorkbenchTab(tabs[next].dataset.wb); tabs[next].focus(); });
+  $$('.wb-tab').forEach((b) => { b.onclick = () => { showWorkbenchTab(b.dataset.wb); cues.paperOpen(); }; });
+  $('.wb-tabs').addEventListener('keydown', (e) => { const tabs = $$('.wb-tab'), i = tabs.indexOf(document.activeElement), next = tabKey(e.key, i, tabs.length); if (i < 0 || next === null) return; e.preventDefault(); showWorkbenchTab(tabs[next].dataset.wb); cues.paperOpen(); tabs[next].focus(); });
   showWorkbenchTab('docs');
 }
 
