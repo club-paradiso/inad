@@ -459,6 +459,8 @@ const EXACT = new Map([
   ['짧은 근무 다시', 'Short shift again'],
   ['바로잡힌 시도', 'Corrected attempts'],
   ['라이브 인터뷰 사건을 찾지 못했습니다.', 'The live interview case could not be found.'],
+  // v11 start screen tiers
+  ['인터뷰 시작', 'Start interview'],
   ['통역 지원', 'Interpreter support'],
   ['답변을 준비하고 있습니다', 'Preparing a reply'],
   ['제안', 'Suggested'],

@@ -60,16 +60,20 @@
 .start-actions-row:has(.resume-start[hidden]) { grid-template-columns: 1fr; }
 .startbtn { height: 48px; border-radius: var(--r-1); background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -.01em; transition: background var(--t-fast) var(--ease); }
 .startbtn:hover { background: var(--accent-hover); }
-/* v10: the quickest way to a real passenger — one case, no setup */
-.start-live { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-bottom: 8px; padding: 12px 16px; border-radius: var(--r-1); background: var(--booth); color: var(--booth-text); }
-.start-live-copy { display: grid; gap: 2px; min-width: 0; }
-.start-live b { font-size: 15px; letter-spacing: -.01em; }
-.start-live span { font-size: var(--fs-label); color: var(--booth-muted); }
-.start-live-actions { display: flex; gap: 6px; }
-.start-live-actions button { min-height: var(--size-touch); padding: 0 14px; border: 1px solid var(--booth-muted); border-radius: var(--r-1); background: transparent; color: var(--booth-text); font-size: var(--fs-compact); font-weight: 700; white-space: nowrap; transition: background var(--t-fast) var(--ease); }
-.start-live-actions button:hover { background: var(--booth-2); }
-.start-live-actions button:first-child { background: var(--booth-text); color: var(--booth); border-color: var(--booth-text); }
-@media (max-width: 1279px) { .start-live { grid-template-columns: minmax(0, 1fr); } .start-live-actions { flex-wrap: wrap; } .start-live-actions button { flex: 1 1 auto; } }
+/* v11: primary / secondary / tertiary start screen tiers */
+.start-primary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 20px; border-radius: var(--r-1); background: var(--booth); color: var(--booth-text); }
+.start-primary-copy { display: grid; gap: 2px; min-width: 0; }
+.start-primary-copy b { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--booth-text); }
+.start-primary-copy span { font-size: var(--fs-label); color: var(--booth-muted); }
+.start-hero-btn { min-height: 48px; padding: 0 24px; border: 0; border-radius: var(--r-1); background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; letter-spacing: -.02em; cursor: pointer; white-space: nowrap; transition: opacity var(--t-fast) var(--ease); }
+.start-hero-btn:hover { opacity: .9; }
+.start-hero-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.start-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.start-mode-btn { min-height: 44px; padding: 8px 14px; text-align: center; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); color: var(--text); font-size: var(--fs-compact); font-weight: 700; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.start-mode-btn:hover { border-color: var(--accent); background: var(--elevated); }
+.start-mode-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.start-tertiary { display: grid; gap: 10px; margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
+@media (max-width: 1279px) { .start-primary { grid-template-columns: minmax(0, 1fr); text-align: center; } .start-hero-btn { width: 100%; } }
 .start-settings { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-compact); font-weight: 600; color: var(--text-2); }
 .start-settings.resume-start { height: 48px; border-color: var(--success); color: var(--success-text); }
 .start-links { display: grid; gap: 6px; }
@@ -113,6 +117,10 @@
   .start-actions-row { grid-template-columns: 1fr; position: sticky; bottom: 0; padding: 10px 0 0; background: var(--elevated); }
   .startbtn { height: 52px; font-size: 16px; }
   .session-row b { font-size: 14px; }
+  .start-hero-btn { height: 56px; font-size: 17px; }
+  .start-secondary { grid-template-columns: 1fr; }
+  .start-mode-btn { min-height: 52px; }
+  .start-shift-toggle summary { min-height: 44px; display: flex; align-items: center; }
   .tutorial-card { left: 14px !important; right: 14px; width: auto; }
 }
 
