@@ -82,3 +82,83 @@ test('statement-lock: unrelated items return consistent (no penalty, clear messa
   assert.match(r.message, /모순이나 불일치가 확인되지 않았습니다/);
   assert.equal(state.discoveredClues.size, 0);
 });
+
+test('statement-lock: ICN-S2-007 massage statement vs tourist visa detects critical contradiction', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S2-007');
+  state.performed = [];
+  state.discoveredClues = new Set();
+
+  const source = { questionId: 'massage', text: '강남 마사지샵에서 청소나 손님 안내를 도울 수 있다고 들었습니다.', logIndex: 3 };
+  const target = { type: 'doc', key: 'VISA' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(r.severity, LOCK_RESULTS.CRITICAL);
+  assert.equal(r.id, 'S2_007_MASSAGE_WORK_INTENT');
+  assert.equal(r.clueId, 'ms5');
+  assert.equal(state.discoveredClues.has('ms5'), true);
+});
+
+test('statement-lock: ICN-S3-009 passport broker statement vs passport detects critical contradiction', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S3-009');
+  state.performed = [];
+  state.discoveredClues = new Set();
+
+  const source = { questionId: 'purchase', text: '모스크바에서 여행사 중개인에게 3,000달러를 주고 급행으로 발급받았습니다.', logIndex: 2 };
+  const target = { type: 'doc', key: 'PASSPORT' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(r.severity, LOCK_RESULTS.CRITICAL);
+  assert.equal(r.id, 'S3_009_PASSPORT_BROKER');
+  assert.equal(r.clueId, 'er4');
+  assert.equal(state.discoveredClues.has('er4'), true);
+});
+
+test('statement-lock: ICN-S3-010 economic work plan vs refugee claim detects conflict', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S3-010');
+  state.performed = [];
+  state.discoveredClues = new Set();
+
+  const source = { questionId: 'workPlan', text: '건설 현장이나 공장에서 일해서 본국에 있는 가족에게 매달 송금하고 싶습니다.', logIndex: 4 };
+  const target = { type: 'doc', key: 'VISA' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(r.severity, LOCK_RESULTS.CONFLICT);
+  assert.equal(r.id, 'S3_010_ECONOMIC_MOTIVE_CONFLICT');
+  assert.equal(r.clueId, 'aa4');
+  assert.equal(state.discoveredClues.has('aa4'), true);
+});
+
+test('statement-lock: ICN-S3-011 biometric exemption claim vs passport detects conflict', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S3-011');
+  state.performed = [];
+  state.discoveredClues = new Set();
+
+  const source = { questionId: 'exempt', text: '특별한 면제 사유는 없습니다. 하지만 지문 제공은 원하지 않습니다.', logIndex: 2 };
+  const target = { type: 'doc', key: 'PASSPORT' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(r.severity, LOCK_RESULTS.CONFLICT);
+  assert.equal(r.id, 'S3_011_BIO_REFUSAL_STATUTORY');
+  assert.equal(r.clueId, 'bt4');
+  assert.equal(state.discoveredClues.has('bt4'), true);
+});
+
+test('statement-lock: ICN-S3-012 deportation history vs watchlist detects critical contradiction', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S3-012');
+  state.performed = [];
+  state.discoveredClues = new Set();
+
+  const source = { questionId: 'history', text: '작년에 출국할 때 강제퇴거 서류에 서명했던 것 같습니다.', logIndex: 3 };
+  const target = { type: 'doc', key: 'WATCHLIST' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(r.severity, LOCK_RESULTS.CRITICAL);
+  assert.equal(r.id, 'S3_012_WATCHLIST_DEPORTATION');
+  assert.equal(r.clueId, 'km4');
+  assert.equal(state.discoveredClues.has('km4'), true);
+});

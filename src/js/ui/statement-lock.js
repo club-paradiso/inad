@@ -8,6 +8,7 @@ import { current } from '../engines/queue-engine.js';
 import { evaluateStatementLock, resolveLogQuestionId, LOCK_RESULTS } from '../engines/statement-lock-engine.js';
 import { cues } from '../services/audio.js';
 import { bus } from '../services/bus.js';
+import { setStageState } from './passenger-stage.js';
 
 let activeLock = null; // { logIndex, text, questionId }
 let lastResult = null; // { ok, title, description, message, severity, timestamp }
@@ -37,7 +38,8 @@ export function selectStatementForLock(logIndex) {
 
   renderStatementLockDock();
   highlightLockTargets(true);
-  cues.toggle(true);
+  if (cues.lockPin) cues.lockPin();
+  else cues.toggle(true);
   bus.emit('changed');
 }
 
@@ -60,7 +62,9 @@ export function compareWithTarget(target) {
   };
 
   if (result.ok) {
-    cues.alert();
+    if (cues.lockConflict) cues.lockConflict();
+    else cues.alert();
+    setStageState('hesitant', 2800);
     // Brief pulse on the affected message
     const msgEl = $(`#log .msg[data-i="${activeLock.logIndex}"]`);
     if (msgEl) {
@@ -69,7 +73,11 @@ export function compareWithTarget(target) {
       msgEl.classList.add('lock-pulse');
     }
   } else {
-    cues.click();
+    if (result.reason === LOCK_RESULTS.CONSISTENT && cues.lockConsistent) {
+      cues.lockConsistent();
+    } else {
+      cues.click();
+    }
   }
 
   renderStatementLockDock();

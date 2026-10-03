@@ -90,6 +90,179 @@ const CASE_CONTRADICTIONS = {
       stressDelta: 15,
       unlockQuestions: ['returnMoney']
     }
+  ],
+  'ICN-S2-007': [
+    // 1. Tourist visa C-3-9 vs Massage parlor work intent
+    {
+      id: 'S2_007_MASSAGE_WORK_INTENT',
+      title: '관광 사증과 마사지샵 취업 의도 불일치 (결정적 모순)',
+      desc: 'C-3-9 관광 사증으로 입국하면서 강남 마사지샵에서 일할 수 있다는 진술을 하여 사증 목적과 실제 입국 목적이 정면으로 상충합니다.',
+      statementQuestions: ['massage', 'work'],
+      matchTargets: [
+        { type: 'doc', key: 'VISA' },
+        { type: 'doc', key: 'E-ARRIVAL', fieldPattern: /목적/ },
+        { type: 'statement', questionId: 'purpose' }
+      ],
+      severity: LOCK_RESULTS.CRITICAL,
+      clueId: 'ms5',
+      actionToken: 'LOCK_s2_007_massage_conflict',
+      stressDelta: 30,
+      unlockQuestions: ['massage', 'alex']
+    },
+    // 2. Hotel unverified and unknown host Alex
+    {
+      id: 'S2_007_HOTEL_UNVERIFIED',
+      title: '숙소 예약 미확인 및 체류지 소명 불일치',
+      desc: '강남 호텔에 체류한다고 주장하나 정확한 상호와 주소를 제시하지 못하며 예약 내역이 확인되지 않습니다.',
+      statementQuestions: ['hotel', 'hotelName'],
+      matchTargets: [
+        { type: 'lookup', kind: 'contact' },
+        { type: 'doc', key: 'E-ARRIVAL', fieldPattern: /체류지|호텔/ }
+      ],
+      severity: LOCK_RESULTS.CONFLICT,
+      clueId: 'ms2',
+      actionToken: 'LOCK_s2_007_hotel_conflict',
+      stressDelta: 20,
+      unlockQuestions: ['hotelName', 'alex']
+    },
+    // 3. Return ticket vs Undefined extension
+    {
+      id: 'S2_007_RETURN_EXTENSION',
+      title: '왕복 여정과 체류 연장 의사 상충 대조',
+      desc: 'PNR상 7일 단기 일정으로 발권되었으나 일자리가 생기면 체류를 연장하겠다는 진술로 귀국의사가 불확실합니다.',
+      statementQuestions: ['returnPlan'],
+      matchTargets: [
+        { type: 'doc', key: 'PNR' },
+        { type: 'lookup', kind: 'pnr' }
+      ],
+      severity: LOCK_RESULTS.DISCREPANCY,
+      clueId: 'ms6',
+      actionToken: 'LOCK_s2_007_return_discrepancy',
+      stressDelta: 15,
+      unlockQuestions: ['returnPlan']
+    }
+  ],
+  'ICN-S3-009': [
+    // 1. Passport obtained via broker vs genuine travel document
+    {
+      id: 'S3_009_PASSPORT_BROKER',
+      title: '여권 비정상 중개 취득 대조 (위변조 여권)',
+      desc: '여권을 공식 발급기관이 아닌 중개인을 통해 대가를 주고 취득했다고 진술하여 유효한 여권 요건을 흠결하였습니다.',
+      statementQuestions: ['purchase'],
+      matchTargets: [
+        { type: 'doc', key: 'PASSPORT' },
+        { type: 'lookup', kind: 'bio' }
+      ],
+      severity: LOCK_RESULTS.CRITICAL,
+      clueId: 'er4',
+      actionToken: 'LOCK_s3_009_broker_passport',
+      stressDelta: 35,
+      unlockQuestions: ['purchase', 'trueName']
+    },
+    // 2. Biometric and altered datapage vs claimed identity
+    {
+      id: 'S3_009_BIOMETRIC_IDENTITY_MISMATCH',
+      title: '생체정보 불일치 감식과 신원 주장 대조',
+      desc: '데이터페이지 변조 및 생체정보 불일치 감식 결과에도 불구하고 여권상 인적사항이 본인이라고 진술하여 신원 도용 사실이 확인됩니다.',
+      statementQuestions: ['identity', 'trueName'],
+      matchTargets: [
+        { type: 'doc', key: 'BIOMETRIC' },
+        { type: 'doc', key: 'PASSPORT' },
+        { type: 'lookup', kind: 'bio' }
+      ],
+      severity: LOCK_RESULTS.CRITICAL,
+      clueId: 'er3',
+      actionToken: 'LOCK_s3_009_bio_mismatch',
+      stressDelta: 30,
+      unlockQuestions: ['trueName']
+    },
+    // 3. Message deletion and covert identity instruction
+    {
+      id: 'S3_009_MESSAGE_DESTRUCTION',
+      title: '증거인멸 시도 및 위장 신원 정황 대조',
+      desc: '휴대전화 메시지 삭제 시도와 새 이름 통과 지시 정황이 확인되어 단순 관광 진술과 정면으로 상충합니다.',
+      statementQuestions: ['destroy', 'messages'],
+      matchTargets: [
+        { type: 'doc', key: 'PNR' },
+        { type: 'statement', questionId: 'phone' }
+      ],
+      severity: LOCK_RESULTS.CONFLICT,
+      clueId: 'er7',
+      actionToken: 'LOCK_s3_009_destroy_conflict',
+      stressDelta: 20,
+      unlockQuestions: ['destroy']
+    }
+  ],
+  'ICN-S3-010': [
+    // 1. Economic employment motive vs convention refugee persecution
+    {
+      id: 'S3_010_ECONOMIC_MOTIVE_CONFLICT',
+      title: '경제적 취업 목적과 난민 박해사유 불일치 대조',
+      desc: '박해에 대한 개별적 소명 없이 한국 내 취업과 본국 송금이 주된 목적임을 진술하여 난민사유와 불일치합니다.',
+      statementQuestions: ['workPlan', 'claimTiming'],
+      matchTargets: [
+        { type: 'doc', key: 'VISA' },
+        { type: 'statement', questionId: 'refugee' },
+        { type: 'statement', questionId: 'persecution' }
+      ],
+      severity: LOCK_RESULTS.CONFLICT,
+      clueId: 'aa4',
+      actionToken: 'LOCK_s3_010_economic_refugee',
+      stressDelta: 20,
+      unlockQuestions: ['workPlan', 'claimTiming']
+    }
+  ],
+  'ICN-S3-011': [
+    // 1. Biometric refusal vs lack of statutory exemption
+    {
+      id: 'S3_011_BIO_REFUSAL_STATUTORY',
+      title: '법정 생체정보 제공의무 불응 대조',
+      desc: '출입국관리법상 면제 요건(17세 미만, 공무 수행 등)에 해당하지 않음을 인정하면서도 지문 및 얼굴 정보 제공을 불응하고 있습니다.',
+      statementQuestions: ['exempt', 'bio', 'otherDocs'],
+      matchTargets: [
+        { type: 'doc', key: 'PASSPORT' },
+        { type: 'doc', key: 'BIOMETRIC' }
+      ],
+      severity: LOCK_RESULTS.CONFLICT,
+      clueId: 'bt4',
+      actionToken: 'LOCK_s3_011_bio_refusal',
+      stressDelta: 25,
+      unlockQuestions: ['exempt', 'explain']
+    }
+  ],
+  'ICN-S3-012': [
+    // 1. Prior deportation 5-year entry ban vs Tourist claim
+    {
+      id: 'S3_012_WATCHLIST_DEPORTATION',
+      title: '과거 강제퇴거 처분 및 입국금지 기록 대조',
+      desc: '전산망상 2023-08-14 강제퇴거명령에 따른 5년 입국금지 규제 기간이 경과하지 않았음에도 단순 관광 입국을 시도하고 있습니다.',
+      statementQuestions: ['history', 'order', 'date'],
+      matchTargets: [
+        { type: 'doc', key: 'WATCHLIST' },
+        { type: 'lookup', kind: 'watchlist' }
+      ],
+      severity: LOCK_RESULTS.CRITICAL,
+      clueId: 'km4',
+      actionToken: 'LOCK_s3_012_watchlist_deportation',
+      stressDelta: 30,
+      unlockQuestions: ['order', 'permission']
+    },
+    // 2. Lack of special permission waiver
+    {
+      id: 'S3_012_NO_PERMISSION_WAIVER',
+      title: '입국규제 해제·특별허가 부존재 대조',
+      desc: '입국금지 처분에 대해 법무부장관의 별도 규제해제 또는 입국허가를 받은 사실이 공식 기록상 존재하지 않습니다.',
+      statementQuestions: ['permission'],
+      matchTargets: [
+        { type: 'doc', key: 'WATCHLIST' },
+        { type: 'lookup', kind: 'watchlist' }
+      ],
+      severity: LOCK_RESULTS.CONFLICT,
+      clueId: 'km6',
+      actionToken: 'LOCK_s3_012_no_permission',
+      stressDelta: 20,
+      unlockQuestions: ['permission']
+    }
   ]
 };
 
