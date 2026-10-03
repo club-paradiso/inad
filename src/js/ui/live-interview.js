@@ -96,7 +96,13 @@ function offerRepeat(id) {
 
 // ---- voice ---------------------------------------------------------------------------------------------
 function sttLang() { const l = state.language; if (l && l.mode === 'en' && !l.interpreterActive) return 'en-US'; return storeGet('inad-locale', 'ko') === 'en' ? 'en-US' : 'ko-KR'; }
-function setMic(on) { const b = byId('micBtn'); if (!b) return; b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '듣는 중' : '말하기'; }
+function setMic(on) {
+  const b = byId('micBtn');
+  if (!b) return;
+  b.setAttribute('aria-pressed', String(on));
+  b.classList.toggle('recording', !!on);
+  b.textContent = on ? '듣는 중' : '말하기';
+}
 function stopListening() { recognizer?.stop(); }
 async function startListening() {
   if (starting || recognizer?.active) return; starting = true;
