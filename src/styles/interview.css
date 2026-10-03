@@ -227,3 +227,66 @@ body.statement-lock-mode .doc-field[data-doc-key]:hover { outline: 1px dashed va
 body.statement-lock-mode #terminal .line[data-lookup-kind] { cursor: pointer; }
 body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px dashed var(--accent); background: var(--accent-soft); }
 
+/* First-Duty Onboarding Coach Banner */
+.coach-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-label);
+  line-height: 1.4;
+  color: var(--text);
+  animation: coachFadeIn .3s ease-out;
+}
+.coach-banner.coach-step-1 { border-left: 3px solid var(--accent); }
+.coach-banner.coach-step-2 { border-left: 3px solid var(--warning); background: var(--warning-soft); }
+.coach-banner.coach-step-3 { border-left: 3px solid var(--success); background: var(--accent-soft); }
+
+.coach-icon { font-size: 14px; flex-shrink: 0; }
+.coach-text { flex: 1; font-weight: 500; }
+.coach-dismiss-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: var(--r-1);
+  flex-shrink: 0;
+}
+.coach-dismiss-btn:hover { background: var(--border-subtle); color: var(--text); }
+@keyframes coachFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Mobile bottom sheet for Statement Lock dock */
+@media (max-width: 767px) {
+  .statement-lock-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 45;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.2);
+    border-radius: var(--r-2) var(--r-2) 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+}
+
+/* Audio wave pulse during mic recording */
+#micBtn.recording {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  animation: micPulseAnim 1.2s infinite ease-in-out;
+}
+@keyframes micPulseAnim {
+  0% { box-shadow: 0 0 0 0 rgba(220, 50, 50, .5); }
+  70% { box-shadow: 0 0 0 8px rgba(220, 50, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 50, 50, 0); }
+}
+
+

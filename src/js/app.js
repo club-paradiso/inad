@@ -45,6 +45,7 @@ import { buildDebrief } from './engines/debrief-engine.js';
 import { interviewSummary } from './engines/interview-engine.js';
 import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
+import { renderCoachBanner } from './ui/coach.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
 const LIVE_CASE = { caseId: 'ICN-S2-005', seed: 271828 };
@@ -62,7 +63,7 @@ function renderAll() {
   if (!current()) return;
   const focus = focusKey();
   renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); cues.paperOpen(); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
-  renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
+  renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderCoachBanner(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
   restoreFocus(focus);
 }
 // Every question button goes through the v10 dispatcher (same engine call, plus the passenger's acting).
@@ -336,5 +337,13 @@ function boot() {
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
   byId('sessionSeed').textContent = String(session.seed); renderQueue(); renderTop(); renderEventBar(); renderDailyStart(showDailyMissions); renderPersistenceStatus(); syncOptionButtons(); startClock();
   scheduleUiEnhancements();
+  if (typeof window !== 'undefined' && window.visualViewport) {
+    const onViewport = () => {
+      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`);
+    };
+    window.visualViewport.addEventListener('resize', onViewport);
+    window.visualViewport.addEventListener('scroll', onViewport);
+    onViewport();
+  }
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
