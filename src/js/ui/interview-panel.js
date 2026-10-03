@@ -9,6 +9,7 @@ import { getTraveler } from '../engines/traveler-engine.js';
 import { questionUnlocked } from '../engines/clue-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
+import { currentLockedStatement } from './statement-lock.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -26,11 +27,14 @@ const msgHTML = (x, t, i, pending = false) => {
   const off = x.offRecord ? ' off-record' : '';
   const avatar = x.type === 'alien' ? `<img class="msgavatar" src="${t?.portrait || ''}" alt="">` : `<span class="msgavatar" aria-hidden="true">${x.type === 'officer' ? '심' : x.type === 'interpreter' ? '통' : 'SYS'}</span>`;
   const label = `<b>${WHO[x.type] || '시스템'}${x.type === 'alien' && x.behaviorLabel ? `<span class="behavior-event">${esc(x.behaviorLabel)}</span>` : ''}${x.type === 'interpreter' && x.languageLabel ? `<span class="language-event">${esc(x.languageLabel)}</span>` : ''}</b>`;
+  const isAlien = x.type === 'alien' && !pending;
+  const locked = currentLockedStatement()?.logIndex === i;
+  const lockBtn = isAlien ? `<button type="button" class="msg-lock-btn ${locked ? 'active' : ''}" data-lock-i="${i}" title="진술 대조" aria-label="진술 대조: 증거자료와 대조">대조</button>` : '';
   let body;
   if (pending) body = '답변을 준비하고 있습니다';
   else if (x.type === 'officer' && x.utterance && x.utterance !== x.text && !x.offRecord) body = `${esc(x.utterance)}<span class="heard">기록 질문 · ${esc(x.text)}</span>`;
   else body = `${x.lead ? `<span class="lead">${esc(x.lead)}</span> ` : ''}${esc(x.type === 'officer' && x.offRecord && x.utterance ? x.utterance : x.text)}`;
-  return `<div class="msg ${x.type} ${x.type === 'alien' ? (x.behaviorClass || '') : ''}${off}${pending ? ' pending' : ''}" data-i="${i}"${pending ? ' aria-hidden="true"' : ''}>${avatar}${label}<div class="msgtext">${body}</div></div>`;
+  return `<div class="msg ${x.type} ${x.type === 'alien' ? (x.behaviorClass || '') : ''}${off}${pending ? ' pending' : ''}${locked ? ' lock-selected' : ''}" data-i="${i}"${pending ? ' aria-hidden="true"' : ''}>${avatar}${label}${lockBtn}<div class="msgtext">${body}</div></div>`;
 };
 export function renderLog() {
   const e = byId('log'), c = current(), t = c ? getTraveler(c.travelerId) : null, logs = state.logs;

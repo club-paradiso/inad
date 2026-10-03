@@ -43,6 +43,7 @@ import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } f
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
 import { interviewSummary } from './engines/interview-engine.js';
+import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
@@ -61,7 +62,7 @@ function renderAll() {
   if (!current()) return;
   const focus = focusKey();
   renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
-  renderMatrix(); renderEntry(); renderTerminal(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
+  renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
   restoreFocus(focus);
 }
 // Every question button goes through the v10 dispatcher (same engine call, plus the passenger's acting).
@@ -298,7 +299,11 @@ function installHooks() {
     live: () => liveInterviewFlow(),
     quick: () => quickShiftFlow(),
     daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
-    startDaily: () => dailyFlow()
+    startDaily: () => dailyFlow(),
+    // v11 Statement Lock test hooks
+    lock: (idx) => selectStatementForLock(idx),
+    compare: (target) => compareWithTarget(target),
+    activeLock: () => currentLockedStatement()
   };
 }
 
@@ -308,6 +313,7 @@ function boot() {
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
+  bindStatementLockListeners();
   byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
