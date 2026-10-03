@@ -38,7 +38,18 @@ export function saveDailyResult(result) {
   return jsonSet(DAILY_KEY, Object.fromEntries(keep.map((k) => [k, all[k]])));
 }
 
+// Visual clue blocks: spoiler-free progress track
+export function clueBlocks(found, total) {
+  if (!total || total <= 0) return '';
+  return '🟩'.repeat(Math.min(found, total)) + '⬜'.repeat(Math.max(0, total - found));
+}
+
 // Share text never names the decision or the case: it must not spoil the day for anyone who has not played.
 export function shareText(r) {
-  return [`INAD · 오늘의 사건 ${r.dateKey}`, `핵심 단서 ${r.keyClues.found}/${r.keyClues.total} · 절차 준수 ${r.procedure}%`, `질문 ${r.questionsAsked} · 바로잡힌 시도 ${r.correctedAttempts}`].join('\n');
+  const blocks = r.keyClues?.total ? ` ${clueBlocks(r.keyClues.found, r.keyClues.total)}` : '';
+  return [
+    `INAD · 오늘의 사건 ${r.dateKey}`,
+    `핵심 단서 ${r.keyClues.found}/${r.keyClues.total}${blocks} · 절차 준수 ${r.procedure}%`,
+    `질문 ${r.questionsAsked} · 바로잡힌 시도 ${r.correctedAttempts}`
+  ].join('\n');
 }
