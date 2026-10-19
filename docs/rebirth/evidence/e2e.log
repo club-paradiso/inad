@@ -1,0 +1,39 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> inad-article12@10.0.0 test:e2e
+> playwright test --max-failures=1
+
+[WebServer] (node:31) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 108 tests using 2 workers
+
+(node:39) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘    1 [chromium] › tests/e2e/a11y-structure.spec.js:15:3 › 접근성 구조 › the workstation behind the start screen is inert until the shift starts (4ms)
+Testing stopped early after 1 maximum allowed failures.
+  ✘    2 [chromium] › tests/e2e/a11y.spec.js:7:3 › 접근성·키보드 › 11. 키보드만으로 근무 시작 → 질문 → 조회 → 서류 이동 → 입국허가 (4ms)
+
+
+  1) [chromium] › tests/e2e/a11y-structure.spec.js:15:3 › 접근성 구조 › the workstation behind the start screen is inert until the shift starts
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/dist/a11y-structure-접근성-구조-the--b6c85-nert-until-the-shift-starts-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/a11y-structure.spec.js:15:3 › 접근성 구조 › the workstation behind the start screen is inert until the shift starts
+  1 interrupted
+    [chromium] › tests/e2e/a11y.spec.js:7:3 › 접근성·키보드 › 11. 키보드만으로 근무 시작 → 질문 → 조회 → 서류 이동 → 입국허가 ──
+  106 did not run
+  1 error was not a part of any test, see above for details

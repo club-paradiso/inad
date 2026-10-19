@@ -1,0 +1,11 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> inad-article12@10.0.0 eval:dialogue
+> node scripts/eval-dialogue.js
+
+| route | n | accuracy | wrong-question | invalid output | provider errors |
+|---|---|---|---|---|---|
+| deterministic · tuned | 152 | 100.0% | 0 | - | - |
+| deterministic · held-out | 145 | 100.0% | 0 | - | - |
+
+(no provider run: set INAD_LLM_BASE_URL / INAD_LLM_MODEL and pass --provider)

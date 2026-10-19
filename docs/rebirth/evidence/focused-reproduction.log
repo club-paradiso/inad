@@ -1,0 +1,26 @@
+{
+  "result": {
+    "ok": true,
+    "severity": "conflict",
+    "id": "S2_005_CONTACT_BROKER",
+    "title": "연락처 불법알선 의혹 대조",
+    "description": "신고된 연락처가 전산망상 불법취업 알선 번호로 확인되었으나, 피심사인은 구체적 신원을 모르는 친구의 친구라고 진술했습니다.",
+    "clueId": "tm4",
+    "isFirstDiscovery": true
+  },
+  "looked": [],
+  "performed": [
+    "QUESTION_contact",
+    "LOCK_contact_anomaly"
+  ],
+  "finiteStress": false,
+  "stress": "NaN",
+  "jobOfferRequires": [
+    "QUESTION_occupation",
+    "LOOKUP_contact"
+  ],
+  "jobOfferUnlocked": false
+}
+one success only: {"confirmationAcceptRate":0,"statementLockSuccessRate":100,"inputDistribution":{"suggestion":0,"list":0,"text":0,"voice":0}}
+case count 12 required LOCK tokens 0
+case resolution counts { CLEAR: 6, REFUSE: 5, ARREST: 1 }

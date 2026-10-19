@@ -1,0 +1,242 @@
+<canvas id="2:2" name="01 — Current Product Audit" x="0" y="0" width="0" height="0">
+  <section id="37:2" name="[Implemented] Current Product Audit · v7.2 (main 845d74c · inad-gray.vercel.app)" x="0" y="0" width="1960" height="1722">
+    <text id="37:3" name="개편 전 제품의 구조를 측정값으로 재현한 와" x="40" y="40" width="1900" height="17" />
+    <frame id="37:4" name="v7.2 as-is · 1440×1000 (구조 와이어프레임 · 측정값)" x="40" y="120" width="1440" height="1000">
+      <frame id="37:5" name="헤더 54 · 브랜드 · 근무조 · KPI 4(처리·대기·평균·평가) · 버튼 7 + 아이콘" x="0" y="0" width="1440" height="54">
+        <frame id="37:6" name="mark" x="8" y="4" width="18" height="18">
+          <text id="37:7" name="2" x="5.5" y="1.5" width="7" height="15" />
+        </frame>
+        <text id="37:8" name="헤더 54 · 브랜드 · 근무조 · KPI " x="32" y="4" width="1400" height="15" />
+      </frame>
+      <frame id="37:9" name="운영 바 32 · 운영상황 · 현장 이벤트 · 운영기록" x="0" y="54" width="1440" height="32">
+        <text id="37:10" name="운영 바 32 · 운영상황 · 현장 이벤트 " x="8" y="4" width="1424" height="15" />
+      </frame>
+      <frame id="37:11" name="대기열 바 68 · 초상 10명 · 대기 통계 4(처리·허가·재심·불허)" x="0" y="86" width="1440" height="68">
+        <frame id="37:12" name="mark" x="8" y="4" width="18" height="18">
+          <text id="37:13" name="2" x="5.5" y="1.5" width="7" height="15" />
+        </frame>
+        <text id="37:14" name="대기열 바 68 · 초상 10명 · 대기 통" x="32" y="4" width="1400" height="15" />
+      </frame>
+      <frame id="37:15" name="심사상태 레일 48 (border-console) · DOC / ID / BIO / REQ / SYS / DEC · OK · CHECK · HOLD · MATCH · READY · WAIT" x="0" y="154" width="1440" height="48">
+        <frame id="37:16" name="mark" x="8" y="4" width="18" height="18">
+          <text id="37:17" name="1" x="5.5" y="1.5" width="7" height="15" />
+        </frame>
+        <text id="37:18" name="심사상태 레일 48 (border-conso" x="32" y="4" width="1400" height="15" />
+      </frame>
+      <frame id="37:19" name="사건 헤더 52 · 심사번호 · 초상 · 성명 · 요약 · 스테퍼 4 · 단계 칩 · 준비도 % · 처리시간" x="0" y="202" width="1440" height="52">
+        <text id="37:20" name="사건 헤더 52 · 심사번호 · 초상 · 성" x="8" y="4" width="1424" height="15" />
+      </frame>
+      <frame id="37:21" name="main" x="0" y="254" width="1440" height="718">
+        <frame id="37:22" name="L" x="8" y="8" width="469.3333435058594" height="702">
+          <frame id="37:25" name="승객 정보 [PAX] · 카드 안 카드(초상 카드 · 상호작용 상자 · 언어 상자 · 동행 상자)" x="0" y="0" width="469.3333435058594" height="300">
+            <frame id="37:26" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:27" name="6" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:28" name="승객 정보 [PAX] · 카드 안 카드(초상" x="32" y="4" width="332.3333435058594" height="30" />
+            <text id="37:29" name="8~9.5px 모노 텍스트" x="370.3333435058594" y="4" width="91" height="14" />
+          </frame>
+          <frame id="37:30" name="진술 기록 [INT] · 가시 높이 ≈ 110px (2줄)" x="0" y="308" width="469.3333435058594" height="110">
+            <frame id="37:31" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:32" name="3" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:33" name="진술 기록 [INT] · 가시 높이 ≈ 11" x="32" y="4" width="429.3333435058594" height="15" />
+          </frame>
+          <frame id="37:34" name="질문·소명 요청 · 카테고리 탭 + 질문 카드" x="0" y="426" width="469.3333435058594" height="276">
+            <text id="37:35" name="질문·소명 요청 · 카테고리 탭 + 질문 카" x="8" y="4" width="453.3333435058594" height="15" />
+          </frame>
+        </frame>
+        <frame id="37:23" name="C" x="485.3333435058594" y="8" width="469.33331298828125" height="702">
+          <frame id="37:36" name="작업대 탭 · 제출 서류 | 입국 요건 자료 · 문서 스택 + 용지 + 서류 상태 타일 3(생체·전자입국신고·전산)" x="0" y="0" width="469.33331298828125" height="494">
+            <frame id="37:37" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:38" name="7" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:39" name="작업대 탭 · 제출 서류 | 입국 요건 자료" x="32" y="4" width="429.33331298828125" height="30" />
+          </frame>
+          <frame id="37:40" name="전산 조회 [QRY] · 버튼 6 + 아이콘(1024에서 라벨 소실) · 검은 터미널 결과" x="0" y="502" width="469.33331298828125" height="200">
+            <frame id="37:41" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:42" name="5" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:43" name="전산 조회 [QRY] · 버튼 6 + 아이콘" x="32" y="4" width="429.33331298828125" height="15" />
+          </frame>
+        </frame>
+        <frame id="37:24" name="R" x="962.6666259765625" y="8" width="469.33331298828125" height="702">
+          <frame id="37:44" name="심사 판단 [DEC] · 판단 근거 8노드(필 뱃지) → 준비도 % → 요건 검토 6카드 → 단서판 → 진행기록 → 사건 메모 (한 스크롤)" x="0" y="0" width="469.33331298828125" height="544">
+            <frame id="37:45" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:46" name="4" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:47" name="심사 판단 [DEC] · 판단 근거 8노드(" x="32" y="4" width="429.33331298828125" height="30" />
+          </frame>
+          <frame id="37:48" name="심사 결정 · 버튼 4 + 아이콘 + 단축키 뱃지 · 하단 안내문 2줄" x="0" y="552" width="469.33331298828125" height="150">
+            <frame id="37:49" name="mark" x="8" y="4" width="18" height="18">
+              <text id="37:50" name="8" x="5.5" y="1.5" width="7" height="15" />
+            </frame>
+            <text id="37:51" name="심사 결정 · 버튼 4 + 아이콘 + 단축키" x="32" y="4" width="429.33331298828125" height="15" />
+          </frame>
+        </frame>
+      </frame>
+      <frame id="37:52" name="푸터 28 · 고지 · 법령 기준 · 시계 · 감찰" x="0" y="972" width="1440" height="28">
+        <text id="37:53" name="푸터 28 · 고지 · 법령 기준 · 시계 " x="8" y="4" width="1424" height="15" />
+      </frame>
+    </frame>
+    <frame id="37:54" name="v7.2 as-is · 390×844 (폴백 스택)" x="1520" y="120" width="390" height="844">
+      <frame id="37:55" name="폴백 안내 배너 · &quot;1024px 이상 권장&quot;" x="0" y="0" width="390" height="44">
+        <frame id="37:56" name="mark" x="8" y="4" width="18" height="18">
+          <text id="37:57" name="9" x="5.5" y="1.5" width="7" height="15" />
+        </frame>
+        <text id="37:58" name="폴백 안내 배너 · &quot;1024px 이상 권장" x="32" y="4" width="350" height="15" />
+      </frame>
+      <frame id="37:59" name="헤더 54" x="0" y="44" width="390" height="54">
+        <text id="37:60" name="헤더 54" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:61" name="운영 바 32" x="0" y="98" width="390" height="32">
+        <text id="37:62" name="운영 바 32" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:63" name="대기열 바 68" x="0" y="130" width="390" height="68">
+        <text id="37:64" name="대기열 바 68" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:65" name="심사상태 레일 48" x="0" y="198" width="390" height="48">
+        <text id="37:66" name="심사상태 레일 48" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:67" name="사건 헤더 52" x="0" y="246" width="390" height="52">
+        <text id="37:68" name="사건 헤더 52" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:69" name="승객 정보 (스크롤 ≈ 300px 지점부터)" x="0" y="298" width="390" height="220">
+        <text id="37:70" name="승객 정보 (스크롤 ≈ 300px 지점부터)" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:71" name="진술 기록" x="0" y="518" width="390" height="100">
+        <text id="37:72" name="진술 기록" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:73" name="질문" x="0" y="618" width="390" height="120">
+        <text id="37:74" name="질문" x="8" y="4" width="374" height="15" />
+      </frame>
+      <frame id="37:75" name="… 작업대 · 전산 조회 · 판단 · 결정(약 3–4 화면 아래) ↓" x="0" y="738" width="390" height="106">
+        <text id="37:76" name="… 작업대 · 전산 조회 · 판단 · 결정(" x="8" y="4" width="305" height="15" />
+        <text id="37:77" name="결정 도달 불가" x="319" y="4" width="63" height="14" />
+      </frame>
+    </frame>
+    <frame id="37:78" name="annotations" x="40" y="1160" width="1900" height="210">
+      <frame id="37:79" name="P0 · 구조" x="0" y="0" width="460" height="200">
+        <frame id="37:80" name="h" x="14" y="14" width="432" height="18">
+          <text id="37:81" name="P0 · 구조" x="0" y="0" width="54" height="18" />
+        </frame>
+        <frame id="37:82" name="item" x="14" y="40" width="432" height="50">
+          <frame id="37:83" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:84" name="1" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:85" name="t" x="26" y="0" width="406" height="50">
+            <text id="37:86" name="중복 상태: 심사상태 레일이 DOM을 긁어(" x="0" y="0" width="406" height="34" />
+            <text id="37:87" name="같은 사실이 레일·근거 패널·서류 타일·요건" x="0" y="36" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:88" name="item" x="14" y="98" width="432" height="47">
+          <frame id="37:89" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:90" name="2" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:91" name="t" x="26" y="0" width="406" height="47">
+            <text id="37:92" name="핵심 정보 순위 역전: 대기열 초상 10명·" x="0" y="0" width="406" height="17" />
+            <text id="37:93" name="chrome 254px(화면의 25%) → " x="0" y="19" width="406" height="28" />
+          </frame>
+        </frame>
+        <frame id="37:94" name="item" x="14" y="153" width="432" height="33">
+          <frame id="37:95" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:96" name="9" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:97" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:98" name="768·390: 폴백 배너 + chrome " x="0" y="0" width="406" height="17" />
+            <text id="37:99" name="과업 내비게이션(승객·인터뷰·자료·판단) +" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+      </frame>
+      <frame id="37:100" name="P1 · 상호작용" x="484" y="0" width="460" height="210">
+        <frame id="37:101" name="h" x="14" y="14" width="432" height="18">
+          <text id="37:102" name="P1 · 상호작용" x="0" y="0" width="78" height="18" />
+        </frame>
+        <frame id="37:103" name="item" x="14" y="40" width="432" height="33">
+          <frame id="37:104" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:105" name="3" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:106" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:107" name="진술 기록 가시 높이 ≈ 110px(2줄)" x="0" y="0" width="406" height="17" />
+            <text id="37:108" name="좌측 열을 대상자 + 인터뷰 2패널로, 기록" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:109" name="item" x="14" y="81" width="432" height="33">
+          <frame id="37:110" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:111" name="4" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:112" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:113" name="근거 패널 과밀: 8노드 + 6카드 + 단서" x="0" y="0" width="406" height="17" />
+            <text id="37:114" name="준비도 → 확인 사항 6행 → 법적 근거 →" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:115" name="item" x="14" y="122" width="432" height="33">
+          <frame id="37:116" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:117" name="5" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:118" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:119" name="전산 조회 아이콘 6개, 1024px에서 라" x="0" y="0" width="406" height="17" />
+            <text id="37:120" name="텍스트 버튼 6개 고정, 결과는 밝은 목록" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:121" name="item" x="14" y="163" width="432" height="33">
+          <frame id="37:122" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:123" name="6" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:124" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:125" name="8~9.5px 모노 텍스트 27곳, 카드 안" x="0" y="0" width="406" height="17" />
+            <text id="37:126" name="최소 10.5px, 행 + 구분선" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+      </frame>
+      <frame id="37:127" name="P2 · 시각·카피" x="968" y="0" width="460" height="186">
+        <frame id="37:128" name="h" x="14" y="14" width="432" height="18">
+          <text id="37:129" name="P2 · 시각·카피" x="0" y="0" width="86" height="18" />
+        </frame>
+        <frame id="37:130" name="item" x="14" y="40" width="432" height="33">
+          <frame id="37:131" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:132" name="7" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:133" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:134" name="서류 상태 타일 3개 = 우측 근거 노드와 " x="0" y="0" width="406" height="17" />
+            <text id="37:135" name="삭제" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:136" name="item" x="14" y="81" width="432" height="33">
+          <frame id="37:137" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:138" name="8" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:139" name="t" x="26" y="0" width="406" height="33">
+            <text id="37:140" name="결정 버튼 아이콘 + 단축키 뱃지 + 하단 " x="0" y="0" width="406" height="17" />
+            <text id="37:141" name="텍스트 + 법적 부제, 단축키는 deskto" x="0" y="19" width="406" height="14" />
+          </frame>
+        </frame>
+        <frame id="37:142" name="item" x="14" y="122" width="432" height="50">
+          <frame id="37:143" name="m" x="0" y="0" width="18" height="18">
+            <text id="37:144" name="·" x="5.5" y="1.5" width="7" height="15" />
+          </frame>
+          <frame id="37:145" name="t" x="26" y="0" width="406" height="50">
+            <text id="37:146" name="장식 부제 12곳(&quot;질문은 사건기록에 남음&quot;" x="0" y="0" width="406" height="34" />
+            <text id="37:147" name="삭제/단색. 법적 의미 있는 문장은 한 곳에" x="0" y="36" width="406" height="14" />
+          </frame>
+        </frame>
+      </frame>
+    </frame>
+    <frame id="37:148" name="캡처 자리 · docs/audit/v7.2/*.png 를 여기에 끌어다 놓기" x="40" y="1410" width="1696" height="252">
+      <frame id="37:149" name="primary-1440x1000.png" x="16" y="16" width="320" height="220">
+        <text id="37:150" name="primary-1440x1000.png" x="88.5" y="102.5" width="143" height="15" />
+      </frame>
+      <frame id="37:151" name="primary-1024x768.png" x="352" y="16" width="320" height="220">
+        <text id="37:152" name="primary-1024x768.png" x="92" y="102.5" width="136" height="15" />
+      </frame>
+      <frame id="37:153" name="primary-768x1024.png" x="688" y="16" width="320" height="220">
+        <text id="37:154" name="primary-768x1024.png" x="92" y="102.5" width="136" height="15" />
+      </frame>
+      <frame id="37:155" name="primary-390x844.png" x="1024" y="16" width="320" height="220">
+        <text id="37:156" name="primary-390x844.png" x="95" y="102.5" width="130" height="15" />
+      </frame>
+      <frame id="37:157" name="refusal-1440x1000.png" x="1360" y="16" width="320" height="220">
+        <text id="37:158" name="refusal-1440x1000.png" x="88.5" y="102.5" width="143" height="15" />
+      </frame>
+    </frame>
+  </section>
+</canvas>
