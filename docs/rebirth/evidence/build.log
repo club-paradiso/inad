@@ -1,0 +1,8 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> inad-article12@10.0.0 build
+> node scripts/check-boot-contract.js && node scripts/build-single-html.js && node scripts/check-built-page.js
+
+Boot contract OK (91 required DOM IDs).
+built dist/index.html (1697 KB, 105 portraits, minify=true) + root index.html mirror
+Built-page smoke check OK (7 critical markers).

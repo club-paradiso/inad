@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> inad-article12@10.0.0 lint
+> node scripts/lint.js
+
+lint: 84 modules OK · 58 tooling files parse

@@ -1,0 +1,23 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> inad-article12@10.0.0 test:integrity
+> node --test tests/integration/*.test.js
+
+✔ dist/index.html exists and mirrors root index.html (53.013746ms)
+✔ release artifact is standalone: no external URLs, no module imports, inline CSS/JS/portraits (25.050742ms)
+✔ release artifact size stays within 15% of the v6.1 baseline (0.395075ms)
+✔ the inline release bundle compiles and runs in strict mode (51.567745ms)
+✔ the build never expands replacement patterns from the bundle ($& etc.) (17.504585ms)
+✔ package.json, package-lock.json and RELEASE agree (1.852424ms)
+✔ pre-boot HTML placeholders show the current version (no stale label before boot) (1.530973ms)
+✔ built artifact banner and the README / release notes name this release (26.372965ms)
+✔ static server: malformed escapes and traversal are rejected without crashing; the API route answers (47.722034ms)
+✔ static server: a missing /favicon.ico is "no content" (legacy baseline), other missing files stay 404 (8.362531ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 333.245478
