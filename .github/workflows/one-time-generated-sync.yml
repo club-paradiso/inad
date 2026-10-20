@@ -23,7 +23,9 @@ jobs:
         run: |
           npm ci
           npm run build
-          git diff --check -- index.html
+          # Minified generated JavaScript contains deterministic trailing whitespace.
+          test -s index.html
+          grep -Fq 'GENERATED FILE, DO NOT EDIT' index.html
       - name: Commit only generated HTML to the PR branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
