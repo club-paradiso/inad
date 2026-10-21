@@ -15,7 +15,7 @@ export const ACHIEVEMENTS = [
 {id:'five_hundred',icon:'500',name:'500명 심사',desc:'누적 심사 승객 500명',test:c=>c.totalPassengers>=500},
 {id:'first_challenge',icon:'◆',name:'첫 특별근무 성공',desc:'선택형 도전과제 1회 성공',test:c=>(c.challengeWins||0)>=1},
 {id:'challenge_master',icon:'◆10',name:'도전근무 전문가',desc:'선택형 도전과제 누적 10회 성공',test:c=>(c.challengeWins||0)>=10},
-{id:'daily_first',icon:'☀',name:'오늘의 임무 완료',desc:'하루의 일일 미션 3종을 모두 완료',test:c=>(c.dailyFullDays||0)>=1},
+{id:'daily_first',icon:'◆',name:'오늘의 임무 완료',desc:'하루의 일일 미션 3종을 모두 완료',test:c=>(c.dailyFullDays||0)>=1},
 {id:'daily_week',icon:'7D',name:'일주일 연속 근무목표',desc:'일일 미션 3종 완료를 7일 연속 달성',test:c=>(c.bestDailyStreak||0)>=7}
 ,
 {id:'campaign_first',icon:'3D',name:'첫 3일 캠페인 완주',desc:'시나리오 캠페인 1회를 끝까지 완료',test:c=>(c.campaignsCompleted||0)>=1},

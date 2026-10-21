@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import * as H from './helpers.js';
 
 test.describe('V11 Playtest Evaluation Suites (Cohorts A, B, C)', () => {
+  // Frozen v6.1 intentionally does not contain V11's live interview start flow.
+  // Keep all three cohorts mandatory for the current built app and source targets.
+  test.skip(process.env.INAD_TARGET === 'legacy', 'V11-only UX does not exist in the frozen v6.1 baseline');
   test('Cohort A (First-Time Player): One-click Live Start, question asking, and quick verdict', async ({ page }) => {
     const errors = await H.openGame(page);
 
