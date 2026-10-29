@@ -299,6 +299,100 @@ const exerciseData = [
     }
   }
 ];
+// Optional source-comparison questions: case-specific, fully grounded in the two visible records.
+// Added without changing prior save IDs, completion gates, or authoritative legal rules.
+const followUps = {
+  "SIM-CA-01": {
+    "q": {
+      "ko": "항공권과 방문 기록에 적힌 출국일은 각각 언제입니까?",
+      "en": "What departure date appears in each source?"
+    },
+    "answer": {
+      "ko": "항공권은 2026년 11월 12일, 방문 기록은 11월 21일입니다.",
+      "en": "The ticket says 12 November 2026; the visit record says 21 November."
+    }
+  },
+  "SIM-CA-02": {
+    "q": {
+      "ko": "숙박 확인과 관련해 실제로 접수된 자료는 무엇입니까?",
+      "en": "Which documents were actually submitted about the stay?"
+    },
+    "answer": {
+      "ko": "제출 목록에는 여권 사본과 방문 계획만 있고 숙박 확인은 없습니다.",
+      "en": "Only a passport copy and visit plan are listed; accommodation confirmation is absent."
+    }
+  },
+  "SIM-CA-03": {
+    "q": {
+      "ko": "현재 대상과 과거 동명이인의 문서 식별자는 일치합니까?",
+      "en": "Do the document identifiers match for the current person and same-name record?"
+    },
+    "answer": {
+      "ko": "현재 문서는 SIM-CA-D03, 과거 동명이인 문서는 SIM-CA-D90으로 다릅니다.",
+      "en": "The current document is SIM-CA-D03 and the historical document is SIM-CA-D90; they differ."
+    }
+  },
+  "SIM-GB-01": {
+    "q": {
+      "ko": "인계 메모가 언급한 일정표는 실제 접수 목록에 있습니까?",
+      "en": "Is the itinerary mentioned in the handover note in the received list?"
+    },
+    "answer": {
+      "ko": "인계 메모는 일정표를 참조하지만 접수 목록에는 일정표가 없습니다.",
+      "en": "The handover note references an itinerary, but none appears in the received list."
+    }
+  },
+  "SIM-GB-02": {
+    "q": {
+      "ko": "초대장의 행사 날짜와 첫 진술의 방문 기간은 어떻게 다릅니까?",
+      "en": "How do the event dates differ from the stated visit length?"
+    },
+    "answer": {
+      "ko": "초대장은 11월 4일부터 5일까지의 행사이고, 첫 진술은 방문 10일입니다.",
+      "en": "The invitation covers 4–5 November; the opening statement describes a ten-day visit."
+    }
+  },
+  "SIM-GB-03": {
+    "q": {
+      "ko": "이전 과업과 재제출 자료의 참조번호는 무엇입니까?",
+      "en": "Which reference appears in both the earlier task and resubmitted evidence?"
+    },
+    "answer": {
+      "ko": "양쪽 모두 SIM-GB-R03입니다.",
+      "en": "Both list SIM-GB-R03."
+    }
+  },
+  "SIM-NZ-01": {
+    "q": {
+      "ko": "현재 신청 번호와 첨부 표지의 번호가 같은가요?",
+      "en": "Does the attachment cover match the current application identifier?"
+    },
+    "answer": {
+      "ko": "현재 신청은 SIM-NZ-A01, 첨부 표지는 SIM-NZ-A90으로 서로 다릅니다.",
+      "en": "The current application is SIM-NZ-A01; the attachment cover says SIM-NZ-A90."
+    }
+  },
+  "SIM-NZ-02": {
+    "q": {
+      "ko": "체류 계획의 몇 쪽이 접수 확인에서 빠져 있습니까?",
+      "en": "Which page of the stay plan is missing from the receipt?"
+    },
+    "answer": {
+      "ko": "접수 확인에는 체류 계획의 둘째 페이지가 없습니다.",
+      "en": "The receipt is missing page two of the stay plan."
+    }
+  },
+  "SIM-NZ-03": {
+    "q": {
+      "ko": "자료 확인 활동과 후속 메모가 가리키는 참조번호는 무엇입니까?",
+      "en": "Which references do the evidence activity and follow-up note share?"
+    },
+    "answer": {
+      "ko": "두 기록 모두 SIM-NZ-A03 / SIM-NZ-E03을 가리킵니다.",
+      "en": "Both refer to SIM-NZ-A03 / SIM-NZ-E03."
+    }
+  }
+};
 const documentTitles = [{"ko":"제출 자료","en":"Submitted evidence"},{"ko":"연결 기록","en":"Linked record"}];
 const syntheticNotice = {"ko":"합성 문서 · 보안특징 및 진위 판별 기능 없음","en":"Synthetic document · no security-feature or authenticity checking"};
 const questions = [{"id":"clarify","q":{"ko":"자료와 기록의 차이를 설명해 주세요.","en":"Please explain the relationship between these records."}},{"id":"source","q":{"ko":"어느 자료를 확인하면 됩니까?","en":"Which evidence should we check?"},"answer":{"ko":"현재 접수된 제출 자료와 연결 기록을 함께 확인해 주세요.","en":"Please compare the submitted evidence with the linked record."}}];
@@ -307,7 +401,7 @@ const taskDefinitions = [{"id":"identity","title":{"ko":"대상과 사건 식별
 export const ATLAS_SCENARIOS = exerciseData.map(({ evidence, reply, ...c }) => {
   const documents = evidence.map((page, i) => ({ id: c.id + '-DOC' + (i + 1), title: documentTitles[i], pages: i === 0 ? [page, syntheticNotice] : [page] }));
   return { ...c, ruleClass: 'SIMULATION_RULE', rulesetVersion: 'atlas-procedure-1', documents,
-    questions: questions.map(q => ({ ...q, answer: q.answer || reply })),
+    questions: [...questions.map(q => ({ ...q, answer: q.answer || reply })), { id: 'crosscheck', ...followUps[c.id] }],
     records: evidence.map((detail, i) => ({ id: c.id + '-REC' + (i + 1), title: recordTitles[i], detail, documentId: documents[i].id })),
     tasks: taskDefinitions.map(({ id, title, documentIndex }) => ({ id, title, documentId: documents[documentIndex].id })) };
 });
