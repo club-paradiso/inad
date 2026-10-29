@@ -45,3 +45,5 @@ No merge or production deployment performed. Branch is `feat/atlas-country-packs
 3. For review preview, run `npm run dev` and open http://127.0.0.1:4175. Select Country from the start screen or the Korean menu.
 4. Address review feedback. Remaining priorities are legal validation, assistive technology/cross-browser checks, richer overseas scenarios, multi-tab conflict protection and global Figma token reconciliation. Keep all unverified outcomes SIMULATION_RULE.
 5. Do not merge or deploy without a new explicit instruction.
+
+Review PR: https://github.com/club-paradiso/inad/pull/21 (draft). Delivery source head: `d3ab9a6`; the following checkpoint-only commit records this link. Rebuilding after the commit reproduced root `index.html` exactly (`git diff --exit-code -- index.html`, exit 0).
