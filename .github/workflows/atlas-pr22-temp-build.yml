@@ -23,7 +23,7 @@ jobs:
       - name: Commit only generated release mirrors when changed
         run: |
           set -euo pipefail
-          git add -- index.html dist/index.html
+          git add -- index.html # dist/ is gitignored; the tracked root release is the source-controlled mirror
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
