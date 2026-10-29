@@ -25,6 +25,8 @@ export const session = {
 };
 
 export const state = {
+  countryId: 'KR', rulesetVersion: 'kr-v6.1', interviewLanguage: 'ko',
+  atlas: { sessions: {}, view: 'counter', krContext: null, saveStatus: 'idle', storageBlocked: false },
   caseIndex: 0, strikes: 0, score: 100, efficiency: 100, proportionality: 100,
   audio: storeGet('inad-audio', '1') !== '0', soundCues: 0, announcements: 0,
   airportId: storedAirport(), airportApplied: false, liveOps: emptyLiveOps(),

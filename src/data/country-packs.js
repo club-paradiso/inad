@@ -1,0 +1,15 @@
+// ATLAS presentation contracts. Fictional workstations informed by public research;
+// source IDs refer to docs/atlas/LEGAL_SOURCE_REGISTER.md and DESIGN_DECISIONS.md.
+// No foreign legal decision logic is supplied by these presentation packs.
+import { AIRPORTS } from './airports.js';
+const label = (ko, en) => ({ ko, en });
+export const COUNTRY_IDS = ['KR', 'CA', 'GB', 'NZ'];
+export const SIMULATION_RULESET = 'atlas-procedure-1';
+export const COUNTRY_PACKS = {
+  KR: { id: 'KR', name: label('대한민국', 'South Korea'), title: label('대면 심사 작업대', 'Counter workstation'), layout: 'counter', mode: 'shift', airports: AIRPORTS.map((a) => ({ id: a.id, name: label(a.name, a.name) })), description: label('승객 · 인터뷰 · 자료 · 판단의 기존 심사 흐름', 'Existing traveler, interview, evidence and assessment flow'), status: label('기존 한국 모드', 'Existing Korean mode'), authenticity: 'Fictionalized', sources: ['R01', 'KR01'], rulesetVersion: 'kr-v6.1' },
+  CA: { id: 'CA', name: label('캐나다', 'Canada'), title: label('기록 중심 작업대', 'Record workstation'), layout: 'records', mode: 'simulation', airports: [{ id: 'ca-yyz', name: label('토론토 피어슨 · 가상 심사대', 'Toronto Pearson · fictional desk') }, { id: 'ca-yvr', name: label('밴쿠버 · 가상 심사대', 'Vancouver · fictional desk') }], description: label('대상과 방문 기록을 구분하고 연결 서류를 대조합니다.', 'Separate people from visit records and compare linked evidence.'), status: label('가상 사건 3건 · 절차 연습', '3 synthetic cases · procedural practice'), authenticity: 'Inspired / Fictionalized', sources: ['CA03', 'CA07', 'CA-ENF4'], rulesetVersion: SIMULATION_RULESET },
+  GB: { id: 'GB', name: label('영국', 'United Kingdom'), title: label('과업 중심 작업대', 'Task workstation'), layout: 'tasks', mode: 'simulation', airports: [{ id: 'gb-lhr', name: label('런던 히스로 · 가상 심사대', 'London Heathrow · fictional desk') }, { id: 'gb-man', name: label('맨체스터 · 가상 심사대', 'Manchester · fictional desk') }], description: label('사람 요약에서 담당 과업과 사건 이력을 따라 검토합니다.', 'Move from person summary through assigned tasks and case history.'), status: label('가상 사건 3건 · 절차 연습', '3 synthetic cases · procedural practice'), authenticity: 'Inspired / Fictionalized', sources: ['UK01', 'UK03', 'GB-VISIT'], rulesetVersion: SIMULATION_RULESET },
+  NZ: { id: 'NZ', name: label('뉴질랜드', 'New Zealand'), title: label('활동 중심 작업대', 'Activity workstation'), layout: 'activities', mode: 'simulation', airports: [{ id: 'nz-akl', name: label('오클랜드 · 가상 검토실', 'Auckland · fictional review desk') }, { id: 'nz-chc', name: label('크라이스트처치 · 가상 검토실', 'Christchurch · fictional review desk') }], description: label('신청 맥락과 검토 활동을 구분하고 미확인 사항을 인계합니다.', 'Separate application context from review activities and hand over unresolved facts.'), status: label('가상 사건 3건 · 절차 연습', '3 synthetic cases · procedural practice'), authenticity: 'Inspired / Fictionalized', sources: ['NZ01', 'NZ06', 'NZ-A16'], rulesetVersion: SIMULATION_RULESET }
+};
+export function countryPack(id) { return Object.hasOwn(COUNTRY_PACKS, id) ? COUNTRY_PACKS[id] : null; }
+export function countryAirport(countryId, airportId) { return countryPack(countryId)?.airports.find((a) => a.id === airportId) || null; }

@@ -796,3 +796,6 @@ if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initI18n, { once: true });
   else initI18n();
 }
+
+// Country pack labels are explicit bilingual values; never translate official source text.
+export function atlasText(value) { return typeof value === 'string' ? value : value?.[getLocale()] || value?.en || ''; }
