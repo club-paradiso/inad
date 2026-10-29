@@ -7,7 +7,8 @@ Base: `fea1a133324ac07ac6a4552f3d5d824fa10f7904` (PR #24 merged). On 2026-10-30 
 - Audited KR queue/interview, international workstation, persistence and PR #24 evidence graph. The Korean interview dispatcher calls the Korean case engine, so it cannot safely be reused for foreign legal outcomes.
 - Added an isolated, DOM-free encounter lifecycle (`src/js/engines/atlas-encounter.js`) and tests. It is not wired into the running app or saved state. No jurisdiction-specific decisions are asserted.
 - A temporary CA-01 call/UI/save integration was prototyped and exercised in Chromium. It is deliberately **not shipped**: the single-file build grew from 1,741,923 bytes on main to 1,742,868 bytes, exceeding the existing 1,742,113-byte ceiling (15% above 1,514,881). Do not weaken that test. The exploratory patch is available in the task outputs as `pr25-checkpoint/encounter-prototype.patch`; it is not a finished or reviewed solution.
-- After removing the prototype integration, `npm run build && npm run test:integrity` passed, including the unchanged size limit. Existing saved data and Evidence Graph are untouched.
+- After removing the prototype integration, `INAD_PORT=4689 npm run qa` passed: lint, 176 unit tests, build, 10 integration tests and 141 Chromium browser tests. The unchanged size limit passed. Existing saved data and Evidence Graph are untouched.
+- Exploratory source-only Chromium checks for the prototype call/reload and the existing CA-01 graph flow passed (2 tests), but the prototype is not included in this commit. No shipped new call UI exists.
 
 ## Remaining
 
