@@ -1,0 +1,30 @@
+# Temporary branch-only source build. Removed before PR #23 review.
+name: ATLAS PR23 temporary build sync
+on:
+  push:
+    branches:
+      - feat/atlas-pr23-case-depth
+permissions:
+  contents: write
+jobs:
+  build-sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - name: Commit generated root release mirror
+        run: |
+          set -euo pipefail
+          git add -- index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(atlas): regenerate release mirror for PR23"
+          git push origin HEAD:feat/atlas-pr23-case-depth
