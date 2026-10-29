@@ -33,6 +33,10 @@ const walk = (dir) => { for (const f of fs.readdirSync(dir)) { const p = path.jo
 walk(path.join(root, 'src', 'js'));
 const js = jsFiles.map((f) => fs.readFileSync(f, 'utf8')).join('\n');
 const rendered = new Set([...js.matchAll(/\bid=\\?["']([\w-]+)/g), ...js.matchAll(/\.id\s*=\s*["']([\w-]+)["']/g)].map((m) => m[1]));
+// ATLAS uses a small button(id, label) template factory. Literal first arguments are
+// rendered IDs just like literal id attributes; dynamic case/document IDs remain excluded.
+const atlasUI = fs.readFileSync(path.join(root, 'src/js/ui/atlas-workstation.js'), 'utf8');
+for (const m of atlasUI.matchAll(/\bbutton\('([\w-]+)'/g)) rendered.add(m[1]);
 const dereferenced = [...new Set([...js.matchAll(/byId\(\s*'([\w-]+)'\s*\)\.(?!\?)/g)].map((m) => m[1]))];
 for (const id of dereferenced) if (!rendered.has(id) && !requiredIds.includes(id)) requiredIds.push(id);
 

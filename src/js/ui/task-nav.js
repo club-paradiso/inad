@@ -16,7 +16,7 @@ export function isPhone() { return window.matchMedia(PHONE_QUERY).matches; }
 // The tablet bar has two segments (인터뷰 · 자료) beside the always-visible traveler and decision columns: there
 // the interview segment is the current one for every task except 자료, so the bar never shows no selection.
 function syncNav() {
-  const name = currentTask(), seg = isStacked() && !isPhone() ? (name === 'evidence' ? 'evidence' : 'interview') : name;
+  const name = currentTask(), seg = document.body.dataset.country === 'KR' && isStacked() && !isPhone() ? (name === 'evidence' ? 'evidence' : 'interview') : name;
   $$('#taskNav button').forEach((b) => { b.setAttribute('aria-current', b.dataset.task === seg ? 'true' : 'false'); });
 }
 export function showTask(name, { focus = false } = {}) {
