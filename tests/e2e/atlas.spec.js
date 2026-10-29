@@ -62,7 +62,9 @@ test('view, refresh and country round trips retain case evidence and draft; empt
 
 test('Korean live interview resumes after country switch, with original transcript and input', async ({ page }) => {
   await page.goto(ENTRY); await page.locator('#liveStartBtn').click();
-  const call = page.locator('#callout'); if (await call.isVisible()) await call.locator('button').click();
+  // The callout auto-dismisses; WebKit can hide it between isVisible and click.
+  // Wait for the real transition instead of racing its optional skip control.
+  await expect(page.locator('#callout')).toBeHidden({ timeout: 10_000 });
   await page.locator('#askInput').fill('Keep this Korean draft');
   const before = await page.evaluate(() => window.INADTest.state());
   await page.locator('#moreBtn').click(); await page.locator('#atlasMenuCountry').click();
@@ -131,4 +133,26 @@ test('selected workspace focus remains readable when hovered', async ({ page }) 
     const a=luminance(c.color),b=luminance(c.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
   });
   expect(ratio).toBeGreaterThanOrEqual(4.5);
+});
+
+test('another open tab cannot silently overwrite newer international notes', async ({ page, context }) => {
+  await openAtlas(page, 'CA');
+  const other = await context.newPage();
+  await other.goto(ENTRY);
+  await expect(other.locator('body')).toHaveAttribute('data-country', 'CA');
+  await other.locator('#atlasSystem').click();
+  await page.locator('#atlasNotes').fill('Evidence comparison saved by the first browser tab.');
+  await expect(other.locator('#atlasSaveStatus')).toContainText(/다른 탭|Another tab/);
+  const preserved = await page.evaluate(() => localStorage.getItem('inad-atlas-v1'));
+  await other.locator('#atlasNotes').fill('Stale tab draft that must remain local only.');
+  await expect(other.locator('#atlasSaveStatus')).toContainText(/다른 탭|Another tab/);
+  expect(await other.evaluate(() => localStorage.getItem('inad-atlas-v1'))).toBe(preserved);
+  await other.locator('#atlasData').click();
+  const downloadPromise = other.waitForEvent('download');
+  await other.locator('#atlasExportDraft').click();
+  const download = await downloadPromise;
+  const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  expect(JSON.parse(exported.payload['inad-atlas-v1']).sessions.CA.cases['SIM-CA-01'].notes)
+    .toBe('Stale tab draft that must remain local only.');
+  await other.close();
 });
