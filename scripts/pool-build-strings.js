@@ -24,14 +24,20 @@ export function poolBuildStrings(source) {
   if (!call || call.expression.callee.body.type !== 'BlockStatement') return source;
   const body = call.expression.callee.body, edits = [], declarations = [];
   let serial = 0;
-  for (const [value, nodes] of groups) {
+  const sorted = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
+  for (const [value, nodes] of sorted) {
     if (nodes.length < 2 || nodes.some((n) => n.start < body.start || n.end > body.end)) continue;
-    let name; do { name = `_$${(serial++).toString(36)}`; } while (identifiers.has(name));
     const literal = JSON.stringify(value);
     const before = nodes.reduce((sum, n) => sum + Buffer.byteLength(source.slice(n.start, n.end)), 0);
-    if (before <= Buffer.byteLength(literal) + (name.length + 2) * nodes.length + name.length + 3) continue;
+    let tempSerial = serial, name;
+    do { name = `_$${(tempSerial++).toString(36)}`; } while (identifiers.has(name));
+    if (before <= Buffer.byteLength(literal) + nodes.length + 1) continue;
+    serial = tempSerial;
     declarations.push(`${name}=${literal}`);
-    nodes.forEach((n) => edits.push({ ...n, text: `(${name})` }));
+    nodes.forEach((n) => {
+      const needsWrap = /[a-zA-Z0-9_$]/.test(source[n.start - 1]) || /[a-zA-Z0-9_$]/.test(source[n.end]);
+      edits.push({ ...n, text: needsWrap ? `(${name})` : name });
+    });
   }
   if (!declarations.length) return source;
   // Insert after any directive prologue, so a local strict directive keeps its meaning.

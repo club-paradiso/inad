@@ -42,5 +42,11 @@ export default defineConfig({
   },
   // INAD_CHROMIUM_PATH lets sandboxes with a preinstalled Chromium of a different revision run
   // the suite without `playwright install`; CI leaves it unset and uses the bundled browser.
-  projects: [{ name: 'chromium', use: { browserName: 'chromium', ...(process.env.INAD_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.INAD_CHROMIUM_PATH } } : {}) } }]
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium', ...(process.env.INAD_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.INAD_CHROMIUM_PATH } } : {}) } },
+    ...(process.env.PLAYWRIGHT_ALL_BROWSERS ? [
+      { name: 'firefox', use: { browserName: 'firefox' } },
+      { name: 'webkit', use: { browserName: 'webkit' } }
+    ] : [])
+  ]
 });
