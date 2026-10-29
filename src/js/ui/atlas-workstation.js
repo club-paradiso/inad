@@ -85,11 +85,12 @@ const activeCompleted = (id) => atlas.activeAtlasSession()?.cases[id]?.completed
 function interviewHTML(c, v) {
   const language = atlas.activeAtlasSession().interviewLanguage;
   const stmtFacts = (c.facts || []).filter((f) => f.sourceType === 'statement');
+  const visibleStmtFacts = stmtFacts.filter((f) => !f.questionIds || f.questionIds.some((qid) => v.asked.includes(qid)));
   const unlockedQIds = v.graph?.unlockedQuestions || [];
   const investigative = c.investigativeQuestions || [];
-  const stmtFactsHTML = (v.asked.length && stmtFacts.length) ? `
+  const stmtFactsHTML = visibleStmtFacts.length ? `
     <div class="atlas-fact-group"><small><strong>${l('진술 대조 항목', 'Facts from statements')}:</strong></small><div class="atlas-fact-chips">
-      ${stmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '💬')).join('')}
+      ${visibleStmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '💬')).join('')}
     </div></div>` : '';
 
   const questionsHTML = `
@@ -146,7 +147,7 @@ function compareDockHTML(c, v) {
     <div class="atlas-discoveries-summary"><small><strong>${l('확인된 증거 관계', 'Discovered relationships')} (${g.discoveries.length}):</strong></small><ul class="atlas-discovery-tags">
       ${g.discoveries.map((fid) => {
         const found = (c.comparisons || []).find((cmp) => cmp.findingId === fid);
-        return found ? `<li><span class="rel-badge-sm badge-${found.type.toLowerCase()}">${esc(relText(found.type))}</span> ${esc(text(found.title))}</li>` : '';
+        return found ? `<li><span class="rel-badge badge-${found.type.toLowerCase()}">${esc(relText(found.type))}</span> ${esc(text(found.title))}</li>` : '';
       }).join('')}
     </ul></div>` : '';
 
@@ -155,7 +156,7 @@ function compareDockHTML(c, v) {
 
   return `<section class="atlas-compare-dock" id="atlasCompareDock" aria-label="${l('증거 대조 작업대', 'Evidence comparison dock')}">
     <div class="dock-header"><h3>🔍 ${l('증거 대조', 'Compare Evidence')}</h3><p class="atlas-muted">${l('대조할 두 항목을 선택하세요.', 'Select two facts to compare.')}</p></div>
-    <div class="dock-slots">${selected.map((f, i) => `<div class="dock-slot ${f ? 'has-fact' : 'empty'}" id="compareSlot${i + 1}"><span class="slot-tag">${l(`항목 ${i + 1}`, `Fact ${i + 1}`)}</span><span class="slot-label">${f ? esc(text(f.label)) : l('선택 대기', 'Waiting for fact')}</span>${f ? `<button type="button" class="act-slot-clear" data-deselect-fact="${f.id}" aria-label="${l('선택 취소', 'Deselect')}">✕</button>` : ''}</div>`).join('')}</div>
+    <div class="dock-slots">${selected.map((f, i) => `<div class="dock-slot ${f ? 'has-fact' : 'empty'}" id="compareSlot${i + 1}"><span class="slot-tag">${l(`항목 ${i + 1}`, `Fact ${i + 1}`)}</span><span class="slot-label">${f ? esc(text(f.label)) : l('선택 대기', 'Waiting for fact')}</span>${f ? `<button type="button" class="act-slot-clear" data-fact="${f.id}" aria-label="${l('선택 취소', 'Deselect')}">✕</button>` : ''}</div>`).join('')}</div>
     <div class="dock-controls"><button type="button" class="act primary" id="atlasDoCompare" ${g.selectedFacts.length === 2 ? '' : 'disabled'}>${l('대조하기', 'Compare Facts')}</button><button type="button" class="act" id="atlasClearFacts" ${g.selectedFacts.length ? '' : 'disabled'}>${l('선택 초기화', 'Clear Selection')}</button></div>
     ${resultBanner}${discoveriesHTML}${reqActionHTML}
   </section>`;
@@ -200,7 +201,6 @@ export function renderAtlas() {
   $$('[data-record]').forEach((b) => { b.onclick = () => atlas.atlasAction('record', b.dataset.record); });
   $$('[data-check]').forEach((b) => { b.onclick = () => { if (!atlas.atlasAction('task', b.dataset.check)) { const message = l('연결 문서를 검토하고, 진술과 메모를 먼저 기록하세요.', 'Review the linked document and record the statement and note first.'); byId('atlasTaskError').textContent = message; announceA11y(message); } }; });
   $$('[data-fact]').forEach((b) => { b.onclick = () => { atlas.atlasAction('selectFact', b.dataset.fact); announceA11y(l('대조 항목 선택', 'Fact selected')); }; });
-  $$('[data-deselect-fact]').forEach((b) => { b.onclick = () => { atlas.atlasAction('selectFact', b.dataset.deselectFact); announceA11y(l('선택 취소', 'Deselected')); }; });
   if (byId('atlasDoCompare')) byId('atlasDoCompare').onclick = () => { const res = atlas.atlasCompare(); if (res.ok) announceA11y(l('대조 완료', 'Comparison complete')); };
   if (byId('atlasClearFacts')) byId('atlasClearFacts').onclick = () => { atlas.atlasAction('clearFacts'); announceA11y(l('초기화', 'Cleared')); };
   if (byId('atlasRequestPage2')) byId('atlasRequestPage2').onclick = () => { atlas.atlasAction('requestEvidence', 'SIM-NZ-02-REQ-PAGE2'); announceA11y(l('보완 요청 발령', 'Request issued')); };

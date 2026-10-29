@@ -134,6 +134,9 @@ export function atlasAction(action, value) {
   else if (action === 'notes' && bounded(value, 4000)) { v.notes = value; persistAtlas(); return true; }
   else if (action === 'selectFact' && typeof value === 'string') {
     if (!v.graph) v.graph = createEmptyGraph();
+    const factObj = (c.facts || []).find((f) => f.id === value);
+    if (!factObj) return false;
+    if (factObj.sourceType === 'statement' && factObj.questionIds && !factObj.questionIds.some((qid) => v.asked.includes(qid))) return false;
     const idx = v.graph.selectedFacts.indexOf(value);
     if (idx >= 0) v.graph.selectedFacts.splice(idx, 1);
     else {
@@ -187,8 +190,9 @@ export function atlasCompare() {
 }
 export function atlasRequestEvidence(requestId) {
   const v = activeAtlasCase(), c = currentAtlasScenario();
-  if (!v || !c || !requestId) return false;
-  if (!v.graph) v.graph = createEmptyGraph();
+  if (!v || !c || typeof requestId !== 'string' || !requestId) return false;
+  const cmp = (c.comparisons || []).find((x) => x.unlocks?.evidenceRequests?.includes(requestId));
+  if (!cmp || !v.graph?.discoveries?.includes(cmp.findingId)) return false;
   if (!v.graph.evidenceRequests.includes(requestId)) {
     v.graph.evidenceRequests.push(requestId);
     changed();

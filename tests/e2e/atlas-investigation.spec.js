@@ -55,8 +55,15 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await expect(resultBox).toContainText(/상충|Conflict/);
     await expect(page.locator('.atlas-discoveries-summary')).toContainText(/확인된 증거 관계|Discovered relationships/);
 
-    // 3. Interview zone: Investigative question `clarify_dates` is unlocked
+    // 3. Interview zone: Statement fact chip is NOT visible before asking explanation
     await task(page, 'interview');
+    await expect(page.locator('#fact-SIM-CA-01-F-STMT')).toHaveCount(0);
+
+    // Asking unrelated question (source) still does not reveal statement fact
+    await page.locator('#ask-source').click();
+    await expect(page.locator('#fact-SIM-CA-01-F-STMT')).toHaveCount(0);
+
+    // Investigative question `clarify_dates` is unlocked
     const unlockedQ = page.locator('#ask-clarify_dates');
     await expect(unlockedQ).toBeVisible();
     await expect(unlockedQ).toBeEnabled();
@@ -169,8 +176,10 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await expect(resultBox).toHaveClass(/type-unverified/);
     await expect(resultBox).toContainText(/미확인|Unverified/);
 
-    // 2. Interview: Unlocks follow-up inquiry on remaining days
+    // 2. Interview: Tourism statement chip is NOT revealed before asking remaining days
     await task(page, 'interview');
+    await expect(page.locator('#fact-SIM-GB-02-F-TOURISM')).toHaveCount(0);
+
     const unlockedQ = page.locator('#ask-gb02_remaining_days');
     await expect(unlockedQ).toBeVisible();
     await expect(unlockedQ).toBeEnabled();
@@ -225,13 +234,16 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await expect(reqBtn).toBeDisabled();
     await expect(reqBtn).toContainText(/완료|lodged/);
 
-    // 4. Interview: Unlocks inquiry on missing page 2 content
+    // 4. Interview: Page 2 statement fact chip is NOT visible before asking question
     await task(page, 'interview');
+    await expect(page.locator('#fact-SIM-NZ-02-F-PAGE2-DETAIL')).toHaveCount(0);
+
     const unlockedQ = page.locator('#ask-nz02_missing_page');
     await expect(unlockedQ).toBeVisible();
     await expect(unlockedQ).toBeEnabled();
     await unlockedQ.click();
     await expect(page.locator('.atlas-transcript')).toContainText(/숙박|Accommodation/);
+    await expect(page.locator('#fact-SIM-NZ-02-F-PAGE2-DETAIL')).toBeVisible();
   });
 
   test('Mobile sequential fact selection (390px): facts preserved across tab switching', async ({ page }) => {

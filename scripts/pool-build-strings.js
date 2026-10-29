@@ -31,7 +31,7 @@ export function poolBuildStrings(source) {
     const before = nodes.reduce((sum, n) => sum + Buffer.byteLength(source.slice(n.start, n.end)), 0);
     let tempSerial = serial, name;
     do { name = `_$${(tempSerial++).toString(36)}`; } while (identifiers.has(name));
-    if (before <= Buffer.byteLength(literal) + name.length * nodes.length + name.length + 3) continue;
+    if (before <= Buffer.byteLength(literal) + nodes.length + 1) continue;
     serial = tempSerial;
     declarations.push(`${name}=${literal}`);
     nodes.forEach((n) => {

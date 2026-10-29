@@ -4,7 +4,7 @@ import { resetStorage } from './setup.js';
 import { state } from '../../src/js/state.js';
 import { atlasScenario, atlasScenarios } from '../../src/data/atlas-scenarios.js';
 import * as atlas from '../../src/js/engines/atlas-engine.js';
-import { RELATIONSHIP_TYPES, compareFacts, evaluateDebrief } from '../../src/js/engines/atlas-graph-engine.js';
+import { RELATIONSHIP_TYPES, compareFacts, evaluateDebrief, validateGraphState, normalizeGraph, createEmptyGraph } from '../../src/js/engines/atlas-graph-engine.js';
 import * as save from '../../src/js/engines/save-engine.js';
 
 beforeEach(() => {
@@ -239,7 +239,7 @@ test('evidence-based debrief evaluation', () => {
   assert.equal(debriefBefore.discrepancyIdentified, false);
   assert.equal(debriefBefore.rating, 'incomplete');
 
-  // Discover conflict and complete follow-up
+  // Discover conflict and ask clarification, but do not verify statement yet
   atlas.atlasAction('selectFact', 'SIM-CA-01-F-TICKET');
   atlas.atlasAction('selectFact', 'SIM-CA-01-F-VISIT');
   atlas.atlasCompare();
@@ -251,10 +251,213 @@ test('evidence-based debrief evaluation', () => {
   atlas.atlasAction('notes', '12th on ticket vs 21st on visit record; transposition explained.');
   caseState.rationale = 'The traveler transposed dates when writing visit record. Retain both.';
 
+  // Unverified follow-up cannot be evaluated as complete
+  const debriefMid = evaluateDebrief(scenario, caseState);
+  assert.equal(debriefMid.discrepancyIdentified, true);
+  assert.equal(debriefMid.followUpCompleted, false);
+  assert.equal(debriefMid.rating, 'competent');
+
+  // Verify statement against ticket
+  atlas.atlasAction('clearFacts');
+  atlas.atlasAction('selectFact', 'SIM-CA-01-F-TICKET');
+  atlas.atlasAction('selectFact', 'SIM-CA-01-F-STMT');
+  atlas.atlasCompare();
+
   const debriefAfter = evaluateDebrief(scenario, caseState);
   assert.equal(debriefAfter.discrepancyIdentified, true);
   assert.equal(debriefAfter.followUpCompleted, true);
   assert.ok(debriefAfter.score >= 80);
   assert.equal(debriefAfter.rating, 'thorough');
   assert.ok(debriefAfter.feedback.length >= 1);
+});
+
+test('validateGraphState and normalizeGraph hardening: history, bounds, and consistency', () => {
+  const valid = createEmptyGraph();
+  assert.equal(validateGraphState(valid), true);
+
+  // History entry checks
+  valid.history.push({
+    time: Date.now(),
+    factA: 'FACT-1',
+    factB: 'FACT-2',
+    type: RELATIONSHIP_TYPES.CONFLICT,
+    findingId: 'FINDING-1'
+  });
+  assert.equal(validateGraphState(valid), true);
+
+  // Negative / zero / NaN time rejected
+  assert.equal(validateGraphState({ ...valid, history: [{ time: 0, factA: 'A', factB: 'B', type: 'MATCH', findingId: null }] }), false);
+  assert.equal(validateGraphState({ ...valid, history: [{ time: -100, factA: 'A', factB: 'B', type: 'MATCH', findingId: null }] }), false);
+  assert.equal(validateGraphState({ ...valid, history: [{ time: NaN, factA: 'A', factB: 'B', type: 'MATCH', findingId: null }] }), false);
+
+  // Self comparison in history rejected
+  assert.equal(validateGraphState({ ...valid, history: [{ time: 1000, factA: 'A', factB: 'A', type: 'MATCH', findingId: null }] }), false);
+
+  // Invalid relationship type rejected
+  assert.equal(validateGraphState({ ...valid, history: [{ time: 1000, factA: 'A', factB: 'B', type: 'INVALID_TYPE', findingId: null }] }), false);
+
+  // Array bounds and uniqueness
+  assert.equal(validateGraphState({ ...valid, selectedFacts: ['A', 'B', 'C'] }), false);
+  assert.equal(validateGraphState({ ...valid, selectedFacts: ['A', 'A'] }), false);
+  assert.equal(validateGraphState({ ...valid, discoveries: ['D1', 'D1'] }), false);
+
+  // Backward compatibility: graph without history is valid
+  const legacyNoHistory = { selectedFacts: [], discoveries: [], unlockedQuestions: [], evidenceRequests: [], investigationPath: null };
+  assert.equal(validateGraphState(legacyNoHistory), true);
+
+  // normalizeGraph sanitizes invalid entries and bounds safely
+  const normalized = normalizeGraph({
+    selectedFacts: ['A', 'B', 'C', 'A'],
+    discoveries: ['D1', 123, 'D1', 'D2'],
+    history: [
+      { time: 1000, factA: 'A', factB: 'B', type: 'MATCH', findingId: null },
+      { time: -1, factA: 'A', factB: 'B', type: 'MATCH', findingId: null }
+    ]
+  });
+  assert.deepEqual(normalized.selectedFacts, ['A', 'B']);
+  assert.deepEqual(normalized.discoveries, ['D1', 'D2']);
+  assert.equal(normalized.history.length, 1);
+  assert.equal(normalized.history[0].time, 1000);
+});
+
+test('statement fact chip gating: chips and selections locked until question is asked', () => {
+  atlas.selectCountry('CA');
+  atlas.selectAtlasCase('SIM-CA-01');
+  const v = atlas.activeAtlasCase();
+
+  // Initially, statement fact cannot be selected
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-CA-01-F-STMT'), false);
+  assert.deepEqual(v.graph.selectedFacts, []);
+
+  // Asking an unrelated question (e.g. source) does NOT unlock statement fact
+  assert.equal(atlas.atlasAction('ask', 'source'), true);
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-CA-01-F-STMT'), false);
+
+  // Asking clarify unlocks statement fact selection
+  assert.equal(atlas.atlasAction('ask', 'clarify'), true);
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-CA-01-F-STMT'), true);
+  assert.ok(v.graph.selectedFacts.includes('SIM-CA-01-F-STMT'));
+
+  // SIM-GB-02 statement fact locked until gb02_remaining_days is asked
+  atlas.selectCountry('GB');
+  atlas.selectAtlasCase('SIM-GB-02');
+  const vGB = atlas.activeAtlasCase();
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-GB-02-F-TOURISM'), false);
+  assert.equal(atlas.atlasAction('ask', 'clarify'), true);
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-GB-02-F-TOURISM'), false);
+
+  // Discover gap and unlock remaining days
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-EVENT');
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-STAY');
+  atlas.atlasCompare();
+  assert.equal(atlas.atlasAction('ask', 'gb02_remaining_days'), true);
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-GB-02-F-TOURISM'), true);
+  assert.ok(vGB.graph.selectedFacts.includes('SIM-GB-02-F-TOURISM'));
+
+  // SIM-NZ-02 statement fact locked until nz02_missing_page is asked
+  atlas.selectCountry('NZ');
+  atlas.selectAtlasCase('SIM-NZ-02');
+  const vNZ = atlas.activeAtlasCase();
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE2-DETAIL'), false);
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE1');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-RECEIPT-PAGE2');
+  atlas.atlasCompare();
+  assert.equal(atlas.atlasAction('ask', 'nz02_missing_page'), true);
+  assert.equal(atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE2-DETAIL'), true);
+  assert.ok(vNZ.graph.selectedFacts.includes('SIM-NZ-02-F-PAGE2-DETAIL'));
+});
+
+test('atlasRequestEvidence engine validation: prerequisite discovery and scenario check', () => {
+  atlas.selectCountry('NZ');
+  atlas.selectAtlasCase('SIM-NZ-02');
+  const v = atlas.activeAtlasCase();
+
+  // Invalid request IDs rejected
+  assert.equal(atlas.atlasRequestEvidence('NON_EXISTENT_REQ'), false);
+  assert.equal(atlas.atlasAction('requestEvidence', 'NON_EXISTENT_REQ'), false);
+
+  // Valid request ID rejected BEFORE prerequisite discovery (NZ02_PAGE2_MISSING)
+  assert.equal(atlas.atlasRequestEvidence('SIM-NZ-02-REQ-PAGE2'), false);
+  assert.deepEqual(v.graph.evidenceRequests, []);
+
+  // Compare to discover NZ02_PAGE2_MISSING
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE1');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-RECEIPT-PAGE2');
+  atlas.atlasCompare();
+  assert.ok(v.graph.discoveries.includes('NZ02_PAGE2_MISSING'));
+
+  // Now evidence request succeeds
+  assert.equal(atlas.atlasRequestEvidence('SIM-NZ-02-REQ-PAGE2'), true);
+  assert.deepEqual(v.graph.evidenceRequests, ['SIM-NZ-02-REQ-PAGE2']);
+
+  // Idempotent call succeeds without duplicate
+  assert.equal(atlas.atlasRequestEvidence('SIM-NZ-02-REQ-PAGE2'), true);
+  assert.deepEqual(v.graph.evidenceRequests, ['SIM-NZ-02-REQ-PAGE2']);
+});
+
+test('evaluateDebrief rigor for UK and NZ vertical slices', () => {
+  // SIM-GB-02
+  atlas.selectCountry('GB');
+  atlas.selectAtlasCase('SIM-GB-02');
+  const scenarioGB = atlas.currentAtlasScenario();
+  const caseGB = atlas.activeAtlasCase();
+
+  atlas.atlasAction('document', 'SIM-GB-02-DOC1');
+  atlas.atlasAction('review', 'SIM-GB-02-DOC1');
+  atlas.atlasAction('document', 'SIM-GB-02-DOC2');
+  atlas.atlasAction('review', 'SIM-GB-02-DOC2');
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-EVENT');
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-STAY');
+  atlas.atlasCompare();
+  atlas.atlasAction('ask', 'gb02_remaining_days');
+  caseGB.rationale = 'Ten day stay accounts for two day event and eight days tourism.';
+
+  // Asking question alone does not complete follow-up
+  const dGB1 = evaluateDebrief(scenarioGB, caseGB);
+  assert.equal(dGB1.discrepancyIdentified, true);
+  assert.equal(dGB1.followUpCompleted, false);
+  assert.equal(dGB1.rating, 'competent');
+
+  // Comparing tourism statement completes follow-up
+  atlas.atlasAction('clearFacts');
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-STAY');
+  atlas.atlasAction('selectFact', 'SIM-GB-02-F-TOURISM');
+  atlas.atlasCompare();
+
+  const dGB2 = evaluateDebrief(scenarioGB, caseGB);
+  assert.equal(dGB2.followUpCompleted, true);
+  assert.equal(dGB2.missingDistinguished, true);
+  assert.equal(dGB2.rating, 'thorough');
+
+  // SIM-NZ-02
+  atlas.selectCountry('NZ');
+  atlas.selectAtlasCase('SIM-NZ-02');
+  const scenarioNZ = atlas.currentAtlasScenario();
+  const caseNZ = atlas.activeAtlasCase();
+
+  atlas.atlasAction('document', 'SIM-NZ-02-DOC1');
+  atlas.atlasAction('review', 'SIM-NZ-02-DOC1');
+  atlas.atlasAction('document', 'SIM-NZ-02-DOC2');
+  atlas.atlasAction('review', 'SIM-NZ-02-DOC2');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE1');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-RECEIPT-PAGE2');
+  atlas.atlasCompare();
+  caseNZ.rationale = 'Stay plan page 2 absent from receipt. Requested omission follow-up.';
+
+  // Without request & confirmation, followUpCompleted is false
+  const dNZ1 = evaluateDebrief(scenarioNZ, caseNZ);
+  assert.equal(dNZ1.discrepancyIdentified, true);
+  assert.equal(dNZ1.followUpCompleted, false);
+
+  // Lodge request and confirm with statement
+  atlas.atlasRequestEvidence('SIM-NZ-02-REQ-PAGE2');
+  atlas.atlasAction('ask', 'nz02_missing_page');
+  atlas.atlasAction('clearFacts');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-RECEIPT-PAGE2');
+  atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE2-DETAIL');
+  atlas.atlasCompare();
+
+  const dNZ2 = evaluateDebrief(scenarioNZ, caseNZ);
+  assert.equal(dNZ2.followUpCompleted, true);
+  assert.equal(dNZ2.rating, 'thorough');
 });
