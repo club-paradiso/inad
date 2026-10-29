@@ -1,0 +1,31 @@
+# Temporary branch-only release generator for the ATLAS hardening PR.
+# Removed before PR #22 is reviewed/merged. Never runs on default branch or pull_request.
+name: ATLAS PR22 temporary build sync
+on:
+  push:
+    branches:
+      - test/atlas-pr22-cross-browser-gate
+permissions:
+  contents: write
+jobs:
+  build-sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - name: Commit only generated release mirrors when changed
+        run: |
+          set -euo pipefail
+          git add -- index.html dist/index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(atlas): regenerate release mirrors for PR22"
+          git push origin HEAD:test/atlas-pr22-cross-browser-gate
