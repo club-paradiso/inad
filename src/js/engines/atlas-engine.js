@@ -37,6 +37,9 @@ export function validateAtlasSave(v) {
 export function atlasSnapshot() { return JSON.parse(JSON.stringify({ version: ATLAS_VERSION, view: state.atlas.view, sessions: state.atlas.sessions })); }
 export function loadAtlas() {
   const raw = storeGetRaw(ATLAS_KEY);
+  // A tab may save newer evidence after this tab loads. Keep our observed bytes
+  // so this tab cannot silently replace that newer save with an older snapshot.
+  state.atlas.persistedRaw = raw;
   if (raw !== null) {
     const parsed = parseJSON(raw);
     if (!validateAtlasSave(parsed)) { state.atlas.storageBlocked = true; state.atlas.saveStatus = 'protected'; }
@@ -46,10 +49,31 @@ export function loadAtlas() {
 }
 export function persistAtlas() {
   const raw = storeGetRaw(ATLAS_KEY);
-  if (state.atlas.storageBlocked || (raw !== null && !validateAtlasSave(parseJSON(raw)))) { state.atlas.storageBlocked = true; state.atlas.saveStatus = 'protected'; return false; }
-  const ok = storeSet(ATLAS_KEY, JSON.stringify(atlasSnapshot()));
+  if (state.atlas.storageBlocked) return false;
+  if (raw !== null && !validateAtlasSave(parseJSON(raw))) {
+    state.atlas.storageBlocked = true; state.atlas.saveStatus = 'protected'; return false;
+  }
+  // In tests/direct engine use loadAtlas may not run; first write observes the
+  // initial storage value. Normal boot always establishes the baseline in loadAtlas.
+  if (!Object.hasOwn(state.atlas, 'persistedRaw')) state.atlas.persistedRaw = raw;
+  if (raw !== state.atlas.persistedRaw) {
+    state.atlas.storageBlocked = true; state.atlas.saveStatus = 'conflict'; return false;
+  }
+  const written = JSON.stringify(atlasSnapshot());
+  const ok = storeSet(ATLAS_KEY, written);
+  if (ok) state.atlas.persistedRaw = written;
   state.atlas.saveStatus = ok ? 'saved' : 'failed';
   return ok;
+}
+// Notification is best-effort; the write-time comparison is the primary guard.
+// localStorage has no atomic compare-and-swap, so simultaneous writes cannot be
+// completely serialized across tabs without a different storage architecture.
+export function noteAtlasExternalWrite(raw) {
+  if (!Object.hasOwn(state.atlas, 'persistedRaw') || raw === state.atlas.persistedRaw) return false;
+  state.atlas.storageBlocked = true;
+  state.atlas.saveStatus = 'conflict';
+  bus.emit('atlas:changed');
+  return true;
 }
 function changed() { persistAtlas(); bus.emit('atlas:changed'); }
 export function selectCountry(id, options = {}) {
