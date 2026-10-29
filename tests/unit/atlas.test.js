@@ -122,3 +122,23 @@ test('write-time stale detection still protects data when storage event is misse
   assert.equal(state.atlas.saveStatus, 'conflict');
   assert.equal(localStorage.getItem(atlas.ATLAS_KEY), newerRaw);
 });
+
+test('case-specific cross-check prompts are grounded, optional and save-compatible', () => {
+  for (const c of ATLAS_SCENARIOS) {
+    const followup = c.questions.find((q) => q.id === 'crosscheck');
+    assert.equal(c.questions.length, 3);
+    assert.ok(followup);
+    for (const locale of ['ko', 'en']) {
+      assert.ok(followup.q[locale].length > 10);
+      assert.ok(followup.answer[locale].length > 10);
+    }
+    atlas.selectCountry(c.countryId);
+    atlas.selectAtlasCase(c.id);
+    assert.equal(atlas.atlasAction('ask', 'crosscheck'), true);
+    assert.ok(atlas.activeAtlasCase().asked.includes('crosscheck'));
+    assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+    // Historical saves with only the original clarifying prompt remain valid.
+    atlas.activeAtlasCase().asked = ['clarify'];
+    assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+  }
+});
