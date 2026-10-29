@@ -49,7 +49,7 @@
 .event-effect:empty { display: none; }
 /* Decorative English labels (procedure kicker, LIVE tag, document type codes) belong to the English UI only:
    in Korean they repeated the Korean title in a second language (CLAUDE.md: no hierarchy-blurring bilingual mix). */
-html[lang="ko"] .proc-kicker, html[lang="ko"] .portrait-tag, html[lang="ko"] .doc-code { display: none; }
+html[lang="ko"] :is(.proc-kicker, .portrait-tag, .doc-code) { display: none; }
 html[lang="ko"] .doctext small:not(:has(.doc-flag)) { display: none; }
 .meta-status { display: flex; align-items: center; gap: 12px; white-space: nowrap; min-width: 0; overflow: hidden; }
 .meta-status > * { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -63,7 +63,7 @@ html[lang="ko"] .doctext small:not(:has(.doc-flag)) { display: none; }
 .challenge-hud b, .campaign-hud b { color: var(--text); }
 .challenge-hud.active { border-color: var(--accent); color: var(--accent-text); }
 .campaign-hud { border-color: var(--info); color: var(--info); }
-.event-details:hover, .challenge-hud:hover, .campaign-hud:hover { background: var(--accent-soft); }
+:is(.event-details, .challenge-hud, .campaign-hud):hover { background: var(--accent-soft); }
 .queue { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; }
 .queue-title { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .queue-title b { color: var(--text); }
@@ -213,7 +213,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .tasknav button:last-of-type { border-radius: 0 var(--r-1) var(--r-1) 0; }
   .tasknav button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: #fff; z-index: 1; }
   /* tablet keeps the traveller and the assessment inspector on screen; only interview ⇄ evidence is switched */
-  .tasknav button[data-task="passenger"], .tasknav button[data-task="assessment"] { display: none; }
+  .tasknav button:is([data-task="passenger"], [data-task="assessment"]) { display: none; }
 }
 
 /* ---- phone (<768): header + case header + one task + bottom navigation ---- */
@@ -238,7 +238,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .app.ops-open > .opsbar .queue { display: grid; grid-template-columns: auto minmax(0, 1fr); }
   .app.ops-open > .opsbar .queue-strip { display: flex; }
   .app.ops-open > .opsbar .queue-stats { grid-column: 1 / -1; }
-  .app.ops-open > .opsbar .qperson, .app.ops-open > .opsbar .qperson img { width: 32px; height: 32px; }
+  .app.ops-open > .opsbar :is(.qperson, .qperson img) { width: 32px; height: 32px; }
   .casebar { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; padding: 0 12px; }
   .case-mini { display: none; }
   .case-ident { gap: 8px; }
@@ -256,7 +256,7 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
   .tasknav button, .tasknav button:first-of-type, .tasknav button:last-of-type { height: var(--h-tasknav); display: grid; place-items: center; margin: 0; padding: 0 4px; border: 0; border-radius: 0; background: transparent; color: var(--chrome-muted); font-size: var(--fs-compact); font-weight: 600; position: relative; }
   .tasknav button[aria-current="true"] { color: #fff; background: var(--chrome-2); }
   .tasknav button[aria-current="true"]::after { content: ""; position: absolute; left: 20%; right: 20%; top: 0; height: 2px; background: #fff; }
-  .tasknav button[data-task="passenger"], .tasknav button[data-task="assessment"] { display: grid; }
+  .tasknav button:is([data-task="passenger"], [data-task="assessment"]) { display: grid; }
   .pa-banner { left: 8px; right: 8px; width: auto; height: auto; min-height: 32px; top: calc(var(--h-mobile-header) + var(--h-casebar) + var(--safe-top)); border-top: 1px solid var(--border); border-radius: 0 0 var(--r-2) var(--r-2); }
   .pa-tag { display: none; }
   body.has-procedure .pa-banner { top: auto; bottom: calc(8px + var(--safe-bottom)); }

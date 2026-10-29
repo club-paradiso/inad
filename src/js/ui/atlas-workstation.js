@@ -86,6 +86,8 @@ function personHTML(c, v, p) {
 const activeCompleted = (id) => atlas.activeAtlasSession()?.cases[id]?.completed;
 function interviewHTML(c, v) {
   const language = atlas.activeAtlasSession().interviewLanguage;
+  const isCA01 = c.id === 'SIM-CA-01';
+  const atCounter = !isCA01 || v.encounter?.phase === 'called' || v.completed;
   const stmtFacts = (c.facts || []).filter((f) => f.sourceType === 'statement');
   const visibleStmtFacts = stmtFacts.filter((f) => !f.questionIds || f.questionIds.some((qid) => v.asked.includes(qid)));
   const unlockedQIds = v.graph?.unlockedQuestions || [];
@@ -95,21 +97,23 @@ function interviewHTML(c, v) {
       ${visibleStmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '💬')).join('')}
     </div></div>` : '';
 
+  const noticeHTML = !atCounter ? `<div class="inline-note warn" role="status"><p>${l('심사대에 가상 승객을 먼저 호출하십시오.', 'Call simulated passenger to counter first.')}</p></div>` : '';
+
   const questionsHTML = `
-    <div class="atlas-questions">
-      ${c.questions.map((q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`)).join('')}
+    <div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">
+      ${c.questions.map((q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${!atCounter || v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`)).join('')}
       ${investigative.map((q) => {
         const isUnlocked = unlockedQIds.includes(q.id);
         const isAsked = v.asked.includes(q.id);
         if (!isUnlocked && !isAsked) {
           return `<button type="button" class="act locked-q" disabled aria-disabled="true" id="ask-${q.id}" title="${l('서류를 대조하여 상충 또는 누락을 발견하면 해제됩니다.', 'Unlocked by discovering discrepancies in evidence.')}">🔒 ${h(q.q)} <small>(${l('대조 후 해제', 'Locked')})</small></button>`;
         }
-        return button(`ask-${q.id}`, `💡 ${text(q.q)}`, `data-ask="${q.id}" ${v.completed || isAsked ? 'disabled' : ''}`);
+        return button(`ask-${q.id}`, `💡 ${text(q.q)}`, `data-ask="${q.id}" ${!atCounter || v.completed || isAsked ? 'disabled' : ''}`);
       }).join('')}
     </div>
   `;
 
-  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p><div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
+  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
 }
 function taskHTML(c, v, title) {
   return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
@@ -167,7 +171,7 @@ function assessmentHTML(c, v) {
   const crossCheckNote = v.asked.includes('crosscheck')
     ? l('추가 원문 교차 질문 확인됨', 'Case-specific source cross-check completed')
     : l('선택 과제: 추가 교차 질문 가능', 'Optional task: cross-check question available');
-  const missing = atlas.atlasMissing(), names = { documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
+  const missing = atlas.atlasMissing(), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
 
   let debriefHTML = '';
   if (v.completed) {

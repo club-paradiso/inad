@@ -47,9 +47,9 @@ export async function buildSingleHtml({ minify = true } = {}) {
   let cleanHtml = html.replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '');
   if (minify) cleanHtml = cleanHtml.replace(/>\s+</g, '><').trim();
   let out = cleanHtml
-    .replace('</head>', () => `<style>\n${css}\n</style>\n</head>`)
-    .replace(/<script type="module" src="js\/app\.js"><\/script>/, () => `<script>\n${js}\n</script>`);
-  const banner = `<!--\n  INAD v${release} — GENERATED FILE, DO NOT EDIT DIRECTLY.\n  Source of truth: src/ (build with \`npm run build\`).\n  Single-file release: inline CSS + JS + ${portraits.count} WebP portraits, no external resources.\n-->\n`;
+    .replace('</head>', () => `<style>${css}</style></head>`)
+    .replace(/<script type="module" src="js\/app\.js"><\/script>/, () => `<script>${js}</script>`);
+  const banner = `<!-- INAD v${release} — GENERATED FILE, DO NOT EDIT DIRECTLY. -->\n`;
   out = out.replace(/<!doctype html>\s*/i, () => '<!doctype html>\n' + banner);
   fs.mkdirSync(dist, { recursive: true });
   fs.writeFileSync(path.join(dist, 'index.html'), out);

@@ -9,6 +9,7 @@ import * as save from '../../src/js/engines/save-engine.js';
 
 beforeEach(() => { resetStorage(); Object.assign(state, { countryId: 'KR', airportId: 'icn-t2', sessionMode: 'shift', scenarioId: 'normal', rulesetVersion: 'kr-v6.1', started: false, atlas: { sessions: {}, view: 'counter', krContext: null, storageBlocked: false, saveStatus: 'idle' } }); });
 function ready(c) {
+  if (c.id === 'SIM-CA-01') atlas.callAtlasPassenger();
   atlas.atlasAction('ask', c.questions[0].id);
   atlas.atlasAction('record', c.records[0].id);
   for (const d of c.documents) { atlas.atlasAction('document', d.id); atlas.atlasAction('review', d.id); }
@@ -134,6 +135,7 @@ test('case-specific cross-check prompts are grounded, optional and save-compatib
     }
     atlas.selectCountry(c.countryId);
     atlas.selectAtlasCase(c.id);
+    if (c.id === 'SIM-CA-01') atlas.callAtlasPassenger();
     assert.equal(atlas.atlasAction('ask', 'crosscheck'), true);
     assert.ok(atlas.activeAtlasCase().asked.includes('crosscheck'));
     assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
@@ -164,4 +166,92 @@ test('Canadian encounter is additive, isolated, persistent and completes once', 
   const malformed = atlas.atlasSnapshot();
   malformed.sessions.CA.cases[c.id].encounter.phase = 'called';
   assert.equal(atlas.validateAtlasSave(malformed), false);
+});
+
+test('CA-01 encounter gating: interview and completion strictly require passenger call', () => {
+  atlas.selectCountry('CA');
+  atlas.selectAtlasCase('SIM-CA-01');
+  const c = atlas.currentAtlasScenario();
+  const v = atlas.activeAtlasCase();
+
+  // 1. Interview actions fail before passenger called
+  assert.equal(atlas.atlasAction('ask', c.questions[0].id), false);
+  assert.equal(v.asked.length, 0);
+
+  // 2. Missing prerequisites includes encounter
+  assert.ok(atlas.atlasMissing().includes('encounter'));
+
+  // 3. Complete fails without encounter
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Valid rationale text of sufficient length.'), false);
+  assert.equal(v.completed, false);
+  assert.equal(v.encounter, undefined);
+
+  // 4. Calling passenger enables asking questions and clears encounter from missing
+  assert.equal(atlas.callAtlasPassenger(), true);
+  assert.equal(v.encounter.phase, 'called');
+  assert.equal(atlas.atlasAction('ask', c.questions[0].id), true);
+  assert.equal(v.asked.includes(c.questions[0].id), true);
+  assert.equal(atlas.atlasMissing().includes('encounter'), false);
+
+  // 5. Duplicate calling is rejected
+  assert.equal(atlas.callAtlasPassenger(), false);
+
+  // 6. Complete succeeds with encounter and transitions phase to completed
+  ready(c);
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Valid rationale text of sufficient length.'), true);
+  assert.equal(v.completed, true);
+  assert.equal(v.encounter.phase, 'completed');
+
+  // 7. Calling passenger after completion is rejected
+  assert.equal(atlas.callAtlasPassenger(), false);
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Duplicate completion attempt.'), false);
+});
+
+test('CA-01 bypass attempt cannot produce completed save or debrief', () => {
+  atlas.selectCountry('CA');
+  atlas.selectAtlasCase('SIM-CA-01');
+  const c = atlas.currentAtlasScenario();
+  const v = atlas.activeAtlasCase();
+
+  // Attempt bypass without calling passenger
+  atlas.atlasAction('selectFact', 'SIM-CA-01-F-VISIT');
+  atlas.atlasAction('selectFact', 'SIM-CA-01-F-TICKET');
+  atlas.atlasCompare();
+  assert.equal(atlas.atlasAction('ask', 'clarify_dates'), false);
+
+  for (const d of c.documents) { atlas.atlasAction('document', d.id); atlas.atlasAction('review', d.id); }
+  atlas.atlasAction('record', c.records[0].id);
+  atlas.atlasAction('notes', 'Notes text of sufficient length.');
+  for (const t of c.tasks) atlas.atlasAction('task', t.id);
+
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Attempting completion without calling passenger.'), false);
+  assert.equal(v.completed, false);
+  assert.equal(v.encounter, undefined);
+  assert.ok(atlas.atlasMissing().includes('encounter'));
+});
+
+test('Legacy completed saves without encounter remain valid, UK/NZ require no encounter', () => {
+  atlas.selectCountry('CA');
+  const snap = atlas.atlasSnapshot();
+  // Mark CA-01 as completed legacy save (encounter undefined)
+  const ca01 = snap.sessions.CA.cases['SIM-CA-01'];
+  ca01.completed = true;
+  ca01.outcome = 'review';
+  ca01.reviewed = ['SIM-CA-01-DOC1', 'SIM-CA-01-DOC2'];
+  ca01.asked = ['clarify'];
+  ca01.selectedRecord = 'SIM-CA-01-REC1';
+  ca01.tasks = ['identity', 'evidence', 'handover'];
+  ca01.notes = 'Legacy completed notes exceeding minimum length.';
+  ca01.rationale = 'Legacy completed rationale exceeding minimum length.';
+  delete ca01.encounter;
+  assert.equal(atlas.validateAtlasSave(snap), true);
+
+  // UK and NZ cases do not require encounter in atlasMissing
+  atlas.selectCountry('GB');
+  atlas.selectAtlasCase('SIM-GB-02');
+  assert.equal(atlas.atlasMissing().includes('encounter'), false);
+
+  atlas.selectCountry('NZ');
+  atlas.selectAtlasCase('SIM-NZ-02');
+  assert.equal(atlas.atlasMissing().includes('encounter'), false);
 });

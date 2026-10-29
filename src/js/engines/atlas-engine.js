@@ -122,6 +122,7 @@ export function atlasAction(action, value) {
   else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; }
   else if (v.completed) return false;
   else if (action === 'ask') {
+    if (c.id === 'SIM-CA-01' && v.encounter?.phase !== 'called') return false;
     const allQuestions = [...c.questions, ...(c.investigativeQuestions || [])];
     const qObj = allQuestions.find((q) => q.id === value);
     if (!qObj) return false;
@@ -215,11 +216,19 @@ export function callAtlasPassenger() {
 }
 export function atlasMissing() {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return ['case'];
-  return [...(v.reviewed.length < c.documents.length ? ['documents'] : []), ...(!v.asked.length ? ['interview'] : []), ...(!v.selectedRecord ? ['record'] : []), ...(v.notes.trim().length < 10 ? ['notes'] : []), ...(v.tasks.length < c.tasks.length ? ['tasks'] : [])];
+  return [
+    ...(c.id === 'SIM-CA-01' && (!v.encounter || v.encounter.phase !== 'called') ? ['encounter'] : []),
+    ...(v.reviewed.length < c.documents.length ? ['documents'] : []),
+    ...(!v.asked.length ? ['interview'] : []),
+    ...(!v.selectedRecord ? ['record'] : []),
+    ...(v.notes.trim().length < 10 ? ['notes'] : []),
+    ...(v.tasks.length < c.tasks.length ? ['tasks'] : [])
+  ];
 }
 export function completeAtlas(outcome, rationale) {
-  const v = activeAtlasCase();
-  if (!v || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
+  if (c.id === 'SIM-CA-01' && !v.encounter) return false;
   if (v.encounter) { const next = finishEncounter(v.encounter); if (!next) return false; v.encounter = next; }
   v.outcome = outcome; v.rationale = rationale.trim(); v.completed = true; changed(); return true;
 }
