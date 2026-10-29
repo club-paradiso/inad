@@ -23,7 +23,7 @@ let callbacks;
 const outcomes = () => ({ complete: l('검토 완료', 'Review complete'), evidence: l('자료 요청', 'Request evidence'), review: l('추가 검토', 'Additional review') });
 const button = (id, label, attr = '') => `<button type="button" class="act" id="${id}" ${attr}>${esc(label)}</button>`;
 const box = (title, content) => `<div class="atlas-section"><h2>${esc(title)}</h2>${content}</div>`;
-function saveLabel() { return ({ saved: l('이 기기에 저장됨', 'Saved on this device'), failed: l('저장 실패 · 입력은 현재 화면에 유지됩니다', 'Save failed · input remains in this session'), protected: l('기존 저장 보호 중 · 현재 연습은 저장되지 않습니다', 'Existing save protected · this practice is not saved'), idle: l('시작 전', 'Not started') })[state.atlas.saveStatus]; }
+function saveLabel() { return ({ saved: l('이 기기에 저장됨', 'Saved on this device'), failed: l('저장 실패 · 입력은 현재 화면에 유지됩니다', 'Save failed · input remains in this session'), protected: l('기존 저장 보호 중 · 현재 연습은 저장되지 않습니다', 'Existing save protected · this practice is not saved'), conflict: l('다른 탭에서 저장된 변경이 있어 덮어쓰기를 막았습니다 · 현재 입력 사본을 내보내세요', 'Another tab saved newer changes · this tab cannot overwrite them. Export a copy of your current input.'), idle: l('시작 전', 'Not started') })[state.atlas.saveStatus]; }
 function focusView() {
   document.body.dataset.focus = state.atlas.view;
   $$('[data-atlas-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.atlasView === state.atlas.view)));
@@ -156,6 +156,13 @@ export function initAtlas(handlers) {
   const menu = document.createElement('button'); menu.type = 'button'; menu.id = 'atlasMenuCountry'; menu.className = 'iconbtn'; menu.setAttribute('role', 'menuitem'); menu.textContent = l('국가 선택 · 대한민국', 'Country selection · South Korea'); menu.onclick = () => openCountrySelector(); byId('moreMenu').append(menu);
   for (const [view, label] of [['counter', l('대면 초점', 'Counter focus')], ['system', l('전산 초점', 'System focus')]]) { const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn'; b.setAttribute('role', 'menuitem'); b.dataset.atlasView = view; b.textContent = label; b.onclick = () => { atlas.setAtlasView(view); showTask(view === 'counter' ? 'interview' : 'evidence'); }; byId('moreMenu').append(b); }
   bus.on('atlas:changed', renderAtlas);
+  // The storage event fires in other same-origin tabs, not in the writing tab.
+  // Warn before a stale tab attempts to save; the engine also compares bytes on write.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== atlas.ATLAS_KEY && event.key !== null) return;
+    const changed = atlas.noteAtlasExternalWrite(event.key === null ? null : event.newValue);
+    if (changed && state.countryId !== 'KR') announceA11y(l('다른 탭의 최신 저장이 감지되었습니다. 현재 입력을 별도 사본으로 내보내세요.', 'A newer save was detected in another tab. Export your current input separately.'));
+  });
   document.addEventListener('inad:localechange', () => { if (state.countryId !== 'KR') renderAtlas(); });
   const selected = atlas.loadAtlas();
   if (!countryPack(selected)) { openCountrySelector(l('저장된 국가를 지원하지 않습니다. 기존 데이터를 보존했습니다. 국가를 직접 선택하세요.', 'The saved country is unsupported. Existing data is preserved. Choose a country explicitly.')); return; }
