@@ -4,6 +4,7 @@ import { countryPack, countryAirport, SIMULATION_RULESET } from '../../data/coun
 import { atlasScenario, atlasScenarios } from '../../data/atlas-scenarios.js';
 import { storeGetRaw, storeSet, parseJSON } from '../services/storage.js';
 import { bus } from '../services/bus.js';
+import { createEmptyGraph, validateGraphState, compareFacts, evaluateDebrief } from './atlas-graph-engine.js';
 
 export const ATLAS_KEY = 'inad-atlas-v1';
 export const COUNTRY_KEY = 'inad-country';
@@ -14,17 +15,24 @@ const bounded = (s, n) => typeof s === 'string' && s.length <= n;
 const list = (v, ids) => Array.isArray(v) && v.length <= ids.length && new Set(v).size === v.length && v.every((x) => ids.includes(x));
 const CONTEXT = ['airportId', 'sessionMode', 'scenarioId', 'rulesetVersion', 'interviewLanguage', 'started', 'difficulty'];
 export function activeAtlasSession() { return state.atlas.sessions[state.countryId] || null; }
-export function activeAtlasCase() { const s = activeAtlasSession(); return s?.cases[s.activeId] || null; }
+export function activeAtlasCase() {
+  const s = activeAtlasSession();
+  const c = s?.cases[s.activeId];
+  if (c && !c.graph) c.graph = createEmptyGraph();
+  return c || null;
+}
 export function currentAtlasScenario() { return atlasScenario(state.countryId, activeAtlasSession()?.activeId); }
 export function emptyAtlasCase(c) {
-  return { countryId: c.countryId, scenarioId: c.id, rulesetVersion: SIMULATION_RULESET, asked: [], reviewed: [], tasks: [], selectedDoc: c.documents[0].id, pages: Object.fromEntries(c.documents.map((d) => [d.id, 0])), zoom: 100, search: '', searched: false, selectedRecord: null, notes: '', outcome: null, completed: false, rationale: '' };
+  return { countryId: c.countryId, scenarioId: c.id, rulesetVersion: SIMULATION_RULESET, asked: [], reviewed: [], tasks: [], selectedDoc: c.documents[0].id, pages: Object.fromEntries(c.documents.map((d) => [d.id, 0])), zoom: 100, search: '', searched: false, selectedRecord: null, notes: '', outcome: null, completed: false, rationale: '', graph: createEmptyGraph() };
 }
 export function atlasCaseValid(v, c) {
+  const allowedQuestions = [...c.questions, ...(c.investigativeQuestions || [])].map((q) => q.id);
   return plain(v) && !!c && v.countryId === c.countryId && v.scenarioId === c.id && v.rulesetVersion === SIMULATION_RULESET &&
-    list(v.asked, c.questions.map((q) => q.id)) && list(v.reviewed, c.documents.map((d) => d.id)) && list(v.tasks, c.tasks.map((t) => t.id)) &&
+    list(v.asked, allowedQuestions) && list(v.reviewed, c.documents.map((d) => d.id)) && list(v.tasks, c.tasks.map((t) => t.id)) &&
     c.documents.some((d) => d.id === v.selectedDoc) && plain(v.pages) && Object.keys(v.pages).length === c.documents.length && c.documents.every((d) => Number.isInteger(v.pages[d.id]) && v.pages[d.id] >= 0 && v.pages[d.id] < d.pages.length) &&
     [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
-    (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (!v.completed || (v.outcome !== null && v.reviewed.length === c.documents.length && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10));
+    (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (!v.completed || (v.outcome !== null && v.reviewed.length === c.documents.length && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
+    (v.graph === undefined || validateGraphState(v.graph));
 }
 // Reject unsupported content rather than normalising it into another country or losing future fields.
 export function validateAtlasSave(v) {
@@ -111,15 +119,85 @@ export function atlasAction(action, value) {
   else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; }
   else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; }
   else if (v.completed) return false;
-  else if (action === 'ask' && c.questions.some((q) => q.id === value)) { if (!v.asked.includes(value)) v.asked.push(value); }
+  else if (action === 'ask') {
+    const allQuestions = [...c.questions, ...(c.investigativeQuestions || [])];
+    const qObj = allQuestions.find((q) => q.id === value);
+    if (!qObj) return false;
+    if (c.investigativeQuestions?.some((q) => q.id === value) && !v.graph?.unlockedQuestions.includes(value)) return false;
+    if (!v.asked.includes(value)) v.asked.push(value);
+    if (!v.graph) v.graph = createEmptyGraph();
+    if (v.graph.investigationPath === null && v.graph.discoveries.length === 0) {
+      v.graph.investigationPath = 'interview_first';
+    }
+  }
   else if (action === 'review' && value === d.id) { if (!v.reviewed.includes(value)) v.reviewed.push(value); }
   else if (action === 'notes' && bounded(value, 4000)) { v.notes = value; persistAtlas(); return true; }
+  else if (action === 'selectFact' && typeof value === 'string') {
+    if (!v.graph) v.graph = createEmptyGraph();
+    const idx = v.graph.selectedFacts.indexOf(value);
+    if (idx >= 0) v.graph.selectedFacts.splice(idx, 1);
+    else {
+      if (v.graph.selectedFacts.length >= 2) v.graph.selectedFacts.shift();
+      v.graph.selectedFacts.push(value);
+    }
+  }
+  else if (action === 'clearFacts') {
+    if (!v.graph) v.graph = createEmptyGraph();
+    v.graph.selectedFacts = [];
+  }
+  else if (action === 'compare') {
+    const res = atlasCompare();
+    return res.ok;
+  }
+  else if (action === 'requestEvidence' && typeof value === 'string') {
+    return atlasRequestEvidence(value);
+  }
   else if (action === 'task' && c.tasks.some((t) => t.id === value)) {
     const task = c.tasks.find((t) => t.id === value);
-    if (!v.reviewed.includes(task.documentId) || (value === 'evidence' && !v.asked.length) || (value === 'handover' && v.notes.trim().length < 10)) return false;
+    if (!v.reviewed.includes(task.documentId) || (value === 'evidence' && !v.asked.length && !v.graph?.discoveries.length) || (value === 'handover' && v.notes.trim().length < 10)) return false;
     if (!v.tasks.includes(value)) v.tasks.push(value);
   } else return false;
   changed(); return true;
+}
+export function atlasCompare() {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c || !v.graph || v.graph.selectedFacts.length !== 2) return { ok: false, reason: 'need-two-facts' };
+  const res = compareFacts(c, v.graph.selectedFacts[0], v.graph.selectedFacts[1]);
+  if (!res.ok) return res;
+  if (v.graph.investigationPath === null) {
+    v.graph.investigationPath = v.asked.length === 0 ? 'records_first' : 'interview_first';
+  }
+  if (res.comparison.findingId && !v.graph.discoveries.includes(res.comparison.findingId)) {
+    v.graph.discoveries.push(res.comparison.findingId);
+  }
+  if (res.comparison.unlocks?.questions) {
+    for (const qid of res.comparison.unlocks.questions) {
+      if (!v.graph.unlockedQuestions.includes(qid)) v.graph.unlockedQuestions.push(qid);
+    }
+  }
+  v.graph.history.push({
+    time: Date.now(),
+    factA: v.graph.selectedFacts[0],
+    factB: v.graph.selectedFacts[1],
+    type: res.comparison.type,
+    findingId: res.comparison.findingId
+  });
+  changed();
+  return res;
+}
+export function atlasRequestEvidence(requestId) {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c || !requestId) return false;
+  if (!v.graph) v.graph = createEmptyGraph();
+  if (!v.graph.evidenceRequests.includes(requestId)) {
+    v.graph.evidenceRequests.push(requestId);
+    changed();
+  }
+  return true;
+}
+export function atlasDebrief() {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  return evaluateDebrief(c, v);
 }
 export function atlasMissing() {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return ['case'];
