@@ -4,7 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
+import { poolBuildStrings } from './pool-build-strings.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
@@ -26,7 +27,8 @@ export async function buildSingleHtml({ minify = true } = {}) {
   const html = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
   // CSS: inline every stylesheet in document order.
   const cssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  const css = cssFiles.map((f) => `/* ${f} */\n` + fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
+  let css = cssFiles.map((f) => `/* ${f} */\n` + fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
+  if (minify) css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', target: 'es2020' })).code;
   // JS: bundle ES modules into a classic IIFE, swapping the portrait module for inline data
   const portraits = portraitDataModule();
   const result = await build({
@@ -37,7 +39,9 @@ export async function buildSingleHtml({ minify = true } = {}) {
     bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], write: false, minify, legalComments: 'none', charset: 'utf8',
     plugins: [{ name: 'inline-portraits', setup(b) { b.onLoad({ filter: /services[\\/]portrait-data\.js$/ }, () => ({ contents: portraits.code, loader: 'js' })); } }]
   });
-  const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+  let bundled = result.outputFiles[0].text;
+  if (minify) bundled = (await transform(poolBuildStrings(bundled), { loader: 'js', minifyWhitespace: true, minifyIdentifiers: true, minifySyntax: false, charset: 'utf8', target: 'es2020', legalComments: 'none' })).code;
+  const js = bundled.replace(/<\/script/gi, '<\\/script');
   // Replacer functions, not replacement strings: a replacement string expands `$&`, `$1`, `$\`` … so any
   // such sequence inside the CSS or the bundle (a regex helper, a price label) would corrupt the release.
   let out = html

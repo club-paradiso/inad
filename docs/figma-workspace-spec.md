@@ -395,3 +395,11 @@ v9.0은 코드가 먼저 바뀌었다(작업 지시: 안정성·제품 품질 �
   캡처), `design/v10/review/proto-*.webp`, `v9-before-1440.webp`. 허용 후 같은 프레임 ID에 채우기로 넣는다.
 - **미완료 · 컴포넌트**: 부스(초상 + 자막 + 상태), 질문 바(입력 · 말하기 · 질문 · 상태/후보 칩), 진술 기록 행, 제안 탭 행,
   디브리핑 섹션은 아직 Figma 컴포넌트가 아니다. 코드가 소스 오브 트루스이며 캡처가 시각 기준이다.
+
+## ATLAS continuation · 2026-10-29
+
+Added page `15 — ATLAS country foundations` and section `[Implemented] ATLAS · procedural foundations · 2026-10-29`.
+Editable references: [CA 232:8](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=232-8), [GB 232:132](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=232-132), [NZ 232:248](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=232-248).
+These reference desktop information hierarchy. Runtime viewport evidence is under `docs/atlas/screenshots/`.
+
+Existing frames and library definitions were not edited. The table above predates current `tokens.css`: several neutral colors already differ. ATLAS preserves runtime tokens, reuses matching variables, and adds an isolated three-color code snapshot for new frames. Global variable reconciliation and editable tablet/mobile variants remain follow-up work; see `docs/atlas/DESIGN_DECISIONS.md`.

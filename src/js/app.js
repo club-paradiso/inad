@@ -46,6 +46,7 @@ import { interviewSummary } from './engines/interview-engine.js';
 import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
 import { renderCoachBanner } from './ui/coach.js';
+import { initAtlas, renderAtlas } from './ui/atlas-workstation.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
 const LIVE_CASE = { caseId: 'ICN-S2-005', seed: 271828 };
@@ -60,6 +61,7 @@ const procHandlers = {
 };
 function openProc(mode) { openProcedureScreen(mode, procHandlers); }
 function renderAll() {
+  if (state.countryId !== 'KR') { renderAtlas(); return; }
   if (!current()) return;
   const focus = focusKey();
   renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); cues.paperOpen(); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); } });
@@ -252,7 +254,7 @@ function bindKeyboard() {
   document.addEventListener('keydown', (e) => {
     // Menus and sheets consume their own Escape (preventDefault) so it never also closes the procedure screen.
     if (e.key === 'Escape') { if (e.defaultPrevented) return; if (tutorial.isOpen()) tutorial.end(true); else if (isModalOpen()) requestCloseModal(); else closeProcedureScreen(); return; }
-    if (shortcutBlocked(e) || e.isComposing) return;
+    if (state.countryId !== 'KR' || shortcutBlocked(e) || e.isComposing) return;
     // A dialog-opening shortcut must never replace an open dialog: that would drop a refusal-reason choice
     // or a decision notice whose action carries the case forward. Nothing else acts behind a dialog either.
     if (isModalOpen() || tutorial.isOpen()) return;
@@ -282,7 +284,7 @@ function bindKeyboard() {
 // ---- bus subscriptions ---------------------------------------------------------------------
 function subscribe() {
   bus.on('changed', () => { renderAll(); if (isProcedureOpen()) renderProcedureScreen(procHandlers); });
-  bus.on('log', () => { if (state.logs.length && byId('log')) renderLog(); });
+  bus.on('log', () => { if (state.countryId === 'KR' && state.logs.length && byId('log')) renderLog(); });
   bus.on('ops', () => { renderWorkloadOnly(); });
   bus.on('behavior', renderBehavior);
   bus.on('fieldEvent', (e) => { showFieldEventToast(e, eventEffectText(e)); cues.fieldEvent(e); notify.pulse('#eventBar', 'event-sonic', 520); });
@@ -303,7 +305,7 @@ function installHooks() {
     seed: () => session.seed,
     regenerate: (s) => regenerate(s),
     queue: () => session.queue.map((q, i) => { const c = caseForQueueItem(q); return { index: i, shift: q.shift, travelerId: q.travelerId, caseId: q.caseId, normalId: q.normalId, id: c.id, special: c.special || null, resolution: c.resolution, required: c.required || [], sessionVariant: c.sessionVariant || null, basis: c.basis }; }),
-    state: () => ({ caseIndex: state.caseIndex, stage: state.stage, strikes: state.strikes, score: state.score, started: state.started, ended: state.ended, stats: { ...state.stats }, performed: state.performed.slice(), asked: [...state.asked], looked: [...state.looked], refugeeStep: state.refugeeStep, repatriationStep: state.repatriationStep, forensic: state.forensic, investigation: state.investigation, arrestReview: state.arrestReview, reports: state.reports.map((r) => ({ label: r.label, caseId: r.caseId, procedure: r.procedure, interpreter: r.interpreter, actions: r.actions })), mistakes: state.mistakes.map((m) => m.msg), language: state.language ? { mode: state.language.mode, korean: state.language.korean, english: state.language.english, interpreterActive: state.language.interpreterActive, interpreterUsed: state.language.interpreterUsed } : null, behavior: state.behavior ? { stress: state.behavior.stress, rapport: state.behavior.rapport } : null, campaignId: state.campaignId, campaignDay: state.campaignDay, difficulty: state.difficulty, scenarioId: state.scenarioId }),
+    state: () => ({ countryId: state.countryId, atlas: JSON.parse(JSON.stringify(state.atlas)), caseIndex: state.caseIndex, stage: state.stage, strikes: state.strikes, score: state.score, started: state.started, ended: state.ended, stats: { ...state.stats }, performed: state.performed.slice(), asked: [...state.asked], looked: [...state.looked], refugeeStep: state.refugeeStep, repatriationStep: state.repatriationStep, forensic: state.forensic, investigation: state.investigation, arrestReview: state.arrestReview, reports: state.reports.map((r) => ({ label: r.label, caseId: r.caseId, procedure: r.procedure, interpreter: r.interpreter, actions: r.actions })), mistakes: state.mistakes.map((m) => m.msg), language: state.language ? { mode: state.language.mode, korean: state.language.korean, english: state.language.english, interpreterActive: state.language.interpreterActive, interpreterUsed: state.language.interpreterUsed } : null, behavior: state.behavior ? { stress: state.behavior.stress, rapport: state.behavior.rapport } : null, campaignId: state.campaignId, campaignDay: state.campaignDay, difficulty: state.difficulty, scenarioId: state.scenarioId }),
     current: () => { const c = current(); return { id: c.id, travelerId: c.travelerId, special: c.special || null, required: c.required || [], resolution: c.resolution, questions: c.questions.map((q) => ({ id: q.id, cat: q.cat, q: q.q, requires: q.requires || [] })), docs: c.docs.map((d) => d.t) }; },
     jump: (i) => { state.caseIndex = i; beginCase(true); },
     languageFor: (i) => { const l = languageProfileFor(caseForQueueItem(session.queue[i])); return { mode: l.mode, korean: l.korean, english: l.english }; },
@@ -337,6 +339,7 @@ function boot() {
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);
   byId('sessionSeed').textContent = String(session.seed); renderQueue(); renderTop(); renderEventBar(); renderDailyStart(showDailyMissions); renderPersistenceStatus(); syncOptionButtons(); startClock();
   scheduleUiEnhancements();
+  initAtlas({ renderKorean: renderAll, settings: showSettings, system: showSystemCenter });
   if (typeof window !== 'undefined' && window.visualViewport) {
     const onViewport = () => {
       document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`);

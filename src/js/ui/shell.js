@@ -12,6 +12,7 @@ import { campaignCfg, currentCampaignSave, storyIsAnchor, storyChapterDef, campa
 const imageCache = new Map();
 
 export function renderWorkloadOnly() {
+  if (state.countryId !== 'KR') return;
   const q = simulatedBacklog(), pi = pressureInfo();
   const qe = byId('queue'); if (qe) qe.textContent = q;
   const qk = byId('queueKpi'); if (qk) qk.className = 'kpi ' + pi[1]; // tone follows the simulated pressure (안정·보통·혼잡)
