@@ -154,3 +154,14 @@ test('another open tab cannot silently overwrite newer international notes', asy
     .toBe('Stale tab draft that must remain local only.');
   await other.close();
 });
+
+for (const country of ['CA', 'GB', 'NZ']) test(`${country}: optional case-specific cross-check persists and is visible in assessment`, async ({ page }) => {
+  await openAtlas(page, country);
+  const followup = atlasScenarios(country)[0].questions.find(q => q.id === 'crosscheck');
+  await page.locator('#ask-crosscheck').click();
+  await expect(page.locator('.atlas-transcript')).toContainText(followup.answer.en);
+  await expect(page.locator('.zone-assessment')).toContainText('추가 원문 교차 질문 확인됨');
+  await page.reload();
+  await expect(page.locator('.atlas-transcript')).toContainText(followup.answer.en);
+  await expect(page.locator('.zone-assessment')).toContainText('추가 원문 교차 질문 확인됨');
+});
