@@ -132,3 +132,25 @@ test('selected workspace focus remains readable when hovered', async ({ page }) 
   });
   expect(ratio).toBeGreaterThanOrEqual(4.5);
 });
+
+test('another open tab cannot silently overwrite newer international notes', async ({ page, context }) => {
+  await openAtlas(page, 'CA');
+  const other = await context.newPage();
+  await other.goto(ENTRY);
+  await expect(other.locator('body')).toHaveAttribute('data-country', 'CA');
+  await other.locator('#atlasSystem').click();
+  await page.locator('#atlasNotes').fill('Evidence comparison saved by the first browser tab.');
+  await expect(other.locator('#atlasSaveStatus')).toContainText(/다른 탭|Another tab/);
+  const preserved = await page.evaluate(() => localStorage.getItem('inad-atlas-v1'));
+  await other.locator('#atlasNotes').fill('Stale tab draft that must remain local only.');
+  await expect(other.locator('#atlasSaveStatus')).toContainText(/다른 탭|Another tab/);
+  expect(await other.evaluate(() => localStorage.getItem('inad-atlas-v1'))).toBe(preserved);
+  await other.locator('#atlasData').click();
+  const downloadPromise = other.waitForEvent('download');
+  await other.locator('#atlasExportDraft').click();
+  const download = await downloadPromise;
+  const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  expect(JSON.parse(exported.payload['inad-atlas-v1']).sessions.CA.cases['SIM-CA-01'].notes)
+    .toBe('Stale tab draft that must remain local only.');
+  await other.close();
+});
