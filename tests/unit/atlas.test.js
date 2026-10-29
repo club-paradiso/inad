@@ -95,3 +95,30 @@ test('future Korean checkpoints cannot be deleted by starting a new duty or repl
   const raw = JSON.stringify({ version: 99, seed: 3, nextIndex: 1 }); localStorage.setItem(save.PROGRESS_KEY, raw);
   assert.equal(save.clearProgressSave(), false); assert.equal(save.applyBundle(save.makeBundle({})).ok, false); assert.equal(localStorage.getItem(save.PROGRESS_KEY), raw);
 });
+
+test('a stale international tab cannot overwrite a newer valid save', () => {
+  atlas.selectCountry('CA');
+  atlas.atlasAction('notes', 'Initial note saved before the second tab made changes.');
+  const external = JSON.parse(localStorage.getItem(atlas.ATLAS_KEY));
+  external.sessions.CA.cases['SIM-CA-01'].notes = 'Evidence changed in the other tab.';
+  const newerRaw = JSON.stringify(external);
+  localStorage.setItem(atlas.ATLAS_KEY, newerRaw);
+  assert.equal(atlas.noteAtlasExternalWrite(newerRaw), true);
+  assert.equal(state.atlas.saveStatus, 'conflict');
+  // The local unsaved draft is retained for the user's explicit recovery export.
+  assert.equal(atlas.atlasAction('notes', 'This old tab should not overwrite the newer record.'), true);
+  assert.match(atlas.activeAtlasCase().notes, /should not overwrite/);
+  assert.equal(atlas.persistAtlas(), false);
+  assert.equal(localStorage.getItem(atlas.ATLAS_KEY), newerRaw);
+});
+
+test('write-time stale detection still protects data when storage event is missed', () => {
+  atlas.selectCountry('NZ');
+  const external = JSON.parse(localStorage.getItem(atlas.ATLAS_KEY));
+  external.sessions.NZ.cases['SIM-NZ-01'].notes = 'Latest document review from a different window.';
+  const newerRaw = JSON.stringify(external);
+  localStorage.setItem(atlas.ATLAS_KEY, newerRaw);
+  assert.equal(atlas.atlasAction('notes', 'Outdated local edits must remain in memory.'), true);
+  assert.equal(state.atlas.saveStatus, 'conflict');
+  assert.equal(localStorage.getItem(atlas.ATLAS_KEY), newerRaw);
+});
