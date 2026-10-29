@@ -59,3 +59,30 @@ jobs:
           name: inad-release-html
           path: dist/index.html
           if-no-files-found: error
+  atlas-cross-browser:
+    # ATLAS release gate: engine/UI behavior in both non-Chromium engines.
+    # Runs the complete overseas case flow, persistence, country switching and mobile layout.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - name: Verify generated release mirror
+        run: git diff --exit-code -- index.html
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Cross-browser ATLAS critical journeys
+        env:
+          INAD_BROWSER: ${{ matrix.browser }}
+          INAD_PORT: '4389'
+        run: >-
+          npx playwright test
+          --config playwright.atlas-crossbrowser.config.js
+          tests/e2e/atlas.spec.js
+          -g 'all three authored cases reach a debrief|view, refresh and country round trips retain case evidence|Korean live interview resumes after country switch|responsive 390'
