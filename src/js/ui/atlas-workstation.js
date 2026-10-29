@@ -41,6 +41,8 @@ function focusView() {
 function mountCountry() {
   const foreign = state.countryId !== 'KR';
   document.body.dataset.country = state.countryId;
+  if (foreign) document.body.dataset.atlas = '1';
+  else delete document.body.dataset.atlas;
   if (foreign && !parkedZones.size) {
     koreanTask = document.body.dataset.task;
     $$('#mainContent > .zone').forEach((zone) => { parkedZones.set(zone, [...zone.childNodes]); zone.replaceChildren(); zone.setAttribute('data-i18n-control', ''); });
@@ -79,7 +81,7 @@ export function openCountrySelector(error = '', selected = state.countryId) {
   };
 }
 function personHTML(c, v, p) {
-  return box(l('사람과 사건', 'Person and case'), `<p class="atlas-person">${esc(c.name)}</p><dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl><p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + box(l('연습 사건', 'Practice cases'), `<div class="atlas-case-list">${atlasScenarios(p.id).map((item) => button(`case-${item.id}`, `${item.id} · ${text(item.title)}${activeCompleted(item.id) ? ' · ' + l('완료', 'Complete') : ''}`, `data-case="${item.id}" aria-current="${item.id === c.id}"`)).join('')}</div>`) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
+  return box(l('사람과 사건', 'Person and case'), `${c.id === 'SIM-CA-01' && !v.completed ? (v.encounter ? `<p role="status">${l('대면 조사 중 · 가상 승객', 'At counter · simulated passenger')}</p>` : button('atlasCallPassenger', l('가상 승객 호출', 'Call simulated passenger'))) : ''}<p class="atlas-person">${esc(c.name)}</p><dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl><p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + box(l('연습 사건', 'Practice cases'), `<div class="atlas-case-list">${atlasScenarios(p.id).map((item) => button(`case-${item.id}`, `${item.id} · ${text(item.title)}${activeCompleted(item.id) ? ' · ' + l('완료', 'Complete') : ''}`, `data-case="${item.id}" aria-current="${item.id === c.id}"`)).join('')}</div>`) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
 }
 const activeCompleted = (id) => atlas.activeAtlasSession()?.cases[id]?.completed;
 function interviewHTML(c, v) {
@@ -195,6 +197,7 @@ export function renderAtlas() {
   byId('atlasCountry').onclick = () => openCountrySelector(); byId('atlasSettings').onclick = showAtlasSettings; byId('atlasData').onclick = showAtlasData;
   byId('atlasLanguage').onclick = () => setLocale(getLocale() === 'ko' ? 'en' : 'ko');
   $$('[data-atlas-view]').forEach((b) => { b.onclick = () => { atlas.setAtlasView(b.dataset.atlasView); showTask(b.dataset.atlasView === 'counter' ? 'interview' : 'evidence'); }; });
+  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
   $$('[data-case]').forEach((b) => { b.onclick = () => { atlas.selectAtlasCase(b.dataset.case); byId('atlasCaseHeading').focus(); }; });
   $$('[data-ask]').forEach((b) => { b.onclick = () => { atlas.atlasAction('ask', b.dataset.ask); announceA11y(l('답변을 기록했습니다.', 'Answer recorded.')); }; });
   $$('[data-doc]').forEach((b) => { b.onclick = () => { atlas.atlasAction('document', b.dataset.doc); showTask('evidence'); }; });
@@ -259,5 +262,5 @@ export function initAtlas(handlers) {
   const selected = atlas.loadAtlas();
   if (!countryPack(selected)) { openCountrySelector(l('저장된 국가를 지원하지 않습니다. 기존 데이터를 보존했습니다. 국가를 직접 선택하세요.', 'The saved country is unsupported. Existing data is preserved. Choose a country explicitly.')); return; }
   if (selected !== 'KR') { atlas.selectCountry(selected); mountCountry(); renderAtlas(); showTask('evidence'); }
-  else document.body.dataset.country = 'KR';
+  else { document.body.dataset.country = 'KR'; delete document.body.dataset.atlas; }
 }

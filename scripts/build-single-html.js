@@ -44,12 +44,13 @@ export async function buildSingleHtml({ minify = true } = {}) {
   const js = bundled.replace(/<\/script/gi, '<\\/script');
   // Replacer functions, not replacement strings: a replacement string expands `$&`, `$1`, `$\`` … so any
   // such sequence inside the CSS or the bundle (a regex helper, a price label) would corrupt the release.
-  let out = html
-    .replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '')
+  let cleanHtml = html.replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '');
+  if (minify) cleanHtml = cleanHtml.replace(/>\s+</g, '><').trim();
+  let out = cleanHtml
     .replace('</head>', () => `<style>\n${css}\n</style>\n</head>`)
     .replace(/<script type="module" src="js\/app\.js"><\/script>/, () => `<script>\n${js}\n</script>`);
   const banner = `<!--\n  INAD v${release} — GENERATED FILE, DO NOT EDIT DIRECTLY.\n  Source of truth: src/ (build with \`npm run build\`).\n  Single-file release: inline CSS + JS + ${portraits.count} WebP portraits, no external resources.\n-->\n`;
-  out = out.replace('<!doctype html>\n', () => '<!doctype html>\n' + banner);
+  out = out.replace(/<!doctype html>\s*/i, () => '<!doctype html>\n' + banner);
   fs.mkdirSync(dist, { recursive: true });
   fs.writeFileSync(path.join(dist, 'index.html'), out);
   fs.writeFileSync(path.join(root, 'index.html'), out); // deployment mirror (Vercel serves root index.html)

@@ -142,3 +142,26 @@ test('case-specific cross-check prompts are grounded, optional and save-compatib
     assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
   }
 });
+
+test('Canadian encounter is additive, isolated, persistent and completes once', () => {
+  atlas.selectCountry('CA');
+  const c = atlas.currentAtlasScenario();
+  const legacy = atlas.atlasSnapshot();
+  assert.equal(atlas.validateAtlasSave(legacy), true);
+  assert.equal(atlas.callAtlasPassenger(), true);
+  assert.equal(atlas.callAtlasPassenger(), false);
+  assert.equal(atlas.activeAtlasCase().encounter.phase, 'called');
+  assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+  atlas.setAtlasView('system');
+  atlas.selectCountry('NZ');
+  assert.equal(atlas.callAtlasPassenger(), false);
+  atlas.selectCountry('CA');
+  assert.equal(atlas.activeAtlasCase().encounter.phase, 'called');
+  ready(c);
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Sources compared and the simulated review recorded.'), true);
+  assert.equal(atlas.activeAtlasCase().encounter.phase, 'completed');
+  assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+  const malformed = atlas.atlasSnapshot();
+  malformed.sessions.CA.cases[c.id].encounter.phase = 'called';
+  assert.equal(atlas.validateAtlasSave(malformed), false);
+});
