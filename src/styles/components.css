@@ -48,9 +48,9 @@
 .msg.officer .msgavatar { background: var(--accent); }
 .msg.interpreter .msgavatar { background: var(--info); }
 .msgtext { grid-column: 2; font-size: var(--fs-body); line-height: 1.5; overflow-wrap: anywhere; }
-.msg.system, .msg.alert { grid-template-columns: minmax(0, 1fr); }
-.msg.system .msgavatar, .msg.alert .msgavatar { display: none; }
-.msg.system b, .msg.system .msgtext, .msg.alert b, .msg.alert .msgtext { grid-column: 1; }
+:is(.msg.system, .msg.alert) { grid-template-columns: minmax(0, 1fr); }
+:is(.msg.system, .msg.alert) .msgavatar { display: none; }
+:is(.msg.system, .msg.alert) :is(b, .msgtext) { grid-column: 1; }
 .msg.system .msgtext { color: var(--text-2); font-size: var(--fs-label); }
 .msg.alert { border-left: 3px solid var(--danger); padding-left: 8px; }
 .msg.alert .msgtext { color: var(--danger-text); font-size: var(--fs-label); }
@@ -148,7 +148,7 @@
 .results .tone { font-weight: 600; margin-right: 6px; }
 .results .정상 { color: var(--success-text); }
 .results .주의 { color: var(--warning-text); }
-.results .경고, .results .치명 { color: var(--danger-text); }
+.results :is(.경고, .치명) { color: var(--danger-text); }
 .lookup-pulse { animation: barPulse 430ms var(--ease); }
 
 /* ---- 판단 ---- */
@@ -328,7 +328,7 @@
 
 /* ---- touch arming (decision-desk.js confirmTouch): the first tap replaces the subtitle with an explicit prompt ---- */
 .arm-hint { display: block; font-size: var(--fs-label); font-weight: 700; letter-spacing: 0; }
-.armed > small, .armed > span:not(.arm-hint) { display: none; }
+.armed > :is(small, span:not(.arm-hint)) { display: none; }
 .act.armed { border-width: 2px 2px 2px 4px; padding: 6px 11px 6px 11px; }
 .proc-action.armed, .reason.armed { border-width: 2px; }
 .arm-hint::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }

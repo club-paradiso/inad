@@ -5,6 +5,7 @@ import { atlasScenario, atlasScenarios } from '../../data/atlas-scenarios.js';
 import { storeGetRaw, storeSet, parseJSON } from '../services/storage.js';
 import { bus } from '../services/bus.js';
 import { createEmptyGraph, validateGraphState, compareFacts, evaluateDebrief } from './atlas-graph-engine.js';
+import { validEncounter, callEncounter, finishEncounter } from './atlas-encounter.js';
 
 export const ATLAS_KEY = 'inad-atlas-v1';
 export const COUNTRY_KEY = 'inad-country';
@@ -32,7 +33,8 @@ export function atlasCaseValid(v, c) {
     c.documents.some((d) => d.id === v.selectedDoc) && plain(v.pages) && Object.keys(v.pages).length === c.documents.length && c.documents.every((d) => Number.isInteger(v.pages[d.id]) && v.pages[d.id] >= 0 && v.pages[d.id] < d.pages.length) &&
     [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
     (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (!v.completed || (v.outcome !== null && v.reviewed.length === c.documents.length && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
-    (v.graph === undefined || validateGraphState(v.graph));
+    (v.graph === undefined || validateGraphState(v.graph)) &&
+    (v.encounter === undefined || (validEncounter(v.encounter) && (v.encounter.phase === 'completed') === v.completed));
 }
 // Reject unsupported content rather than normalising it into another country or losing future fields.
 export function validateAtlasSave(v) {
@@ -120,6 +122,7 @@ export function atlasAction(action, value) {
   else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; }
   else if (v.completed) return false;
   else if (action === 'ask') {
+    if (c.id === 'SIM-CA-01' && v.encounter?.phase !== 'called') return false;
     const allQuestions = [...c.questions, ...(c.investigativeQuestions || [])];
     const qObj = allQuestions.find((q) => q.id === value);
     if (!qObj) return false;
@@ -203,12 +206,29 @@ export function atlasDebrief() {
   const v = activeAtlasCase(), c = currentAtlasScenario();
   return evaluateDebrief(c, v);
 }
+// An encounter is opt-in for existing exercises; old saves are never rewritten on load.
+export function callAtlasPassenger() {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c || c.countryId !== 'CA' || c.id !== 'SIM-CA-01' || v.completed) return false;
+  const encounter = callEncounter(v.encounter);
+  if (!encounter) return false;
+  v.encounter = encounter; changed(); return true;
+}
 export function atlasMissing() {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return ['case'];
-  return [...(v.reviewed.length < c.documents.length ? ['documents'] : []), ...(!v.asked.length ? ['interview'] : []), ...(!v.selectedRecord ? ['record'] : []), ...(v.notes.trim().length < 10 ? ['notes'] : []), ...(v.tasks.length < c.tasks.length ? ['tasks'] : [])];
+  return [
+    ...(c.id === 'SIM-CA-01' && (!v.encounter || v.encounter.phase !== 'called') ? ['encounter'] : []),
+    ...(v.reviewed.length < c.documents.length ? ['documents'] : []),
+    ...(!v.asked.length ? ['interview'] : []),
+    ...(!v.selectedRecord ? ['record'] : []),
+    ...(v.notes.trim().length < 10 ? ['notes'] : []),
+    ...(v.tasks.length < c.tasks.length ? ['tasks'] : [])
+  ];
 }
 export function completeAtlas(outcome, rationale) {
-  const v = activeAtlasCase();
-  if (!v || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
+  if (c.id === 'SIM-CA-01' && !v.encounter) return false;
+  if (v.encounter) { const next = finishEncounter(v.encounter); if (!next) return false; v.encounter = next; }
   v.outcome = outcome; v.rationale = rationale.trim(); v.completed = true; changed(); return true;
 }

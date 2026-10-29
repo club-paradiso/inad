@@ -151,5 +151,5 @@
   .doc-modal-wrap .passport-photo-wrap { width: 88px; height: 108px; }
   .doc-modal-wrap .docsheet { font-size: var(--fs-body); }
   .doc-modal-wrap .field-value { font-size: 15px; white-space: normal; overflow-wrap: anywhere; }
-  .doc-modal-wrap .mrz, .doc-modal-wrap [class*="mrz"] { font-size: 11px; overflow-wrap: anywhere; }
+  .doc-modal-wrap :is(.mrz, [class*="mrz"]) { font-size: 11px; overflow-wrap: anywhere; }
 }

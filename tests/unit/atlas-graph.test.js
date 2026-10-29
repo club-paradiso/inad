@@ -95,6 +95,7 @@ test('invalid and fallback comparisons are deterministic and never throw', () =>
 test('dynamic investigative question unlock gates and branch routing', () => {
   atlas.selectCountry('CA');
   atlas.selectAtlasCase('SIM-CA-01');
+  atlas.callAtlasPassenger();
   const c = atlas.currentAtlasScenario();
   const v = atlas.activeAtlasCase();
 
@@ -231,6 +232,7 @@ test('evidence graph save compatibility and migration', () => {
 test('evidence-based debrief evaluation', () => {
   atlas.selectCountry('CA');
   atlas.selectAtlasCase('SIM-CA-01');
+  atlas.callAtlasPassenger();
   const scenario = atlas.currentAtlasScenario();
   const caseState = atlas.activeAtlasCase();
 
@@ -323,6 +325,7 @@ test('validateGraphState and normalizeGraph hardening: history, bounds, and cons
 test('statement fact chip gating: chips and selections locked until question is asked', () => {
   atlas.selectCountry('CA');
   atlas.selectAtlasCase('SIM-CA-01');
+  atlas.callAtlasPassenger();
   const v = atlas.activeAtlasCase();
 
   // Initially, statement fact cannot be selected

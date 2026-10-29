@@ -19,11 +19,11 @@ body.pref-font-large { --fs-section: 14.5px; --fs-body: 14.5px; --fs-compact: 13
 
 /* high contrast: darker text, stronger borders, no translucent surfaces */
 body.pref-contrast { --canvas: #d6dde3; --surface: #ffffff; --surface-2: #eef2f5; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --accent-text: #0b3d6e; --success: #14613b; --success-text: #0f4a2c; --warning: #8a5300; --warning-text: #5e3800; --danger: #931c1c; --danger-text: #721515; --chrome: #06192b; --chrome-muted: #cfe0ee; }
-body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, body.pref-contrast .docitem, body.pref-contrast .proc-card, body.pref-contrast .basis-node, body.pref-contrast .msg { border-color: var(--border-strong); }
+body.pref-contrast :is(.panel, .ev, .qbtn, .docitem, .proc-card, .basis-node, .msg) { border-color: var(--border-strong); }
 /* the OS-level "more contrast" preference gets the same token set as the 고대비 setting */
 @media (prefers-contrast: more) {
   body { --canvas: #d6dde3; --surface: #ffffff; --surface-2: #eef2f5; --panel-head: #cfd9e3; --border-subtle: #9fb0bf; --border: #6c7f90; --border-strong: #2f4355; --text: #000; --text-2: #1e2b36; --text-3: #3c4b58; --accent: #0b4a86; --accent-text: #0b3d6e; --success: #14613b; --success-text: #0f4a2c; --warning: #8a5300; --warning-text: #5e3800; --danger: #931c1c; --danger-text: #721515; --chrome: #06192b; --chrome-muted: #cfe0ee; }
-  .panel, .ev, .qbtn, .docitem, .proc-card, .basis-node, .msg { border-color: var(--border-strong); }
+  :is(.panel, .ev, .qbtn, .docitem, .proc-card, .basis-node, .msg) { border-color: var(--border-strong); }
 }
 
 /* Windows high contrast / forced colours: selected and current states must not depend on background colour alone. */
@@ -37,7 +37,7 @@ body.pref-contrast .panel, body.pref-contrast .ev, body.pref-contrast .qbtn, bod
 }
 
 /* reduced motion: user setting and OS preference */
-body.pref-reduce-motion *, body.pref-reduce-motion *::before, body.pref-reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+body.pref-reduce-motion :is(*, *::before, *::after) { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; } }
 
 /* touch: every interactive control is at least 44px tall under a coarse pointer or on phone layouts */

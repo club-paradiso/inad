@@ -20,6 +20,7 @@ async function recordSearch(page) {
 async function reviewCase(page, country, number) {
   const id = `SIM-${country}-${number}`;
   await task(page, 'passenger'); await page.locator(`[data-case="${id}"]`).click();
+  if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await task(page, 'interview'); await page.locator('#ask-clarify').click();
   await task(page, 'evidence'); await recordSearch(page);
   for (const suffix of ['DOC1', 'DOC2']) { await page.locator(`#doc-${id}-${suffix}`).click(); await page.locator('#atlasReviewDoc').click(); }
@@ -45,6 +46,7 @@ for (const country of ['CA', 'GB', 'NZ']) test(`${country}: all three authored c
 
 test('view, refresh and country round trips retain case evidence and draft; empty search recovers', async ({ page }) => {
   await openAtlas(page);
+  if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await page.locator('#ask-clarify').click(); await page.locator('#atlasNotes').fill('Draft note that must survive switching.');
   await page.locator('#atlasNextPage').click(); await page.locator('#atlasZoom').selectOption('150');
   await page.locator('#atlasSearch').fill('no-such-record'); await expect(page.locator('#atlasSearchForm + p')).toContainText(/없습니다|No synthetic/);
@@ -85,6 +87,8 @@ test('future data and unsupported country remain protected; failed writes are vi
 
 for (const country of ['CA','GB','NZ']) for (const width of [1440,1024,768,390]) test(`${country} responsive ${width}: navigation, focus, overflow and 44px controls`, async ({ page }) => {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); await openAtlas(page, country);
+  await task(page,'passenger');
+  if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await task(page,'evidence');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   const small = await page.locator('#atlasHeader button, #mainContent button, #taskNav button').evaluateAll(nodes => nodes.filter(n => n.getClientRects().length && !n.disabled).filter(n => { const r=n.getBoundingClientRect(); return r.width < 43.5 || r.height < 43.5; }).map(n=>n.id || n.textContent));
@@ -159,6 +163,7 @@ test('another open tab cannot silently overwrite newer international notes', asy
 
 for (const country of ['CA', 'GB', 'NZ']) test(`${country}: optional case-specific cross-check persists and is visible in assessment`, async ({ page }) => {
   await openAtlas(page, country);
+  if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   const followup = atlasScenarios(country)[0].questions.find(q => q.id === 'crosscheck');
   await page.locator('#ask-crosscheck').click();
   await expect(page.locator('.atlas-transcript')).toContainText(followup.answer.en);

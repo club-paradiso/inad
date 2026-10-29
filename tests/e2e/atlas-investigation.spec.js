@@ -28,6 +28,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await openAtlas(page, 'CA');
     await task(page, 'passenger');
     await page.locator('[data-case="SIM-CA-01"]').click();
+    await page.locator('#atlasCallPassenger').click();
 
     // 1. Evidence zone: Select Fact 1 on DOC1 (ticket departure)
     await task(page, 'evidence');
@@ -119,6 +120,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await openAtlas(page, 'CA');
     await task(page, 'passenger');
     await page.locator('[data-case="SIM-CA-01"]').click();
+    await page.locator('#atlasCallPassenger').click();
 
     // 1. Interview zone: Ask initial question first
     await task(page, 'interview');
@@ -249,6 +251,8 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
   test('Mobile sequential fact selection (390px): facts preserved across tab switching', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openAtlas(page, 'CA');
+    await task(page, 'passenger');
+    await page.locator('#atlasCallPassenger').click();
 
     // 1. In Evidence zone: select ticket fact on DOC1
     await task(page, 'evidence');
@@ -305,6 +309,8 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
 
   test('Save persistence: browser reload preserves evidence graph discoveries and unlocked questions', async ({ page }) => {
     await openAtlas(page, 'CA');
+    await task(page, 'passenger');
+    await page.locator('#atlasCallPassenger').click();
     await task(page, 'evidence');
 
     // Perform comparison across DOC1 and DOC2
@@ -340,6 +346,144 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await expect(page.locator('body')).toHaveAttribute('data-country', 'KR');
     await expect(page.locator('#brandTag')).toHaveText('v10.0');
     await expect(page.locator('#caseCount')).toBeVisible();
+  });
+
+  test('Canadian simulated passenger call persists across reload and workspace switches', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await openAtlas(page, 'CA');
+    await task(page, 'passenger');
+    await page.locator('#atlasCallPassenger').click();
+    await expect(page.locator('.zone-person')).toContainText(/대면 조사 중|At counter/);
+    await page.locator('#ask-source').click();
+    await expect(page.locator('.atlas-transcript')).not.toContainText(/질문 대기|No questions yet/);
+    await page.locator('#atlasSystem').click();
+    await page.reload();
+    await expect(page.locator('body')).toHaveAttribute('data-country', 'CA');
+    await task(page, 'passenger');
+    await expect(page.locator('.zone-person')).toContainText(/대면 조사 중|At counter/);
+    await task(page, 'interview');
+    await expect(page.locator('.atlas-transcript')).not.toContainText(/질문 대기|No questions yet/);
+    expect(errors).toEqual([]);
+  });
+
+  test('Canada SIM-CA-01 full start-to-finish encounter: call, examine, compare, decide, debrief, and verify persistence', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await openAtlas(page, 'CA');
+
+    // 1. Passenger call
+    await task(page, 'passenger');
+    const callBtn = page.locator('#atlasCallPassenger');
+    await expect(callBtn).toBeVisible();
+    await callBtn.click();
+    await expect(page.locator('.zone-person')).toContainText(/대면 조사 중|At counter/);
+    await expect(callBtn).toHaveCount(0);
+
+    // 2. Documents examination
+    await task(page, 'evidence');
+    await page.locator('#doc-SIM-CA-01-DOC1').click();
+    await page.locator('#atlasReviewDoc').click();
+    await page.locator('#doc-SIM-CA-01-DOC2').click();
+    await page.locator('#atlasReviewDoc').click();
+
+    // 3. Evidence comparison: Conflict between ticket and visit record
+    await page.locator('#fact-SIM-CA-01-F-VISIT').click();
+    await page.locator('#doc-SIM-CA-01-DOC1').click();
+    await page.locator('#fact-SIM-CA-01-F-TICKET').click();
+    await page.locator('#atlasDoCompare').click();
+    await expect(page.locator('.atlas-result-box')).toHaveClass(/type-conflict/);
+
+    // 4. Interview: Unlocked question
+    await task(page, 'interview');
+    const unlockedQ = page.locator('#ask-clarify_dates');
+    await expect(unlockedQ).toBeVisible();
+    await unlockedQ.click();
+    await expect(page.locator('.atlas-transcript')).toContainText(/12일|12 Nov/);
+
+    // 5. Compare statement fact with ticket
+    await task(page, 'evidence');
+    await page.locator('#atlasClearFacts').click();
+    await task(page, 'interview');
+    const stmtChip = page.locator('#fact-SIM-CA-01-F-STMT');
+    await expect(stmtChip).toBeVisible();
+    await stmtChip.click();
+    await task(page, 'evidence');
+    await page.locator('#doc-SIM-CA-01-DOC1').click();
+    await page.locator('#fact-SIM-CA-01-F-TICKET').click();
+    await page.locator('#atlasDoCompare').click();
+    await expect(page.locator('.atlas-result-box')).toHaveClass(/type-match/);
+
+    // 6. Record search & tasks
+    await page.locator('#atlasSearchForm button[type="submit"]').click();
+    await page.locator('[data-record]').first().click();
+    await task(page, 'assessment');
+    await page.locator('#atlasNotes').fill('Discrepancy identified between ticket and visit record. Explanation noted.');
+    await task(page, 'evidence');
+    for (const t of ['identity', 'evidence', 'handover']) {
+      await page.locator(`#task-${t}`).click();
+    }
+
+    // 7. Decision submission
+    await task(page, 'assessment');
+    await page.locator('#atlasPrepare').click();
+    await expect(page.locator('#atlasOutcome')).toBeVisible();
+    await page.locator('#atlasOutcome').selectOption('review');
+    await page.locator('#atlasRationale').fill('Ticket date (12 Nov) contradicts visit record (21 Nov). Retain original sources and refer for review.');
+    await page.locator('#atlasConfirmOutcome').click();
+
+    // 8. Debrief verification
+    const debrief = page.locator('.atlas-debrief');
+    await expect(debrief).toBeVisible();
+    await expect(debrief).toContainText(/철저한 검토|Thorough/);
+    await expect(debrief).toContainText(/출국일 상충 확인|Date conflict confirmed/);
+
+    // 9. Save persistence
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('inad-atlas-v1')));
+    const ca01 = saved.sessions.CA.cases['SIM-CA-01'];
+    expect(ca01.completed).toBe(true);
+    expect(ca01.encounter).toEqual({ version: 1, phase: 'completed' });
+    expect(ca01.outcome).toBe('review');
+    expect(errors).toEqual([]);
+  });
+
+  test('Canada SIM-CA-01 bypass prevention: interview actions and completion fail without calling simulated passenger', async ({ page }) => {
+    await openAtlas(page, 'CA');
+    await task(page, 'passenger');
+    await page.locator('[data-case="SIM-CA-01"]').click();
+
+    // Verify Call Passenger button is visible and passenger has NOT been called
+    const callBtn = page.locator('#atlasCallPassenger');
+    await expect(callBtn).toBeVisible();
+
+    // 1. In Interview zone: warning notice is displayed and questions are disabled
+    await task(page, 'interview');
+    await expect(page.locator('.zone-interview')).toContainText(/가상 승객을 먼저 호출하십시오|Call simulated passenger/);
+    await expect(page.locator('#ask-clarify')).toBeDisabled();
+
+    // 2. Review documents, search records and fill notes in attempt to bypass calling
+    await task(page, 'evidence');
+    await page.locator('#doc-SIM-CA-01-DOC1').click();
+    await page.locator('#atlasReviewDoc').click();
+    await page.locator('#doc-SIM-CA-01-DOC2').click();
+    await page.locator('#atlasReviewDoc').click();
+
+    await page.locator('#atlasSearchForm button[type="submit"]').click();
+    await page.locator('[data-record]').first().click();
+
+    await task(page, 'assessment');
+    await page.locator('#atlasNotes').fill('Bypass attempt without calling simulated passenger.');
+
+    // 3. In Assessment zone: '가상 승객 호출' / 'Call simulated passenger' is listed under remaining requirements
+    await expect(page.locator('.zone-assessment')).toContainText(/가상 승객 호출|Call simulated passenger/);
+    await page.locator('#atlasPrepare').click();
+    await expect(page.locator('#modal')).toHaveAttribute('aria-hidden', 'true');
+
+    // 4. Persistence check: Save state remains incomplete and encounter remains undefined
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('inad-atlas-v1')));
+    const ca01 = saved.sessions.CA.cases['SIM-CA-01'];
+    expect(ca01.completed).toBe(false);
+    expect(ca01.encounter).toBeUndefined();
   });
 
 });

@@ -41,6 +41,8 @@ function focusView() {
 function mountCountry() {
   const foreign = state.countryId !== 'KR';
   document.body.dataset.country = state.countryId;
+  if (foreign) document.body.dataset.atlas = '1';
+  else delete document.body.dataset.atlas;
   if (foreign && !parkedZones.size) {
     koreanTask = document.body.dataset.task;
     $$('#mainContent > .zone').forEach((zone) => { parkedZones.set(zone, [...zone.childNodes]); zone.replaceChildren(); zone.setAttribute('data-i18n-control', ''); });
@@ -79,11 +81,13 @@ export function openCountrySelector(error = '', selected = state.countryId) {
   };
 }
 function personHTML(c, v, p) {
-  return box(l('사람과 사건', 'Person and case'), `<p class="atlas-person">${esc(c.name)}</p><dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl><p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + box(l('연습 사건', 'Practice cases'), `<div class="atlas-case-list">${atlasScenarios(p.id).map((item) => button(`case-${item.id}`, `${item.id} · ${text(item.title)}${activeCompleted(item.id) ? ' · ' + l('완료', 'Complete') : ''}`, `data-case="${item.id}" aria-current="${item.id === c.id}"`)).join('')}</div>`) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
+  return box(l('사람과 사건', 'Person and case'), `${c.id === 'SIM-CA-01' && !v.completed ? (v.encounter ? `<p role="status">${l('대면 조사 중 · 가상 승객', 'At counter · simulated passenger')}</p>` : button('atlasCallPassenger', l('가상 승객 호출', 'Call simulated passenger'))) : ''}<p class="atlas-person">${esc(c.name)}</p><dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl><p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + box(l('연습 사건', 'Practice cases'), `<div class="atlas-case-list">${atlasScenarios(p.id).map((item) => button(`case-${item.id}`, `${item.id} · ${text(item.title)}${activeCompleted(item.id) ? ' · ' + l('완료', 'Complete') : ''}`, `data-case="${item.id}" aria-current="${item.id === c.id}"`)).join('')}</div>`) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
 }
 const activeCompleted = (id) => atlas.activeAtlasSession()?.cases[id]?.completed;
 function interviewHTML(c, v) {
   const language = atlas.activeAtlasSession().interviewLanguage;
+  const isCA01 = c.id === 'SIM-CA-01';
+  const atCounter = !isCA01 || v.encounter?.phase === 'called' || v.completed;
   const stmtFacts = (c.facts || []).filter((f) => f.sourceType === 'statement');
   const visibleStmtFacts = stmtFacts.filter((f) => !f.questionIds || f.questionIds.some((qid) => v.asked.includes(qid)));
   const unlockedQIds = v.graph?.unlockedQuestions || [];
@@ -93,21 +97,23 @@ function interviewHTML(c, v) {
       ${visibleStmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '💬')).join('')}
     </div></div>` : '';
 
+  const noticeHTML = !atCounter ? `<div class="inline-note warn" role="status"><p>${l('심사대에 가상 승객을 먼저 호출하십시오.', 'Call simulated passenger to counter first.')}</p></div>` : '';
+
   const questionsHTML = `
-    <div class="atlas-questions">
-      ${c.questions.map((q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`)).join('')}
+    <div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">
+      ${c.questions.map((q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${!atCounter || v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`)).join('')}
       ${investigative.map((q) => {
         const isUnlocked = unlockedQIds.includes(q.id);
         const isAsked = v.asked.includes(q.id);
         if (!isUnlocked && !isAsked) {
           return `<button type="button" class="act locked-q" disabled aria-disabled="true" id="ask-${q.id}" title="${l('서류를 대조하여 상충 또는 누락을 발견하면 해제됩니다.', 'Unlocked by discovering discrepancies in evidence.')}">🔒 ${h(q.q)} <small>(${l('대조 후 해제', 'Locked')})</small></button>`;
         }
-        return button(`ask-${q.id}`, `💡 ${text(q.q)}`, `data-ask="${q.id}" ${v.completed || isAsked ? 'disabled' : ''}`);
+        return button(`ask-${q.id}`, `💡 ${text(q.q)}`, `data-ask="${q.id}" ${!atCounter || v.completed || isAsked ? 'disabled' : ''}`);
       }).join('')}
     </div>
   `;
 
-  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p><div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
+  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
 }
 function taskHTML(c, v, title) {
   return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
@@ -165,7 +171,7 @@ function assessmentHTML(c, v) {
   const crossCheckNote = v.asked.includes('crosscheck')
     ? l('추가 원문 교차 질문 확인됨', 'Case-specific source cross-check completed')
     : l('선택 과제: 추가 교차 질문 가능', 'Optional task: cross-check question available');
-  const missing = atlas.atlasMissing(), names = { documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
+  const missing = atlas.atlasMissing(), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
 
   let debriefHTML = '';
   if (v.completed) {
@@ -195,6 +201,7 @@ export function renderAtlas() {
   byId('atlasCountry').onclick = () => openCountrySelector(); byId('atlasSettings').onclick = showAtlasSettings; byId('atlasData').onclick = showAtlasData;
   byId('atlasLanguage').onclick = () => setLocale(getLocale() === 'ko' ? 'en' : 'ko');
   $$('[data-atlas-view]').forEach((b) => { b.onclick = () => { atlas.setAtlasView(b.dataset.atlasView); showTask(b.dataset.atlasView === 'counter' ? 'interview' : 'evidence'); }; });
+  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
   $$('[data-case]').forEach((b) => { b.onclick = () => { atlas.selectAtlasCase(b.dataset.case); byId('atlasCaseHeading').focus(); }; });
   $$('[data-ask]').forEach((b) => { b.onclick = () => { atlas.atlasAction('ask', b.dataset.ask); announceA11y(l('답변을 기록했습니다.', 'Answer recorded.')); }; });
   $$('[data-doc]').forEach((b) => { b.onclick = () => { atlas.atlasAction('document', b.dataset.doc); showTask('evidence'); }; });
@@ -259,5 +266,5 @@ export function initAtlas(handlers) {
   const selected = atlas.loadAtlas();
   if (!countryPack(selected)) { openCountrySelector(l('저장된 국가를 지원하지 않습니다. 기존 데이터를 보존했습니다. 국가를 직접 선택하세요.', 'The saved country is unsupported. Existing data is preserved. Choose a country explicitly.')); return; }
   if (selected !== 'KR') { atlas.selectCountry(selected); mountCountry(); renderAtlas(); showTask('evidence'); }
-  else document.body.dataset.country = 'KR';
+  else { document.body.dataset.country = 'KR'; delete document.body.dataset.atlas; }
 }
