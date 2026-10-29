@@ -62,7 +62,9 @@ test('view, refresh and country round trips retain case evidence and draft; empt
 
 test('Korean live interview resumes after country switch, with original transcript and input', async ({ page }) => {
   await page.goto(ENTRY); await page.locator('#liveStartBtn').click();
-  const call = page.locator('#callout'); if (await call.isVisible()) await call.locator('button').click();
+  // The callout auto-dismisses; WebKit can hide it between isVisible and click.
+  // Wait for the real transition instead of racing its optional skip control.
+  await expect(page.locator('#callout')).toBeHidden({ timeout: 10_000 });
   await page.locator('#askInput').fill('Keep this Korean draft');
   const before = await page.evaluate(() => window.INADTest.state());
   await page.locator('#moreBtn').click(); await page.locator('#atlasMenuCountry').click();
