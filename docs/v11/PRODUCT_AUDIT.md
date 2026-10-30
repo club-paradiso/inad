@@ -76,3 +76,15 @@ Status column refers to this v11 branch (`claude/youthful-shannon-okcuam`).
 ## 4. Remaining gaps (not claimed as done)
 
 See `docs/v11/IMPLEMENTATION_STATUS.md` for the live list. Not implemented in this branch: overseas free-text interview, Figma synchronisation (no authorised session in this environment), Firefox/WebKit runs if the browsers are unavailable locally, human playtest.
+
+## 6. Post-merge hotfix — Codex P1 on PR #27 (2026-10-30)
+
+Thread: https://github.com/club-paradiso/inad/pull/27#discussion_r4420697921 — "Keep record-fact selections valid when the search changes".
+
+| Item | Detail |
+|---|---|
+| Reproduction | `SIM-CA-02`: search with an empty query → select the record fact `SIM-CA-02-F-ADDR` without opening its record → search for something that does not list it → any further edit. Unit: `tests/unit/atlas-record-search.test.js`; browser: `tests/e2e/atlas-record-search.spec.js` (both fail on `53c0756`). |
+| Root cause | Record-fact visibility depends on the current search, but a new search did not re-check facts already selected. The save validator (PR #27 R4) rejects hidden selected facts, and `persistAtlas()` wrote the snapshot without validating it, so the next write saw an invalid stored save and marked all overseas progress `protected`; reload refused to restore any country. |
+| Fix | (1) `search`/`record` actions release only selections that became hidden; discoveries, history, unlocks, asked questions and requests are untouched. (2) Load-time recovery (`migrateAtlasSave` → `releaseStaleRecordSelections`) drops only well-formed, stale **record-fact selections** belonging to the case; every other check still applies and the input is not mutated; storage is rewritten only by the next normal save. (3) `persistAtlas()` refuses to write a snapshot it would itself reject (status `failed`, disk save untouched, draft kept for export). |
+| Not weakened | Hidden statement/request selections, facts from another case, unjustified discoveries, duplicate or malformed selection lists, malformed search fields remain rejected (unit "repair is narrow"). |
+| Regression | All 36 cases × several searches keep the save valid; another country's progress loads and saves after recovery (unit + browser). |

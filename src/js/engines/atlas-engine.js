@@ -57,7 +57,34 @@ function graphConsistent(v, c) {
 // Reject unsupported content rather than normalising it into another country or losing future fields.
 // v1 → v2: documents added to an existing case start on page 1. Nothing else changes;
 // unknown versions are never migrated (they stay protected).
-export function migrateAtlasSave(v) {
+export function migrateAtlasSave(raw) {
+  return releaseStaleRecordSelections(upgradeV1(raw));
+}
+// Recovery for saves written by the PR #27 build: a record fact could stay selected after a
+// search that no longer lists it, which made the whole overseas save "protected". Only that
+// transient selection is released, and only for record facts of the case's own library;
+// evidence (discoveries, history, unlocks, requests) is never changed, and every other
+// check in validateAtlasSave still applies to the result. Input is never mutated.
+function releaseStaleRecordSelections(v) {
+  if (!plain(v) || v.version !== ATLAS_VERSION || !plain(v.sessions)) return v;
+  let next = v;
+  for (const [id, s] of Object.entries(v.sessions)) {
+    if (!plain(s) || !plain(s.cases)) continue;
+    for (const [cid, cs] of Object.entries(s.cases)) {
+      const c = atlasScenario(id, cid);
+      const sel = plain(cs) && plain(cs.graph) ? cs.graph.selectedFacts : null;
+      // Only a well-formed selection is eligible; malformed data stays for validation to reject.
+      if (!c || !Array.isArray(sel) || sel.length > 2 || new Set(sel).size !== sel.length || !sel.every((x) => typeof x === 'string') || typeof cs.search !== 'string' || typeof cs.searched !== 'boolean' || !(cs.selectedRecord === null || typeof cs.selectedRecord === 'string')) continue;
+      const stale = cs.graph.selectedFacts.filter((fid) => { const f = facts(c).find((x) => x.id === fid); return f?.sourceType === 'record' && !atlasFactVisible(c, cs, f); });
+      if (!stale.length) continue;
+      if (next === v) next = structuredClone(v);
+      const g = next.sessions[id].cases[cid].graph;
+      g.selectedFacts = g.selectedFacts.filter((fid) => !stale.includes(fid));
+    }
+  }
+  return next;
+}
+function upgradeV1(v) {
   if (!plain(v) || v.version !== 1 || !plain(v.sessions)) return v;
   const next = structuredClone(v); next.version = 2;
   for (const [id, s] of Object.entries(next.sessions)) {
@@ -105,7 +132,11 @@ export function persistAtlas() {
   if (raw !== state.atlas.persistedRaw) {
     state.atlas.storageBlocked = true; state.atlas.saveStatus = 'conflict'; return false;
   }
-  const written = JSON.stringify(atlasSnapshot());
+  // Never write what the next load would reject: that would lock every country's progress.
+  // The in-memory draft is kept and can still be exported; the valid save on disk is untouched.
+  const snapshot = atlasSnapshot();
+  if (!validateAtlasSave(snapshot)) { state.atlas.saveStatus = 'failed'; return false; }
+  const written = JSON.stringify(snapshot);
   const ok = storeSet(ATLAS_KEY, written);
   if (ok) state.atlas.persistedRaw = written;
   state.atlas.saveStatus = ok ? 'saved' : 'failed';
@@ -163,6 +194,9 @@ export function atlasRecordMatches(c, r, query) {
   const q = String(query || '').toLowerCase();
   return `${r.id} ${c.name} ${r.title.ko} ${r.title.en} ${r.detail.ko} ${r.detail.en}`.toLowerCase().includes(q);
 }
+function releaseHiddenSelections(c, v) {
+  v.graph.selectedFacts = v.graph.selectedFacts.filter((id) => atlasFactVisible(c, v, facts(c).find((f) => f.id === id)));
+}
 export function atlasQuestionAvailable(c, v, id) {
   if (!allQuestions(c).some((q) => q.id === id)) return false;
   return !(c.investigativeQuestions || []).some((q) => q.id === id) || !!v.graph?.unlockedQuestions.includes(id);
@@ -173,8 +207,10 @@ export function atlasAction(action, value) {
   if (action === 'document' && c.documents.some((x) => x.id === value)) v.selectedDoc = value;
   else if (action === 'page' && Number.isInteger(value) && value >= 0 && value < d.pages.length) v.pages[d.id] = value;
   else if (action === 'zoom' && [100, 125, 150].includes(value)) v.zoom = value;
-  else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; }
-  else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; }
+  // A new search (or another opened record) can hide record facts; release only those
+  // selections. Discoveries and comparison history are never touched.
+  else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; releaseHiddenSelections(c, v); }
+  else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; releaseHiddenSelections(c, v); }
   else if (v.completed) return false;
   else if (action === 'ask') {
     // Every case: the person must be at the counter before any question is put.
