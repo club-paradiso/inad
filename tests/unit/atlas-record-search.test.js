@@ -30,7 +30,8 @@ function reload() { const keep = state.atlas.sessions; state.atlas.sessions = {}
 
 test('codex P1: changing the search never writes an invalid save', () => {
   codexPath();
-  assert.ok(!atlas.activeAtlasCase().graph.selectedFacts.includes(FACT), 'hidden selection released in memory');
+  // Since revealedRecords: a record once listed stays revealed, so the selection is kept.
+  assert.ok(atlas.activeAtlasCase().graph.selectedFacts.includes(FACT), 'selection kept after a later search');
   assertSelectionsVisible(JSON.parse(localStorage.getItem(atlas.ATLAS_KEY)), 'stored');
   assert.equal(atlas.validateAtlasSave(JSON.parse(localStorage.getItem(atlas.ATLAS_KEY))), true, 'stored save stays valid');
   atlas.atlasAction('notes', 'The next action must still be able to save.');
@@ -41,7 +42,7 @@ test('codex P1: changing the search never writes an invalid save', () => {
   assert.ok(state.atlas.sessions.CA.cases[CASE], 'case restored after refresh');
 });
 
-test('a hidden selection is released; discoveries, history and searches already done are kept', () => {
+test('a later search keeps the selection; discoveries, history and searches already done are kept', () => {
   const c = atlasScenarios('CA').find((x) => x.id === CASE);
   atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
   atlas.atlasAction('search', '');
@@ -52,15 +53,14 @@ test('a hidden selection is released; discoveries, history and searches already 
   const before = structuredClone(atlas.activeAtlasCase().graph);
   atlas.atlasAction('search', 'zzz-no-such-record');
   const g = atlas.activeAtlasCase().graph;
-  assert.ok(!g.selectedFacts.includes(FACT), 'hidden record fact deselected');
+  assert.deepEqual(g.selectedFacts, before.selectedFacts, 'selection unchanged by a non-matching search');
   assert.deepEqual(g.discoveries, before.discoveries, 'discoveries kept');
   assert.deepEqual(g.history, before.history, 'comparison history kept');
   assert.deepEqual(g.unlockedQuestions, before.unlockedQuestions);
-  // Selections that remain visible are not touched.
-  for (const id of before.selectedFacts.filter((x) => x !== FACT)) assert.ok(g.selectedFacts.includes(id));
-  // Searching again reveals the record and the fact can be selected again.
-  atlas.atlasAction('search', '');
+  // The revealed record's fact can be deselected and re-selected whatever the current search.
+  atlas.atlasAction('clearFacts');
   assert.equal(atlas.atlasAction('selectFact', FACT), true);
+  assert.deepEqual(atlas.activeAtlasCase().graph.selectedFacts, [FACT]);
 });
 
 test('an opened record keeps its fact selectable whatever the search', () => {
@@ -80,6 +80,7 @@ test('recovery: a save already written in the broken state loads, keeps all evid
   atlas.atlasAction('search', ''); atlas.atlasAction('selectFact', FACT);
   const broken = atlas.atlasSnapshot();
   broken.sessions.CA.cases[CASE].search = 'zzz-no-such-record';
+  delete broken.sessions.CA.cases[CASE].revealedRecords; // the #27/#28 builds never wrote this field
   const raw = JSON.stringify(broken);
   localStorage.setItem(atlas.ATLAS_KEY, raw);
   assert.equal(atlas.validateAtlasSave(broken), true, 'repairable: only a transient selection is out of date');
@@ -121,6 +122,7 @@ test('defence in depth: the engine refuses to persist a snapshot it would itself
   atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
   atlas.atlasAction('search', ''); atlas.atlasAction('selectFact', FACT);
   const saved = localStorage.getItem(atlas.ATLAS_KEY);
+  delete atlas.activeAtlasCase().revealedRecords; // a case loaded from a #27/#28 save
   atlas.activeAtlasCase().search = 'zzz-no-such-record'; // the pre-fix search action
   assert.equal(atlas.persistAtlas(), false);
   assert.equal(localStorage.getItem(atlas.ATLAS_KEY), saved);
@@ -138,4 +140,58 @@ test('every case: any search sequence keeps the save valid (36-case regression)'
     }
   }
   assert.notEqual(state.atlas.saveStatus, 'protected');
+});
+
+test('typing a query keystroke by keystroke never drops a selected record fact', () => {
+  atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', '');
+  atlas.atlasAction('selectFact', FACT);
+  for (const q of ['P', 'Pr', 'Pri', 'Prx', 'Pr', 'Priya', 'zzz', '']) {
+    atlas.atlasAction('search', q);
+    assert.ok(atlas.activeAtlasCase().graph.selectedFacts.includes(FACT), `kept after "${q}"`);
+  }
+  assertSelectionsVisible(atlas.atlasSnapshot(), 'typing');
+  assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+});
+
+test('revealedRecords is validated and only ever lists this case\'s records', () => {
+  const c = atlasScenarios('CA').find((x) => x.id === CASE);
+  atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', 'SIM-CA-02-REC3');
+  assert.deepEqual(atlas.activeAtlasCase().revealedRecords, ['SIM-CA-02-REC3'], 'only matching records are revealed');
+  atlas.atlasAction('search', '');
+  assert.deepEqual([...atlas.activeAtlasCase().revealedRecords].sort(), c.records.map((r) => r.id).sort());
+  const base = atlas.atlasSnapshot();
+  for (const bad of [['SIM-CA-03-REC1'], ['SIM-CA-02-REC1', 'SIM-CA-02-REC1'], 'SIM-CA-02-REC1', [1]]) {
+    const s = structuredClone(base); s.sessions.CA.cases[CASE].revealedRecords = bad;
+    assert.equal(atlas.validateAtlasSave(s), false, JSON.stringify(bad));
+  }
+  // Older saves without the field remain valid and gain it on the next search.
+  const old = structuredClone(base); delete old.sessions.CA.cases[CASE].revealedRecords;
+  assert.equal(atlas.validateAtlasSave(old), true);
+  // Replay starts with nothing revealed.
+  atlas.restartAtlasCase(CASE);
+  assert.deepEqual(atlas.activeAtlasCase().revealedRecords, []);
+});
+
+test('a save from before revealedRecords keeps its selection on the first non-matching keystroke', () => {
+  atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', ''); atlas.atlasAction('selectFact', FACT);
+  const old = atlas.atlasSnapshot(); delete old.sessions.CA.cases[CASE].revealedRecords;
+  localStorage.setItem(atlas.ATLAS_KEY, JSON.stringify(old)); reload(); atlas.selectCountry('CA');
+  assert.equal(atlas.activeAtlasCase().revealedRecords, undefined, 'fixture: field absent after load');
+  atlas.atlasAction('search', 'Qx');
+  assert.deepEqual(atlas.activeAtlasCase().graph.selectedFacts, [FACT], 'selection kept');
+  assert.ok(atlas.activeAtlasCase().revealedRecords.includes('SIM-CA-02-REC3'), 'seeded from the saved search');
+  assertSelectionsVisible(atlas.atlasSnapshot(), 'after first keystroke');
+});
+
+test('opening a record reveals it even when the current search does not list it', () => {
+  atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', 'zzz-no-such-record');
+  assert.deepEqual(atlas.activeAtlasCase().revealedRecords, []);
+  atlas.atlasAction('record', 'SIM-CA-02-REC3');
+  assert.deepEqual(atlas.activeAtlasCase().revealedRecords, ['SIM-CA-02-REC3']);
+  atlas.atlasAction('record', 'SIM-CA-02-REC1');
+  assert.equal(atlas.atlasAction('selectFact', FACT), true, 'REC3 stays revealed after opening another record');
 });

@@ -14,22 +14,30 @@ async function openCA02(page) {
   await page.locator('#atlasCallPassenger').click();
 }
 
-test('record search: a selected record fact survives a new search without locking the save', async ({ page }) => {
+test('record search: a selected record fact stays selected while typing a new search, and saving keeps working', async ({ page }) => {
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   await openCA02(page);
   await page.locator('#atlasSearchForm button[type="submit"]').click();
   await page.locator('#fact-SIM-CA-02-F-ADDR').click();
   await expect(page.locator('#compareSlot1')).toHaveClass(/has-fact/);
-  await page.locator('#atlasSearch').fill('zzz-no-such-record');
+  // Type a query key by key (each keystroke searches); a record once listed stays revealed,
+  // so neither a passing non-match nor a final non-matching query drops the selection.
+  await page.locator('#atlasSearch').pressSequentially('Prx');
+  await expect(page.locator('#compareSlot1')).toHaveClass(/has-fact/);
+  await page.locator('#atlasSearch').fill('');
+  await page.locator('#atlasSearch').pressSequentially('zzz-no-such-record');
   await expect(page.locator('#atlasSearchForm + p')).toContainText(/없습니다|No synthetic/);
-  // The hidden selection is released instead of being saved in an invalid state.
-  await expect(page.locator('#compareSlot1')).not.toHaveClass(/has-fact/);
+  await expect(page.locator('#compareSlot1')).toHaveClass(/has-fact/);
+  await expect(page.locator('#compareSlot1')).toContainText(/주소|address/);
   await page.locator('#atlasNotes').fill('Saving must keep working after a narrower search.');
   await expect(page.locator('#atlasSaveStatus')).toContainText(/저장됨|Saved on this device/);
   await page.reload();
   await expect(page.locator('#atlasNotes')).toHaveValue('Saving must keep working after a narrower search.');
   await expect(page.locator('#atlasSaveStatus')).toContainText(/저장됨|Saved on this device/);
-  expect((await stored(page)).sessions.CA.cases['SIM-CA-02'].graph.selectedFacts).toEqual([]);
+  await expect(page.locator('#compareSlot1')).toHaveClass(/has-fact/);
+  const saved = (await stored(page)).sessions.CA.cases['SIM-CA-02'];
+  expect(saved.graph.selectedFacts).toEqual(['SIM-CA-02-F-ADDR']);
+  expect(saved.revealedRecords).toContain('SIM-CA-02-REC3');
   expect(errors).toEqual([]);
 });
 
@@ -46,6 +54,7 @@ test('record search: a save written by the affected build recovers on load and o
   await page.locator('#atlasNotes').fill('New Zealand progress kept through recovery.');
   const broken = await stored(page);
   broken.sessions.CA.cases['SIM-CA-02'].search = 'zzz-no-such-record';
+  delete broken.sessions.CA.cases['SIM-CA-02'].revealedRecords; // the #27/#28 builds never wrote this field
   await page.evaluate((raw) => localStorage.setItem('inad-atlas-v1', raw), JSON.stringify(broken));
   await page.reload();
   await expect(page.locator('#atlasNotes')).toHaveValue('New Zealand progress kept through recovery.');
