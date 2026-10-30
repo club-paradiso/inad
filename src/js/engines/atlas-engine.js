@@ -29,14 +29,14 @@ export function activeAtlasCase() {
 }
 export function currentAtlasScenario() { return atlasScenario(state.countryId, activeAtlasSession()?.activeId); }
 export function emptyAtlasCase(c) {
-  return { countryId: c.countryId, scenarioId: c.id, rulesetVersion: SIMULATION_RULESET, asked: [], reviewed: [], tasks: [], selectedDoc: c.documents[0].id, pages: Object.fromEntries(c.documents.map((d) => [d.id, 0])), zoom: 100, search: '', searched: false, selectedRecord: null, notes: '', outcome: null, completed: false, rationale: '', graph: createEmptyGraph() };
+  return { countryId: c.countryId, scenarioId: c.id, rulesetVersion: SIMULATION_RULESET, asked: [], reviewed: [], tasks: [], selectedDoc: c.documents[0].id, pages: Object.fromEntries(c.documents.map((d) => [d.id, 0])), zoom: 100, search: '', searched: false, selectedRecord: null, revealedRecords: [], notes: '', outcome: null, completed: false, rationale: '', graph: createEmptyGraph() };
 }
 export function atlasCaseValid(v, c) {
   const allowedQuestions = [...c.questions, ...(c.investigativeQuestions || [])].map((q) => q.id);
   return plain(v) && !!c && v.countryId === c.countryId && v.scenarioId === c.id && v.rulesetVersion === SIMULATION_RULESET &&
     list(v.asked, allowedQuestions) && list(v.reviewed, c.documents.map((d) => d.id)) && list(v.tasks, c.tasks.map((t) => t.id)) &&
     c.documents.some((d) => d.id === v.selectedDoc) && plain(v.pages) && Object.keys(v.pages).length === c.documents.length && c.documents.every((d) => Number.isInteger(v.pages[d.id]) && v.pages[d.id] >= 0 && v.pages[d.id] < d.pages.length) &&
-    [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
+    [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && (v.revealedRecords === undefined || list(v.revealedRecords, c.records.map((r) => r.id))) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
     (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (v.legacyDocuments === undefined || (v.legacyDocuments === 2 && v.completed)) &&
     (!v.completed || (v.outcome !== null && (v.reviewed.length === c.documents.length || (v.legacyDocuments === 2 && c.documents.slice(0, 2).every((d) => v.reviewed.includes(d.id)))) && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
     (v.graph === undefined || (validateGraphState(v.graph) && graphConsistent(v, c))) &&
@@ -185,7 +185,9 @@ export function setAtlasView(view) { if (!['counter', 'system'].includes(view)) 
 // desk, records need a search, statements need the question, request results need the request.
 export function atlasFactVisible(c, v, f) {
   if (!f) return false;
-  if (f.sourceType === 'record') { const r = c.records.find((x) => x.id === f.sourceId); return !!r && (v.selectedRecord === r.id || (v.searched && atlasRecordMatches(c, r, v.search))); }
+  // A record stays revealed once any search listed it (or it was opened), like asked
+  // statements and issued requests; saves without revealedRecords use the current search.
+  if (f.sourceType === 'record') { const r = c.records.find((x) => x.id === f.sourceId); return !!r && (v.selectedRecord === r.id || (Array.isArray(v.revealedRecords) && v.revealedRecords.includes(r.id)) || (v.searched && atlasRecordMatches(c, r, v.search))); }
   if (f.sourceType === 'statement') return !f.questionIds || f.questionIds.some((q) => v.asked.includes(q));
   if (f.sourceType === 'request') return !!v.graph?.evidenceRequests.includes(f.requestId);
   return true;
@@ -194,6 +196,10 @@ export function atlasFactVisible(c, v, f) {
 export function atlasRecordMatches(c, r, query) {
   const q = String(query || '').toLowerCase();
   return `${r.id} ${c.name} ${r.title.ko} ${r.title.en} ${r.detail.ko} ${r.detail.en}`.toLowerCase().includes(q);
+}
+function revealRecords(c, v, ids) {
+  if (!Array.isArray(v.revealedRecords)) v.revealedRecords = [];
+  for (const id of ids) if (!v.revealedRecords.includes(id)) v.revealedRecords.push(id);
 }
 function releaseHiddenSelections(c, v) {
   v.graph.selectedFacts = v.graph.selectedFacts.filter((id) => atlasFactVisible(c, v, facts(c).find((f) => f.id === id)));
@@ -208,10 +214,10 @@ export function atlasAction(action, value) {
   if (action === 'document' && c.documents.some((x) => x.id === value)) v.selectedDoc = value;
   else if (action === 'page' && Number.isInteger(value) && value >= 0 && value < d.pages.length) v.pages[d.id] = value;
   else if (action === 'zoom' && [100, 125, 150].includes(value)) v.zoom = value;
-  // A new search (or another opened record) can hide record facts; release only those
-  // selections. Discoveries and comparison history are never touched.
-  else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; releaseHiddenSelections(c, v); }
-  else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; releaseHiddenSelections(c, v); }
+  // Records a search lists stay revealed, so typing or refining a query never drops a
+  // selection. The release only applies to saves from before revealedRecords existed.
+  else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; revealRecords(c, v, c.records.filter((r) => atlasRecordMatches(c, r, value)).map((r) => r.id)); releaseHiddenSelections(c, v); }
+  else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; revealRecords(c, v, [value]); releaseHiddenSelections(c, v); }
   else if (v.completed) return false;
   else if (action === 'ask') {
     // Every case: the person must be at the counter before any question is put.
