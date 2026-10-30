@@ -24,12 +24,13 @@ jobs:
         run: |
           set -euo pipefail
           test -s index.html
-          test "$(wc -c < index.html)" -gt 100000
+          test "$(wc -c < index.html)" -lt 50000
           grep -Fq '<title>INAD</title>' index.html
           grep -Fq 'GENERATED FILE, DO NOT EDIT' index.html
           grep -Fq '2026-09-07' index.html
           grep -Fq 'INAD_SAVE_BUNDLE' index.html
-          grep -Fq 'data:image/' index.html
+          grep -Fq 'type="module"' index.html
+          grep -Fq 'rel="stylesheet"' index.html
           sha256sum index.html
   verify:
     runs-on: ubuntu-latest
@@ -56,8 +57,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: inad-release-html
-          path: dist/index.html
+          name: inad-release-dist
+          path: dist/
           if-no-files-found: error
   atlas-cross-browser:
     # ATLAS release gate: engine/UI behavior in both non-Chromium engines.

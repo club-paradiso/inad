@@ -23,8 +23,7 @@ export function runDiagnostics() {
   let qok = false; try { qok = session.queue.length === 36 && session.queue.every((x) => travelerMap.has(x.travelerId) && (x.caseId ? coreCaseMap.has(x.caseId) : session.normalCaseMap.has(x.normalId))); } catch (e) { /* keep false */ }
   checks.push(check('현재 근무 큐', qok ? 'pass' : 'fail', `${session.queue.length}명 · 참조 ${qok ? '정상' : '오류'}`));
   const portrait = pool.every((t) => /^data:image\/(webp|png|jpeg);base64,/.test(t.portrait || '') || /assets\/portraits\/TRV-\d{4}\.webp$/.test(t.portrait || ''));
-  const inline = pool.every((t) => /^data:image\//.test(t.portrait || ''));
-  checks.push(check('초상화 에셋', portrait ? (inline ? 'pass' : 'warn') : 'fail', portrait ? (inline ? '내장 Data URI 정상' : '개발 모드 · 파일 에셋') : '누락 또는 외부 에셋'));
+  checks.push(check('초상화 에셋', portrait ? 'pass' : 'fail', portrait ? '정적 WebP 에셋 정상 (105명)' : '누락 또는 외부 에셋'));
   const domIds = [...document.querySelectorAll('[id]')].map((x) => x.id), dups = domIds.filter((v, i, a) => a.indexOf(v) !== i); checks.push(check('DOM ID', dups.length ? 'fail' : 'pass', dups.length ? `${[...new Set(dups)].length}개 중복` : '중복 0'));
   const ext = [...document.querySelectorAll('[src],[href]')].filter((el) => /^https?:\/\//i.test(el.getAttribute('src') || el.getAttribute('href') || '')); checks.push(check('외부 네트워크 에셋', ext.length ? 'warn' : 'pass', ext.length ? `${ext.length}개 발견` : '0개'));
   checks.push(check('브라우저 저장소', storageWritable() ? 'pass' : 'warn', storageWritable() ? '읽기/쓰기 가능' : '사용 불가 · 세션은 플레이 가능'));

@@ -1,4 +1,5 @@
-// Lossless build-only string interning. References stay inside esbuild's IIFE;
+// Build-only string interning (retired from active production build in PR #26).
+// Retained for utility test reference. References stay inside IIFE;
 // source modules, property keys, directives and network call targets stay intact.
 import { parse } from 'acorn';
 

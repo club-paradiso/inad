@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
-const builtPath = path.join(root, 'dist', 'index.html');
+const distDir = path.join(root, 'dist');
+const builtPath = path.join(distDir, 'index.html');
 
 if (!fs.existsSync(builtPath)) {
   console.error('Built-page smoke check failed. dist/index.html does not exist.');
@@ -13,31 +14,70 @@ if (!fs.existsSync(builtPath)) {
 }
 
 const html = fs.readFileSync(builtPath, 'utf8');
-const checks = [
+const missing = [];
+
+// 1. Verify CSS reference and file existence
+const cssMatch = html.match(/<link rel="stylesheet" href="(assets\/style\.[a-f0-9]+\.css)">/);
+if (!cssMatch) {
+  missing.push('hashed stylesheet link (assets/style.[hash].css)');
+} else {
+  const cssPath = path.join(distDir, cssMatch[1]);
+  if (!fs.existsSync(cssPath) || fs.statSync(cssPath).size < 50000) {
+    missing.push(`valid CSS asset file on disk (${cssMatch[1]})`);
+  }
+}
+
+// 2. Verify ESM JS reference and file existence
+const jsMatch = html.match(/<script type="module" src="(assets\/app\.[a-f0-9]+\.js)"><\/script>/);
+if (!jsMatch) {
+  missing.push('hashed ESM script tag (assets/app.[hash].js)');
+} else {
+  const jsPath = path.join(distDir, jsMatch[1]);
+  if (!fs.existsSync(jsPath) || fs.statSync(jsPath).size < 300000) {
+    missing.push(`valid JS asset file on disk (${jsMatch[1]})`);
+  } else {
+    const jsCode = fs.readFileSync(jsPath, 'utf8');
+    const jsChecks = [
+      ['optional UI isolation marker', /Optional UI enhancement disabled/],
+      ['boot watchdog marker', /bootFailureNotice/],
+      ['UI localization bundled', /inad-locale/],
+      ['work manual bundled', /work-manual|workManual/]
+    ];
+    for (const [label, pattern] of jsChecks) {
+      if (!pattern.test(jsCode)) missing.push(label);
+    }
+    try {
+      new vm.Script(jsCode, { filename: jsMatch[1] });
+    } catch (e) {
+      missing.push(`ESM bundle compiles (${e.message})`);
+    }
+  }
+}
+
+// 3. HTML DOM structure markers
+const htmlChecks = [
   ['start overlay', /\bid=["']startOverlay["']/],
   ['start button', /\bid=["']startBtn["']/],
-  ['optional UI isolation marker', /Optional UI enhancement disabled/],
-  ['boot watchdog marker', /bootFailureNotice/],
-  ['UI localization bundled', /inad-locale/],
-  ['adaptive task navigation present', /\bid=["']taskNav["']/],
-  ['work manual bundled', /work-manual|workManual/]
+  ['adaptive task navigation present', /\bid=["']taskNav["']/]
 ];
+for (const [label, pattern] of htmlChecks) {
+  if (!pattern.test(html)) missing.push(label);
+}
 
-const stripped = html.replace(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g, '');
-const missing = checks.filter(([, pattern]) => !pattern.test(html)).map(([label]) => label);
-// A computed `import(path)` survives bundling as a runtime request that 404s on the single-file
-// release page. Every optional module has to be inlined by esbuild.
-if (/\bimport\s*\(/.test(stripped)) missing.push('no unresolved dynamic import() in bundle');
-
-// The inline bundle must compile: a corrupted release (e.g. an expanded `$&` in a string replacement)
-// otherwise only shows up as a blank start screen in the browser.
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-if (scripts.length !== 1) missing.push(`exactly one inline script (found ${scripts.length})`);
-for (const code of scripts) { try { new vm.Script(code, { filename: 'dist/index.html#inline' }); } catch (e) { missing.push(`inline script compiles (${e.message})`); } }
+// 4. Portrait assets verification
+const portraitsDir = path.join(distDir, 'assets/portraits');
+if (!fs.existsSync(portraitsDir)) {
+  missing.push('assets/portraits directory exists');
+} else {
+  const portraits = fs.readdirSync(portraitsDir).filter((f) => f.endsWith('.webp'));
+  if (portraits.length !== 105) {
+    missing.push(`105 portraits in assets/portraits (found ${portraits.length})`);
+  }
+}
 
 if (missing.length) {
   console.error(`Built-page smoke check failed. Missing: ${missing.join(', ')}`);
   process.exit(1);
 }
 
-console.log(`Built-page smoke check OK (${checks.length} critical markers).`);
+console.log(`Built-page smoke check OK (modular architecture, hashed assets, 105 portraits verified).`);

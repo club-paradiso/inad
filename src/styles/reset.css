@@ -8,6 +8,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
 button:disabled { cursor: not-allowed; }
 img { display: block; max-width: 100%; }
+img:not([src]), img[src=""] { visibility: hidden; }
 table { border-collapse: collapse; }
 [hidden] { display: none !important; }
 .mono { font-family: var(--mono); }
