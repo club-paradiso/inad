@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { ENTRY } from './helpers.js';
 import fs from 'node:fs';
-import { atlasScenarios } from '../../src/data/atlas-scenarios.js';
+import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
+await loadAtlasLibraries();
 
 test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to the current app.');
 async function openAtlas(page, country = 'CA') {
@@ -23,7 +24,8 @@ async function reviewCase(page, country, number) {
   if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await task(page, 'interview'); await page.locator('#ask-clarify').click();
   await task(page, 'evidence'); await recordSearch(page);
-  for (const suffix of ['DOC1', 'DOC2']) { await page.locator(`#doc-${id}-${suffix}`).click(); await page.locator('#atlasReviewDoc').click(); }
+  // v11: legacy cases may carry extra documents; every document is reviewed.
+  for (const doc of atlasScenarios(country).find((c) => c.id === id).documents) { await page.locator(`#doc-${doc.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Compared original documents and statement; unresolved facts retained for follow-up.');
   await task(page, 'evidence');
   for (const check of ['identity','evidence','handover']) await page.locator(`#task-${check}`).click();
@@ -95,7 +97,7 @@ for (const country of ['CA','GB','NZ']) for (const width of [1440,1024,768,390])
   expect(small).toEqual([]);
   await page.locator('#atlasCountry').focus(); await page.keyboard.press('Enter'); await expect(page.locator('#modal')).toHaveAttribute('aria-hidden','false');
   await page.keyboard.press('Escape'); await expect(page.locator('#atlasCountry')).toBeFocused();
-  await task(page,'interview'); await page.locator('#ask-clarify').click(); await expect(page.locator('.atlas-transcript')).toContainText(atlasScenarios(country)[0].questions[0].answer.en);
+  await task(page,'interview'); await page.locator('#ask-clarify').click(); await expect(page.locator('.atlas-transcript')).toContainText(atlasScenarios(country)[0].questions.find((q) => q.id === 'clarify').answer.en);
   await task(page,'evidence');
   if (process.env.ATLAS_SCREENSHOTS) { fs.mkdirSync(process.env.ATLAS_SCREENSHOTS,{recursive:true}); await page.screenshot({ path: `${process.env.ATLAS_SCREENSHOTS}/${country.toLowerCase()}-${width}.png` }); }
 });
@@ -164,7 +166,7 @@ test('another open tab cannot silently overwrite newer international notes', asy
 for (const country of ['CA', 'GB', 'NZ']) test(`${country}: optional case-specific cross-check persists and is visible in assessment`, async ({ page }) => {
   await openAtlas(page, country);
   if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
-  const followup = atlasScenarios(country)[0].questions.find(q => q.id === 'crosscheck');
+  const followup = atlasScenarios(country).find((c) => c.id === `SIM-${country}-01`).questions.find(q => q.id === 'crosscheck');
   await page.locator('#ask-crosscheck').click();
   await expect(page.locator('.atlas-transcript')).toContainText(followup.answer.en);
   await expect(page.locator('.zone-assessment')).toContainText('추가 원문 교차 질문 확인됨');

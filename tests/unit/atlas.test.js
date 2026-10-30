@@ -9,7 +9,8 @@ import * as save from '../../src/js/engines/save-engine.js';
 
 beforeEach(() => { resetStorage(); Object.assign(state, { countryId: 'KR', airportId: 'icn-t2', sessionMode: 'shift', scenarioId: 'normal', rulesetVersion: 'kr-v6.1', started: false, atlas: { sessions: {}, view: 'counter', krContext: null, storageBlocked: false, saveStatus: 'idle' } }); });
 function ready(c) {
-  if (c.id === 'SIM-CA-01') atlas.callAtlasPassenger();
+  // v11: every case starts with the passenger call.
+  if (!atlas.activeAtlasCase().encounter) assert.equal(atlas.callAtlasPassenger(), true);
   atlas.atlasAction('ask', c.questions[0].id);
   atlas.atlasAction('record', c.records[0].id);
   for (const d of c.documents) { atlas.atlasAction('document', d.id); atlas.atlasAction('review', d.id); }
@@ -135,7 +136,8 @@ test('case-specific cross-check prompts are grounded, optional and save-compatib
     }
     atlas.selectCountry(c.countryId);
     atlas.selectAtlasCase(c.id);
-    if (c.id === 'SIM-CA-01') atlas.callAtlasPassenger();
+    // v11: every case starts with the passenger call.
+  if (!atlas.activeAtlasCase().encounter) assert.equal(atlas.callAtlasPassenger(), true);
     assert.equal(atlas.atlasAction('ask', 'crosscheck'), true);
     assert.ok(atlas.activeAtlasCase().asked.includes('crosscheck'));
     assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
@@ -246,12 +248,15 @@ test('Legacy completed saves without encounter remain valid, UK/NZ require no en
   delete ca01.encounter;
   assert.equal(atlas.validateAtlasSave(snap), true);
 
-  // UK and NZ cases do not require encounter in atlasMissing
+  // v11: UK and NZ cases require the same encounter as Canada (no per-case exemption)
   atlas.selectCountry('GB');
   atlas.selectAtlasCase('SIM-GB-02');
-  assert.equal(atlas.atlasMissing().includes('encounter'), false);
+  assert.equal(atlas.atlasMissing().includes('encounter'), true);
+  assert.equal(atlas.atlasAction('ask', 'clarify'), false);
 
   atlas.selectCountry('NZ');
   atlas.selectAtlasCase('SIM-NZ-02');
+  assert.equal(atlas.atlasMissing().includes('encounter'), true);
+  assert.equal(atlas.callAtlasPassenger(), true);
   assert.equal(atlas.atlasMissing().includes('encounter'), false);
 });

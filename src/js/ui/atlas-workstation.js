@@ -2,7 +2,7 @@
 // parked Korean DOM nodes retain their listeners, drafts and document view state.
 import { state } from '../state.js';
 import { countryPack, COUNTRY_IDS } from '../../data/country-packs.js';
-import { atlasScenarios } from '../../data/atlas-scenarios.js';
+import { atlasScenarios, loadAtlasLibrary, loadAtlasLibraries } from '../../data/atlas-scenarios.js';
 import * as atlas from '../engines/atlas-engine.js';
 import { atlasText as text, getLocale, setLocale } from '../services/i18n.js';
 import { bus } from '../services/bus.js';
@@ -20,10 +20,14 @@ const h = (value) => esc(text(value));
 const parkedZones = new Map();
 let koreanTask = 'passenger';
 let callbacks;
-const outcomes = () => ({ complete: l('검토 완료', 'Review complete'), evidence: l('자료 요청', 'Request evidence'), review: l('추가 검토', 'Additional review') });
-const button = (id, label, attr = '') => `<button type="button" class="act" id="${id}" ${attr}>${esc(label)}</button>`;
+// Outcome labels come from the country pack; the three simulation outcomes are shared.
+const outcomes = () => Object.fromEntries(Object.entries(countryPack(state.countryId)?.outcomes || { complete: { ko: '검토 완료', en: 'Review complete' }, evidence: { ko: '보완 자료 요청', en: 'Request supporting evidence' }, review: { ko: '추가 검토', en: 'Further review' } }).map(([k, v]) => [k, text(v)]));
+const DIFFICULTY = { intro: ['입문', 'Intro'], standard: ['표준', 'Standard'], advanced: ['심화', 'Advanced'] };
+const diffText = (d) => l(...(DIFFICULTY[d] || DIFFICULTY.standard));
+// A caller-supplied class replaces the default (duplicate attributes are ignored by HTML).
+const button = (id, label, attr = '') => `<button type="button" ${/\bclass="/.test(attr) ? '' : 'class="act"'} id="${id}" ${attr}>${esc(label)}</button>`;
 const box = (title, content) => `<div class="atlas-section"><h2>${esc(title)}</h2>${content}</div>`;
-const factChip = (f, sel, icon = '📌') => `<button type="button" class="act fact-chip ${sel ? 'selected' : ''}" data-fact="${f.id}" aria-pressed="${String(sel)}" id="fact-${f.id}"><span class="chip-icon">${sel ? '✓' : icon}</span><span>${h(f.label)}</span></button>`;
+const factChip = (f, sel) => `<button type="button" class="act fact-chip ${sel ? 'selected' : ''}" data-fact="${f.id}" aria-pressed="${String(sel)}" id="fact-${f.id}"><span class="chip-icon" aria-hidden="true">${sel ? '✓' : '+'}</span><span>${h(f.label)}</span></button>`;
 const SAVE_LABELS = {
   saved: ['이 기기에 저장됨', 'Saved on this device'],
   failed: ['저장 실패 · 입력 유지', 'Save failed · input preserved'],
@@ -60,7 +64,7 @@ function mountCountry() {
 }
 export function openCountrySelector(error = '', selected = state.countryId) {
   if (!countryPack(selected)) selected = 'KR';
-  showModal(l('국가와 업무 선택', 'Choose country and duty'), `<div class="atlas-setup" data-i18n-control><p>${l('국가별 업무 연습 (합성 자료 · 법률 판정 미제공)', 'Practice duty stations (synthetic cases · no legal determinations)')}</p>${error ? `<p role="alert">${esc(error)}</p>` : ''}<fieldset><legend>${l('국가', 'Country')}</legend><div class="atlas-country-list">${COUNTRY_IDS.map((id) => { const p = countryPack(id); return `<label><input type="radio" name="atlas-country" value="${id}" ${id === selected ? 'checked' : ''}><span><strong>${h(p.name)}</strong><span>${h(p.title)}</span><small>${h(p.status)}</small></span></label>`; }).join('')}</div></fieldset><div id="atlasPackDetail"></div><div class="atlas-settings"><label>${l('화면 언어', 'UI language')}<select id="atlasLocale"><option value="ko" ${getLocale() === 'ko' ? 'selected' : ''}>한국어</option><option value="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option></select></label>${button('atlasAccessibility', l('접근성 설정', 'Accessibility settings'))}</div><p>${l('사건은 국가별로 보관됩니다.', 'Cases are kept separately by country.')}</p><div class="modal-actions">${error ? '' : button('atlasCancel', l('취소', 'Cancel'))}<button type="button" class="act primary" id="atlasEnter">${l('선택한 업무로 이동', 'Open selected duty')}</button></div></div>`, { size: 'wide', dismissible: !error });
+  showModal(l('국가와 업무 선택', 'Choose country and duty'), `<div class="atlas-setup" data-i18n-control><p>${l('국가별 업무 연습 (합성 자료 · 법률 판정 미제공)', 'Practice duty stations (synthetic cases · no legal determinations)')}</p>${error ? `<p role="alert">${esc(error)}</p>` : ''}<fieldset><legend>${l('국가', 'Country')}</legend><div class="atlas-country-list">${COUNTRY_IDS.map((id) => { const p = countryPack(id); const pr = id === 'KR' ? null : atlas.atlasProgress(id); return `<label><input type="radio" name="atlas-country" value="${id}" ${id === selected ? 'checked' : ''}><span><strong>${h(p.name)}</strong><span>${h(p.title)}</span><small>${h(p.status)}${pr && pr.total ? ` · ${pr.completed}/${pr.total} ${l('완료', 'complete')}` : ''}</small></span></label>`; }).join('')}</div></fieldset><div id="atlasPackDetail"></div><div class="atlas-settings"><label>${l('화면 언어', 'UI language')}<select id="atlasLocale"><option value="ko" ${getLocale() === 'ko' ? 'selected' : ''}>한국어</option><option value="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option></select></label>${button('atlasAccessibility', l('접근성 설정', 'Accessibility settings'))}</div><p>${l('사건은 국가별로 보관됩니다.', 'Cases are kept separately by country.')}</p><div class="modal-actions">${error ? '' : button('atlasCancel', l('취소', 'Cancel'))}<button type="button" class="act primary" id="atlasEnter">${l('선택한 업무로 이동', 'Open selected duty')}</button></div></div>`, { size: 'wide', dismissible: !error });
   const details = (id) => {
     const p = countryPack(id), s = state.atlas.sessions[id];
     byId('atlasPackDetail').innerHTML = `<h3>${h(p.name)} · ${h(p.title)}</h3><p>${h(p.description)}</p><p>${l('디자인 근거', 'Design evidence')}: ${esc(p.authenticity)} · ${p.sources.join(', ')}</p><p>${({ CA: l('IRCC 패턴 참고', 'IRCC patterns'), GB: l('UKVI 과업 패턴 참고', 'UKVI patterns'), NZ: l('INZ 지침 참고', 'INZ patterns'), KR: l('한국 심사 기준 유지', 'Korean baseline') })[id] || ''}</p>${id === 'KR' ? `<p>${l('공항·난이도·인터뷰 언어는 기존 한국 모드에서 설정합니다.', 'Configure airport, difficulty and interview language in the existing Korean mode.')}</p>` : `<div class="atlas-settings"><label>${l('가상 근무지', 'Fictional duty station')}<select id="atlasAirport">${p.airports.map((a) => `<option value="${a.id}" ${a.id === s?.airportId ? 'selected' : ''}>${h(a.name)}</option>`).join('')}</select></label><label>${l('업무 모드', 'Duty mode')}<select id="atlasMode"><option value="simulation">${l('절차·증거 검토 연습', 'Procedure and evidence practice')}</option></select></label><label>${l('안내 수준', 'Guidance')}<select id="atlasDifficulty"><option value="guided">${l('안내 제공', 'Guided')}</option><option value="independent" ${s?.difficulty === 'independent' ? 'selected' : ''}>${l('자율 검토', 'Independent')}</option></select></label><label>${l('인터뷰 언어', 'Interview language')}<select id="atlasInterviewLanguage"><option value="en">English</option><option value="ko" ${s?.interviewLanguage === 'ko' ? 'selected' : ''}>한국어</option></select></label></div><p class="atlas-muted">${l('가상 근무 맥락입니다.', 'Fictional station context.')}</p>`}`;
@@ -73,47 +77,35 @@ export function openCountrySelector(error = '', selected = state.countryId) {
   byId('atlasEnter').onclick = () => {
     const id = $('[name="atlas-country"]:checked').value;
     const options = { airportId: byId('atlasAirport')?.value, difficulty: byId('atlasDifficulty')?.value, interviewLanguage: byId('atlasInterviewLanguage')?.value };
-    const go = () => { const r = atlas.selectCountry(id, options); if (!r.ok) return; closeModal(); mountCountry(); if (id !== 'KR') { renderAtlas(); showTask(state.atlas.view === 'counter' ? 'interview' : 'evidence'); byId('atlasCaseHeading')?.focus(); } else { callbacks.renderKorean(); if (state.started) byId('caseName')?.focus(); } };
+    const go = async () => { await loadAtlasLibrary(id).catch(() => null); const r = atlas.selectCountry(id, options); if (!r.ok) { if ($('#atlasEnter')) announceA11y(l('사건 자료를 불러오지 못했습니다. 다시 시도하세요.', 'Case content could not be loaded. Try again.')); return; } closeModal(); mountCountry(); if (id !== 'KR') { renderAtlas(); showTask(state.atlas.view === 'counter' ? 'interview' : 'evidence'); byId('atlasCaseHeading')?.focus(); } else { callbacks.renderKorean(); if (state.started) byId('caseName')?.focus(); } };
     if (state.started && id !== state.countryId) {
       showModal(l('국가 변경 확인', 'Confirm country change'), `<div data-i18n-control><p>${l('현재 사건을 보관하고 선택한 국가로 이동합니다. 돌아오면 검토를 이어갈 수 있습니다.', 'Keep the current case and switch countries. Return here to continue the review.')}</p><p>${state.countryId === 'KR' ? l('한국 사건의 현재 화면은 이 탭에서 유지됩니다. 새로고침 시에는 마지막 체크포인트부터 복원됩니다.', 'The current Korean screen stays in this tab. Reloading restores the last checkpoint.') : esc(saveLabel())}</p><div class="modal-actions">${button('atlasStay', l('현재 국가 유지', 'Stay here'), 'data-autofocus')}<button type="button" class="act primary" id="atlasSwitch">${l('국가 변경', 'Switch country')}</button></div></div>`);
       byId('atlasStay').onclick = closeModal; byId('atlasSwitch').onclick = go;
     } else go();
   };
 }
-function personHTML(c, v, p) {
-  return box(l('사람과 사건', 'Person and case'), `${c.id === 'SIM-CA-01' && !v.completed ? (v.encounter ? `<p role="status">${l('대면 조사 중 · 가상 승객', 'At counter · simulated passenger')}</p>` : button('atlasCallPassenger', l('가상 승객 호출', 'Call simulated passenger'))) : ''}<p class="atlas-person">${esc(c.name)}</p><dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl><p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + box(l('연습 사건', 'Practice cases'), `<div class="atlas-case-list">${atlasScenarios(p.id).map((item) => button(`case-${item.id}`, `${item.id} · ${text(item.title)}${activeCompleted(item.id) ? ' · ' + l('완료', 'Complete') : ''}`, `data-case="${item.id}" aria-current="${item.id === c.id}"`)).join('')}</div>`) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
+function queueHTML(p, c) {
+  const pr = atlas.atlasProgress(p.id);
+  const status = (id) => { const r = atlas.atlasCaseResult(p.id, id); return r.status === 'completed' ? `${l('완료', 'Complete')} · ${r.score}${r.outcomeCorrect ? '' : ' · ' + l('결론 재검토', 'Outcome revisit')}` : r.status === 'active' ? l('진행 중', 'In progress') : l('대기', 'Queued'); };
+  return box(l('사건 대기열', 'Case queue'), `<p class="atlas-progress" role="status">${pr.completed}/${pr.total} ${l('건 완료', 'complete')}${pr.averageScore !== null ? ` · ${l('평균', 'average')} ${pr.averageScore} · ${l('근거 일치', 'supported outcomes')} ${pr.correct}/${pr.completed}` : ''}</p><div class="atlas-case-list">${atlasScenarios(p.id).map((item) => `<button type="button" class="act atlas-case" id="case-${item.id}" data-case="${item.id}" aria-current="${item.id === c.id}"><span class="mono">${item.id}</span><span>${h(item.title)}</span><small>${esc(diffText(item.difficulty))} · ${esc(status(item.id))}</small></button>`).join('')}</div>`);
 }
-const activeCompleted = (id) => atlas.activeAtlasSession()?.cases[id]?.completed;
+function personHTML(c, v, p) {
+  const called = v.encounter?.phase === 'called', closed = v.completed || v.encounter?.phase === 'completed';
+  const call = closed ? `<p class="atlas-muted">${l('면담 종료', 'Interview closed')}</p>` : called ? `<p role="status" class="atlas-state">${l('대면 조사 중 · 가상 승객', 'At counter · simulated passenger')}</p>` : button('atlasCallPassenger', l('가상 승객 호출', 'Call simulated passenger'), 'class="act primary"');
+  const profile = `<dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('난이도', 'Difficulty')}</dt><dd>${esc(diffText(c.difficulty))}</dd>${(c.profile || []).map((row) => `<dt>${h(row.label)}</dt><dd>${h(row.value)}</dd>`).join('')}<dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl>`;
+  return box(l('사람과 사건', 'Person and case'), `${call}<p class="atlas-person">${esc(c.name)}</p>${profile}<p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + queueHTML(p, c) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
+}
 function interviewHTML(c, v) {
   const language = atlas.activeAtlasSession().interviewLanguage;
-  const isCA01 = c.id === 'SIM-CA-01';
-  const atCounter = !isCA01 || v.encounter?.phase === 'called' || v.completed;
-  const stmtFacts = (c.facts || []).filter((f) => f.sourceType === 'statement');
-  const visibleStmtFacts = stmtFacts.filter((f) => !f.questionIds || f.questionIds.some((qid) => v.asked.includes(qid)));
-  const unlockedQIds = v.graph?.unlockedQuestions || [];
+  const atCounter = v.encounter?.phase === 'called';
   const investigative = c.investigativeQuestions || [];
-  const stmtFactsHTML = visibleStmtFacts.length ? `
-    <div class="atlas-fact-group"><small><strong>${l('진술 대조 항목', 'Facts from statements')}:</strong></small><div class="atlas-fact-chips">
-      ${visibleStmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '💬')).join('')}
-    </div></div>` : '';
-
-  const noticeHTML = !atCounter ? `<div class="inline-note warn" role="status"><p>${l('심사대에 가상 승객을 먼저 호출하십시오.', 'Call simulated passenger to counter first.')}</p></div>` : '';
-
-  const questionsHTML = `
-    <div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">
-      ${c.questions.map((q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${!atCounter || v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`)).join('')}
-      ${investigative.map((q) => {
-        const isUnlocked = unlockedQIds.includes(q.id);
-        const isAsked = v.asked.includes(q.id);
-        if (!isUnlocked && !isAsked) {
-          return `<button type="button" class="act locked-q" disabled aria-disabled="true" id="ask-${q.id}" title="${l('서류를 대조하여 상충 또는 누락을 발견하면 해제됩니다.', 'Unlocked by discovering discrepancies in evidence.')}">🔒 ${h(q.q)} <small>(${l('대조 후 해제', 'Locked')})</small></button>`;
-        }
-        return button(`ask-${q.id}`, `💡 ${text(q.q)}`, `data-ask="${q.id}" ${!atCounter || v.completed || isAsked ? 'disabled' : ''}`);
-      }).join('')}
-    </div>
-  `;
-
-  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
+  const visibleStmtFacts = (c.facts || []).filter((f) => f.sourceType === 'statement' && atlas.atlasFactVisible(c, v, f));
+  const stmtFactsHTML = visibleStmtFacts.length ? `<div class="atlas-fact-group"><small><strong>${l('진술 대조 항목', 'Facts from statements')}:</strong></small><div class="atlas-fact-chips">${visibleStmtFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id))).join('')}</div></div>` : '';
+  const noticeHTML = !atCounter && !v.completed ? `<div class="inline-note warn" role="status"><p>${l('심사대에 가상 승객을 먼저 호출하십시오.', 'Call simulated passenger to counter first.')}</p></div>` : '';
+  const opening = atCounter || v.completed ? `<div class="atlas-opening"><b>${l('첫 진술', 'Opening statement')}</b><p lang="${language}">${esc(c.opening?.[language] || '')}</p></div>` : '';
+  const ask = (q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${!atCounter || v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`);
+  const questionsHTML = `<div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">${c.questions.map(ask).join('')}${investigative.map((q) => atlas.atlasQuestionAvailable(c, v, q.id) ? ask(q) : `<button type="button" class="act locked-q" disabled aria-disabled="true" id="ask-${q.id}">${l('후속 질문 · 자료 대조 후 열림', 'Follow-up · opens after a comparison')}</button>`).join('')}</div>`;
+  return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}${opening}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${questionsHTML}`);
 }
 function taskHTML(c, v, title) {
   return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
@@ -121,8 +113,8 @@ function taskHTML(c, v, title) {
 function recordsHTML(c, v) {
   const query = v.search.toLowerCase(), records = v.searched ? c.records.filter((r) => `${r.id} ${c.name} ${text(r.title)} ${text(r.detail)}`.toLowerCase().includes(query)) : [];
   return box(l('기록 조회', 'Record search'), `<form id="atlasSearchForm"><label for="atlasSearch">${l('검색어', 'Search')}</label><div class="atlas-search"><input id="atlasSearch" maxlength="120" value="${esc(v.search)}" autocomplete="off"><button class="act" type="submit">${l('조회', 'Search')}</button>${button('atlasResetSearch', l('초기화', 'Reset'))}</div></form><p role="status">${v.searched ? records.length ? `${records.length} ${l('건 조회', 'results')}` : l('일치하는 기록이 없습니다.', 'No synthetic records match.') : l('조회 대기', 'Not searched')}</p>${records.length ? `<table><caption class="sr-only">${l('합성 기록', 'Records')}</caption><thead><tr><th>${l('기록', 'Record')}</th><th>${l('내용', 'Content')}</th><th>${l('상태', 'State')}</th></tr></thead><tbody>${records.map((r) => {
-    const recFact = (c.facts || []).find((f) => f.sourceId === r.id || f.sourceId === r.documentId);
-    const factBtn = recFact ? factChip(recFact, v.graph?.selectedFacts?.includes(recFact.id)) : '';
+    // Only facts that come from the record itself; document facts live in the document viewer (unique ids).
+    const factBtn = (c.facts || []).filter((f) => f.sourceType === 'record' && f.sourceId === r.id).map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id))).join('');
     return `<tr class="${v.selectedRecord === r.id ? 'selected' : ''}"><th scope="row">${button(`record-${r.id}`, text(r.title), `data-record="${r.id}"`)}<small class="mono">${r.id}</small>${factBtn}</th><td>${h(r.detail)}</td><td>${v.selectedRecord === r.id ? l('선택됨', 'Selected') : l('미선택', 'Not selected')}</td></tr>`;
   }).join('')}</tbody></table>` : ''}`);
 }
@@ -131,7 +123,7 @@ function documentsHTML(c, v) {
   const docFacts = (c.facts || []).filter((f) => f.sourceId === d.id && (f.page === undefined || f.page === page));
   const factsHTML = docFacts.length ? `
     <div class="atlas-fact-group"><small><strong>${l('이 서류의 대조 항목', 'Facts in this document')}:</strong></small><div class="atlas-fact-chips">
-      ${docFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id), '📌')).join('')}
+      ${docFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id))).join('')}
     </div></div>` : '';
   return box(l('문서 검토', 'Document review'), `<div class="atlas-doc-tabs">${c.documents.map((doc) => button(`doc-${doc.id}`, text(doc.title), `data-doc="${doc.id}" aria-pressed="${doc.id === d.id}"`)).join('')}</div><div class="atlas-doc-tools">${button('atlasPrevPage', l('이전 쪽', 'Previous page'), page === 0 ? 'disabled' : '')}<span>${page + 1} / ${d.pages.length}</span>${button('atlasNextPage', l('다음 쪽', 'Next page'), page === d.pages.length - 1 ? 'disabled' : '')}<label>${l('확대', 'Zoom')}<select id="atlasZoom">${[100, 125, 150].map((z) => `<option ${z === v.zoom ? 'selected' : ''} value="${z}">${z}%</option>`).join('')}</select></label></div><article class="atlas-document" style="font-size:${v.zoom}%" aria-label="${h(d.title)}"><small>${l('가상 문서 대조', 'Synthetic document')}</small><h3>${h(d.title)}</h3><p class="mono">${d.id}</p><p>${h(d.pages[page])}</p></article>${factsHTML}<div class="atlas-row"><span>${v.reviewed.includes(d.id) ? l('검토 완료', 'Reviewed') : l('미검토', 'Not reviewed')}</span>${button('atlasReviewDoc', l('검토 자료로 기록', 'Record reviewed'), v.completed || v.reviewed.includes(d.id) ? 'disabled' : '')}</div>`);
 }
@@ -157,11 +149,13 @@ function compareDockHTML(c, v) {
       }).join('')}
     </ul></div>` : '';
 
-  const reqActionHTML = (c.id === 'SIM-NZ-02' && g.discoveries.includes('NZ02_PAGE2_MISSING')) ? `
-    <div class="atlas-req-panel"><p><strong>${l('보완 요구 가능', 'Evidence Request Available')}:</strong> ${l('체류 계획 2쪽 미접수 확인됨', 'Absence of stay plan page 2 confirmed')}</p>${button('atlasRequestPage2', g.evidenceRequests.includes('SIM-NZ-02-REQ-PAGE2') ? l('✓ 체류 계획 2쪽 보완 요청 완료', '✓ Page 2 evidence request lodged') : l('📄 체류 계획 2쪽 보완 요청 발령', '📄 Issue request for stay plan page 2'), g.evidenceRequests.includes('SIM-NZ-02-REQ-PAGE2') ? 'disabled' : 'class="act primary"')}</div>` : '';
+  // Requests appear only once a comparison has established why they are needed.
+  const unlockedRequests = (c.requests || []).filter((r) => (c.comparisons || []).some((x) => x.unlocks?.evidenceRequests?.includes(r.id) && g.discoveries.includes(x.findingId)));
+  const suppliedFacts = allFacts.filter((f) => f.sourceType === 'request' && atlas.atlasFactVisible(c, v, f));
+  const reqActionHTML = unlockedRequests.length ? `<div class="atlas-req-panel"><p><strong>${l('보완 요청', 'Evidence requests')}</strong></p>${unlockedRequests.map((r) => { const issued = g.evidenceRequests.includes(r.id); return `<div class="atlas-req">${issued ? `<p role="status">${l('요청 완료', 'Requested')}: ${h(r.title)}</p><p>${h(r.result)}</p>` : button(`request-${r.id}`, `${l('요청', 'Request')}: ${text(r.title)}`, `data-request="${r.id}" ${v.completed ? 'disabled' : ''}`)}</div>`; }).join('')}${suppliedFacts.length ? `<div class="atlas-fact-chips">${suppliedFacts.map((f) => factChip(f, g.selectedFacts.includes(f.id))).join('')}</div>` : ''}</div>` : '';
 
   return `<section class="atlas-compare-dock" id="atlasCompareDock" aria-label="${l('증거 대조 작업대', 'Evidence comparison dock')}">
-    <div class="dock-header"><h3>🔍 ${l('증거 대조', 'Compare Evidence')}</h3><p class="atlas-muted">${l('대조할 두 항목을 선택하세요.', 'Select two facts to compare.')}</p></div>
+    <div class="dock-header"><h3>${l('증거 대조', 'Compare Evidence')}</h3><p class="atlas-muted">${l('대조할 두 항목을 선택하세요.', 'Select two facts to compare.')}</p></div>
     <div class="dock-slots">${selected.map((f, i) => `<div class="dock-slot ${f ? 'has-fact' : 'empty'}" id="compareSlot${i + 1}"><span class="slot-tag">${l(`항목 ${i + 1}`, `Fact ${i + 1}`)}</span><span class="slot-label">${f ? esc(text(f.label)) : l('선택 대기', 'Waiting for fact')}</span>${f ? `<button type="button" class="act-slot-clear" data-fact="${f.id}" aria-label="${l('선택 취소', 'Deselect')}">✕</button>` : ''}</div>`).join('')}</div>
     <div class="dock-controls"><button type="button" class="act primary" id="atlasDoCompare" ${g.selectedFacts.length === 2 ? '' : 'disabled'}>${l('대조하기', 'Compare Facts')}</button><button type="button" class="act" id="atlasClearFacts" ${g.selectedFacts.length ? '' : 'disabled'}>${l('선택 초기화', 'Clear Selection')}</button></div>
     ${resultBanner}${discoveriesHTML}${reqActionHTML}
@@ -179,7 +173,9 @@ function assessmentHTML(c, v) {
     const route = v.graph?.investigationPath === 'records_first' ? l('기록 우선', 'Records-first') : l('인터뷰 우선', 'Interview-first');
     const rating = { thorough: l('철저한 검토', 'Thorough'), competent: l('적절한 검토', 'Competent'), incomplete: l('추가 대조 권장', 'Incomplete') }[d?.rating] || l('검토 완료', 'Complete');
     const fbs = d?.feedback?.length ? `<ul class="atlas-debrief-points">${d.feedback.map((fb) => `<li>${esc(text(fb))}</li>`).join('')}</ul>` : '';
-    debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${outcomes()[v.outcome]}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p>${v.outcome === c.expectedOutcome ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</p><p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div></div>`;
+    const next = atlas.nextAtlasCaseId();
+    const actions = `<div class="modal-actions">${next ? `<button type="button" class="act primary" id="atlasNextCase">${l('다음 사건', 'Next case')} · ${esc(next)}</button>` : `<p role="status">${l('이 국가의 모든 사건을 마쳤습니다.', 'All cases for this country are complete.')}</p>`}${button('atlasRestartCase', l('이 사건 다시 하기', 'Replay this case'))}</div>`;
+    debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${esc(outcomes()[v.outcome])}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)} · ${d?.score ?? ''}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p><strong>${d?.outcomeCorrect ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</strong>${d?.outcomeFeedback ? ` · ${h(d.outcomeFeedback)}` : ''}</p>${d?.outcomeCorrect ? '' : `<p>${l('근거에 맞는 결론', 'Supported outcome')}: ${esc(outcomes()[c.expectedOutcome])}</p>`}<p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div>${actions}</div>`;
   }
 
   return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · ${v.tasks.length}/${c.tasks.length} ${l('과업 완료', 'tasks checked')}</p><p class="atlas-muted">${esc(crossCheckNote)}</p>${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
@@ -210,7 +206,9 @@ export function renderAtlas() {
   $$('[data-fact]').forEach((b) => { b.onclick = () => { atlas.atlasAction('selectFact', b.dataset.fact); announceA11y(l('대조 항목 선택', 'Fact selected')); }; });
   if (byId('atlasDoCompare')) byId('atlasDoCompare').onclick = () => { const res = atlas.atlasCompare(); if (res.ok) announceA11y(l('대조 완료', 'Comparison complete')); };
   if (byId('atlasClearFacts')) byId('atlasClearFacts').onclick = () => { atlas.atlasAction('clearFacts'); announceA11y(l('초기화', 'Cleared')); };
-  if (byId('atlasRequestPage2')) byId('atlasRequestPage2').onclick = () => { atlas.atlasAction('requestEvidence', 'SIM-NZ-02-REQ-PAGE2'); announceA11y(l('보완 요청 발령', 'Request issued')); };
+  $$('[data-request]').forEach((b) => { b.onclick = () => { if (atlas.atlasAction('requestEvidence', b.dataset.request)) announceA11y(l('보완 요청을 기록했습니다.', 'Request recorded.')); }; });
+  if (byId('atlasNextCase')) byId('atlasNextCase').onclick = () => { if (atlas.startNextAtlasCase()) { showTask('passenger'); byId('atlasCaseHeading')?.focus(); } };
+  if (byId('atlasRestartCase')) byId('atlasRestartCase').onclick = confirmRestart;
   byId('atlasSearchForm').onsubmit = (e) => { e.preventDefault(); atlas.atlasAction('search', byId('atlasSearch').value); };
   byId('atlasSearch').oninput = (e) => { const value = e.target.value; atlas.atlasAction('search', value); byId('atlasSearch').focus(); byId('atlasSearch').setSelectionRange(value.length, value.length); };
   byId('atlasResetSearch').onclick = () => atlas.atlasAction('search', '');
@@ -243,9 +241,15 @@ function prepareOutcome() {
   const missing = atlas.atlasMissing();
   if (missing.length) { renderAtlas(); announceA11y(l('남은 문서·인터뷰·기록·메모·과업을 확인하세요.', 'Complete the outstanding document, interview, record, note and task checks.')); return; }
   const c = atlas.currentAtlasScenario(), v = atlas.activeAtlasCase();
-  showModal(l('가상 결과 확인', 'Confirm simulated outcome'), `<div data-i18n-control><p>${esc(c.name)} · ${c.id}</p><p>${l('연습 기록을 완료합니다. 실제 법적 처분은 발생하지 않습니다.', 'Complete the exercise record. No legal disposition is made.')}</p><label for="atlasOutcome">${l('가상 결과', 'Simulated outcome')}</label><select id="atlasOutcome">${Object.entries(outcomes()).map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('')}</select><label for="atlasRationale">${l('판단 근거와 남은 사항', 'Rationale and unresolved points')}</label><textarea id="atlasRationale" rows="5" maxlength="4000">${esc(v.notes)}</textarea><p id="atlasOutcomeError" role="alert"></p><div class="modal-actions">${button('atlasOutcomeCancel', l('취소', 'Cancel'), 'data-autofocus')}<button type="button" class="act primary" id="atlasConfirmOutcome">${l('연습 기록 완료', 'Complete exercise record')}</button></div></div>`);
+  showModal(l('가상 결과 확인', 'Confirm simulated outcome'), `<div data-i18n-control><p>${esc(c.name)} · ${c.id}</p><p>${l('연습 기록을 완료합니다. 실제 법적 처분은 발생하지 않습니다.', 'Complete the exercise record. No legal disposition is made.')}</p><label for="atlasOutcome">${l('가상 결과', 'Simulated outcome')}</label><select id="atlasOutcome"><option value="">${l('결론을 선택하세요', 'Choose an outcome')}</option>${Object.entries(outcomes()).map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('')}</select><label for="atlasRationale">${l('판단 근거와 남은 사항', 'Rationale and unresolved points')}</label><textarea id="atlasRationale" rows="5" maxlength="4000">${esc(v.notes)}</textarea><p id="atlasOutcomeError" role="alert"></p><div class="modal-actions">${button('atlasOutcomeCancel', l('취소', 'Cancel'), 'data-autofocus')}<button type="button" class="act primary" id="atlasConfirmOutcome">${l('연습 기록 완료', 'Complete exercise record')}</button></div></div>`);
   byId('atlasOutcomeCancel').onclick = closeModal;
-  byId('atlasConfirmOutcome').onclick = () => { if (atlas.completeAtlas(byId('atlasOutcome').value, byId('atlasRationale').value)) { closeModal(); showTask('assessment'); $('.atlas-debrief')?.setAttribute('tabindex', '-1'); $('.atlas-debrief')?.focus(); } else byId('atlasOutcomeError').textContent = l('근거를 10자 이상 입력하고 필수 검토를 완료하세요.', 'Enter at least 10 characters of rationale and complete the required review.'); };
+  byId('atlasConfirmOutcome').onclick = () => { if (atlas.completeAtlas(byId('atlasOutcome').value, byId('atlasRationale').value)) { closeModal(); showTask('assessment'); $('.atlas-debrief')?.setAttribute('tabindex', '-1'); $('.atlas-debrief')?.focus(); } else byId('atlasOutcomeError').textContent = l('결론을 고르고 근거를 10자 이상 입력하세요.', 'Choose an outcome and enter at least 10 characters of rationale.'); };
+}
+function confirmRestart() {
+  const c = atlas.currentAtlasScenario();
+  showModal(l('사건 다시 하기', 'Replay case'), `<div data-i18n-control><p>${esc(c.id)} · ${h(c.title)}</p><p>${l('이 사건의 이전 시도와 결과를 지우고 처음부터 다시 시작합니다. 다른 사건과 국가는 바뀌지 않습니다.', 'This clears the previous attempt and result for this case only. Other cases and countries are unchanged.')}</p><div class="modal-actions">${button('atlasRestartCancel', l('취소', 'Cancel'), 'data-autofocus')}<button type="button" class="act danger" id="atlasRestartConfirm">${l('지우고 다시 시작', 'Clear and replay')}</button></div></div>`);
+  byId('atlasRestartCancel').onclick = closeModal;
+  byId('atlasRestartConfirm').onclick = () => { atlas.restartAtlasCase(c.id); closeModal(); showTask('passenger'); byId('atlasCaseHeading')?.focus(); };
 }
 export function initAtlas(handlers) {
   callbacks = handlers;
@@ -263,6 +267,11 @@ export function initAtlas(handlers) {
     if (changed && state.countryId !== 'KR') announceA11y(l('다른 탭의 최신 저장이 감지되었습니다. 현재 입력을 별도 사본으로 내보내세요.', 'A newer save was detected in another tab. Export your current input separately.'));
   });
   document.addEventListener('inad:localechange', () => { if (state.countryId !== 'KR') renderAtlas(); });
+  // Saved overseas progress can only be validated against its case library, so the
+  // libraries load (as separate chunks) before the save is read. Korean play is not blocked.
+  loadAtlasLibraries().then(restoreAtlas, () => restoreAtlas());
+}
+function restoreAtlas() {
   const selected = atlas.loadAtlas();
   if (!countryPack(selected)) { openCountrySelector(l('저장된 국가를 지원하지 않습니다. 기존 데이터를 보존했습니다. 국가를 직접 선택하세요.', 'The saved country is unsupported. Existing data is preserved. Choose a country explicitly.')); return; }
   if (selected !== 'KR') { atlas.selectCountry(selected); mountCountry(); renderAtlas(); showTask('evidence'); }

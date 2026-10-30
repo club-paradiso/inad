@@ -156,7 +156,7 @@ body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px 
 .atlas-discoveries-summary { margin-top: var(--s-2); padding-top: var(--s-2); border-top: 1px solid var(--border-subtle); }
 .atlas-discovery-tags { list-style: none; padding: 0; margin: var(--s-1) 0 0; display: flex; flex-direction: column; gap: 4px; }
 .atlas-discovery-tags li { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-compact); }
-.atlas-req-panel { margin-top: var(--s-2); padding: var(--s-2); background: var(--warning-soft); border: 1px solid var(--warning); border-radius: var(--r-1); }
+.atlas-req-panel { margin-top: var(--s-2); padding: var(--s-2); background: var(--surface-2, var(--surface)); border: 1px solid var(--border); border-radius: var(--r-1); }
 .atlas-fact-group { margin-top: var(--s-3); padding-top: var(--s-2); border-top: 1px solid var(--border-subtle); }
 .atlas-fact-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-1); }
 .fact-chip { min-height: 44px; display: inline-flex; align-items: center; gap: var(--s-2); padding: 8px 12px; font-size: var(--fs-compact); border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: var(--r-1); cursor: pointer; text-align: left; }
@@ -201,3 +201,14 @@ body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px 
   [data-atlas] .atlas-footer { font-size: 10.5px; padding: 4px 8px; }
   .atlas-section :is(th, td) { padding: 4px; }
 }
+
+/* v11 shared international workstation: queue, opening statement, requests */
+.atlas-case-list .atlas-case { display: grid; gap: 2px; align-items: start; }
+.atlas-case-list .atlas-case small { font-size: var(--fs-compact); color: var(--text-3); }
+.atlas-progress { margin: 0 0 var(--s-2); font-size: var(--fs-compact); }
+.atlas-opening { border-left: 2px solid var(--border); padding: var(--s-1) var(--s-3); margin: var(--s-2) 0; }
+.atlas-opening p { margin: var(--s-1) 0 0; }
+.atlas-state { font-weight: 600; }
+.atlas-req { display: grid; gap: var(--s-1); margin-top: var(--s-2); }
+.atlas-req p { margin: 0; }
+.atlas-debrief .modal-actions { margin-top: var(--s-3); flex-wrap: wrap; }
