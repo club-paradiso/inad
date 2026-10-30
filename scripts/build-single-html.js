@@ -1,64 +1,14 @@
-// Builds the standalone release artifact: dist/index.html (+ root index.html mirror).
-// Source modules (src/) → one HTML file with inline CSS, inline JS (esbuild IIFE bundle) and inline
-// WebP portraits. No external URLs, no runtime module imports, no server required.
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { build, transform } from 'esbuild';
-import { poolBuildStrings } from './pool-build-strings.js';
+// Deprecated: Single-file HTML build is retired as of PR #26.
+// This wrapper delegates to scripts/build.js for backwards compatibility.
+import { buildModularApp } from './build.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..');
-const src = path.join(root, 'src');
-const dist = path.join(root, 'dist');
-const release = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
-
-function portraitDataModule() {
-  const dir = path.join(src, 'assets/portraits');
-  const map = {};
-  for (const f of fs.readdirSync(dir).sort()) {
-    if (!f.endsWith('.webp')) continue;
-    map[f.replace('.webp', '')] = 'data:image/webp;base64,' + fs.readFileSync(path.join(dir, f)).toString('base64');
-  }
-  return { code: `export const PORTRAIT_DATA = ${JSON.stringify(map)};`, count: Object.keys(map).length };
+export async function buildSingleHtml(opts) {
+  return buildModularApp(opts);
 }
 
-export async function buildSingleHtml({ minify = true } = {}) {
-  const html = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
-  // CSS: inline every stylesheet in document order.
-  const cssFiles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  let css = cssFiles.map((f) => `/* ${f} */\n` + fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
-  if (minify) css = (await transform(css, { loader: 'css', minify: true, legalComments: 'none', target: 'es2020' })).code;
-  // JS: bundle ES modules into a classic IIFE, swapping the portrait module for inline data
-  const portraits = portraitDataModule();
-  const result = await build({
-    entryPoints: [path.join(src, 'js/app.js')],
-    // strict mode in the release bundle, like the native ES modules in src/ (otherwise a write to a
-    // primitive from damaged save data throws in src but is silently ignored in dist, and E2E misses it)
-    banner: { js: '"use strict";' },
-    bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], write: false, minify, legalComments: 'none', charset: 'utf8',
-    plugins: [{ name: 'inline-portraits', setup(b) { b.onLoad({ filter: /services[\\/]portrait-data\.js$/ }, () => ({ contents: portraits.code, loader: 'js' })); } }]
+if (process.argv[1] && process.argv[1].endsWith('build-single-html.js')) {
+  buildModularApp({ minify: !process.argv.includes('--no-minify') }).catch((e) => {
+    console.error(e);
+    process.exit(1);
   });
-  let bundled = result.outputFiles[0].text;
-  if (minify) bundled = (await transform(poolBuildStrings(bundled), { loader: 'js', minifyWhitespace: true, minifyIdentifiers: true, minifySyntax: false, charset: 'utf8', target: 'es2020', legalComments: 'none' })).code;
-  const js = bundled.replace(/<\/script/gi, '<\\/script');
-  // Replacer functions, not replacement strings: a replacement string expands `$&`, `$1`, `$\`` … so any
-  // such sequence inside the CSS or the bundle (a regex helper, a price label) would corrupt the release.
-  let cleanHtml = html.replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '');
-  if (minify) cleanHtml = cleanHtml.replace(/>\s+</g, '><').trim();
-  let out = cleanHtml
-    .replace('</head>', () => `<style>${css}</style></head>`)
-    .replace(/<script type="module" src="js\/app\.js"><\/script>/, () => `<script>${js}</script>`);
-  const banner = `<!-- INAD v${release} — GENERATED FILE, DO NOT EDIT DIRECTLY. -->\n`;
-  out = out.replace(/<!doctype html>\s*/i, () => '<!doctype html>\n' + banner);
-  fs.mkdirSync(dist, { recursive: true });
-  fs.writeFileSync(path.join(dist, 'index.html'), out);
-  fs.writeFileSync(path.join(root, 'index.html'), out); // deployment mirror (Vercel serves root index.html)
-  const size = Buffer.byteLength(out);
-  console.log(`built dist/index.html (${(size / 1024).toFixed(0)} KB, ${portraits.count} portraits, minify=${minify}) + root index.html mirror`);
-  return { size, portraits: portraits.count };
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  buildSingleHtml({ minify: !process.argv.includes('--no-minify') }).catch((e) => { console.error(e); process.exit(1); });
 }

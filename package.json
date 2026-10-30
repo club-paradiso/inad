@@ -2,11 +2,11 @@
   "name": "inad-article12",
   "version": "10.0.0",
   "private": true,
-  "description": "INAD — 입국심사관 시뮬레이션 (vanilla HTML/CSS/JS, single-file release build)",
+  "description": "INAD — 입국심사관 시뮬레이션 (vanilla HTML/CSS/JS, modular static web application)",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.js",
-    "build": "node scripts/check-boot-contract.js && node scripts/build-single-html.js && node scripts/check-built-page.js",
+    "build": "node scripts/check-boot-contract.js && node scripts/build.js && node scripts/check-built-page.js",
     "test": "npm run test:unit && npm run build && npm run test:integrity && npm run test:e2e",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:integrity": "node --test tests/integration/*.test.js",

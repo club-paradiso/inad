@@ -1,7 +1,6 @@
 // Portrait source resolver.
-// - dev (src served over http): relative asset path under src/assets/portraits/
-// - release build: scripts/build-single-html.js replaces portrait-data.js with an inline data-URI map,
-//   so dist/index.html needs no external files.
+// Resolves portrait images to static relative assets under assets/portraits/${id}.webp.
+// With the modular web architecture (PR #26), portraits are served as independent static WebP assets.
 import { PORTRAIT_DATA } from './portrait-data.js';
 
 export function portraitSrc(id) {

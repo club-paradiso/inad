@@ -1,3 +1,3 @@
-// Placeholder for development: portraits load from src/assets/portraits/*.webp.
-// The release build swaps this module for a generated map { 'TRV-0001': 'data:image/webp;base64,...', ... }.
+// Portrait data module.
+// In the modular architecture (PR #26), portraits are served as independent static WebP assets.
 export const PORTRAIT_DATA = null;

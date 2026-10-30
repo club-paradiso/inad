@@ -3,6 +3,7 @@
 // of the living portrait while idle (10 s) and while answering, JS heap, and the turn latency of the dispatcher.
 // usage: npm run build && node scripts/measure-performance.js [--cpu-throttle 4] [--chromium /path]
 import fs from 'node:fs';
+import path from 'node:path';
 import { chromium } from '@playwright/test';
 import { createStaticServer } from './static-server.js';
 
@@ -19,7 +20,22 @@ if (throttle > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throt
 const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
 const busy = async (fn, ms) => { const a = await metrics(); const t0 = Date.now(); await fn(); const wall = Math.max(ms, Date.now() - t0); const b = await metrics(); return { wallMs: wall, taskMs: Math.round((b.TaskDuration - a.TaskDuration) * 1000), scriptMs: Math.round((b.ScriptDuration - a.ScriptDuration) * 1000), layoutMs: Math.round((b.LayoutDuration - a.LayoutDuration) * 1000), busyPct: +(((b.TaskDuration - a.TaskDuration) * 1000 / wall) * 100).toFixed(1) }; };
 
-const out = { cpuThrottle: throttle, distBytes: fs.statSync('dist/index.html').size };
+const htmlText = fs.readFileSync('dist/index.html', 'utf8');
+const cssMatch = htmlText.match(/<link rel="stylesheet" href="(assets\/style\.[a-f0-9]+\.css)">/);
+const jsMatch = htmlText.match(/<script type="module" src="(assets\/app\.[a-f0-9]+\.js)"><\/script>/);
+const cssBytes = cssMatch ? fs.statSync(path.join('dist', cssMatch[1])).size : 0;
+const jsBytes = jsMatch ? fs.statSync(path.join('dist', jsMatch[1])).size : 0;
+const htmlBytes = fs.statSync('dist/index.html').size;
+const totalInitialBytes = htmlBytes + cssBytes + jsBytes;
+
+const out = {
+  cpuThrottle: throttle,
+  htmlBytes,
+  cssBytes,
+  jsBytes,
+  totalInitialBytes,
+  distBytes: htmlBytes
+};
 let t = Date.now();
 await page.goto(`http://127.0.0.1:${port}/index.html`); await page.waitForSelector('#liveStartBtn');
 out.startScreenMs = Date.now() - t;
