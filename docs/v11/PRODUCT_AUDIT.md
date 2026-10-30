@@ -48,6 +48,9 @@ Status column refers to this v11 branch (`claude/youthful-shannon-okcuam`).
 | A-18 | P2 | Country-specific source register | `docs/v11/PROCEDURAL_SOURCES.md` | New official sources (eTA/ETA/NZeTA, NZ Act) blocked by this environment's network policy | Requirement-type cases rely on generic "travel authorisation record" wording | Recorded as NOT VERIFIED; UI wording neutral | Doc review | Open (blocked) |
 | A-19 | P3 | Footer shows internal source codes | Any overseas screen | Debug-style provenance string | Jargon | Kept (provenance is required); candidate for a "Sources" disclosure | — | Open |
 | A-20 | P3 | Korean start screen | First launch | Country entry is a plain secondary button | Overseas mode is easy to miss | Unchanged in this pass (Korean screens out of scope for change) | — | Open |
+| A-21 | P1 | `workspace.css` ATLAS compact layout (≤1100 px) | Open any overseas country at 1024×768 | Desktop focus rules (`[data-atlas][data-focus=…]`) outrank the compact block, so the desktop grid leaks in | Main column empty, assessment panel half-height in a corner (pre-existing on `main`; found in the v11 visual audit) | Compact block raised to `body[data-atlas][data-focus]`; assessment task spans full width | `docs/v11/screenshots/*-1024.png`, `adaptive.spec.js` | Fixed |
+| A-22 | P2 | Fact chips | Any statement/document chip | `.act` (`display:grid`) overrides `.fact-chip` | Marker and label on separate lines | `.act.fact-chip` inline layout | Visual audit | Fixed |
+| A-23 | P2 | Task navigation at 768–1100 px | Overseas mode at 1024 | Active task button has no visible selected state in the ATLAS compact layout | Weak orientation | Not changed | — | Open |
 
 ## 3. Engineering audit summary
 
@@ -56,6 +59,19 @@ Status column refers to this v11 branch (`claude/youthful-shannon-okcuam`).
 - **Korean engines:** untouched. `legal-engine.js`, `case-engine.js`, `src/data/cases.js`, Korean save keys and `legacy/` are unchanged by v11.
 - **Persistence:** `inad-atlas-v1` key unchanged; payload version 1 → 2 by explicit migration (`migrateAtlasSave`), future versions remain protected byte-for-byte.
 - **Build:** PR #26 modular architecture retained; one plugin adds on-demand hashed case libraries.
+
+## 5. Independent review (separate reviewer context, 2026-10-30)
+
+| ID | Sev | Finding | Fix | Test |
+|---|---|---|---|---|
+| R1 | P1 | v1 save with a completed legacy case that gained a 3rd document failed validation, so the whole overseas save became "protected" and imports were blocked | Migration marks such cases `legacyDocuments: 2`; validation accepts their v1 completion | unit "review R1" |
+| R2 | P1 | Boot race: entering a country before the saved state was read persisted an empty session over stored progress | Country entry awaits the restore; libraries load at boot only when overseas state exists; import loads them first | E2E "review R2" |
+| R3 | P1 | Repeated Compare grew history past the validator's 100-entry bound, invalidating the save | One history entry per distinct pair (latest moved last); schema caps facts at 14 | unit "review R3" |
+| R4 | P2 | Crafted saves with unjustified discoveries or hidden selected facts were accepted | Discoveries need a matching comparison entry; selected facts must be visible | unit "review R4" |
+| R5 | P2 | Cross-check note shown for cases without that prompt | Shown only when the case has it | — |
+| R6 | P2 | `SIM-NZ-07` open question presupposed a gated fact; wording issues in NZ-07, NZ-10, GB-12 | Question gated; wording fixed | validator |
+| R7 | P2 | Record facts unlocked by any search, even a non-matching one | Visible only if the record matches the search run or was opened | unit "record facts follow the search" |
+| — | open | `SIM-CA-11` trap request returns relevant information yet costs 10 | Kept as authored; flagged for content review | — |
 
 ## 4. Remaining gaps (not claimed as done)
 
