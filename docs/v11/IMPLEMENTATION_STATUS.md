@@ -35,7 +35,7 @@ UX unification (#28) is partial — see "Not done".
 - Overseas free-text or voice interview (Korean v10 only). Buttons only.
 - The three manual "task" checks remain (kept for save compatibility).
 - Country-specific visual workstation variants beyond the existing layouts; Figma sync (no authorised Figma session in this environment).
-- Firefox/WebKit runs: only Chromium is installed in this environment.
+- Firefox/WebKit: not installed locally; covered by the CI `atlas-cross-browser` job (green on `bfbac02` for `atlas.spec.js`; from this commit it also runs the full-library reachability, queue, boot-race and GB-02/NZ-02 journeys). Korean flows run in Chromium only.
 - New official sources (eTA/ETA/NZeTA, NZ Act) could not be retrieved (network policy); cases `SIM-CA-05`, `SIM-GB-06`, `SIM-NZ-04` cite them as context and the register marks them NOT VERIFIED.
 - Human playtest, screen-reader testing.
 - Korean mode unchanged by design (legal logic frozen).
@@ -45,4 +45,4 @@ UX unification (#28) is partial — see "Not done".
 1. Allow `www.canada.ca`, `www.gov.uk`, `www.immigration.govt.nz`, `www.legislation.govt.nz` and re-run source retrieval.
 2. Deterministic per-case free-text question matcher for overseas interviews (must route through `atlasAction('ask')`).
 3. Replace manual task checks with derived checks behind a save migration.
-4. Firefox/WebKit runs via `playwright.atlas-crossbrowser.config.js` where browsers are available.
+4. Extend the CI cross-browser matrix to Korean flows if needed.
