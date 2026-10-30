@@ -129,3 +129,35 @@ test('the build never expands replacement patterns from the bundle ($& etc.)', (
   const src = fs.readFileSync(path.join(root, 'src/js/ui/dom.js'), 'utf8');
   if (src.includes('$&')) assert.ok(jsCode.includes('$&'), 'a literal $& in source survives into the bundle');
 });
+
+test('vercel.json specifies valid static deployment configuration and caching contracts', () => {
+  const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+  assert.equal(vercel.outputDirectory, 'dist', 'Vercel outputs dist');
+  assert.ok(Array.isArray(vercel.headers), 'headers array configured');
+
+  // Must have root revalidation and security headers
+  const rootHeader = vercel.headers.find((h) => h.source === '/(.*)');
+  assert.ok(rootHeader, 'root wildcard header exists');
+  const rootCache = rootHeader.headers.find((kv) => kv.key === 'Cache-Control');
+  assert.ok(rootCache && rootCache.value.includes('must-revalidate'), 'root must revalidate');
+  const csp = rootHeader.headers.find((kv) => kv.key === 'Content-Security-Policy');
+  assert.ok(csp && csp.value.includes("default-src 'self'"), 'strict CSP defined');
+
+  // Must have immutable caching for hashed bundles
+  const bundleHeader = vercel.headers.find((h) => h.source.includes('assets') && h.headers.some((kv) => kv.value.includes('immutable')));
+  assert.ok(bundleHeader, 'hashed assets have immutable caching');
+
+  // Must have portraits cache policy without immutable
+  const portraitHeader = vercel.headers.find((h) => h.source.includes('portraits'));
+  assert.ok(portraitHeader, 'portraits have dedicated caching header');
+  const portraitCache = portraitHeader.headers.find((kv) => kv.key === 'Cache-Control');
+  assert.ok(!portraitCache.value.includes('immutable'), 'unhashed portraits are not marked immutable');
+  assert.ok(portraitCache.value.includes('stale-while-revalidate'), 'portraits support stale-while-revalidate');
+});
+
+test('save bundle schema contract: INAD_SAVE_BUNDLE schema is strictly schema 1', () => {
+  const legalSrc = fs.readFileSync(path.join(root, 'src/data/legal-baseline.js'), 'utf8');
+  assert.match(legalSrc, /saveSchema:\s*1\b/, 'legal baseline pins saveSchema to 1');
+  const saveEngineSrc = fs.readFileSync(path.join(root, 'src/js/engines/save-engine.js'), 'utf8');
+  assert.match(saveEngineSrc, /if\s*\(b\.schema\s*!==\s*1\)/, 'save engine strictly enforces schema 1');
+});
