@@ -197,8 +197,14 @@ export function atlasRecordMatches(c, r, query) {
   const q = String(query || '').toLowerCase();
   return `${r.id} ${c.name} ${r.title.ko} ${r.title.en} ${r.detail.ko} ${r.detail.en}`.toLowerCase().includes(q);
 }
+// A save from before revealedRecords: first carry over what its saved search and opened
+// record already revealed, so the next keystroke cannot drop an existing selection.
+function seedRevealed(c, v) {
+  if (Array.isArray(v.revealedRecords)) return;
+  v.revealedRecords = c.records.filter((r) => v.selectedRecord === r.id || (v.searched && atlasRecordMatches(c, r, v.search))).map((r) => r.id);
+}
 function revealRecords(c, v, ids) {
-  if (!Array.isArray(v.revealedRecords)) v.revealedRecords = [];
+  seedRevealed(c, v);
   for (const id of ids) if (!v.revealedRecords.includes(id)) v.revealedRecords.push(id);
 }
 function releaseHiddenSelections(c, v) {
@@ -216,8 +222,8 @@ export function atlasAction(action, value) {
   else if (action === 'zoom' && [100, 125, 150].includes(value)) v.zoom = value;
   // Records a search lists stay revealed, so typing or refining a query never drops a
   // selection. The release only applies to saves from before revealedRecords existed.
-  else if (action === 'search' && bounded(value, 120)) { v.search = value; v.searched = true; revealRecords(c, v, c.records.filter((r) => atlasRecordMatches(c, r, value)).map((r) => r.id)); releaseHiddenSelections(c, v); }
-  else if (action === 'record' && c.records.some((r) => r.id === value)) { v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; revealRecords(c, v, [value]); releaseHiddenSelections(c, v); }
+  else if (action === 'search' && bounded(value, 120)) { seedRevealed(c, v); v.search = value; v.searched = true; revealRecords(c, v, c.records.filter((r) => atlasRecordMatches(c, r, value)).map((r) => r.id)); releaseHiddenSelections(c, v); }
+  else if (action === 'record' && c.records.some((r) => r.id === value)) { seedRevealed(c, v); v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; revealRecords(c, v, [value]); releaseHiddenSelections(c, v); }
   else if (v.completed) return false;
   else if (action === 'ask') {
     // Every case: the person must be at the counter before any question is put.
