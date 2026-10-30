@@ -23,8 +23,9 @@ test('exactly four explicit packs: unknown/JP/UK cannot fall back to KR; airport
   assert.equal(countryAirport('CA', 'icn-t2'), null);
   assert.equal(atlas.selectCountry('CA', { airportId: 'nz-akl' }).ok, false);
   assert.equal(state.countryId, 'KR');
-  assert.equal(ATLAS_SCENARIOS.length, 9);
-  assert.equal(new Set(ATLAS_SCENARIOS.map((c) => c.id)).size, 9);
+  // v11: at least 12 authored cases per overseas country (library-wide checks: atlas-library.test.js).
+  assert.ok(ATLAS_SCENARIOS.length >= 36);
+  assert.equal(new Set(ATLAS_SCENARIOS.map((c) => c.id)).size, ATLAS_SCENARIOS.length);
 });
 test('all nine exercises require evidence and complete exactly once, without writing Korean keys', () => {
   const legacy = { version: 1, seed: 14, nextIndex: 2 };
@@ -126,9 +127,12 @@ test('write-time stale detection still protects data when storage event is misse
 });
 
 test('case-specific cross-check prompts are grounded, optional and save-compatible', () => {
-  for (const c of ATLAS_SCENARIOS) {
+  // v11: the nine pre-v11 cases keep their open clarify/source/crosscheck prompts (saved ids);
+  // authored v11 cases may add further open questions.
+  for (const c of ATLAS_SCENARIOS.filter((x) => /-0[123]$/.test(x.id))) {
     const followup = c.questions.find((q) => q.id === 'crosscheck');
-    assert.equal(c.questions.length, 3);
+    assert.ok(c.questions.length >= 3);
+    for (const id of ['clarify', 'source', 'crosscheck']) assert.ok(c.questions.some((q) => q.id === id), `${c.id} keeps ${id}`);
     assert.ok(followup);
     for (const locale of ['ko', 'en']) {
       assert.ok(followup.q[locale].length > 10);
@@ -137,7 +141,7 @@ test('case-specific cross-check prompts are grounded, optional and save-compatib
     atlas.selectCountry(c.countryId);
     atlas.selectAtlasCase(c.id);
     // v11: every case starts with the passenger call.
-  if (!atlas.activeAtlasCase().encounter) assert.equal(atlas.callAtlasPassenger(), true);
+    if (!atlas.activeAtlasCase().encounter) assert.equal(atlas.callAtlasPassenger(), true);
     assert.equal(atlas.atlasAction('ask', 'crosscheck'), true);
     assert.ok(atlas.activeAtlasCase().asked.includes('crosscheck'));
     assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
@@ -158,7 +162,8 @@ test('Canadian encounter is additive, isolated, persistent and completes once', 
   assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
   atlas.setAtlasView('system');
   atlas.selectCountry('NZ');
-  assert.equal(atlas.callAtlasPassenger(), false);
+  // v11: every country uses the same encounter; NZ's call never touches the Canadian case.
+  assert.equal(atlas.callAtlasPassenger(), true);
   atlas.selectCountry('CA');
   assert.equal(atlas.activeAtlasCase().encounter.phase, 'called');
   ready(c);

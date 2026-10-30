@@ -49,8 +49,9 @@ async function play(page, c, outcome) {
       await page.locator('#atlasDoCompare').click();
       await expect(page.locator('.atlas-result-box')).toHaveClass(new RegExp(`type-${cmp.type.toLowerCase()}`));
       done.add(cmp.id); progress = true;
-      for (const q of cmp.unlocks?.questions || []) await page.locator(`#ask-${q}`).click();
-      for (const r of cmp.unlocks?.evidenceRequests || []) if (c.assessment.resolve.requests.includes(r)) await page.locator(`#request-${r}`).click();
+      // A follow-up can be unlocked by several comparisons; ask/request each only once.
+      for (const q of cmp.unlocks?.questions || []) if (await page.locator(`#ask-${q}`).isEnabled()) await page.locator(`#ask-${q}`).click();
+      for (const r of cmp.unlocks?.evidenceRequests || []) if (c.assessment.resolve.requests.includes(r) && await page.locator(`#request-${r}`).count()) await page.locator(`#request-${r}`).click();
     }
   }
   expect(done.size).toBe(c.comparisons.length);
