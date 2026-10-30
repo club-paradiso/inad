@@ -40,6 +40,9 @@ test('record search: a save written by the affected build recovers on load and o
   await page.locator('#fact-SIM-CA-02-F-ADDR').click();
   await page.locator('#atlasCountry').click(); await page.locator('[name="atlas-country"][value="NZ"]').check();
   await page.locator('#atlasEnter').click(); await page.locator('#atlasSwitch').click();
+  // Country entry is asynchronous (it waits for the saved state and case library); type only once NZ is shown.
+  await expect(page.locator('body')).toHaveAttribute('data-country', 'NZ');
+  await expect(page.locator('#atlasCaseHeading')).toContainText('SIM-NZ-');
   await page.locator('#atlasNotes').fill('New Zealand progress kept through recovery.');
   const broken = await stored(page);
   broken.sessions.CA.cases['SIM-CA-02'].search = 'zzz-no-such-record';
