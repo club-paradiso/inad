@@ -37,7 +37,8 @@ export function atlasCaseValid(v, c) {
     list(v.asked, allowedQuestions) && list(v.reviewed, c.documents.map((d) => d.id)) && list(v.tasks, c.tasks.map((t) => t.id)) &&
     c.documents.some((d) => d.id === v.selectedDoc) && plain(v.pages) && Object.keys(v.pages).length === c.documents.length && c.documents.every((d) => Number.isInteger(v.pages[d.id]) && v.pages[d.id] >= 0 && v.pages[d.id] < d.pages.length) &&
     [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
-    (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (!v.completed || (v.outcome !== null && v.reviewed.length === c.documents.length && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
+    (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (v.legacyDocuments === undefined || (v.legacyDocuments === 2 && v.completed)) &&
+    (!v.completed || (v.outcome !== null && (v.reviewed.length === c.documents.length || (v.legacyDocuments === 2 && c.documents.slice(0, 2).every((d) => v.reviewed.includes(d.id)))) && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
     (v.graph === undefined || (validateGraphState(v.graph) && graphConsistent(v, c))) &&
     (v.encounter === undefined || (validEncounter(v.encounter) && (v.encounter.phase === 'completed') === v.completed));
 }
@@ -47,7 +48,9 @@ function graphConsistent(v, c) {
   const g = v.graph, found = (c.comparisons || []).filter((x) => g.discoveries.includes(x.findingId));
   const unlockedQ = found.flatMap((x) => x.unlocks?.questions || []), unlockedR = found.flatMap((x) => x.unlocks?.evidenceRequests || []);
   const factIds = facts(c).map((f) => f.id), findingIds = (c.comparisons || []).map((x) => x.findingId);
-  return subset(g.selectedFacts, factIds) && subset(g.discoveries, findingIds) && subset(g.unlockedQuestions, unlockedQ) && subset(g.evidenceRequests, unlockedR) &&
+  const pair = (h, x) => [h.factA, h.factB].sort().join('|') === [...x.facts].sort().join('|');
+  const justified = g.history === undefined || found.every((x) => g.history.some((h) => h.findingId === x.findingId && pair(h, x)));
+  return justified && g.selectedFacts.every((id) => atlasFactVisible(c, v, facts(c).find((f) => f.id === id))) && subset(g.discoveries, findingIds) && subset(g.unlockedQuestions, unlockedQ) && subset(g.evidenceRequests, unlockedR) &&
     v.asked.every((q) => !(c.investigativeQuestions || []).some((x) => x.id === q) || g.unlockedQuestions.includes(q)) &&
     (g.history || []).every((h) => factIds.includes(h.factA) && factIds.includes(h.factB) && (h.findingId === null || findingIds.includes(h.findingId)));
 }
@@ -62,6 +65,9 @@ export function migrateAtlasSave(v) {
     for (const [cid, cs] of Object.entries(s.cases)) {
       const c = atlasScenario(id, cid);
       if (c && plain(cs) && plain(cs.pages)) for (const d of c.documents) if (!Object.hasOwn(cs.pages, d.id)) cs.pages[d.id] = 0;
+      // A case completed under v1 had two documents; v11 may add more. Its completion stays
+      // as saved (marked, never re-opened or re-scored as new work).
+      if (c && plain(cs) && cs.completed === true && c.documents.length > 2) cs.legacyDocuments = 2;
     }
   }
   return next;
@@ -147,10 +153,15 @@ export function setAtlasView(view) { if (!['counter', 'system'].includes(view)) 
 // desk, records need a search, statements need the question, request results need the request.
 export function atlasFactVisible(c, v, f) {
   if (!f) return false;
-  if (f.sourceType === 'record') return v.searched;
+  if (f.sourceType === 'record') { const r = c.records.find((x) => x.id === f.sourceId); return !!r && (v.selectedRecord === r.id || (v.searched && atlasRecordMatches(c, r, v.search))); }
   if (f.sourceType === 'statement') return !f.questionIds || f.questionIds.some((q) => v.asked.includes(q));
   if (f.sourceType === 'request') return !!v.graph?.evidenceRequests.includes(f.requestId);
   return true;
+}
+// The record search (shared by the engine and the UI) matches id, person, title and detail.
+export function atlasRecordMatches(c, r, query) {
+  const q = String(query || '').toLowerCase();
+  return `${r.id} ${c.name} ${r.title.ko} ${r.title.en} ${r.detail.ko} ${r.detail.en}`.toLowerCase().includes(q);
 }
 export function atlasQuestionAvailable(c, v, id) {
   if (!allQuestions(c).some((q) => q.id === id)) return false;
@@ -210,6 +221,11 @@ export function atlasCompare() {
       if (!v.graph.unlockedQuestions.includes(qid)) v.graph.unlockedQuestions.push(qid);
     }
   }
+  // One entry per distinct pair (moved to the end when repeated): bounded by the case's
+  // pair count, and every discovery keeps the entry that justifies it.
+  const key = [...v.graph.selectedFacts].sort().join('|');
+  const repeat = v.graph.history.findIndex((h) => [h.factA, h.factB].sort().join('|') === key);
+  if (repeat >= 0) v.graph.history.splice(repeat, 1);
   v.graph.history.push({
     time: Date.now(),
     factA: v.graph.selectedFacts[0],

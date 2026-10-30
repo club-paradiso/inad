@@ -54,7 +54,10 @@ async function play(page, c, outcome) {
       for (const r of cmp.unlocks?.evidenceRequests || []) if (c.assessment.resolve.requests.includes(r) && await page.locator(`#request-${r}`).count()) await page.locator(`#request-${r}`).click();
     }
   }
-  expect(done.size).toBe(c.comparisons.length);
+  // Comparisons that use the result of an unneeded (trap) request stay unreachable on the correct path.
+  const trap = new Set(c.requests.filter((r) => !c.assessment.resolve.requests.includes(r.id)).map((r) => r.id));
+  const reachable = c.comparisons.filter((x) => !x.facts.some((id) => trap.has(c.facts.find((f) => f.id === id).requestId)));
+  expect(done.size).toBe(reachable.length);
   for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await page.locator('#atlasNotes').fill('Compared the sources; outcome and unresolved points recorded.');
   for (const t of c.tasks) await page.locator(`#task-${t.id}`).click();
@@ -97,4 +100,21 @@ test('an unsupported outcome gets explanatory feedback, and the queue moves on t
   await page.locator('#atlasRestartCase').click();
   await page.locator('#atlasRestartConfirm').click();
   await expect(page.locator('#atlasCallPassenger')).toBeVisible();
+});
+
+test('review R2: entering a country at boot never overwrites saved progress of another country', async ({ page }) => {
+  await openCountry(page, 'GB');
+  await page.locator('#atlasCallPassenger').click();
+  await page.locator('#atlasNotes').fill('UK progress that must survive a fast country choice at boot.');
+  await page.evaluate(() => localStorage.setItem('inad-country', 'KR'));
+  // Slow the case libraries so the player can choose before the save has been read.
+  await page.route(/atlas-(ca|gb|nz)\.[a-f0-9]+\.js$|data\/atlas\/(ca|gb|nz)\.js$/, async (route) => { await new Promise((r) => setTimeout(r, 800)); await route.continue(); });
+  await page.reload();
+  await page.locator('#atlasStartCountry').click();
+  await page.locator('[name="atlas-country"][value="CA"]').check();
+  await page.locator('#atlasEnter').click();
+  await expect(page.locator('body')).toHaveAttribute('data-country', 'CA');
+  const sessions = await page.evaluate(() => JSON.parse(localStorage.getItem('inad-atlas-v1')).sessions);
+  expect(Object.keys(sessions).sort()).toEqual(['CA', 'GB']);
+  expect(Object.values(sessions.GB.cases).some((c) => c.notes.includes('must survive'))).toBe(true);
 });

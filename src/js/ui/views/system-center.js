@@ -4,6 +4,8 @@ import { amendmentStatus } from '../../engines/legal-baseline-status.js';
 import { showModal, closeModal } from '../modals.js';
 import { session } from '../../state.js';
 import { RELEASE, makeBundle, validateBundle, bundleSummary, applyBundle, resetData, META_KEY, PROGRESS_KEY } from '../../engines/save-engine.js';
+// Overseas progress in a bundle is validated against its case library (loaded on demand).
+import { loadAtlasLibraries } from '../../../data/atlas-scenarios.js';
 import { parseJSON, storageWritable, storeGetRaw } from '../../services/storage.js';
 import { runDiagnostics, diagnosticText, downloadBlob } from '../../services/diagnostics.js';
 import { analyticsSnapshot, resetAnalytics } from '../../services/analytics.js';
@@ -45,7 +47,7 @@ export function showAnalyticsModal() {
 
 export function exportSave() { const b = makeBundle(); const stamp = new Date().toISOString().replace(/[:.]/g, '-'); downloadBlob(`INAD_save_v${RELEASE.version}_${stamp}.json`, JSON.stringify(b, null, 2)); toast('INAD 저장 데이터를 내보냈습니다.'); }
 export function importFile(file) {
-  const r = new FileReader(); r.onload = () => { let b; try { b = JSON.parse(String(r.result || '')); } catch (e) { showModal('저장 데이터 불러오기', '<p class="modal-note">JSON 파일을 읽을 수 없습니다.</p>'); return; } const v = validateBundle(b); if (!v.ok) { showModal('저장 데이터 불러오기', `<p class="modal-note">${esc(v.msg)}</p>`); return; } const sm = bundleSummary(b);
+  const r = new FileReader(); r.onload = async () => { await loadAtlasLibraries().catch(() => null); let b; try { b = JSON.parse(String(r.result || '')); } catch (e) { showModal('저장 데이터 불러오기', '<p class="modal-note">JSON 파일을 읽을 수 없습니다.</p>'); return; } const v = validateBundle(b); if (!v.ok) { showModal('저장 데이터 불러오기', `<p class="modal-note">${esc(v.msg)}</p>`); return; } const sm = bundleSummary(b);
     showModal('저장 데이터 불러오기', `<div class="sys-import-preview"><p class="modal-note">이 파일의 INAD 기록·진행도·설정을 현재 브라우저 데이터와 <b>교체</b>합니다. 먼저 내보내기로 백업하는 것을 권장합니다.</p><div class="sys-import-kpis"><div><span>원본 버전</span><b>v${esc(sm.source)}</b></div><div><span>완료 근무</span><b>${esc(sm.sessions)}</b></div><div><span>이어할 진행</span><b>${esc(sm.processed)}/36</b></div></div><p class="modal-note">저장일 ${esc(sm.date)} · 캠페인 ${esc(sm.campaign)}</p><div class="sys-inline-actions"><button type="button" id="sysConfirmImport">현재 데이터 교체</button><button type="button" id="sysCancelImport">취소</button></div></div>`);
     byId('sysConfirmImport').onclick = () => { const a = applyBundle(b); if (!a.ok) showModal('불러오기 실패', `<p class="modal-note">${esc(a.msg)}</p>`); else setTimeout(() => location.reload(), 120); }; byId('sysCancelImport').onclick = closeModal; };
   r.readAsText(file);

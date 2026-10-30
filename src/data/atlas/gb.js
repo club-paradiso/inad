@@ -729,7 +729,7 @@ export const CASES = [
     questions: [
       { id: 'gb12_purpose', q: L('방문 목적을 말씀해 주세요.', 'What is the purpose of your visit?'), answer: L('Haldane Rail Systems와 고객 회의에 참석합니다. 12일에 돌아갑니다.', 'I am attending client meetings with Haldane Rail Systems. I go back on the 12th.') },
       { id: 'gb12_costs', q: L('출장 비용과 급여는 누가 부담합니까?', 'Who pays for the trip and your salary?'), answer: L('회사 출장이라 제 회사가 냅니다. 급여도 회사에서 받습니다.', 'It is a work trip, so my employer pays. My salary comes from them as well.') },
-      { id: 'gb12_previous', q: L('이전에 오신 적이 있습니까?', 'Have you visited before?'), answer: L('6월에 같은 회사와 회의하러 사흘 왔습니다.', 'In June, for three days of meetings with the same company.') },
+      { id: 'gb12_previous', q: L('이전에 오신 적이 있습니까?', 'Have you visited before?'), answer: L('6월에 같은 회사와 회의하러 나흘 왔습니다.', 'In June, for four days of meetings with the same company.') },
       { id: 'gb12_letters', q: L('방문처 서신에는 18일까지 프로젝트팀 배치로 적혀 있습니다.', 'The host company letter describes a project-team placement until the 18th.'), answer: L('원래는 더 길게 있을 계획이었는데, 11월 초에 계획이 바뀌어서 회의만 하고 돌아가기로 했습니다.', 'At first I was meant to stay longer, but plans changed in early November and it became meetings only.') },
       { id: 'gb12_original', q: L('귀국편이 11월 2일에 19일에서 12일로 변경됐습니다. 왜 바꾸셨습니까?', 'Your return was moved from the 19th to the 12th on 2 November. Why?'), answer: L('말씀드린 대로 11월 초에 계획이 바뀌어서 회의만 하고 돌아가기로 했습니다. 방문처 서신은 그 전에 받은 거라 고치지 않았습니다.', 'As I said, plans changed in early November to meetings only. The host letter came before that, so it was never updated.') }
     ],

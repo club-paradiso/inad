@@ -50,7 +50,7 @@ export function validateScenarioDefinition(def) {
   const requests = Array.isArray(def.requests) ? def.requests : [];
   for (const r of requests) { unique(r.id, 'request'); if (!text(r.title, 120) || !text(r.result)) err(`request ${r.id} text`); }
   const facts = Array.isArray(def.facts) ? def.facts : [];
-  if (facts.length < 3) err('needs at least three facts');
+  if (facts.length < 3 || facts.length > 14) err('needs 3–14 facts (comparison history stays within its 100-entry bound)');
   for (const f of facts) {
     unique(f.id, 'fact');
     if (!FACT_SOURCES.includes(f.sourceType)) err(`fact ${f.id} sourceType`);

@@ -158,6 +158,8 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await openAtlas(page, 'GB');
     await task(page, 'passenger');
     await page.locator('[data-case="SIM-GB-02"]').click();
+    // v11: every country starts the case by calling the passenger.
+    await page.locator('#atlasCallPassenger').click();
 
     // 1. Evidence: Compare 2-day event on DOC1 vs 10-day stay on DOC2
     await task(page, 'evidence');
@@ -206,6 +208,8 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await openAtlas(page, 'NZ');
     await task(page, 'passenger');
     await page.locator('[data-case="SIM-NZ-02"]').click();
+    // v11: every country starts the case by calling the passenger.
+    await page.locator('#atlasCallPassenger').click();
 
     // 1. Evidence: Compare page 1 on DOC1 and receipt check on DOC2 (page 2 absent)
     await task(page, 'evidence');
@@ -244,7 +248,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await expect(unlockedQ).toBeVisible();
     await expect(unlockedQ).toBeEnabled();
     await unlockedQ.click();
-    await expect(page.locator('.atlas-transcript')).toContainText(/숙박|Accommodation/);
+    await expect(page.locator('.atlas-transcript')).toContainText(/숙박|accommodation/i);
     await expect(page.locator('#fact-SIM-NZ-02-F-PAGE2-DETAIL')).toBeVisible();
   });
 

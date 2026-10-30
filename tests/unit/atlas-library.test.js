@@ -197,3 +197,57 @@ test('schema validator rejects broken definitions', () => {
   ];
   for (const fn of broken) { const d = structuredClone(def); fn(d); assert.ok(validateScenarioDefinition(d).length > 0); }
 });
+
+// Regressions from the independent v11 review.
+test('review R1: a v1 save whose legacy case was completed with its two v1 documents stays valid', () => {
+  const c = atlasScenarios('CA').find((x) => x.id === 'SIM-CA-02');
+  assert.ok(c.documents.length > 2, 'fixture: legacy case gained documents in v11');
+  open(c); atlas.callAtlasPassenger(); atlas.atlasAction('ask', 'clarify'); checklist(c);
+  atlas.completeAtlas(c.expectedOutcome, 'Completed under the v1 two-document case.');
+  const v1 = atlas.atlasSnapshot(); v1.version = 1;
+  const cs = v1.sessions.CA.cases[c.id];
+  cs.reviewed = c.documents.slice(0, 2).map((d) => d.id);
+  for (const d of c.documents.slice(2)) delete cs.pages[d.id];
+  assert.equal(atlas.validateAtlasSave(v1), true);
+  localStorage.setItem(atlas.ATLAS_KEY, JSON.stringify(v1)); state.atlas.sessions = {};
+  atlas.loadAtlas();
+  assert.notEqual(state.atlas.saveStatus, 'protected');
+  assert.equal(state.atlas.sessions.CA.cases[c.id].completed, true);
+  // The marker is only accepted on completed cases.
+  const bad = atlas.migrateAtlasSave(v1); bad.sessions.CA.cases[c.id].completed = false;
+  assert.equal(atlas.validateAtlasSave(bad), false);
+});
+
+test('review R3: repeated comparisons keep the history bounded and the save valid', () => {
+  const c = atlasScenarios('GB')[0];
+  open(c); atlas.callAtlasPassenger(); investigate(c);
+  const [cmp] = c.comparisons;
+  for (let i = 0; i < 150; i++) { atlas.atlasAction('clearFacts'); for (const id of cmp.facts) atlas.atlasAction('selectFact', id); atlas.atlasCompare(); }
+  const g = atlas.activeAtlasCase().graph;
+  assert.ok(g.history.length <= c.comparisons.length);
+  assert.equal(g.history.at(-1).findingId, cmp.findingId, 'latest comparison is last');
+  assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true);
+});
+
+test('review R4: crafted saves with unjustified discoveries or hidden selected facts are rejected', () => {
+  const c = atlasScenarios('CA').find((x) => x.id === 'SIM-CA-02');
+  open(c);
+  const snap = atlas.atlasSnapshot();
+  const cs = snap.sessions.CA.cases[c.id];
+  cs.graph.discoveries = [...c.findings];
+  cs.graph.history = [];
+  assert.equal(atlas.validateAtlasSave(snap), false, 'discoveries without comparisons');
+  const hidden = c.facts.find((f) => f.sourceType === 'statement');
+  const snap2 = atlas.atlasSnapshot(); snap2.sessions.CA.cases[c.id].graph.selectedFacts = [hidden.id];
+  assert.equal(atlas.validateAtlasSave(snap2), false, 'hidden statement fact selected');
+});
+
+test('review: record facts follow the search the player actually ran', () => {
+  const c = ATLAS_SCENARIOS.find((x) => x.facts.some((f) => f.sourceType === 'record'));
+  const f = c.facts.find((x) => x.sourceType === 'record');
+  open(c); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', 'zzz-no-such-record');
+  assert.equal(atlas.atlasAction('selectFact', f.id), false);
+  atlas.atlasAction('search', '');
+  assert.equal(atlas.atlasAction('selectFact', f.id), true);
+});

@@ -376,7 +376,7 @@ export const CASES = [
       { label: L('체류 기간', 'Stated stay'), value: L('10일 · 12월 13일 오클랜드 출국', '10 days · departing Auckland 13 December') },
       { label: L('제출 자료', 'Submitted'), value: L('도착 정보 · 투어 일정표 · 국내선 예약', 'Arrival details · tour itinerary · domestic booking') }
     ],
-    opening: L('안녕하세요. 남섬 투어를 하러 왔습니다.', 'Hello. I am here for a South Island tour.'),
+    opening: L('안녕하세요. 남북섬 투어를 하러 왔습니다.', 'Hello. I am here for a tour of both islands.'),
     documents: [
       { id: 'SIM-NZ-07-DOC1', title: L('도착 정보', 'Arrival details'), pages: [L('목적: 단체 투어 · 예정 체류 10일 · 출국 2026-12-13 오클랜드', 'Purpose: group tour · intended stay 10 days · departure 2026-12-13 from Auckland'), NOTICE] },
       { id: 'SIM-NZ-07-DOC2', title: L('투어 일정표', 'Tour itinerary'), pages: [L('Southern Lakes 소규모 투어 · 12월 3일–12일 · 오클랜드, 로토루아, 웰링턴, 퀸스타운 · 12월 12일 퀸스타운 해산', 'Southern Lakes small-group tour · 3–12 Dec · Auckland, Rotorua, Wellington, Queenstown · ends in Queenstown on 12 Dec')] },
@@ -399,7 +399,7 @@ export const CASES = [
       { id: 'nz07_friend', q: L('퀸스타운 친구의 주소를 알고 계십니까?', 'Do you know your friend\'s address in Queenstown?'), answer: L('Frankton 쪽이라는 것만 알고 정확한 주소는 휴대전화 메시지에 있습니다.', 'Somewhere in Frankton. The exact address is in a message on my phone.') }
     ],
     comparisons: [
-      { id: 'COMP-NZ-07-FLIGHTS', facts: ['SIM-NZ-07-F-DOMESTIC', 'SIM-NZ-07-F-INTL'], type: 'CONFLICT', findingId: 'NZ07_DEPARTURE_CONFLICT', title: L('국내선이 국제선 출발 이후', 'Domestic flight after international departure'), explanation: L('12월 20일 국내선은 12월 13일 국제선 출발보다 일주일 늦습니다. 두 예약이 함께 성립하지 않습니다.', 'The 20 December domestic flight is a week after the 13 December international departure; the two bookings cannot both stand.'), unlocks: { questions: ['nz07_after'] } },
+      { id: 'COMP-NZ-07-FLIGHTS', facts: ['SIM-NZ-07-F-DOMESTIC', 'SIM-NZ-07-F-INTL'], type: 'CONFLICT', findingId: 'NZ07_DEPARTURE_CONFLICT', title: L('국내선이 국제선 출발 이후', 'Domestic flight after international departure'), explanation: L('12월 20일 국내선은 12월 13일 국제선 출발보다 일주일 늦습니다. 두 예약이 함께 성립하지 않습니다.', 'The 20 December domestic flight is a week after the 13 December international departure; the two bookings cannot both stand.'), unlocks: { questions: ['nz07_after', 'nz07_friend'] } },
       { id: 'COMP-NZ-07-TOUR', facts: ['SIM-NZ-07-F-TOUR', 'SIM-NZ-07-F-STATED'], type: 'MATCH', findingId: 'NZ07_TOUR_FITS_STATED', title: L('투어와 신고 체류 일치', 'Tour fits the stated stay'), explanation: L('투어 일정은 신고한 10일 체류와 13일 출국에 맞습니다.', 'The tour fits the stated 10-day stay and 13 December departure.') },
       { id: 'COMP-NZ-07-DOMESTIC', facts: ['SIM-NZ-07-F-STMT', 'SIM-NZ-07-F-DOMESTIC'], type: 'MATCH', findingId: 'NZ07_DOMESTIC_EXPLAINED', title: L('국내선 날짜 설명됨', 'Domestic date explained'), explanation: L('투어 후 일주일 더 머문다는 진술이 20일 국내선과 맞습니다.', 'Staying a further week after the tour accounts for the flight on the 20th.') },
       { id: 'COMP-NZ-07-STAY', facts: ['SIM-NZ-07-F-STMT', 'SIM-NZ-07-F-STATED'], type: 'CONFLICT', findingId: 'NZ07_STAY_EXCEEDS_STATED', title: L('실제 계획이 신고 체류보다 김', 'Plan is longer than the stated stay'), explanation: L('진술상 계획은 약 17일이지만 도착 정보는 10일, 13일 출국으로 남아 있고 국제선도 바뀌지 않았습니다.', 'The described plan runs about 17 days, but the arrival details still state 10 days and a 13 December departure, and the international booking is unchanged.') }
@@ -578,7 +578,7 @@ export const CASES = [
     questions: [
       { id: 'nz10_purpose', q: L('방문 목적을 말씀해 주세요.', 'What is the purpose of your visit?'), answer: L('웰링턴에서 열리는 친구 결혼식에 갑니다. 그 뒤 며칠 여행할 예정입니다.', 'A friend\'s wedding in Wellington, then a few days of travel.') },
       { id: 'nz10_work', q: L('현재 하시는 일은 무엇입니까?', 'What do you do for work?'), answer: L('도서관 사서로 일하고 있습니다.', 'I work as a librarian.') },
-      { id: 'nz10_previous', q: L('이전에 뉴질랜드 비자나 NZeTA를 신청한 적이 있습니까? 다른 이름을 쓴 적이 있습니까?', 'Have you applied for a New Zealand visa or NZeTA before, or used another name?'), answer: L('아니요, 이번이 처음입니다. Kowalczyk-Hale은 결혼 전부터 써 온 이름이고 다른 이름을 쓴 적은 없습니다.', 'No, this is my first application. I have been Kowalczyk-Hale since before I married, and I have never used another name.') },
+      { id: 'nz10_previous', q: L('이전에 뉴질랜드 비자나 NZeTA를 신청한 적이 있습니까? 다른 이름을 쓴 적이 있습니까?', 'Have you applied for a New Zealand visa or NZeTA before, or used another name?'), answer: L('아니요, 이번이 처음입니다. Kowalczyk-Hale은 늘 써 온 이름이고 다른 이름을 쓴 적은 없습니다.', 'No, this is my first application. Kowalczyk-Hale is the name I have always used, and I have never used another name.') },
       { id: 'nz10_return', q: L('언제 돌아가십니까?', 'When do you return?'), answer: L('12월 14일에 출국합니다.', 'I leave on 14 December.') }
     ],
     comparisons: [

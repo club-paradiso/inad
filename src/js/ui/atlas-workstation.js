@@ -14,12 +14,14 @@ import { announceA11y } from './toast.js';
 import { makeBundle, collectPayload } from '../engines/save-engine.js';
 import { downloadBlob } from '../services/diagnostics.js';
 import { exportSave, ensureImportInput } from './views/system-center.js';
+import { storeGetRaw } from '../services/storage.js';
 
 const l = (ko, en) => text({ ko, en });
 const h = (value) => esc(text(value));
 const parkedZones = new Map();
 let koreanTask = 'passenger';
 let callbacks;
+let restored = Promise.resolve();
 // Outcome labels come from the country pack; the three simulation outcomes are shared.
 const outcomes = () => Object.fromEntries(Object.entries(countryPack(state.countryId)?.outcomes || { complete: { ko: '검토 완료', en: 'Review complete' }, evidence: { ko: '보완 자료 요청', en: 'Request supporting evidence' }, review: { ko: '추가 검토', en: 'Further review' } }).map(([k, v]) => [k, text(v)]));
 const DIFFICULTY = { intro: ['입문', 'Intro'], standard: ['표준', 'Standard'], advanced: ['심화', 'Advanced'] };
@@ -77,7 +79,7 @@ export function openCountrySelector(error = '', selected = state.countryId) {
   byId('atlasEnter').onclick = () => {
     const id = $('[name="atlas-country"]:checked').value;
     const options = { airportId: byId('atlasAirport')?.value, difficulty: byId('atlasDifficulty')?.value, interviewLanguage: byId('atlasInterviewLanguage')?.value };
-    const go = async () => { await loadAtlasLibrary(id).catch(() => null); const r = atlas.selectCountry(id, options); if (!r.ok) { if ($('#atlasEnter')) announceA11y(l('사건 자료를 불러오지 못했습니다. 다시 시도하세요.', 'Case content could not be loaded. Try again.')); return; } closeModal(); mountCountry(); if (id !== 'KR') { renderAtlas(); showTask(state.atlas.view === 'counter' ? 'interview' : 'evidence'); byId('atlasCaseHeading')?.focus(); } else { callbacks.renderKorean(); if (state.started) byId('caseName')?.focus(); } };
+    const go = async () => { await restored; await loadAtlasLibrary(id).catch(() => null); const r = atlas.selectCountry(id, options); if (!r.ok) { if ($('#atlasEnter')) announceA11y(l('사건 자료를 불러오지 못했습니다. 다시 시도하세요.', 'Case content could not be loaded. Try again.')); return; } closeModal(); mountCountry(); if (id !== 'KR') { renderAtlas(); showTask(state.atlas.view === 'counter' ? 'interview' : 'evidence'); byId('atlasCaseHeading')?.focus(); } else { callbacks.renderKorean(); if (state.started) byId('caseName')?.focus(); } };
     if (state.started && id !== state.countryId) {
       showModal(l('국가 변경 확인', 'Confirm country change'), `<div data-i18n-control><p>${l('현재 사건을 보관하고 선택한 국가로 이동합니다. 돌아오면 검토를 이어갈 수 있습니다.', 'Keep the current case and switch countries. Return here to continue the review.')}</p><p>${state.countryId === 'KR' ? l('한국 사건의 현재 화면은 이 탭에서 유지됩니다. 새로고침 시에는 마지막 체크포인트부터 복원됩니다.', 'The current Korean screen stays in this tab. Reloading restores the last checkpoint.') : esc(saveLabel())}</p><div class="modal-actions">${button('atlasStay', l('현재 국가 유지', 'Stay here'), 'data-autofocus')}<button type="button" class="act primary" id="atlasSwitch">${l('국가 변경', 'Switch country')}</button></div></div>`);
       byId('atlasStay').onclick = closeModal; byId('atlasSwitch').onclick = go;
@@ -111,7 +113,7 @@ function taskHTML(c, v, title) {
   return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
 }
 function recordsHTML(c, v) {
-  const query = v.search.toLowerCase(), records = v.searched ? c.records.filter((r) => `${r.id} ${c.name} ${text(r.title)} ${text(r.detail)}`.toLowerCase().includes(query)) : [];
+  const query = v.search.toLowerCase(), records = v.searched ? c.records.filter((r) => atlas.atlasRecordMatches(c, r, query)) : [];
   return box(l('기록 조회', 'Record search'), `<form id="atlasSearchForm"><label for="atlasSearch">${l('검색어', 'Search')}</label><div class="atlas-search"><input id="atlasSearch" maxlength="120" value="${esc(v.search)}" autocomplete="off"><button class="act" type="submit">${l('조회', 'Search')}</button>${button('atlasResetSearch', l('초기화', 'Reset'))}</div></form><p role="status">${v.searched ? records.length ? `${records.length} ${l('건 조회', 'results')}` : l('일치하는 기록이 없습니다.', 'No synthetic records match.') : l('조회 대기', 'Not searched')}</p>${records.length ? `<table><caption class="sr-only">${l('합성 기록', 'Records')}</caption><thead><tr><th>${l('기록', 'Record')}</th><th>${l('내용', 'Content')}</th><th>${l('상태', 'State')}</th></tr></thead><tbody>${records.map((r) => {
     // Only facts that come from the record itself; document facts live in the document viewer (unique ids).
     const factBtn = (c.facts || []).filter((f) => f.sourceType === 'record' && f.sourceId === r.id).map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id))).join('');
@@ -162,7 +164,8 @@ function compareDockHTML(c, v) {
   </section>`;
 }
 function assessmentHTML(c, v) {
-  const crossCheckNote = v.asked.includes('crosscheck')
+  const hasCrossCheck = c.questions.some((q) => q.id === 'crosscheck');
+  const crossCheckNote = !hasCrossCheck ? '' : v.asked.includes('crosscheck')
     ? l('추가 원문 교차 질문 확인됨', 'Case-specific source cross-check completed')
     : l('선택 과제: 추가 교차 질문 가능', 'Optional task: cross-check question available');
   const missing = atlas.atlasMissing(), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
@@ -178,7 +181,7 @@ function assessmentHTML(c, v) {
     debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${esc(outcomes()[v.outcome])}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)} · ${d?.score ?? ''}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p><strong>${d?.outcomeCorrect ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</strong>${d?.outcomeFeedback ? ` · ${h(d.outcomeFeedback)}` : ''}</p>${d?.outcomeCorrect ? '' : `<p>${l('근거에 맞는 결론', 'Supported outcome')}: ${esc(outcomes()[c.expectedOutcome])}</p>`}<p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div>${actions}</div>`;
   }
 
-  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · ${v.tasks.length}/${c.tasks.length} ${l('과업 완료', 'tasks checked')}</p><p class="atlas-muted">${esc(crossCheckNote)}</p>${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
+  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · ${v.tasks.length}/${c.tasks.length} ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
 }
 export function renderAtlas() {
   if (state.countryId === 'KR') { focusView(); return; }
@@ -269,8 +272,12 @@ export function initAtlas(handlers) {
   document.addEventListener('inad:localechange', () => { if (state.countryId !== 'KR') renderAtlas(); });
   // Saved overseas progress can only be validated against its case library, so the
   // libraries load (as separate chunks) before the save is read. Korean play is not blocked.
-  loadAtlasLibraries().then(restoreAtlas, () => restoreAtlas());
+  // A country can only be entered once the saved state has been read (otherwise a quick
+  // choice at boot would persist an empty session over the stored one).
+  restored = (needsLibraries() ? loadAtlasLibraries() : Promise.resolve()).then(restoreAtlas, restoreAtlas);
 }
+// A Korean-only player has no overseas save to validate, so no case library is fetched at boot.
+function needsLibraries() { const c = storeGetRaw(atlas.COUNTRY_KEY); return storeGetRaw(atlas.ATLAS_KEY) !== null || (c !== null && c !== 'KR'); }
 function restoreAtlas() {
   const selected = atlas.loadAtlas();
   if (!countryPack(selected)) { openCountrySelector(l('저장된 국가를 지원하지 않습니다. 기존 데이터를 보존했습니다. 국가를 직접 선택하세요.', 'The saved country is unsupported. Existing data is preserved. Choose a country explicitly.')); return; }
