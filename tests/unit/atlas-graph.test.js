@@ -123,6 +123,7 @@ test('dynamic investigative question unlock gates and branch routing', () => {
 test('branch routing: interview-first path', () => {
   atlas.selectCountry('GB');
   atlas.selectAtlasCase('SIM-GB-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const v = atlas.activeAtlasCase();
 
   // Route B: Interview first
@@ -143,6 +144,7 @@ test('branch routing: interview-first path', () => {
 test('simulated evidence request in NZ SIM-NZ-02', () => {
   atlas.selectCountry('NZ');
   atlas.selectAtlasCase('SIM-NZ-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const v = atlas.activeAtlasCase();
 
   atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE1');
@@ -344,6 +346,7 @@ test('statement fact chip gating: chips and selections locked until question is 
   // SIM-GB-02 statement fact locked until gb02_remaining_days is asked
   atlas.selectCountry('GB');
   atlas.selectAtlasCase('SIM-GB-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const vGB = atlas.activeAtlasCase();
   assert.equal(atlas.atlasAction('selectFact', 'SIM-GB-02-F-TOURISM'), false);
   assert.equal(atlas.atlasAction('ask', 'clarify'), true);
@@ -360,6 +363,7 @@ test('statement fact chip gating: chips and selections locked until question is 
   // SIM-NZ-02 statement fact locked until nz02_missing_page is asked
   atlas.selectCountry('NZ');
   atlas.selectAtlasCase('SIM-NZ-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const vNZ = atlas.activeAtlasCase();
   assert.equal(atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE2-DETAIL'), false);
   atlas.atlasAction('selectFact', 'SIM-NZ-02-F-PAGE1');
@@ -373,6 +377,7 @@ test('statement fact chip gating: chips and selections locked until question is 
 test('atlasRequestEvidence engine validation: prerequisite discovery and scenario check', () => {
   atlas.selectCountry('NZ');
   atlas.selectAtlasCase('SIM-NZ-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const v = atlas.activeAtlasCase();
 
   // Invalid request IDs rejected
@@ -402,6 +407,7 @@ test('evaluateDebrief rigor for UK and NZ vertical slices', () => {
   // SIM-GB-02
   atlas.selectCountry('GB');
   atlas.selectAtlasCase('SIM-GB-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const scenarioGB = atlas.currentAtlasScenario();
   const caseGB = atlas.activeAtlasCase();
 
@@ -435,6 +441,7 @@ test('evaluateDebrief rigor for UK and NZ vertical slices', () => {
   // SIM-NZ-02
   atlas.selectCountry('NZ');
   atlas.selectAtlasCase('SIM-NZ-02');
+  atlas.callAtlasPassenger(); // v11: every case starts with the call
   const scenarioNZ = atlas.currentAtlasScenario();
   const caseNZ = atlas.activeAtlasCase();
 

@@ -53,7 +53,24 @@ export async function buildModularApp({ minify = true } = {}) {
   const cssFileName = `style.${cssHash}.css`;
   fs.writeFileSync(path.join(assetsDir, cssFileName), combinedCss);
 
-  // 4. Bundle and minify JS (ESM format)
+  // 4. International case libraries (src/data/atlas/<country>.js) are built as separate
+  //    hashed ESM files and loaded on demand, so overseas content is not in the initial bundle.
+  const libraryFiles = {};
+  const chunkFiles = [];
+  for (const cc of ['ca', 'gb', 'nz']) {
+    const out = await build({ entryPoints: [path.join(src, `data/atlas/${cc}.js`)], bundle: true, format: 'esm', platform: 'browser', target: ['es2020'], minify, legalComments: 'none', charset: 'utf8', write: false });
+    const code = out.outputFiles[0].text;
+    const name = `atlas-${cc}.${crypto.createHash('sha256').update(code).digest('hex').slice(0, 8)}.js`;
+    fs.writeFileSync(path.join(assetsDir, name), code);
+    libraryFiles[cc] = name;
+    chunkFiles.push({ name, bytes: Buffer.byteLength(code), gzip: zlib.gzipSync(code).byteLength });
+  }
+  const atlasLibraries = {
+    name: 'atlas-libraries',
+    setup(b) { b.onResolve({ filter: /data\/atlas\/(ca|gb|nz)\.js$/ }, (args) => ({ path: `./${libraryFiles[args.path.match(/(ca|gb|nz)\.js$/)[1]]}`, external: true })); }
+  };
+
+  // 5. Bundle and minify JS (ESM format)
   const esbuildResult = await build({
     entryPoints: { app: path.join(src, 'js/app.js') },
     bundle: true,
@@ -63,6 +80,7 @@ export async function buildModularApp({ minify = true } = {}) {
     minify,
     legalComments: 'none',
     charset: 'utf8',
+    plugins: [atlasLibraries],
     write: false
   });
   let bundledJs = esbuildResult.outputFiles[0].text;
@@ -70,7 +88,7 @@ export async function buildModularApp({ minify = true } = {}) {
   const jsFileName = `app.${jsHash}.js`;
   fs.writeFileSync(path.join(assetsDir, jsFileName), bundledJs);
 
-  // 5. Generate clean HTML entrypoint
+  // 6. Generate clean HTML entrypoint
   let cleanHtml = htmlSrc
     .replace(/<link rel="stylesheet" href="[^"]+">\n?/g, '')
     .replace(/<script type="module" src="[^"]+"><\/script>\n?/g, '');
@@ -103,6 +121,7 @@ export async function buildModularApp({ minify = true } = {}) {
   console.log(`  - dist/index.html: ${(htmlBytes / 1024).toFixed(1)} KB (mirror at ./index.html)`);
   console.log(`  - dist/assets/${cssFileName}: ${(cssBytes / 1024).toFixed(1)} KB`);
   console.log(`  - dist/assets/${jsFileName}: ${(jsBytes / 1024).toFixed(1)} KB (ESM)`);
+  for (const c of chunkFiles) console.log(`  - dist/assets/${c.name}: ${(c.bytes / 1024).toFixed(1)} KB / ${(c.gzip / 1024).toFixed(1)} KB gz (on demand)`);
   console.log(`  - dist/assets/portraits/: ${portraitFiles.length} files (${(totalPortraitBytes / 1024).toFixed(0)} KB)`);
   console.log(`  - Initial transfer: ${(totalInitialUncompressed / 1024).toFixed(1)} KB uncompressed / ${(totalInitialGzip / 1024).toFixed(1)} KB gzipped`);
 

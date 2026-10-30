@@ -70,61 +70,50 @@ export function compareFacts(scenario, factIdA, factIdB) {
   };
 }
 
+// Shared, data-driven debrief for every country (v11). Each case's `assessment` names the
+// relationship to establish (issue) and what verifies it (resolve). Action order never matters.
+// An outcome that the evidence does not support caps the result, so completing the
+// checklist alone can never earn a thorough rating.
 export function evaluateDebrief(scenario, caseState) {
   if (!scenario || !caseState) return null;
   const graph = normalizeGraph(caseState.graph);
-  const discoveries = graph.discoveries;
-  const isVerticalSlice = ['SIM-CA-01', 'SIM-GB-02', 'SIM-NZ-02'].includes(scenario.id);
-  let discrepancyIdentified = false, missingDistinguished = false, followUpCompleted = false;
+  const found = (ids) => ids.some((id) => graph.discoveries.includes(id));
+  const all = (ids, list) => ids.every((id) => list.includes(id));
+  const a = scenario.assessment || { issue: [], distinguish: [], resolve: { findings: [], questions: [], requests: [] }, feedback: null };
+  const asked = Array.isArray(caseState.asked) ? caseState.asked : [];
+  const reviewed = Array.isArray(caseState.reviewed) ? caseState.reviewed : [];
+  const discrepancyIdentified = a.issue.length ? found(a.issue) : graph.discoveries.length > 0;
+  const missingDistinguished = (a.distinguish || []).length ? found(a.distinguish) : discrepancyIdentified;
+  const askedResolution = !a.resolve.questions.length || a.resolve.questions.some((q) => asked.includes(q));
+  const followUpCompleted = all(a.resolve.findings, graph.discoveries) && askedResolution && all(a.resolve.requests, graph.evidenceRequests);
+  const unnecessaryRequests = graph.evidenceRequests.filter((r) => !a.resolve.requests.includes(r));
   const feedback = [];
-
-  const fb = (ko, en) => feedback.push({ ko, en });
-  if (scenario.id === 'SIM-CA-01') {
-    discrepancyIdentified = discoveries.includes('CA01_DATE_CONFLICT');
-    missingDistinguished = discoveries.includes('CA01_RECORD_UNAMENDED') || (discrepancyIdentified && discoveries.includes('CA01_TICKET_MATCHES_STMT'));
-    const statementVerified = discoveries.includes('CA01_TICKET_MATCHES_STMT');
-    const askedClarification = caseState.asked.includes('clarify_dates') || caseState.asked.includes('clarify');
-    followUpCompleted = askedClarification && statementVerified;
-    if (discrepancyIdentified) fb('출국일 상충 확인', 'Date conflict confirmed');
-    if (statementVerified) fb('날짜 오기 진술 검증', 'Statement verified');
-    if (!discrepancyIdentified) fb('출국일 불일치 미확인', 'Date conflict missed');
-    if (!followUpCompleted) fb('진술 대조 미완료', 'Follow-up comparison incomplete');
-  } else if (scenario.id === 'SIM-GB-02') {
-    discrepancyIdentified = discoveries.includes('GB02_DURATION_GAP');
-    missingDistinguished = discoveries.includes('GB02_ITINERARY_SEPARATED') || discoveries.includes('GB02_TOTAL_DAYS_ACCOUNTED');
-    const askedRemaining = caseState.asked.includes('gb02_remaining_days');
-    const tourismVerified = discoveries.includes('GB02_TOTAL_DAYS_ACCOUNTED') || discoveries.includes('GB02_ITINERARY_SEPARATED');
-    followUpCompleted = askedRemaining && tourismVerified;
-    if (discrepancyIdentified) fb('행사·체류 기간 분리 확인', 'Duration gap separated');
-    if (tourismVerified) fb('관광 일정 해명 확인', 'Tourism itinerary confirmed');
-    if (!discrepancyIdentified) fb('기간 차이 미대조', 'Duration gap unexamined');
-    if (!followUpCompleted) fb('잔여 체류 조사 미완료', 'Remaining stay inquiry incomplete');
-  } else if (scenario.id === 'SIM-NZ-02') {
-    discrepancyIdentified = discoveries.includes('NZ02_PAGE2_MISSING');
-    missingDistinguished = discoveries.includes('NZ02_PAGE2_MISSING');
-    const hasRequest = graph.evidenceRequests.includes('SIM-NZ-02-REQ-PAGE2');
-    const askedMissing = caseState.asked.includes('nz02_missing_page');
-    const statementChecked = discoveries.includes('NZ02_PAGE2_CONFIRMED');
-    followUpCompleted = hasRequest && askedMissing && statementChecked;
-    if (discrepancyIdentified) fb('체류 계획 2쪽 미접수 확인', 'Page 2 absence confirmed');
-    if (hasRequest) fb('2쪽 보완 요청 발령', 'Page 2 request issued');
-    if (statementChecked) fb('누락 서류 내용 진술 확인', 'Missing page content confirmed');
-    if (!discrepancyIdentified) fb('누락 서류 미확인', 'Missing page overlooked');
-    if (!hasRequest) fb('자료 보완 요청 미발령', 'Evidence request not issued');
-    if (!followUpCompleted) fb('누락 보완 조사 미완료', 'Omission follow-up incomplete');
-  } else {
-    discrepancyIdentified = discoveries.length > 0;
-    followUpCompleted = caseState.asked.length > 0;
+  const fb = (t) => { if (t) feedback.push(t); };
+  if (a.feedback) {
+    fb(discrepancyIdentified ? a.feedback.issueHit : a.feedback.issueMiss);
+    fb(followUpCompleted ? a.feedback.resolveHit : a.feedback.resolveMiss);
   }
-
-  const score = (discrepancyIdentified ? 35 : 10) +
-                (followUpCompleted ? 35 : 5) +
-                (caseState.reviewed.length >= scenario.documents.length ? 20 : 5) +
-                (typeof caseState.rationale === 'string' && caseState.rationale.trim().length >= 10 ? 10 : 0);
-
+  for (const id of a.resolve.requests) if (!graph.evidenceRequests.includes(id)) {
+    const r = (scenario.requests || []).find((x) => x.id === id);
+    fb({ ko: `보완 요청 미발령: ${r?.title.ko || id}`, en: `Evidence request not issued: ${r?.title.en || id}` });
+  }
+  for (const id of unnecessaryRequests) {
+    const r = (scenario.requests || []).find((x) => x.id === id);
+    fb({ ko: `불필요한 보완 요청: ${r?.title.ko || id}`, en: `Unnecessary request: ${r?.title.en || id}` });
+  }
+  let score = (discrepancyIdentified ? 35 : 10) + (followUpCompleted ? 35 : 5) +
+    (reviewed.length >= scenario.documents.length ? 20 : 5) +
+    (typeof caseState.rationale === 'string' && caseState.rationale.trim().length >= 10 ? 10 : 0) -
+    10 * unnecessaryRequests.length;
+  const outcome = ['complete', 'evidence', 'review'].includes(caseState.outcome) ? caseState.outcome : null;
+  const accepted = [scenario.expectedOutcome, ...(scenario.acceptableOutcomes || [])];
+  const outcomeCorrect = outcome ? accepted.includes(outcome) : null;
+  if (outcomeCorrect === false) score = Math.min(score, 45);
+  score = Math.max(0, Math.min(100, score));
+  const outcomeFeedback = outcome && scenario.outcomeFeedback ? scenario.outcomeFeedback[outcome] : null;
   return {
-    isVerticalSlice, discrepancyIdentified, missingDistinguished, followUpCompleted,
-    sourcesExamined: caseState.reviewed.length, score,
+    isVerticalSlice: true, discrepancyIdentified, missingDistinguished, followUpCompleted,
+    sourcesExamined: reviewed.length, score, outcomeCorrect, outcomeFeedback, unnecessaryRequests,
     rating: score >= 80 ? 'thorough' : score >= 50 ? 'competent' : 'incomplete',
     feedback, investigationPath: graph.investigationPath
   };

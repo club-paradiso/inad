@@ -161,3 +161,19 @@ test('save bundle schema contract: INAD_SAVE_BUNDLE schema is strictly schema 1'
   const saveEngineSrc = fs.readFileSync(path.join(root, 'src/js/engines/save-engine.js'), 'utf8');
   assert.match(saveEngineSrc, /if\s*\(b\.schema\s*!==\s*1\)/, 'save engine strictly enforces schema 1');
 });
+
+test('v11: international case libraries ship as on-demand hashed files, not in the initial bundle', () => {
+  const html = fs.readFileSync(distPath, 'utf8');
+  const js = fs.readFileSync(path.join(distDir, html.match(/assets\/app\.[a-f0-9]+\.js/)[0]), 'utf8');
+  const assets = fs.readdirSync(path.join(distDir, 'assets'));
+  for (const cc of ['ca', 'gb', 'nz']) {
+    const file = assets.find((f) => new RegExp(`^atlas-${cc}\\.[a-f0-9]{8}\\.js$`).test(f));
+    assert.ok(file, `hashed ${cc} library present`);
+    assert.ok(js.includes(`import("./${file}")`), `app loads ${file} on demand`);
+    assert.ok(!html.includes(file), `${file} is not part of the initial HTML`);
+  }
+  // Authored overseas case text stays out of the entry bundle.
+  assert.ok(!js.includes('Avery Morgan'), 'case content is not inlined into app bundle');
+  const dynamicImports = [...js.matchAll(/import\("([^"]+)"\)/g)].map((m) => m[1]);
+  assert.ok(dynamicImports.every((p) => /^\.\/atlas-(ca|gb|nz)\.[a-f0-9]{8}\.js$/.test(p)), `only case libraries are dynamic: ${dynamicImports}`);
+});
