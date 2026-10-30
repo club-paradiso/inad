@@ -19,10 +19,19 @@ function codexPath() {
   assert.equal(atlas.activeAtlasCase().selectedRecord, null, 'fixture: record itself not opened');
   atlas.atlasAction('search', 'zzz-no-such-record');
 }
+// Checks the raw state, not validateAtlasSave (which repairs stale record selections on load).
+function assertSelectionsVisible(save, label) {
+  for (const [cc, sess] of Object.entries(save.sessions)) for (const [cid, v] of Object.entries(sess.cases)) {
+    const c = atlasScenarios(cc).find((x) => x.id === cid);
+    for (const id of v.graph?.selectedFacts || []) assert.equal(atlas.atlasFactVisible(c, v, c.facts.find((f) => f.id === id)), true, `${label}: ${cid} keeps hidden ${id}`);
+  }
+}
 function reload() { const keep = state.atlas.sessions; state.atlas.sessions = {}; state.atlas.storageBlocked = false; delete state.atlas.persistedRaw; atlas.loadAtlas(); return keep; }
 
 test('codex P1: changing the search never writes an invalid save', () => {
   codexPath();
+  assert.ok(!atlas.activeAtlasCase().graph.selectedFacts.includes(FACT), 'hidden selection released in memory');
+  assertSelectionsVisible(JSON.parse(localStorage.getItem(atlas.ATLAS_KEY)), 'stored');
   assert.equal(atlas.validateAtlasSave(JSON.parse(localStorage.getItem(atlas.ATLAS_KEY))), true, 'stored save stays valid');
   atlas.atlasAction('notes', 'The next action must still be able to save.');
   assert.equal(state.atlas.saveStatus, 'saved');
@@ -107,6 +116,14 @@ test('defence in depth: the engine refuses to persist a snapshot it would itself
   assert.equal(localStorage.getItem(atlas.ATLAS_KEY), good, 'valid save on disk untouched');
   assert.equal(state.atlas.saveStatus, 'failed');
   assert.equal(state.atlas.storageBlocked, false, 'not marked protected: storage itself is fine');
+  // A stale record selection (repairable on load) is also never written as-is.
+  atlas.activeAtlasCase().graph.discoveries = [];
+  atlas.selectCountry('CA'); atlas.selectAtlasCase(CASE); atlas.callAtlasPassenger();
+  atlas.atlasAction('search', ''); atlas.atlasAction('selectFact', FACT);
+  const saved = localStorage.getItem(atlas.ATLAS_KEY);
+  atlas.activeAtlasCase().search = 'zzz-no-such-record'; // the pre-fix search action
+  assert.equal(atlas.persistAtlas(), false);
+  assert.equal(localStorage.getItem(atlas.ATLAS_KEY), saved);
 });
 
 test('every case: any search sequence keeps the save valid (36-case regression)', () => {
@@ -116,6 +133,7 @@ test('every case: any search sequence keeps the save valid (36-case regression)'
     for (const f of c.facts.filter((x) => x.sourceType === 'record')) atlas.atlasAction('selectFact', f.id);
     for (const q of ['zzz', c.records[0].id, '', c.name.slice(0, 3)]) {
       atlas.atlasAction('search', q);
+      assertSelectionsVisible(atlas.atlasSnapshot(), `${c.id} after search "${q}"`);
       assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true, `${c.id} after search "${q}"`);
     }
   }

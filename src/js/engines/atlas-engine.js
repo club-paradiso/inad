@@ -135,7 +135,8 @@ export function persistAtlas() {
   // Never write what the next load would reject: that would lock every country's progress.
   // The in-memory draft is kept and can still be exported; the valid save on disk is untouched.
   const snapshot = atlasSnapshot();
-  if (!validateAtlasSave(snapshot)) { state.atlas.saveStatus = 'failed'; return false; }
+  // Strict: a snapshot that would need load-time repair is just as unwritable as an invalid one.
+  if (migrateAtlasSave(snapshot) !== snapshot || !validateAtlasSave(snapshot)) { state.atlas.saveStatus = 'failed'; return false; }
   const written = JSON.stringify(snapshot);
   const ok = storeSet(ATLAS_KEY, written);
   if (ok) state.atlas.persistedRaw = written;
