@@ -160,4 +160,4 @@ Each overseas country now has its own workstation look on the same DOM (one tree
   - NZ phase state was visible only through colour and weight. It is now stated in visible text.
   - Phases were not chained. They now are.
   - Forced-colours marks were added.
-- **Figma:** the Variables collection `ATLAS / Country desk` (KR/CA/GB/NZ) is synced. Six editable country-desk frames (1440 and 390 for CA/GB/NZ) are in `[Implemented] ATLAS · country desks · 2026-11-03`, bound to those variables. See `docs/figma-workspace-spec.md`.
+- **Figma:** the Variables collection `ATLAS / Country desk` (KR/CA/GB/NZ) is synced. Nine editable country-desk frames (1440, 768 and 390 for CA/GB/NZ) are in `[Implemented] ATLAS · country desks · 2026-11-03`, bound to those variables. See `docs/figma-workspace-spec.md`.
