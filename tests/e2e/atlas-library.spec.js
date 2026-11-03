@@ -60,7 +60,7 @@ async function play(page, c, outcome) {
   expect(done.size).toBe(reachable.length);
   for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await page.locator('#atlasNotes').fill('Compared the sources; outcome and unresolved points recorded.');
-  for (const t of c.tasks) await page.locator(`#task-${t.id}`).click();
+  for (const t of c.tasks) await expect(page.locator(`#task-status-${t.id}`)).toHaveText(/^(완료|Complete)$/);
   await page.locator('#atlasPrepare').click();
   await page.locator('#atlasOutcome').selectOption(outcome);
   await page.locator('#atlasConfirmOutcome').click();

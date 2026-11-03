@@ -403,3 +403,77 @@ Editable references: [CA 232:8](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUn
 These reference desktop information hierarchy. Runtime viewport evidence is under `docs/atlas/screenshots/`.
 
 Existing frames and library definitions were not edited. The table above predates current `tokens.css`: several neutral colors already differ. ATLAS preserves runtime tokens, reuses matching variables, and adds an isolated three-color code snapshot for new frames. Global variable reconciliation and editable tablet/mobile variants remain follow-up work; see `docs/atlas/DESIGN_DECISIONS.md`.
+
+## ATLAS country desks · 2026-11-03 (code first)
+
+These token additions come from the code (`src/styles/tokens.css`). The Figma Variables to match them are a collection named **Country desk** with modes KR, CA, GB and NZ:
+
+| Variable | KR | CA | GB | NZ |
+|---|---|---|---|---|
+| `color/desk/mark` (`--desk`) | = `--accent` #245f86 | #22717a | #45539c | #5c6b2f |
+| `color/desk/soft` (`--desk-soft`) | = `--accent-soft` #e2edf4 | #e0eef0 | #e7e9f5 | #eef1e0 |
+| `color/bg/chrome` (`--chrome`) | #14232f | #15282b | #171c32 | #1f231a |
+| `color/bg/chrome-2` (`--chrome-2`) | #203746 | #21393d | #252b47 | #2e3426 |
+| `color/text/chrome-muted` (`--chrome-muted`) | #a9bac6 | #a6bfc2 | #b1b8d6 | #bcc4a6 |
+
+Existing variables are not renamed. The CA, GB and NZ chrome values override the shared chrome only when the high-contrast setting is off. Runtime evidence is in `docs/v11/screenshots/*`.
+
+**Sync status (2026-11-03):** the new collection `ATLAS / Country desk` (`VariableCollectionId:236:2`) has modes KR, CA, GB and NZ, five variables (`236:3` to `236:7`), explicit scopes and WEB code syntax.
+- **KR mode:** each value is an alias of the existing `Color` variable (`color/action/primary`, `color/action/soft`, `color/bg/chrome`, `color/bg/chrome-2`, `color/text/chrome-muted`).
+- **Existing collections, frames and the `[Implemented] ATLAS · procedural foundations` section were not touched.**
+- **Frames:** section `[Implemented] ATLAS · country desks · 2026-11-03` on page `15 — ATLAS country foundations` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84)).
+  - **Counter focus (대면) · 1440 × 1000:** [CA 246:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-84) · [GB 246:238](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-238) · [NZ 246:385](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-385). The layout is the same for every country (person · interview · evidence over notes); the chrome and desk marks differ.
+  - **Counter focus, interview task · tablet 768 × 1024:** [CA 247:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=247-84) · [GB 247:183](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=247-183) · [NZ 247:282](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=247-282). **Phone 390 × 844:** [CA 248:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=248-84) · [GB 248:156](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=248-156) · [NZ 248:228](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=248-228).
+  - **System focus · 1440 × 1000:** [CA 239:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=239-84) · [GB 240:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=240-84) · [NZ 241:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=241-84).
+  - **Compact (work area + inspector), evidence task · 1024 × 768:** [CA 245:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-84) · [GB 245:188](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-188) · [NZ 245:279](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-279).
+  - **Phone, evidence task · 390 × 844:** [CA 242:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-84) · [GB 242:172](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-172) · [NZ 242:247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-247).
+  - **Tablet (work area + inspector), evidence task · 768 × 1024:** [CA 243:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=243-84) · [GB 243:209](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=243-209) · [NZ 243:331](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=243-331).
+- **How they were made:** every frame is editable layers (frames, rectangles, text in Noto Sans KR / Roboto Mono; no raster UI). The geometry, colours and text come from the running app's computed styles in a mid-review state (passenger called, one question asked, first document reviewed).
+  - Scroll zones are clipping frames.
+  - Each frame sets the `ATLAS / Country desk` mode for its country, and its chrome, desk-mark and desk-soft fills are bound to those variables (15–25 bound fills per frame). Switching a frame's mode recolours it.
+  - `html_to_figma` was not usable because `mcp.figma.com` is blocked by this environment's network policy, so the frames were built with the Plugin API.
+  - Disabled buttons (an already-asked question, a locked follow-up, compare/clear with nothing selected) carry the runtime `.act:disabled` opacity of .45.
+- **Country selection:** the dialog that opens from the start screen's "국가 선택", with Canada, the United Kingdom or New Zealand chosen. It is in its own section, `[Implemented] ATLAS · country selection · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84)).
+  - Frames, one row per chosen country (1440 × 1000 · 768 × 1024 · 390 × 844):
+    - CA: [250:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-84) · [250:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-155) · [250:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-226)
+    - GB: [265:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-84) · [265:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-155) · [265:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-226)
+    - NZ: [266:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-84) · [266:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-155) · [266:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-226)
+  - The chosen country changes the highlighted card, the desk summary and design basis (UK01/UK03/GB-VISIT, NZ01/NZ06/NZ-A16) and the default fictional workplace (런던 히스로 · 가상 심사대, 오클랜드 · 가상 검토실).
+  - When this section grew to three rows, the sections below it that this automation made (switch confirmation, outcome review, debrief, case queue) moved down by the same amount.
+  - The backdrop is one dim layer; the start screen behind it is omitted.
+  - Native radios and select arrows are drawn as vectors, and the dialog carries the `--shadow-3` drop shadow.
+- **Country switch confirmation:** the "국가 변경 확인" dialog shown when a desk is left for another country. There are three examples, each with the departing desk dimmed behind the dialog: GB → NZ, CA → GB and NZ → CA.
+  - Section: `[Implemented] ATLAS · country switch confirmation · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84)).
+  - Frames, one row per departing desk (1440 × 1000 · 768 × 1024 · 390 × 844 bottom sheet):
+    - GB → NZ: [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340)
+    - CA → GB: [267:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-84) · [267:242](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-242) · [267:351](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-351)
+    - NZ → CA: [268:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-84) · [268:244](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-244) · [268:353](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-353)
+  - The dialog text is the same for every pair. What differs is the desk behind it, which uses the departing country's mode of the `ATLAS / Country desk` variables.
+  - When this section grew to three rows, the sections below it that this automation made (outcome review, debrief, case queue) moved down by the same amount.
+- **Outcome review:** the "가상 결과 확인" dialog opened by "가상 결과 검토", for CA, GB and NZ. The CA example is SIM-CA-01 with every review item done, "2차 심사 회부(가상)" chosen and a rationale typed, over the dimmed CA desk.
+  - Section: `[Implemented] ATLAS · outcome review · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84)).
+  - Frames, one row per desk (1440 × 1000 · 768 × 1024 · 390 × 844 bottom sheet):
+    - CA: [255:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-84) · [255:293](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-293) · [255:374](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-374)
+    - GB, SIM-GB-01 with "보완 자료 요청" chosen: [263:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-84) · [263:271](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-271) · [263:353](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-353)
+    - NZ, SIM-NZ-01 with "추가 평가 인계(가상)" chosen: [264:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-84) · [264:252](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-252) · [264:334](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-334)
+  - The dimmed desk behind each dialog uses that country's variable mode. GB and NZ choose each case's expected outcome.
+  - When this section grew to three rows, the debrief and case queue sections below it, both made by this automation, moved down by the same amount.
+  - The outcome labels are simulation training labels, not legal dispositions.
+- **Debrief:** the in-desk debrief shown after the outcome is confirmed, for CA, GB and NZ. The CA example is SIM-CA-01 completed with "2차 심사 회부(가상)", the rating "추가 대조 권장 · 45", the route, the evidence-match line, feedback, the typed rationale, and the next-case and replay buttons.
+  - Section: `[Implemented] ATLAS · debrief · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84)).
+  - Frames, one row per desk (1440 × 1000 system focus · 768 × 1024 review task · 390 × 844 review task):
+    - CA: [257:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-84) · [257:276](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-276) · [257:349](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-349)
+    - GB, SIM-GB-01 with "보완 자료 요청": [261:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=261-84) · [261:250](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=261-250) · [261:325](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=261-325)
+    - NZ, SIM-NZ-01 with "추가 평가 인계(가상)": [262:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=262-84) · [262:233](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=262-233) · [262:305](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=262-305)
+  - GB and NZ use each case's expected outcome, so the evidence-match line reads "근거 일치". Their 1440 frames also show the completed checks in each desk's own form: filled diamonds for GB, and for NZ the board's top bars plus a phase line that reads "완료" (complete) at every step.
+  - At 1440 the debrief sits in the scrolling assessment zone and is clipped there, the same as at runtime. At 768 and 390 the review task is scrolled to the debrief.
+  - The score of 45 in every desk is the real result of the short path used for the capture, and the rating and outcome are simulation training labels, not legal dispositions.
+- **Case queue** (moved below the debrief section when that section grew): the "사건 대기열" list in the person zone, right after "다음 사건" (next case), for CA, GB and NZ. In CA, SIM-CA-01 is "완료 · 45", SIM-CA-02 is current and "진행 중" (in progress), and the rest are "대기" (queued). The progress line reads "1/12 건 완료 · 평균 45 · 근거 일치 1/1".
+  - Section: `[Implemented] ATLAS · case queue · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=258-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=258-84)).
+  - Frames, one row per desk (1440 × 1000 system focus · 768 × 1024 passenger task · 390 × 844 passenger task):
+    - CA: [258:85](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=258-85) · [258:269](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=258-269) · [258:383](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=258-383)
+    - GB: [259:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=259-84) · [259:264](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=259-264) · [259:378](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=259-378)
+    - NZ: [260:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=260-84) · [260:245](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=260-245) · [260:359](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=260-359)
+  - GB and NZ show the same moment: the first case finished with its expected outcome, then "다음 사건". Each frame uses its country's variable mode, and the GB task-rail nodes are rotated vector diamonds.
+  - The person zone is scrolled to the queue. The current case uses the shared accent-soft selection, not a desk colour, and the queue is a list of buttons, not a ranking.
+- **Existing frames were not touched.**

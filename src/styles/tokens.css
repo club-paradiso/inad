@@ -54,6 +54,10 @@
   --booth-text: #e9eef1;
   --booth-muted: #a3b3bd;     /* ≥4.5:1 on --booth and --booth-2 */
 
+  /* v11 country desk identity (Figma color/desk/* · mode per country). Identity marks only — never an action or status colour. */
+  --desk: var(--accent);
+  --desk-soft: var(--accent-soft);
+
   /* procedure accent (set per data-mode) */
   --proc: var(--accent);
 
@@ -98,3 +102,15 @@
 @media (max-height: 820px) { :root { --h-topbar: 44px; --h-opsbar: 30px; --h-casebar: 40px; } }
 /* short landscape phones run the phone layout (task-nav.js PHONE_QUERY) with tighter chrome */
 @media (max-height: 500px) and (max-width: 1023px) { :root { --h-mobile-header: 44px; --h-tasknav: 44px; --h-casebar: 36px; } }
+
+/* v11 country desks (Figma Variables · collection "Country desk", modes KR/CA/GB/NZ). Fictional identities informed by each
+   workstation's layout, not by any agency's branding. Only the chrome hue and the desk mark change: action and status colours
+   keep one meaning in every country. The high-contrast setting keeps its own chrome. */
+body[data-country="CA"] { --desk: #22717a; --desk-soft: #e0eef0; }
+body[data-country="GB"] { --desk: #45539c; --desk-soft: #e7e9f5; }
+body[data-country="NZ"] { --desk: #5c6b2f; --desk-soft: #eef1e0; }
+@media not (prefers-contrast: more) {
+  body[data-country="CA"]:not(.pref-contrast) { --chrome: #15282b; --chrome-2: #21393d; --chrome-muted: #a6bfc2; }
+  body[data-country="GB"]:not(.pref-contrast) { --chrome: #171c32; --chrome-2: #252b47; --chrome-muted: #b1b8d6; }
+  body[data-country="NZ"]:not(.pref-contrast) { --chrome: #1f231a; --chrome-2: #2e3426; --chrome-muted: #bcc4a6; }
+}

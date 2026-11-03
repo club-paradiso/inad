@@ -176,4 +176,6 @@ export function bindLiveInterview({ render } = {}) {
   byId('assistBtn').onclick = showInterviewSettings; syncAssistButton();
   checkModel();
 }
+// Stops a Korean push-to-talk session without clearing the question box (e.g. when an overseas desk opens).
+export function stopLiveListening() { if (!recognizer) return; recognizer.abort(); recognizer = null; setMic(false); }
 export function resetLiveInterview() { turnGen++; flush(); resetStage(); stopSpeaking(); recognizer?.abort(); recognizer = null; setMic(false); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }

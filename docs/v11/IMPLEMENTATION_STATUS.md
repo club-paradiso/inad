@@ -32,9 +32,9 @@ UX unification (#28) is partial — see "Not done".
 
 ## Not done / limitations (not claimed)
 
-- Overseas voice interview (Korean v10 only). Overseas free-text questions are implemented (deterministic; see `docs/v11/PRODUCT_AUDIT.md` §7); no model-assisted interpretation overseas.
-- The three manual "task" checks remain (kept for save compatibility).
-- Country-specific visual workstation variants beyond the existing layouts; Figma sync (no authorised Figma session in this environment).
+- Overseas free-text and push-to-talk questions are implemented (deterministic; see `docs/v11/PRODUCT_AUDIT.md` §7–8). No model-assisted interpretation overseas. Overseas read-aloud of answers is implemented (§9).
+- The three per-case review checks are derived from the work done (no buttons, no save migration; see `docs/v11/PRODUCT_AUDIT.md` §10).
+- Country-specific visual workstation variants are implemented (`docs/v11/PRODUCT_AUDIT.md` §11). Figma: see `docs/figma-workspace-spec.md` (ATLAS country desks).
 - Firefox/WebKit: not installed locally; covered by the CI `atlas-cross-browser` job (green on `bfbac02` for `atlas.spec.js`; from this commit it also runs the full-library reachability, queue, boot-race and GB-02/NZ-02 journeys). Korean flows run in Chromium only.
 - New official sources (eTA/ETA/NZeTA, NZ Act) could not be retrieved (network policy); cases `SIM-CA-05`, `SIM-GB-06`, `SIM-NZ-04` cite them as context and the register marks them NOT VERIFIED.
 - Human playtest, screen-reader testing.
@@ -44,5 +44,5 @@ UX unification (#28) is partial — see "Not done".
 
 1. Allow `www.canada.ca`, `www.gov.uk`, `www.immigration.govt.nz`, `www.legislation.govt.nz` and re-run source retrieval.
 2. Done: overseas free-text questions (`engines/atlas-intent.js`, `submitAtlasUtterance`). Next: widen the held-out paraphrase set before any further lexicon tuning.
-3. Replace manual task checks with derived checks behind a save migration.
+3. Done: derived review checks (no migration needed: the saved `tasks` list keeps its meaning).
 4. Extend the CI cross-browser matrix to Korean flows if needed.

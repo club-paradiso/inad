@@ -79,9 +79,60 @@
 [data-atlas][data-focus="counter"] .zone-interview { grid-column: 2; grid-row: 1 / 3; }
 [data-atlas][data-focus="counter"] .zone-evidence { grid-column: 3; grid-row: 1; }
 [data-atlas][data-focus="counter"] .zone-assessment { grid-column: 3; grid-row: 2; }
-body[data-country="GB"] .atlas-tasks li { border-left: 4px solid var(--accent); padding-left: 12px; }
-body[data-country="NZ"] .atlas-tasks { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px solid var(--border-strong); }
+/* v11 country desks: one DOM, three compositions. The desk colour (tokens.css --desk) marks the header and each desk's
+   primary workspace; a completed check is also stated in text, never by colour alone. */
+[data-atlas] .atlas-header { border-bottom: 4px solid var(--desk); }
+[data-atlas] .zone-evidence { border-top: 4px solid var(--desk); container-type: inline-size; }
+/* 1100.02: no gap with the compact block (max-width: 1100px) at fractional widths (zoom, HiDPI). */
+@media (min-width: 1100.02px) {
+  [data-atlas][data-focus="system"] .main { grid-template-columns: 260px minmax(0, 1fr) 340px; }
+  /* CA · records desk: records and documents fill the middle; the interview sits above the review notes. */
+  body[data-country="CA"][data-focus="system"] .zone-person { grid-column: 1; grid-row: 1 / 3; }
+  body[data-country="CA"][data-focus="system"] .zone-evidence { grid-column: 2; grid-row: 1 / 3; }
+  body[data-country="CA"][data-focus="system"] .zone-interview { grid-column: 3; grid-row: 1; }
+  body[data-country="CA"][data-focus="system"] .zone-assessment { grid-column: 3; grid-row: 2; }
+  /* GB · task desk: the task list in the middle with the handover notes and outcome beside it; the interview below them. */
+  body[data-country="GB"][data-focus="system"] .zone-person { grid-column: 1; grid-row: 1 / 3; }
+  body[data-country="GB"][data-focus="system"] .zone-evidence { grid-column: 2; grid-row: 1 / 3; }
+  body[data-country="GB"][data-focus="system"] .zone-assessment { grid-column: 3; grid-row: 1; }
+  body[data-country="GB"][data-focus="system"] .zone-interview { grid-column: 3; grid-row: 2; }
+  /* NZ · activity desk: the activity board spans the top; the interview and review notes share the lower row. */
+  body[data-country="NZ"][data-focus="system"] .zone-person { grid-column: 1; grid-row: 1 / 3; }
+  body[data-country="NZ"][data-focus="system"] .zone-evidence { grid-column: 2 / 4; grid-row: 1; }
+  body[data-country="NZ"][data-focus="system"] .zone-interview { grid-column: 2; grid-row: 2; }
+  body[data-country="NZ"][data-focus="system"] .zone-assessment { grid-column: 3; grid-row: 2; }
+}
+[data-atlas] .atlas-tasks li[data-task-state="done"] span { color: var(--desk); font-weight: 600; }
+/* CA: dense record rows — check and its evidence link on one line, record table banded. */
+body[data-country="CA"] .atlas-tasks li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-left: 12px; border-left: 4px solid var(--border); }
+body[data-country="CA"] .atlas-tasks li[data-task-state="done"] { border-left-color: var(--desk); }
+body[data-country="CA"] .atlas-section thead { background: var(--desk-soft); }
+body[data-country="CA"] .atlas-section tbody tr:nth-child(even):not(.selected) { background: var(--surface-2); }
+/* GB: the assigned tasks as steps on a rail. */
+body[data-country="GB"] .atlas-tasks li { position: relative; padding-left: 32px; border-bottom: 0; }
+body[data-country="GB"] .atlas-tasks li::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+body[data-country="GB"] .atlas-tasks li:first-child::before { top: 18px; }
+body[data-country="GB"] .atlas-tasks li:last-child::before { bottom: auto; height: 18px; }
+/* A diamond node on the rail (not a checkbox: the checks complete on their own). */
+body[data-country="GB"] .atlas-tasks li::after { content: ""; position: absolute; left: 3px; top: 15px; width: 12px; height: 12px; border: 2px solid var(--border-strong); border-radius: var(--r-1); background: var(--surface); box-sizing: border-box; transform: rotate(45deg); }
+body[data-country="GB"] .atlas-tasks li[data-task-state="done"]::after { background: var(--desk); border-color: var(--desk); }
+body[data-country="GB"] .atlas-history summary { border-left: 4px solid var(--desk); }
+/* NZ: an activity board, one column per activity once the workspace is wide enough. */
+body[data-country="NZ"] .atlas-tasks { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@container (min-width: 640px) { body[data-country="NZ"] .atlas-tasks { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px solid var(--border-strong); border-bottom: 0; }
+body[data-country="NZ"] .atlas-tasks li[data-task-state="done"] { border-top-color: var(--desk); }
+.atlas-phases { display: flex; flex-wrap: wrap; gap: 4px 8px; list-style: none; padding: 0; margin: 8px 0 0; }
+.atlas-phases li + li::before { content: "→"; content: "→" / ""; margin-right: 8px; color: var(--text-3); }
+.atlas-phases li[data-phase-state="done"] { color: var(--desk); font-weight: 600; }
+.atlas-phases li span { font-weight: normal; }
+/* Forced colours: the desk marks keep a done/open difference without relying on colour. */
+@media (forced-colors: active) {
+  body[data-country="GB"] .atlas-tasks li::after { forced-color-adjust: none; background: Canvas; border-color: CanvasText; }
+  body[data-country="GB"] .atlas-tasks li[data-task-state="done"]::after { background: CanvasText; }
+  body[data-country="CA"] .atlas-tasks li[data-task-state="done"] { border-left-style: double; border-left-width: 6px; }
+  body[data-country="NZ"] .atlas-tasks li[data-task-state="done"] { border-top-style: double; border-top-width: 6px; }
+}
 .atlas-activity-context { padding: 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
 .atlas-section { padding: 16px; border-bottom: 1px solid var(--border-subtle); min-width: 0; }
 .atlas-section h2 { font-size: 17px; line-height: 1.4; margin-bottom: 12px; }
@@ -184,7 +235,6 @@ body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px 
   body[data-atlas][data-focus][data-task="assessment"] .zone-assessment { grid-column: 1 / 3; }
   [data-atlas] .app > .tasknav { display: flex; grid-row: 3; position: static; }
   [data-atlas] .tasknav button { display: block; flex: 1; min-height: 44px; }
-  body[data-country="NZ"] .atlas-tasks { grid-template-columns: 1fr; }
 }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   [data-atlas] .main { display: block; padding: 0; }
