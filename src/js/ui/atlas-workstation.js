@@ -183,6 +183,15 @@ function refreshTasks() {
     if (changedState) announceA11y(`${text(c.tasks.find((x) => x.id === t.id).title)}: ${taskStatus(t)}`);
   }
   const n = byId('atlasTaskCount'); if (n) n.textContent = taskCount(c, state);
+  for (const [id, on] of phaseState(c, v)) { const li = byId(`phase-${id}`); if (li) { li.dataset.phaseState = on ? 'done' : 'open'; li.lastElementChild.textContent = ` · ${on ? l('완료', 'Complete') : l('진행 전', 'Not yet')}`; } }
+}
+// NZ activity desk: the three phases of the assigned activities, derived from the same checks (display only).
+function phaseState(c, v) {
+  const done = Object.fromEntries(atlas.atlasTaskState(c, v).map((t) => [t.id, t.done]));
+  return [['link', v.reviewed.length > 0, l('자료 연결', 'Link evidence')], ['verify', !!(done.identity && done.evidence), l('확인', 'Verify')], ['handover', !!done.handover, l('미확인 사항 인계', 'Hand over unresolved points')]];
+}
+function phasesHTML(c, v) {
+  return `<ol class="atlas-phases" aria-labelledby="atlasPhasesLabel">${phaseState(c, v).map(([id, on, label]) => `<li id="phase-${id}" data-phase-state="${on ? 'done' : 'open'}">${esc(label)}<span class="sr-only"> · ${on ? l('완료', 'Complete') : l('진행 전', 'Not yet')}</span></li>`).join('')}</ol>`;
 }
 // Counted from the derived checks, so the count always matches the rows (even before a button-era save syncs).
 function taskCount(c, state) { return `${state.filter((t) => t.done).length}/${c.tasks.length}`; }
@@ -275,7 +284,7 @@ export function renderAtlas() {
   $('.zone-interview').innerHTML = interviewHTML(c, v);
   const tasks = taskHTML(c, v, p.id === 'NZ' ? l('배정 활동', 'Assigned activities') : l('담당 과업', 'Assigned tasks'));
   const dock = compareDockHTML(c, v);
-  $('.zone-evidence').innerHTML = dock + (p.id === 'CA' ? recordsHTML(c, v) + documentsHTML(c, v) + tasks : p.id === 'GB' ? tasks + documentsHTML(c, v) + `<details class="atlas-history"><summary>${l('사건 이력과 기록', 'Case history and records')}</summary>${recordsHTML(c, v)}</details>` : `<div class="atlas-activity-context"><b>${l('현재 신청의 배정 활동', 'Assigned activities in this application')}</b><p>${l('자료 연결 → 확인 → 미확인 사항 인계', 'Link evidence → verify → hand over unresolved points')}</p></div>` + tasks + recordsHTML(c, v) + documentsHTML(c, v));
+  $('.zone-evidence').innerHTML = dock + (p.id === 'CA' ? recordsHTML(c, v) + documentsHTML(c, v) + tasks : p.id === 'GB' ? tasks + documentsHTML(c, v) + `<details class="atlas-history"><summary>${l('사건 이력과 기록', 'Case history and records')}</summary>${recordsHTML(c, v)}</details>` : `<div class="atlas-activity-context"><b id="atlasPhasesLabel">${l('현재 신청의 배정 활동', 'Assigned activities in this application')}</b>${phasesHTML(c, v)}</div>` + tasks + recordsHTML(c, v) + documentsHTML(c, v));
   $('.zone-assessment').innerHTML = assessmentHTML(c, v);
   byId('atlasFooter').textContent = `${p.authenticity} · ${p.sources.join(' / ')} · ${l('가상 규칙', 'SIMULATION_RULE')} · ${esc(saveLabel())}`;
   $$('#taskNav button').forEach((b) => { b.textContent = ({ passenger: l('대상', 'Person'), interview: l('인터뷰', 'Interview'), evidence: p.id === 'CA' ? l('기록', 'Records') : p.id === 'GB' ? l('과업', 'Tasks') : l('활동', 'Activities'), assessment: l('검토', 'Review') })[b.dataset.task]; });

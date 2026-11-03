@@ -125,3 +125,31 @@ With the shared `inad-tts` preference on (off by default; switch in the overseas
 ## 10. Derived review checks (2026-11-03)
 
 The three per-case checks (identity, evidence comparison, handover) no longer have "Mark checked" buttons. `atlas-engine.js atlasTaskState()` derives each one from what the player has done, with exactly the former button preconditions: its linked document reviewed, plus a question asked or a record comparison made for evidence, plus a review note of 10+ characters for handover. The task panel shows what each check still needs ("Linked document not reviewed yet", "Ask a question or compare a record", "Write a review note of at least 10 characters") and keeps the "Open evidence" link; the handover status and the n/3 count follow the note while typing. **Independent review (fixed):** the count is now taken from the derived checks (it read the saved list, which could disagree with the rows until the next action for a button-era save), and a change of a check while typing is announced once through the polite live region. Because the conditions are unchanged, completion and scoring are unchanged. The saved `tasks` list keeps its meaning: it is kept in step for unfinished cases (and once more on completion, so an in-progress save from the button era with no checks marked completes without an extra step), and a completed case keeps exactly what it saved. No save migration is needed; old and new builds read each other's saves. `atlasAction('task', id)` is kept for compatibility and only reports whether a check is satisfied. The outcome panel no longer lists "Task checks" as a separate missing item, since every unmet check is already listed under the documents, interview or note it depends on. Tests: `tests/unit/atlas-derived-tasks.test.js` (each prerequisite in any order, record comparison, note shortened, button-era save, completed save, read-only action, whole library); `tests/e2e/atlas.spec.js` "review checks" (no buttons, live statuses, reload), also in the cross-browser gate. Removing the sync on note input, or the sync itself, fails these tests.
+
+## 11. Country desk visual variants (2026-11-03)
+
+Each overseas country now has its own workstation look on the same DOM (one tree, four zones):
+
+| | CA · records desk | GB · task desk | NZ · activity desk |
+|---|---|---|---|
+| Chrome / desk mark | teal-slate `#15282b` / `#22717a` | navy `#171c32` / `#45539c` | olive-charcoal `#1f231a` / `#5c6b2f` |
+| System focus (≥1101 px) | person · records+documents (full height) · interview over notes | person · task list (full height) · notes over interview | person · activity board across the top · interview and notes below |
+| Review checks | dense rows, check and evidence link on one line, left bar | steps on a rail with a diamond node | board columns (3 when the workspace is ≥640 px wide, container query) with a top bar |
+| Extra | banded record table, desk-tinted header | history drawer marked with the desk colour | phase line "Link evidence → Verify → Hand over", derived from the checks, updated live |
+
+- **Tokens:** `--desk` and `--desk-soft` (`tokens.css`, default = the Korean accent) and per-country `--chrome`, `--chrome-2` and `--chrome-muted`.
+  - Only chrome and the desk mark change. `--accent` and the status colours keep one meaning in every country, which a test asserts.
+  - The high-contrast setting and the OS "more contrast" setting keep their own chrome.
+  - The colours are fictional identities, not agency branding.
+  - Measured contrast: chrome text 14–15.5:1, muted chrome text ≥6.3:1, desk mark on white ≥5.6:1.
+- **Text cue:** a completed check is also stated in text ("Complete", in the desk colour). NZ phases carry visually hidden "Complete / Not yet" text.
+- **Bug fix:** system focus at 1440 previously auto-placed all four zones in one grid row, leaving the lower ~40% of the screen empty (pre-existing). It is fixed by the per-country placements.
+- **Tests:** `tests/e2e/atlas-desks.spec.js`, also in the Firefox/WebKit gate. It covers:
+  - distinct chrome with the same action colour;
+  - high contrast;
+  - per-country zone geometry, with every row used;
+  - per-desk done marks and NZ live phases;
+  - no overflow at 1024/768/390.
+
+  Removing the NZ placement rule or the GB done-node rule fails it.
+- **Screenshots:** `docs/v11/screenshots/{ca,gb,nz}-{1440,1024,768,390}.png`. 1440 and 1024 use system focus; 768 and 390 use the evidence task.

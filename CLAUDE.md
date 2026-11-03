@@ -40,6 +40,7 @@
 
 ## 디자인 시스템 원칙 (v3 · 적응형 워크스테이션)
 - 토큰은 `src/styles/tokens.css`의 semantic token만 사용(색상 hex 직접 사용 최소화). 토큰은 Figma Variables와 1:1이며 이름을 바꾸지 않는다.
+- 해외 국가별 작업대(v11)는 같은 DOM에서 크롬 색(`--chrome*`)·표식(`--desk`, `--desk-soft`)·전산 초점 배치·과업 표시만 달리한다. 실행·상태 의미색은 국가와 무관하게 같고, 고대비 설정이 국가 크롬보다 우선한다(`tests/e2e/atlas-desks.spec.js`).
 - system font만 사용. 모노스페이스는 ID·MRZ·PNR·코드·KPI에만. 10.5px 미만 텍스트 금지.
 - 간격 4/8/12/16/24/32, 반경 0/2/4/6(6은 대화상자·시트·절차 화면만), 그림자는 모달·절차화면·호출 카드·PA 배너에만.
 - 모션 120~220ms, `prefers-reduced-motion`과 `body.pref-reduce-motion` 존중.

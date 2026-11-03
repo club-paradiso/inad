@@ -403,3 +403,17 @@ Editable references: [CA 232:8](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUn
 These reference desktop information hierarchy. Runtime viewport evidence is under `docs/atlas/screenshots/`.
 
 Existing frames and library definitions were not edited. The table above predates current `tokens.css`: several neutral colors already differ. ATLAS preserves runtime tokens, reuses matching variables, and adds an isolated three-color code snapshot for new frames. Global variable reconciliation and editable tablet/mobile variants remain follow-up work; see `docs/atlas/DESIGN_DECISIONS.md`.
+
+## ATLAS country desks · 2026-11-03 (code first)
+
+These token additions come from the code (`src/styles/tokens.css`). The Figma Variables to match them are a collection named **Country desk** with modes KR, CA, GB and NZ:
+
+| Variable | KR | CA | GB | NZ |
+|---|---|---|---|---|
+| `color/desk/mark` (`--desk`) | = `--accent` #245f86 | #22717a | #45539c | #5c6b2f |
+| `color/desk/soft` (`--desk-soft`) | = `--accent-soft` #e2edf4 | #e0eef0 | #e7e9f5 | #eef1e0 |
+| `color/bg/chrome` (`--chrome`) | #14232f | #15282b | #171c32 | #1f231a |
+| `color/bg/chrome-2` (`--chrome-2`) | #203746 | #21393d | #252b47 | #2e3426 |
+| `color/text/chrome-muted` (`--chrome-muted`) | #a9bac6 | #a6bfc2 | #b1b8d6 | #bcc4a6 |
+
+Existing variables are not renamed. The CA, GB and NZ chrome values override the shared chrome only when the high-contrast setting is off. Runtime evidence is in `docs/v11/screenshots/*`. Sync status is recorded below.
