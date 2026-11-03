@@ -15,7 +15,8 @@ import { makeBundle, collectPayload } from '../engines/save-engine.js';
 import { downloadBlob } from '../services/diagnostics.js';
 import { exportSave, ensureImportInput } from './views/system-center.js';
 import { storeGetRaw } from '../services/storage.js';
-import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang } from './atlas-voice.js';
+import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang, showVoiceSettings, voiceSettingLabel } from './atlas-voice.js';
+import { stopLiveListening } from './live-interview.js';
 
 const l = (ko, en) => text({ ko, en });
 const h = (value) => esc(text(value));
@@ -25,6 +26,13 @@ let callbacks;
 let restored = Promise.resolve();
 // Typed question draft and the last interpretation shown under it. UI-only: never saved or scored.
 let ask = { caseRef: null, draft: '', result: null, note: '' };
+// Stops listening and, because an ended session's own events are ignored, refreshes the mic state itself.
+// Text a session wrote while it was still listening is discarded with it; a finished transcript stays for review.
+function endVoice() {
+  const was = voiceListening(); stopVoice();
+  if (ask.heardLive) { ask.draft = ''; ask.heardLive = false; }
+  if (was && state.countryId !== 'KR') { ask.note = ''; renderAtlas(); }
+}
 // Outcome labels come from the country pack; the three simulation outcomes are shared.
 const outcomes = () => Object.fromEntries(Object.entries(countryPack(state.countryId)?.outcomes || { complete: { ko: '검토 완료', en: 'Review complete' }, evidence: { ko: '보완 자료 요청', en: 'Request supporting evidence' }, review: { ko: '추가 검토', en: 'Further review' } }).map(([k, v]) => [k, text(v)]));
 const DIFFICULTY = { intro: ['입문', 'Intro'], standard: ['표준', 'Standard'], advanced: ['심화', 'Advanced'] };
@@ -48,8 +56,9 @@ function focusView() {
   $$('[data-atlas-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.atlasView === state.atlas.view)));
 }
 function mountCountry() {
-  stopVoice();
+  endVoice();
   const foreign = state.countryId !== 'KR';
+  if (foreign) stopLiveListening();
   document.body.dataset.country = state.countryId;
   if (foreign) document.body.dataset.atlas = '1';
   else delete document.body.dataset.atlas;
@@ -69,6 +78,7 @@ function mountCountry() {
   focusView();
 }
 export function openCountrySelector(error = '', selected = state.countryId) {
+  endVoice();
   if (!countryPack(selected)) selected = 'KR';
   showModal(l('국가와 업무 선택', 'Choose country and duty'), `<div class="atlas-setup" data-i18n-control><p>${l('국가별 업무 연습 (합성 자료 · 법률 판정 미제공)', 'Practice duty stations (synthetic cases · no legal determinations)')}</p>${error ? `<p role="alert">${esc(error)}</p>` : ''}<fieldset><legend>${l('국가', 'Country')}</legend><div class="atlas-country-list">${COUNTRY_IDS.map((id) => { const p = countryPack(id); const pr = id === 'KR' ? null : atlas.atlasProgress(id); return `<label><input type="radio" name="atlas-country" value="${id}" ${id === selected ? 'checked' : ''}><span><strong>${h(p.name)}</strong><span>${h(p.title)}</span><small>${h(p.status)}${pr && pr.total ? ` · ${pr.completed}/${pr.total} ${l('완료', 'complete')}` : ''}</small></span></label>`; }).join('')}</div></fieldset><div id="atlasPackDetail"></div><div class="atlas-settings"><label>${l('화면 언어', 'UI language')}<select id="atlasLocale"><option value="ko" ${getLocale() === 'ko' ? 'selected' : ''}>한국어</option><option value="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option></select></label>${button('atlasAccessibility', l('접근성 설정', 'Accessibility settings'))}</div><p>${l('사건은 국가별로 보관됩니다.', 'Cases are kept separately by country.')}</p><div class="modal-actions">${error ? '' : button('atlasCancel', l('취소', 'Cancel'))}<button type="button" class="act primary" id="atlasEnter">${l('선택한 업무로 이동', 'Open selected duty')}</button></div></div>`, { size: 'wide', dismissible: !error });
   const details = (id) => {
@@ -117,6 +127,7 @@ function interviewHTML(c, v) {
 function freeTextHTML(c, v, atCounter) {
   if (ask.caseRef !== v) { stopVoice(); ask = { caseRef: v, draft: '', result: null, note: '' }; }
   const disabled = !atCounter || v.completed ? 'disabled' : '';
+  if (disabled && voiceListening()) stopVoice();
   const qText = (id) => text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
   const r = ask.result;
   let status = '';
@@ -126,7 +137,7 @@ function freeTextHTML(c, v, atCounter) {
   else if (r?.kind === 'confirm') status = `<p>${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} “${esc(qText(r.questionId))}”</p><div class="atlas-row">${button('atlasAskConfirm', l('이 질문으로 묻기', 'Ask this'), `data-ask-choice="${r.questionId}" ${disabled}`)}${button('atlasAskCancel', l('아니요', 'No'))}</div>`;
   else if (r?.kind === 'ambiguous') status = `<p>${l('어느 질문인가요?', 'Which question did you mean?')}</p><div class="atlas-questions">${r.candidates.map((id) => button(`atlasAskChoice-${id}`, qText(id), `data-ask-choice="${id}" ${disabled}`)).join('')}</div>`;
   else if (r?.kind === 'question') status = `<p>${r.repeated ? l('이미 한 질문입니다. 기록된 답변을 확인하세요.', 'Already asked. See the recorded answer.') : l('질문했습니다', 'Asked')}: “${esc(qText(r.questionId))}”</p>`;
-  return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button>${voiceAvailable() ? `<button type="button" class="act" id="atlasAskMic" aria-pressed="${voiceListening()}" ${disabled}>${voiceListening() ? l('듣는 중', 'Listening') : l('말하기', 'Speak')}</button>` : ''}</div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
+  return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button>${voiceAvailable() ? `<button type="button" class="act" id="atlasAskMic" aria-pressed="${voiceListening()}" ${disabled}>${l('말하기', 'Speak')}</button>` : ''}</div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
 }
 function questionText(id) {
   const c = atlas.currentAtlasScenario();
@@ -246,15 +257,17 @@ export function renderAtlas() {
   $$('[data-ask]').forEach((b) => { b.onclick = () => { ask.result = null; announceAsk(atlas.submitAtlasUtterance({ questionId: b.dataset.ask })); }; });
   if (byId('atlasAskForm')) {
     byId('atlasAskForm').onsubmit = (e) => { e.preventDefault(); submitAsk({ text: byId('atlasAskInput').value }); };
-    byId('atlasAskInput').oninput = (e) => { ask.draft = e.target.value; };
+    byId('atlasAskInput').oninput = (e) => { ask.draft = e.target.value; ask.heardLive = false; };
     $$('[data-ask-choice]').forEach((b) => { b.onclick = () => { ask.draft = ''; submitAsk({ questionId: b.dataset.askChoice }); }; });
     if (byId('atlasAskMic')) byId('atlasAskMic').onclick = () => {
       const session = atlas.activeAtlasSession();
-      ask.result = null;
+      ask.result = null; ask.note = '';
       toggleVoice(recognitionLang(state.countryId, session.interviewLanguage), {
         // Interim text goes straight into the box; nothing is submitted on the player's behalf.
-        onText: (t) => { ask.draft = t; const i = byId('atlasAskInput'); if (i) i.value = t; },
+        onText: (t) => { ask.draft = t; ask.heardLive = true; const i = byId('atlasAskInput'); if (i) i.value = t; },
+        onStarted: () => { ask.note = l('듣는 중입니다. 말하기를 다시 누르면 멈춥니다.', 'Listening. Press Speak again to stop.'); announceA11y(ask.note); renderAtlas(); byId('atlasAskMic')?.focus(); },
         onDone: (t) => {
+          ask.note = ''; ask.heardLive = false;
           if (t) { ask.draft = t; ask.note = l('인식된 문장을 확인·수정한 뒤 [질문]을 누르세요.', 'Check or correct the recognised text, then press Ask.'); announceA11y(ask.note); }
           renderAtlas(); byId(t ? 'atlasAskInput' : 'atlasAskMic')?.focus();
         },
@@ -286,11 +299,19 @@ export function renderAtlas() {
   focusView(); $$('#mainContent > .zone').forEach((z, i) => { z.scrollTop = scroll[i]; }); restoreFocus(key);
 }
 function showAtlasSettings() {
+  endVoice();
   callbacks.settings();
   $$('.settings-section').slice(1).forEach((section) => section.remove());
   $('[data-pref-toggle="shortcutHints"]')?.closest('.setting-row')?.remove();
+  // Voice consent can be changed or withdrawn here as well as in the Korean interview settings.
+  const section = $('.settings-section');
+  if (section) {
+    section.insertAdjacentHTML('beforeend', `<div class="setting-row" data-i18n-control><div class="setting-copy"><b>${l('음성 질문', 'Voice questions')}</b><span id="atlasVoiceSetting">${esc(voiceSettingLabel())}</span></div><button type="button" class="act" id="atlasVoiceSettings">${l('변경', 'Change')}</button></div>`);
+    byId('atlasVoiceSettings').onclick = () => showVoiceSettings(() => announceA11y(`${l('음성 질문', 'Voice questions')}: ${voiceSettingLabel()}`));
+  }
 }
 function showAtlasData() {
+  endVoice();
   const p = countryPack(state.countryId);
   showModal(l('저장 데이터', 'Save data'), `<div data-i18n-control><h3>${h(p.name)} · ${l('절차 연습', 'Procedural practice')}</h3><p>${esc(saveLabel())}</p><p>${l('한국 기록과 국가별 연습을 함께 보관합니다. 해외 결과는 가상 규칙입니다.', 'Korean records and country exercises are stored together. Overseas outcomes are simulation rules.')}</p><div class="modal-actions">${button('atlasExportStored', l('저장된 기록 내보내기', 'Export stored'))}${button('atlasExportDraft', l('현재 입력 사본 내보내기', 'Export draft'))}${button('atlasImport', l('저장 파일 가져오기', 'Import save'))}</div></div>`);
   byId('atlasExportStored').onclick = exportSave;
@@ -301,6 +322,7 @@ function showAtlasData() {
   byId('atlasImport').onclick = () => { ensureImportInput(); byId('sysImportFile').click(); };
 }
 function prepareOutcome() {
+  endVoice();
   const missing = atlas.atlasMissing();
   if (missing.length) { renderAtlas(); announceA11y(l('남은 문서·인터뷰·기록·메모·과업을 확인하세요.', 'Complete the outstanding document, interview, record, note and task checks.')); return; }
   const c = atlas.currentAtlasScenario(), v = atlas.activeAtlasCase();
@@ -309,6 +331,7 @@ function prepareOutcome() {
   byId('atlasConfirmOutcome').onclick = () => { if (atlas.completeAtlas(byId('atlasOutcome').value, byId('atlasRationale').value)) { closeModal(); showTask('assessment'); $('.atlas-debrief')?.setAttribute('tabindex', '-1'); $('.atlas-debrief')?.focus(); } else byId('atlasOutcomeError').textContent = l('결론을 고르고 근거를 10자 이상 입력하세요.', 'Choose an outcome and enter at least 10 characters of rationale.'); };
 }
 function confirmRestart() {
+  endVoice();
   const c = atlas.currentAtlasScenario();
   showModal(l('사건 다시 하기', 'Replay case'), `<div data-i18n-control><p>${esc(c.id)} · ${h(c.title)}</p><p>${l('이 사건의 이전 시도와 결과를 지우고 처음부터 다시 시작합니다. 다른 사건과 국가는 바뀌지 않습니다.', 'This clears the previous attempt and result for this case only. Other cases and countries are unchanged.')}</p><div class="modal-actions">${button('atlasRestartCancel', l('취소', 'Cancel'), 'data-autofocus')}<button type="button" class="act danger" id="atlasRestartConfirm">${l('지우고 다시 시작', 'Clear and replay')}</button></div></div>`);
   byId('atlasRestartCancel').onclick = closeModal;
@@ -322,6 +345,7 @@ export function initAtlas(handlers) {
   const menu = document.createElement('button'); menu.type = 'button'; menu.id = 'atlasMenuCountry'; menu.className = 'iconbtn'; menu.setAttribute('role', 'menuitem'); menu.textContent = l('국가 선택 · 대한민국', 'Country selection · South Korea'); menu.onclick = () => openCountrySelector(); byId('moreMenu').append(menu);
   for (const [view, label] of [['counter', l('대면 초점', 'Counter focus')], ['system', l('전산 초점', 'System focus')]]) { const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn'; b.setAttribute('role', 'menuitem'); b.dataset.atlasView = view; b.textContent = label; b.onclick = () => { atlas.setAtlasView(view); showTask(view === 'counter' ? 'interview' : 'evidence'); }; byId('moreMenu').append(b); }
   bus.on('atlas:changed', renderAtlas);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) endVoice(); });
   // The storage event fires in other same-origin tabs, not in the writing tab.
   // Warn before a stale tab attempts to save; the engine also compares bytes on write.
   window.addEventListener('storage', (event) => {
