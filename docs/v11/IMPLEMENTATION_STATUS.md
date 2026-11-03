@@ -32,7 +32,7 @@ UX unification (#28) is partial — see "Not done".
 
 ## Not done / limitations (not claimed)
 
-- Overseas voice interview (Korean v10 only). Overseas free-text questions are implemented (deterministic; see `docs/v11/PRODUCT_AUDIT.md` §7); no model-assisted interpretation overseas.
+- Overseas free-text and push-to-talk questions are implemented (deterministic; see `docs/v11/PRODUCT_AUDIT.md` §7–8). No model-assisted interpretation overseas; spoken replies (TTS) remain Korean-only.
 - The three manual "task" checks remain (kept for save compatibility).
 - Country-specific visual workstation variants beyond the existing layouts; Figma sync (no authorised Figma session in this environment).
 - Firefox/WebKit: not installed locally; covered by the CI `atlas-cross-browser` job (green on `bfbac02` for `atlas.spec.js`; from this commit it also runs the full-library reachability, queue, boot-race and GB-02/NZ-02 journeys). Korean flows run in Chromium only.

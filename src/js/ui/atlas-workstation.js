@@ -15,6 +15,7 @@ import { makeBundle, collectPayload } from '../engines/save-engine.js';
 import { downloadBlob } from '../services/diagnostics.js';
 import { exportSave, ensureImportInput } from './views/system-center.js';
 import { storeGetRaw } from '../services/storage.js';
+import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang } from './atlas-voice.js';
 
 const l = (ko, en) => text({ ko, en });
 const h = (value) => esc(text(value));
@@ -23,7 +24,7 @@ let koreanTask = 'passenger';
 let callbacks;
 let restored = Promise.resolve();
 // Typed question draft and the last interpretation shown under it. UI-only: never saved or scored.
-let ask = { caseRef: null, draft: '', result: null };
+let ask = { caseRef: null, draft: '', result: null, note: '' };
 // Outcome labels come from the country pack; the three simulation outcomes are shared.
 const outcomes = () => Object.fromEntries(Object.entries(countryPack(state.countryId)?.outcomes || { complete: { ko: '검토 완료', en: 'Review complete' }, evidence: { ko: '보완 자료 요청', en: 'Request supporting evidence' }, review: { ko: '추가 검토', en: 'Further review' } }).map(([k, v]) => [k, text(v)]));
 const DIFFICULTY = { intro: ['입문', 'Intro'], standard: ['표준', 'Standard'], advanced: ['심화', 'Advanced'] };
@@ -47,6 +48,7 @@ function focusView() {
   $$('[data-atlas-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.atlasView === state.atlas.view)));
 }
 function mountCountry() {
+  stopVoice();
   const foreign = state.countryId !== 'KR';
   document.body.dataset.country = state.countryId;
   if (foreign) document.body.dataset.atlas = '1';
@@ -113,17 +115,18 @@ function interviewHTML(c, v) {
   return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}${opening}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${askHTML}${questionsHTML}`);
 }
 function freeTextHTML(c, v, atCounter) {
-  if (ask.caseRef !== v) ask = { caseRef: v, draft: '', result: null };
+  if (ask.caseRef !== v) { stopVoice(); ask = { caseRef: v, draft: '', result: null, note: '' }; }
   const disabled = !atCounter || v.completed ? 'disabled' : '';
   const qText = (id) => text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
   const r = ask.result;
   let status = '';
-  if (r?.kind === 'document') status = `<p>${l('서류는 자료 영역에서 열어 확인합니다. 질문은 기록되지 않았습니다.', 'Open documents in the evidence area. No question was recorded.')}</p>`;
+  if (!r && ask.note) status = `<p>${esc(ask.note)}</p>`;
+  else if (r?.kind === 'document') status = `<p>${l('서류는 자료 영역에서 열어 확인합니다. 질문은 기록되지 않았습니다.', 'Open documents in the evidence area. No question was recorded.')}</p>`;
   else if (r?.kind === 'unknown') status = `<p>${l('질문을 알아듣지 못했습니다. 다르게 물어보거나 아래 목록에서 고르세요.', 'That question was not understood. Rephrase it or choose one below.')}</p>`;
   else if (r?.kind === 'confirm') status = `<p>${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} “${esc(qText(r.questionId))}”</p><div class="atlas-row">${button('atlasAskConfirm', l('이 질문으로 묻기', 'Ask this'), `data-ask-choice="${r.questionId}" ${disabled}`)}${button('atlasAskCancel', l('아니요', 'No'))}</div>`;
   else if (r?.kind === 'ambiguous') status = `<p>${l('어느 질문인가요?', 'Which question did you mean?')}</p><div class="atlas-questions">${r.candidates.map((id) => button(`atlasAskChoice-${id}`, qText(id), `data-ask-choice="${id}" ${disabled}`)).join('')}</div>`;
   else if (r?.kind === 'question') status = `<p>${r.repeated ? l('이미 한 질문입니다. 기록된 답변을 확인하세요.', 'Already asked. See the recorded answer.') : l('질문했습니다', 'Asked')}: “${esc(qText(r.questionId))}”</p>`;
-  return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button></div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
+  return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button>${voiceAvailable() ? `<button type="button" class="act" id="atlasAskMic" aria-pressed="${voiceListening()}" ${disabled}>${voiceListening() ? l('듣는 중', 'Listening') : l('말하기', 'Speak')}</button>` : ''}</div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
 }
 function questionText(id) {
   const c = atlas.currentAtlasScenario();
@@ -138,8 +141,9 @@ function announceAsk(r) {
   else if (r.kind === 'unknown') announceA11y(l('질문을 알아듣지 못했습니다.', 'Question not understood.'));
 }
 function submitAsk(input) {
+  stopVoice();
   const r = atlas.submitAtlasUtterance(input);
-  ask.result = r.kind === 'empty' ? null : r;
+  ask.result = r.kind === 'empty' ? null : r; ask.note = '';
   if (r.kind === 'question') ask.draft = '';
   announceAsk(r);
   renderAtlas();
@@ -244,6 +248,19 @@ export function renderAtlas() {
     byId('atlasAskForm').onsubmit = (e) => { e.preventDefault(); submitAsk({ text: byId('atlasAskInput').value }); };
     byId('atlasAskInput').oninput = (e) => { ask.draft = e.target.value; };
     $$('[data-ask-choice]').forEach((b) => { b.onclick = () => { ask.draft = ''; submitAsk({ questionId: b.dataset.askChoice }); }; });
+    if (byId('atlasAskMic')) byId('atlasAskMic').onclick = () => {
+      const session = atlas.activeAtlasSession();
+      ask.result = null;
+      toggleVoice(recognitionLang(state.countryId, session.interviewLanguage), {
+        // Interim text goes straight into the box; nothing is submitted on the player's behalf.
+        onText: (t) => { ask.draft = t; const i = byId('atlasAskInput'); if (i) i.value = t; },
+        onDone: (t) => {
+          if (t) { ask.draft = t; ask.note = l('인식된 문장을 확인·수정한 뒤 [질문]을 누르세요.', 'Check or correct the recognised text, then press Ask.'); announceA11y(ask.note); }
+          renderAtlas(); byId(t ? 'atlasAskInput' : 'atlasAskMic')?.focus();
+        },
+        onStatus: (msg) => { ask.note = msg; announceA11y(msg); renderAtlas(); }
+      });
+    };
     if (byId('atlasAskCancel')) byId('atlasAskCancel').onclick = () => { ask.result = null; renderAtlas(); byId('atlasAskInput')?.focus(); };
   }
   $$('[data-doc]').forEach((b) => { b.onclick = () => { atlas.atlasAction('document', b.dataset.doc); showTask('evidence'); }; });
