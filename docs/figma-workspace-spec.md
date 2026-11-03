@@ -422,6 +422,7 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
 - **KR mode:** each value is an alias of the existing `Color` variable (`color/action/primary`, `color/action/soft`, `color/bg/chrome`, `color/bg/chrome-2`, `color/text/chrome-muted`).
 - **Existing collections, frames and the `[Implemented] ATLAS · procedural foundations` section were not touched.**
 - **Frames:** section `[Implemented] ATLAS · country desks · 2026-11-03` on page `15 — ATLAS country foundations` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84)).
+  - **Counter focus (대면) · 1440 × 1000:** [CA 246:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-84) · [GB 246:238](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-238) · [NZ 246:385](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=246-385). The layout is the same for every country (person · interview · evidence over notes); the chrome and desk marks differ.
   - **System focus · 1440 × 1000:** [CA 239:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=239-84) · [GB 240:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=240-84) · [NZ 241:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=241-84).
   - **Compact (work area + inspector), evidence task · 1024 × 768:** [CA 245:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-84) · [GB 245:188](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-188) · [NZ 245:279](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=245-279).
   - **Phone, evidence task · 390 × 844:** [CA 242:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-84) · [GB 242:172](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-172) · [NZ 242:247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-247).
@@ -430,4 +431,5 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Scroll zones are clipping frames.
   - Each frame sets the `ATLAS / Country desk` mode for its country, and its chrome, desk-mark and desk-soft fills are bound to those variables (15–25 bound fills per frame). Switching a frame's mode recolours it.
   - `html_to_figma` was not usable because `mcp.figma.com` is blocked by this environment's network policy, so the frames were built with the Plugin API.
+  - Disabled buttons (an already-asked question, a locked follow-up, compare/clear with nothing selected) carry the runtime `.act:disabled` opacity of .45.
 - **Existing frames were not touched.**
