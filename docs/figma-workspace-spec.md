@@ -421,4 +421,11 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
 **Sync status (2026-11-03):** the new collection `ATLAS / Country desk` (`VariableCollectionId:236:2`) has modes KR, CA, GB and NZ, five variables (`236:3` to `236:7`), explicit scopes and WEB code syntax.
 - **KR mode:** each value is an alias of the existing `Color` variable (`color/action/primary`, `color/action/soft`, `color/bg/chrome`, `color/bg/chrome-2`, `color/text/chrome-muted`).
 - **Existing collections, frames and the `[Implemented] ATLAS · procedural foundations` section were not touched.**
-- **Not done:** editable country-desk frames, because screenshot upload to Figma was previously blocked by network policy. The runtime screenshots are the visual reference.
+- **Frames:** section `[Implemented] ATLAS · country desks · 2026-11-03` on page `15 — ATLAS country foundations` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=237-84)).
+  - **System focus · 1440 × 1000:** [CA 239:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=239-84) · [GB 240:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=240-84) · [NZ 241:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=241-84).
+  - **Phone, evidence task · 390 × 844:** [CA 242:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-84) · [GB 242:172](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-172) · [NZ 242:247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=242-247).
+- **How they were made:** every frame is editable layers (frames, rectangles, text in Noto Sans KR / Roboto Mono; no raster UI). The geometry, colours and text come from the running app's computed styles in a mid-review state (passenger called, one question asked, first document reviewed).
+  - Scroll zones are clipping frames.
+  - Each frame sets the `ATLAS / Country desk` mode for its country, and its chrome, desk-mark and desk-soft fills are bound to those variables (15–25 bound fills per frame). Switching a frame's mode recolours it.
+  - `html_to_figma` was not usable because `mcp.figma.com` is blocked by this environment's network policy, so the frames were built with the Plugin API.
+- **Existing frames were not touched.**
