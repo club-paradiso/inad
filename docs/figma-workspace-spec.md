@@ -433,8 +433,13 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Each frame sets the `ATLAS / Country desk` mode for its country, and its chrome, desk-mark and desk-soft fills are bound to those variables (15–25 bound fills per frame). Switching a frame's mode recolours it.
   - `html_to_figma` was not usable because `mcp.figma.com` is blocked by this environment's network policy, so the frames were built with the Plugin API.
   - Disabled buttons (an already-asked question, a locked follow-up, compare/clear with nothing selected) carry the runtime `.act:disabled` opacity of .45.
-- **Country selection:** the dialog that opens from the start screen's "국가 선택", with Canada chosen. It is in its own section, `[Implemented] ATLAS · country selection · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84)).
-  - Frames: 1440 × 1000 [250:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-84) · 768 × 1024 [250:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-155) · 390 × 844 [250:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-226).
+- **Country selection:** the dialog that opens from the start screen's "국가 선택", with Canada, the United Kingdom or New Zealand chosen. It is in its own section, `[Implemented] ATLAS · country selection · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84)).
+  - Frames, one row per chosen country (1440 × 1000 · 768 × 1024 · 390 × 844):
+    - CA: [250:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-84) · [250:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-155) · [250:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-226)
+    - GB: [265:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-84) · [265:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-155) · [265:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=265-226)
+    - NZ: [266:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-84) · [266:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-155) · [266:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=266-226)
+  - The chosen country changes the highlighted card, the desk summary and design basis (UK01/UK03/GB-VISIT, NZ01/NZ06/NZ-A16) and the default fictional workplace (런던 히스로 · 가상 심사대, 오클랜드 · 가상 검토실).
+  - When this section grew to three rows, the sections below it that this automation made (switch confirmation, outcome review, debrief, case queue) moved down by the same amount.
   - The backdrop is one dim layer; the start screen behind it is omitted.
   - Native radios and select arrows are drawn as vectors, and the dialog carries the `--shadow-3` drop shadow.
 - **Country switch confirmation:** the "국가 변경 확인" dialog shown when a desk is left for another country. The example is the GB desk switching to New Zealand, with the GB desk dimmed behind the dialog.
