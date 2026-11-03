@@ -437,4 +437,8 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Frames: 1440 × 1000 [250:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-84) · 768 × 1024 [250:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-155) · 390 × 844 [250:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-226).
   - The backdrop is one dim layer; the start screen behind it is omitted.
   - Native radios and select arrows are drawn as vectors, and the dialog carries the `--shadow-3` drop shadow.
+- **Country switch confirmation:** the "국가 변경 확인" dialog shown when a desk is left for another country. The example is the GB desk switching to New Zealand, with the GB desk dimmed behind the dialog.
+  - Section: `[Implemented] ATLAS · country switch confirmation · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84)).
+  - Frames: 1440 × 1000 [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · 768 × 1024 [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · 390 × 844 bottom sheet [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340).
+  - The desk behind the dialog uses the GB mode of the `ATLAS / Country desk` variables.
 - **Existing frames were not touched.**
