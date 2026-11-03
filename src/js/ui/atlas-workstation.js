@@ -15,7 +15,7 @@ import { makeBundle, collectPayload } from '../engines/save-engine.js';
 import { downloadBlob } from '../services/diagnostics.js';
 import { exportSave, ensureImportInput } from './views/system-center.js';
 import { storeGetRaw } from '../services/storage.js';
-import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang, showVoiceSettings, voiceSettingLabel } from './atlas-voice.js';
+import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang, showVoiceSettings, voiceSettingLabel, readAloud, readAloudOn, readAloudAvailable, setReadAloud, stopReading } from './atlas-voice.js';
 import { stopLiveListening } from './live-interview.js';
 
 const l = (ko, en) => text({ ko, en });
@@ -29,7 +29,7 @@ let ask = { caseRef: null, draft: '', result: null, note: '' };
 // Stops listening and, because an ended session's own events are ignored, refreshes the mic state itself.
 // Text a session wrote while it was still listening is discarded with it; a finished transcript stays for review.
 function endVoice() {
-  const was = voiceListening(); stopVoice();
+  const was = voiceListening(); stopVoice(); stopReading();
   if (ask.heardLive) { ask.draft = ''; ask.heardLive = false; }
   if (was && state.countryId !== 'KR') { ask.note = ''; renderAtlas(); }
 }
@@ -125,7 +125,7 @@ function interviewHTML(c, v) {
   return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}${opening}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${askHTML}${questionsHTML}`);
 }
 function freeTextHTML(c, v, atCounter) {
-  if (ask.caseRef !== v) { stopVoice(); ask = { caseRef: v, draft: '', result: null, note: '' }; }
+  if (ask.caseRef !== v) { stopVoice(); stopReading(); ask = { caseRef: v, draft: '', result: null, note: '' }; }
   const disabled = !atCounter || v.completed ? 'disabled' : '';
   if (disabled && voiceListening()) stopVoice();
   const qText = (id) => text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
@@ -144,6 +144,13 @@ function questionText(id) {
   return text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
 }
 // The status region is re-rendered, so the outcome is also announced explicitly, naming the question.
+// Reads the recorded canonical answer aloud when the player has turned read-aloud on.
+function speakResult(r) {
+  if (r.kind !== 'question') return;
+  const c = atlas.currentAtlasScenario(), session = atlas.activeAtlasSession();
+  const q = [...c.questions, ...(c.investigativeQuestions || [])].find((x) => x.id === r.questionId);
+  if (q) readAloud(q.answer[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage));
+}
 function announceAsk(r) {
   if (r.kind === 'question') announceA11y(`${r.repeated ? l('이미 한 질문입니다', 'Already asked') : l('답변을 기록했습니다', 'Answer recorded')}: ${questionText(r.questionId)}`);
   else if (r.kind === 'confirm') announceA11y(`${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} ${questionText(r.questionId)}`);
@@ -155,6 +162,7 @@ function submitAsk(input) {
   stopVoice();
   const r = atlas.submitAtlasUtterance(input);
   ask.result = r.kind === 'empty' ? null : r; ask.note = '';
+  speakResult(r);
   if (r.kind === 'question') ask.draft = '';
   announceAsk(r);
   renderAtlas();
@@ -252,9 +260,9 @@ export function renderAtlas() {
   byId('atlasCountry').onclick = () => openCountrySelector(); byId('atlasSettings').onclick = showAtlasSettings; byId('atlasData').onclick = showAtlasData;
   byId('atlasLanguage').onclick = () => setLocale(getLocale() === 'ko' ? 'en' : 'ko');
   $$('[data-atlas-view]').forEach((b) => { b.onclick = () => { atlas.setAtlasView(b.dataset.atlasView); showTask(b.dataset.atlasView === 'counter' ? 'interview' : 'evidence'); }; });
-  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
+  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { const session = atlas.activeAtlasSession(); readAloud(c.opening?.[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage)); atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
   $$('[data-case]').forEach((b) => { b.onclick = () => { atlas.selectAtlasCase(b.dataset.case); byId('atlasCaseHeading').focus(); }; });
-  $$('[data-ask]').forEach((b) => { b.onclick = () => { ask.result = null; announceAsk(atlas.submitAtlasUtterance({ questionId: b.dataset.ask })); }; });
+  $$('[data-ask]').forEach((b) => { b.onclick = () => { ask.result = null; const r = atlas.submitAtlasUtterance({ questionId: b.dataset.ask }); announceAsk(r); speakResult(r); }; });
   if (byId('atlasAskForm')) {
     byId('atlasAskForm').onsubmit = (e) => { e.preventDefault(); submitAsk({ text: byId('atlasAskInput').value }); };
     byId('atlasAskInput').oninput = (e) => { ask.draft = e.target.value; ask.heardLive = false; };
@@ -308,6 +316,11 @@ function showAtlasSettings() {
   if (section) {
     section.insertAdjacentHTML('beforeend', `<div class="setting-row" data-i18n-control><div class="setting-copy"><b>${l('음성 질문', 'Voice questions')}</b><span id="atlasVoiceSetting">${esc(voiceSettingLabel())}</span></div><button type="button" class="act" id="atlasVoiceSettings">${l('변경', 'Change')}</button></div>`);
     byId('atlasVoiceSettings').onclick = () => showVoiceSettings(() => announceA11y(`${l('음성 질문', 'Voice questions')}: ${voiceSettingLabel()}`));
+    // Read-aloud: the same shared preference as the Korean "hear answers aloud" switch.
+    const tts = () => `<div class="setting-row" id="atlasTtsRow" data-i18n-control><div class="setting-copy"><b id="atlasTtsLabel">${l('음성으로 답변 듣기', 'Hear answers aloud')}</b><span id="atlasTtsDesc">${readAloudAvailable() ? l('승객의 답변과 첫 진술을 기기 음성으로 읽어 줍니다. 자막과 기록은 항상 표시됩니다.', 'Reads the passenger\'s answers and opening statement with the device voice. Captions and the transcript are always shown.') : l('이 브라우저는 음성 합성을 지원하지 않습니다.', 'This browser does not support speech synthesis.')}</span></div><button class="setting-toggle" type="button" role="switch" id="atlasTtsToggle" aria-checked="${readAloudOn()}" aria-labelledby="atlasTtsLabel" aria-describedby="atlasTtsDesc"${readAloudAvailable() ? '' : ' disabled'}><span aria-hidden="true">${readAloudOn() ? l('사용 중', 'On') : l('사용 안 함', 'Off')}</span></button></div>`;
+    section.insertAdjacentHTML('beforeend', tts());
+    const bindTts = () => { byId('atlasTtsToggle').onclick = () => { setReadAloud(!readAloudOn()); byId('atlasTtsRow').outerHTML = tts(); bindTts(); byId('atlasTtsToggle').focus(); announceA11y(`${l('음성으로 답변 듣기', 'Hear answers aloud')}: ${readAloudOn() ? l('사용 중', 'On') : l('사용 안 함', 'Off')}`); }; };
+    bindTts();
   }
 }
 function showAtlasData() {
