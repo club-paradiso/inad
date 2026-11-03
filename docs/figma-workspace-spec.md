@@ -441,9 +441,14 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Section: `[Implemented] ATLAS · country switch confirmation · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84)).
   - Frames: 1440 × 1000 [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · 768 × 1024 [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · 390 × 844 bottom sheet [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340).
   - The desk behind the dialog uses the GB mode of the `ATLAS / Country desk` variables.
-- **Outcome review:** the "가상 결과 확인" dialog opened by "가상 결과 검토". The example is SIM-CA-01 with every review item done, "2차 심사 회부(가상)" chosen and a rationale typed, over the dimmed CA desk.
+- **Outcome review:** the "가상 결과 확인" dialog opened by "가상 결과 검토", for CA, GB and NZ. The CA example is SIM-CA-01 with every review item done, "2차 심사 회부(가상)" chosen and a rationale typed, over the dimmed CA desk.
   - Section: `[Implemented] ATLAS · outcome review · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84)).
-  - Frames: 1440 × 1000 [255:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-84) · 768 × 1024 [255:293](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-293) · 390 × 844 bottom sheet [255:374](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-374).
+  - Frames, one row per desk (1440 × 1000 · 768 × 1024 · 390 × 844 bottom sheet):
+    - CA: [255:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-84) · [255:293](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-293) · [255:374](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-374)
+    - GB, SIM-GB-01 with "보완 자료 요청" chosen: [263:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-84) · [263:271](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-271) · [263:353](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=263-353)
+    - NZ, SIM-NZ-01 with "추가 평가 인계(가상)" chosen: [264:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-84) · [264:252](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-252) · [264:334](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=264-334)
+  - The dimmed desk behind each dialog uses that country's variable mode. GB and NZ choose each case's expected outcome.
+  - When this section grew to three rows, the debrief and case queue sections below it, both made by this automation, moved down by the same amount.
   - The outcome labels are simulation training labels, not legal dispositions.
 - **Debrief:** the in-desk debrief shown after the outcome is confirmed, for CA, GB and NZ. The CA example is SIM-CA-01 completed with "2차 심사 회부(가상)", the rating "추가 대조 권장 · 45", the route, the evidence-match line, feedback, the typed rationale, and the next-case and replay buttons.
   - Section: `[Implemented] ATLAS · debrief · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84)).
