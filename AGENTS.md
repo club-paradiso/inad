@@ -20,6 +20,7 @@
 - 해외 사건(v11): 저장 키 `inad-atlas-v1`(payload v2, v1은 `atlas-engine.js migrateAtlasSave`로 명시적 이전). 사건은 `src/data/atlas/<ca|gb|nz>.js`에 선언형으로 작성하고 `engines/atlas-scenario-schema.js`가 검증·도달성 검사·동결한다(`docs/v11/SCENARIO_SCHEMA.md`, `node scripts/validate-atlas.js`). 사건 ID 분기 금지 — 호출·질문 선행조건·보완 요청·디브리핑은 모두 데이터로 정의한다. 국가별 사건 라이브러리는 빌드에서 별도 해시 파일로 분리되어 필요 시 로드된다.
 - 해외 자유 입력 질문: 모든 질문 경로(직접 입력·확인·선택지·목록)는 `atlas-engine.js submitAtlasUtterance()` 하나를 거치고, 기록되는 답은 사건의 정규 답변뿐이다. 해석(`engines/atlas-intent.js`, 어휘 `src/data/atlas-dialogue-lexicon.js`)은 결정적이며 현재 물을 수 있는 질문만 후보로 삼아 잠긴 후속 질문을 드러내지 않는다. 단어 겹침 없이 개념만 맞으면 확인을 거친다. 입력 원문은 저장하지 않는다. 해외 음성 질문(`src/js/ui/atlas-voice.js`)은 한국 v10과 같은 원칙을 따른다: 마이크 기본 꺼짐, 공용 동의 설정 `inad-voice`(기기 내 처리 우선, 브라우저 인식은 명시적 허용), 인식된 문장은 입력칸에만 채워지고 플레이어가 확인 후 [질문]을 눌러야 하며, 음성은 녹음·저장·전송하지 않고 사건 전환·다시 하기·국가 전환 시 즉시 중단한다. 해외 답변 음성 읽기는 공용 설정 `inad-tts`(기본 꺼짐)를 따르고, 사건의 정규 답변과 첫 진술만 인터뷰 언어로 읽으며 자막·기록은 항상 표시한다. 마이크가 켜지기 전과 사건 전환·대화상자·국가 전환 시 읽기를 멈춘다. `tests/dialogue/atlas-utterances.fixture.js`는 개발 세트, `atlas-utterances-heldout2.fixture.js`는 보류 세트이므로 보류 세트로 어휘·임계값을 튜닝하지 않는다.
 - 해외 결과 `complete/evidence/review`는 SIMULATION_RULE 훈련 라벨이며 법적 처분이 아니다. 근거와 맞지 않는 결론은 점수가 45로 제한된다.
+- 해외 검토 과업 3개(신원·자료 대조·인계)는 수동 확인 버튼 없이 수행한 작업에서 파생된다(`atlas-engine.js atlasTaskState`: 연결 문서 검토 + 대조는 질문 또는 기록 대조, 인계는 10자 이상 메모). 저장되는 `tasks` 목록의 의미는 유지되며 완료된 사건은 저장된 값을 그대로 쓴다.
 - 실시간 공항 운항정보는 운영 시뮬레이션 보조자료입니다. 승객 유입·대기열·현장 이벤트 압박에만 제한적으로 사용하며 법적 입국요건, 위험도, 허가·불허 판정에는 사용 금지. API 실패·키 미설정 시 정적 공항 프리셋으로 fail-safe 합니다.
 
 ## v10 인터뷰 원칙 (AI = 배우, 엔진 = 규칙·사실)

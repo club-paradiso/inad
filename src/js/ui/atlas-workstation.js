@@ -169,8 +169,22 @@ function submitAsk(input) {
   // A choice is pending: put focus on it; otherwise keep typing.
   ($('#atlasAskStatus [data-ask-choice]') || byId('atlasAskInput'))?.focus();
 }
+// Review checks complete themselves from what the player has done (atlas-engine atlasTaskState).
+function refreshTasks() {
+  const c = atlas.currentAtlasScenario(), v = atlas.activeAtlasCase();
+  if (!c || !v) return;
+  for (const t of atlas.atlasTaskState(c, v)) {
+    const el = byId(`task-status-${t.id}`);
+    if (el) { el.textContent = taskStatus(t); el.closest('li').dataset.taskState = t.done ? 'done' : 'open'; }
+  }
+  const n = byId('atlasTaskCount'); if (n) n.textContent = `${v.tasks.length}/${c.tasks.length}`;
+}
+function taskStatus(t) {
+  return t.done ? l('완료', 'Complete') : { document: l('연결 문서 검토 필요', 'Linked document not reviewed yet'), interview: l('질문 또는 기록 대조 필요', 'Ask a question or compare a record'), notes: l('검토 메모 10자 이상 필요', 'Write a review note of at least 10 characters') }[t.missing] || l('검토 필요', 'Review needed');
+}
 function taskHTML(c, v, title) {
-  return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
+  const state = atlas.atlasTaskState(c, v);
+  return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('과업은 직접 표시하지 않아도 됩니다. 연결 문서를 검토하면 완료되며, 자료 대조는 질문이나 기록 대조가, 인계는 메모가 함께 필요합니다.', 'Checks complete on their own once the linked document is reviewed; evidence comparison also needs a question or a record comparison, and handover needs a note.')}</p>` : ''}<ol class="atlas-tasks">${c.tasks.map((t, i) => `<li data-task-state="${state[i].done ? 'done' : 'open'}"><div><b>${i + 1}. ${h(t.title)}</b><span id="task-status-${t.id}">${esc(taskStatus(state[i]))}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}</li>`).join('')}</ol>`);
 }
 function recordsHTML(c, v) {
   const query = v.search.toLowerCase(), records = v.searched ? c.records.filter((r) => atlas.atlasRecordMatches(c, r, query)) : [];
@@ -228,7 +242,8 @@ function assessmentHTML(c, v) {
   const crossCheckNote = !hasCrossCheck ? '' : v.asked.includes('crosscheck')
     ? l('추가 원문 교차 질문 확인됨', 'Case-specific source cross-check completed')
     : l('선택 과제: 추가 교차 질문 가능', 'Optional task: cross-check question available');
-  const missing = atlas.atlasMissing(), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
+  // The derived review checks follow from the items above them, so they are not listed twice.
+  const missing = atlas.atlasMissing().filter((k) => k !== 'tasks'), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
 
   let debriefHTML = '';
   if (v.completed) {
@@ -241,7 +256,7 @@ function assessmentHTML(c, v) {
     debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${esc(outcomes()[v.outcome])}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)} · ${d?.score ?? ''}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p><strong>${d?.outcomeCorrect ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</strong>${d?.outcomeFeedback ? ` · ${h(d.outcomeFeedback)}` : ''}</p>${d?.outcomeCorrect ? '' : `<p>${l('근거에 맞는 결론', 'Supported outcome')}: ${esc(outcomes()[c.expectedOutcome])}</p>`}<p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div>${actions}</div>`;
   }
 
-  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · ${v.tasks.length}/${c.tasks.length} ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
+  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · <span id="atlasTaskCount">${v.tasks.length}/${c.tasks.length}</span> ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
 }
 export function renderAtlas() {
   if (state.countryId === 'KR') { focusView(); return; }
@@ -286,7 +301,6 @@ export function renderAtlas() {
   }
   $$('[data-doc]').forEach((b) => { b.onclick = () => { atlas.atlasAction('document', b.dataset.doc); showTask('evidence'); }; });
   $$('[data-record]').forEach((b) => { b.onclick = () => atlas.atlasAction('record', b.dataset.record); });
-  $$('[data-check]').forEach((b) => { b.onclick = () => { if (!atlas.atlasAction('task', b.dataset.check)) { const message = l('연결 문서를 검토하고, 진술과 메모를 먼저 기록하세요.', 'Review the linked document and record the statement and note first.'); byId('atlasTaskError').textContent = message; announceA11y(message); } }; });
   $$('[data-fact]').forEach((b) => { b.onclick = () => { atlas.atlasAction('selectFact', b.dataset.fact); announceA11y(l('대조 항목 선택', 'Fact selected')); }; });
   if (byId('atlasDoCompare')) byId('atlasDoCompare').onclick = () => { const res = atlas.atlasCompare(); if (res.ok) announceA11y(l('대조 완료', 'Comparison complete')); };
   if (byId('atlasClearFacts')) byId('atlasClearFacts').onclick = () => { atlas.atlasAction('clearFacts'); announceA11y(l('초기화', 'Cleared')); };
@@ -300,7 +314,7 @@ export function renderAtlas() {
   byId('atlasPrevPage').onclick = () => atlas.atlasAction('page', v.pages[d.id] - 1); byId('atlasNextPage').onclick = () => atlas.atlasAction('page', v.pages[d.id] + 1);
   byId('atlasZoom').onchange = (e) => atlas.atlasAction('zoom', Number(e.target.value));
   byId('atlasReviewDoc').onclick = () => atlas.atlasAction('review', d.id);
-  byId('atlasNotes').oninput = (e) => { atlas.atlasAction('notes', e.target.value); byId('atlasSaveStatus').textContent = saveLabel(); };
+  byId('atlasNotes').oninput = (e) => { atlas.atlasAction('notes', e.target.value); byId('atlasSaveStatus').textContent = saveLabel(); refreshTasks(); };
   byId('atlasSaveRetry').onclick = () => { atlas.persistAtlas(); renderAtlas(); };
   if (byId('atlasPrepare')) byId('atlasPrepare').onclick = prepareOutcome;
   if ($('.atlas-history')) $('.atlas-history').open = historyOpen;

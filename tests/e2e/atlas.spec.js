@@ -28,7 +28,8 @@ async function reviewCase(page, country, number) {
   for (const doc of atlasScenarios(country).find((c) => c.id === id).documents) { await page.locator(`#doc-${doc.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Compared original documents and statement; unresolved facts retained for follow-up.');
   await task(page, 'evidence');
-  for (const check of ['identity','evidence','handover']) await page.locator(`#task-${check}`).click();
+  // v11: the review checks complete themselves from the documents, interview and note above.
+  for (const check of ['identity','evidence','handover']) await expect(page.locator(`#task-status-${check}`)).toHaveText(/^(완료|Complete)$/);
   await task(page, 'assessment'); await page.locator('#atlasPrepare').click();
   await expect(page.locator('#atlasOutcomeCancel')).toBeFocused();
   const outcome = country === 'GB' ? (number === '01' ? 'evidence' : number === '02' ? 'review' : 'complete') : number === '01' ? 'review' : number === '02' ? 'evidence' : 'complete';
@@ -122,14 +123,41 @@ test('overseas export/import round trip and failed-write recovery copy preserve 
   expect(await page.evaluate(() => localStorage.getItem('inad-atlas-v1'))).toBe(raw);
 });
 
-test('country choice survives language change; keyboard checks show visible prerequisite errors', async ({ page }) => {
+test('country choice survives language change; review checks show what they still need', async ({ page }) => {
   await page.goto(ENTRY); await page.locator('#atlasStartCountry').click(); await page.locator('[name="atlas-country"][value="GB"]').check();
   await page.locator('#atlasLocale').selectOption('en'); await expect(page.locator('[name="atlas-country"][value="GB"]')).toBeChecked();
   await page.locator('#atlasEnter').focus(); await page.keyboard.press('Enter'); await page.locator('#atlasSystem').click();
-  await page.locator('#task-identity').focus(); await page.keyboard.press('Enter'); await expect(page.locator('#atlasTaskError')).toContainText('Review the linked document');
+  await expect(page.locator('#task-status-identity')).toHaveText('Linked document not reviewed yet'); await expect(page.locator('#task-identity')).toHaveCount(0);
   await page.locator('#atlasSettings').click(); await page.locator('[data-pref-toggle="contrast"]').click(); await page.locator('[data-pref-toggle="reduceMotion"]').click(); await page.keyboard.press('Escape');
   await expect(page.locator('body')).toHaveClass(/pref-contrast/); await expect(page.locator('body')).toHaveClass(/pref-reduce-motion/);
   await page.setViewportSize({width:768,height:1024}); await task(page,'passenger'); await expect(page.locator('#taskNav [data-task="passenger"]')).toHaveAttribute('aria-current','true');
+});
+
+test('review checks: complete on their own as the work is done, follow the note live, and survive a reload', async ({ page }) => {
+  await openAtlas(page, 'GB');
+  const c = atlasScenarios('GB').find((x) => x.id === 'SIM-GB-01');
+  await task(page, 'passenger'); await page.locator('[data-case="SIM-GB-01"]').click();
+  const status = (id) => page.locator(`#task-status-${id}`);
+  await expect(page.locator('.atlas-tasks button:not([data-doc])')).toHaveCount(0);   // nothing to tick by hand
+  for (const t of c.tasks) await expect(status(t.id)).not.toHaveText(/^(완료|Complete)$/);
+  await task(page, 'evidence');
+  for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
+  await expect(status('identity')).toHaveText(/^(완료|Complete)$/);
+  await expect(status('evidence')).toHaveText(/질문 또는 기록 대조 필요|Ask a question or compare a record/);
+  await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
+  await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Itinerary referenced but not received.');
+  await expect(status('handover')).toHaveText(/^(완료|Complete)$/);              // updated while typing, no re-render
+  await expect(page.locator('#atlasTaskCount')).toHaveText(`2/${c.tasks.length}`);
+  await page.locator('#atlasNotes').fill('short');
+  await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
+  await page.locator('#atlasNotes').fill('Itinerary referenced but not received.');
+  await task(page, 'interview'); if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
+  await page.locator('#ask-source').click();
+  await expect(status('evidence')).toHaveText(/^(완료|Complete)$/);
+  await page.reload();
+  await expect(page.locator('body')).toHaveAttribute('data-country', 'GB');
+  for (const t of c.tasks) await expect(status(t.id)).toHaveText(/^(완료|Complete)$/);
+  await expect(page.locator('#atlasTaskCount')).toHaveText(`${c.tasks.length}/${c.tasks.length}`);
 });
 
 test('selected workspace focus remains readable when hovered', async ({ page }) => {

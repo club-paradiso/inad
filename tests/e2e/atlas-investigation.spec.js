@@ -97,7 +97,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await page.locator('#atlasNotes').fill('Found departure date conflict (12 vs 21 Nov). Traveler confirmed transposition.');
     await task(page, 'evidence');
     for (const check of ['identity', 'evidence', 'handover']) {
-      await page.locator(`#task-${check}`).click();
+      await expect(page.locator(`#task-status-${check}`)).toHaveText(/^(완료|Complete)$/);
     }
 
     // Prepare simulated outcome
@@ -425,7 +425,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     await page.locator('#atlasNotes').fill('Discrepancy identified between ticket and visit record. Explanation noted.');
     await task(page, 'evidence');
     for (const t of ['identity', 'evidence', 'handover']) {
-      await page.locator(`#task-${t}`).click();
+      await expect(page.locator(`#task-status-${t}`)).toHaveText(/^(완료|Complete)$/);
     }
 
     // 7. Decision submission

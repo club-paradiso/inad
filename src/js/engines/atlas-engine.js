@@ -154,7 +154,23 @@ export function noteAtlasExternalWrite(raw) {
   bus.emit('atlas:changed');
   return true;
 }
-function changed() { persistAtlas(); bus.emit('atlas:changed'); }
+// The three review checks are derived from what the player has done (v11): the linked document reviewed,
+// plus for "evidence" a question asked or a comparison made, and for "handover" a note of 10+ characters.
+// These are the same conditions the former "Mark checked" buttons required. The saved `tasks` list keeps
+// its meaning and is kept in step for unfinished cases; a completed case keeps exactly what it saved.
+export function atlasTaskState(c, v) {
+  return c.tasks.map((t) => {
+    const missing = !v.reviewed.includes(t.documentId) ? 'document'
+      : t.id === 'evidence' && !v.asked.length && !v.graph?.discoveries?.length ? 'interview'
+      : t.id === 'handover' && v.notes.trim().length < 10 ? 'notes' : null;
+    return { id: t.id, documentId: t.documentId, done: v.completed ? v.tasks.includes(t.id) : !missing, missing: v.completed ? null : missing };
+  });
+}
+function syncTasks() {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (v && c && !v.completed) v.tasks = atlasTaskState(c, v).filter((t) => t.done).map((t) => t.id);
+}
+function changed() { syncTasks(); persistAtlas(); bus.emit('atlas:changed'); }
 export function selectCountry(id, options = {}) {
   const p = countryPack(id);
   if (!p) return { ok: false, reason: 'unknown-country' };
@@ -249,7 +265,7 @@ export function atlasAction(action, value) {
     if (v.graph.investigationPath === null && v.graph.discoveries.length === 0) v.graph.investigationPath = 'interview_first';
   }
   else if (action === 'review' && value === d.id) { if (!v.reviewed.includes(value)) v.reviewed.push(value); }
-  else if (action === 'notes' && bounded(value, 4000)) { v.notes = value; persistAtlas(); return true; }
+  else if (action === 'notes' && bounded(value, 4000)) { v.notes = value; syncTasks(); persistAtlas(); return true; }
   else if (action === 'selectFact' && typeof value === 'string') {
     const factObj = facts(c).find((f) => f.id === value);
     if (!atlasFactVisible(c, v, factObj)) return false;
@@ -263,11 +279,9 @@ export function atlasAction(action, value) {
   else if (action === 'clearFacts') v.graph.selectedFacts = [];
   else if (action === 'compare') return atlasCompare().ok;
   else if (action === 'requestEvidence' && typeof value === 'string') return atlasRequestEvidence(value);
-  else if (action === 'task' && c.tasks.some((t) => t.id === value)) {
-    const task = c.tasks.find((t) => t.id === value);
-    if (!v.reviewed.includes(task.documentId) || (value === 'evidence' && !v.asked.length && !v.graph.discoveries.length) || (value === 'handover' && v.notes.trim().length < 10)) return false;
-    if (!v.tasks.includes(value)) v.tasks.push(value);
-  } else return false;
+  // Kept for compatibility: checks are derived now, so this only reports whether one is satisfied.
+  else if (action === 'task' && c.tasks.some((t) => t.id === value)) return atlasTaskState(c, v).find((t) => t.id === value).done;
+  else return false;
   changed(); return true;
 }
 export function atlasCompare() {
@@ -334,13 +348,14 @@ export function atlasMissing() {
     ...(!v.asked.length ? ['interview'] : []),
     ...(!v.selectedRecord ? ['record'] : []),
     ...(v.notes.trim().length < 10 ? ['notes'] : []),
-    ...(v.tasks.length < c.tasks.length ? ['tasks'] : [])
+    ...(atlasTaskState(c, v).some((t) => !t.done) ? ['tasks'] : [])
   ];
 }
 export function completeAtlas(outcome, rationale) {
   const v = activeAtlasCase(), c = currentAtlasScenario();
   if (!v || !c || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
   const next = finishEncounter(v.encounter); if (!next) return false;
+  syncTasks(); // a case loaded from an older save may not have synced its checks yet
   v.encounter = next; v.outcome = outcome; v.rationale = rationale.trim(); v.completed = true; changed(); return true;
 }
 // Queue and progression are derived from saved cases; nothing is stored twice.
