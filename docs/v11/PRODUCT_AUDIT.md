@@ -97,12 +97,17 @@ The #28 fix released a record-fact selection whenever the current query stopped 
 
 Players can type a question in Korean or English in every overseas case. `submitAtlasUtterance()` is the single entry for typed text, clarification choices and the question list, and records only the case's canonical answer, so the input method never changes evidence or score (unit "the input method never changes the debrief"). Interpretation is deterministic (`engines/atlas-intent.js`): shared concepts that make sense overseas plus an overseas phrasing supplement (`src/data/atlas-dialogue-lexicon.js`), Korean bigrams and English topic tokens, scored only against the questions the player may ask now — a locked follow-up is never reachable or offered by typing (unit test over all 36 cases). Below 0.30 the text is not understood; below 0.50, or when only concepts match with no shared wording, the player confirms first; two close matches become a choice. Typed text is never saved.
 
-Evaluation on held-out paraphrases written without seeing the matcher (154 questions × ko/en, 20 negatives):
+Rules that keep a wrong question from being recorded silently: below 0.30 the text is not understood; below 0.50, when only concepts match with no shared wording, or when the utterance's own topic is not one the question carries, the player confirms first; two close matches become a choice; "show me / hand over <document>" is answered as a document request and asks nothing.
 
-| Set | Before tuning | After | Silent wrong question |
-|---|---|---|---|
-| Canada + UK (used to tune the supplement) | 88.5% reached (69.7% direct) | 97.6% (73.1% direct) | 1 → 0 |
-| New Zealand (never tuned on) | 83.0% (61.0% direct) | 91.0% (69.0% direct) | 0 → 0 |
-| Off-topic negatives × 36 cases | 1 of 720 silently asked | 0 of 720 | — |
+**Evaluation.** Two paraphrase sets, both written by separate authors who did not see the matcher:
 
-"Reached" counts a direct ask, a confirmation or a clarification choice that holds the right question. The floors are locked in `tests/unit/atlas-free-text-eval.test.js`. The Korean dialogue evaluation is unchanged (deterministic tuned 100%, held-out 100%). Not implemented overseas: voice input and model-assisted interpretation.
+| Set | Use | Reached | Direct | Silently wrong question |
+|---|---|---|---|---|
+| Development, CA + GB (`atlas-utterances.fixture.js`) | tuned the overseas lexicon | 96.6% | 70.7% | 0 |
+| Development, NZ (same file) | meant to be held out, but its errors were viewed before the split | 88.0% | 69.0% | 0 |
+| **Held-out** (`atlas-utterances-heldout2.fixture.js`, 154 questions × ko/en) | measured once, never tuned on | **90.6%** | 68.8% | **0** |
+| Negatives (dev 20 + held-out 40, × 36 cases) | off-topic, greetings, generic openers | — | — | 0 (the only 6 hits are "have you been here before?" asking a real previous-visit question) |
+
+The first version claimed the NZ items were "never tuned on"; the independent review showed seven stems matched only NZ items and the earlier 91% figure depended on them. Those stems were removed and a second held-out set was commissioned; the table above reports that set once. "Reached" counts a direct ask, a confirmation or a clarification choice that holds the right question; floors are locked in `tests/unit/atlas-free-text-eval.test.js`. The Korean dialogue evaluation is unchanged (deterministic tuned 100%, held-out 100%).
+
+Not implemented overseas: voice input and model-assisted interpretation.

@@ -79,3 +79,26 @@ test('free text at 390px: no horizontal overflow and 44px controls', async ({ pa
   const small = await page.locator('#atlasAskForm button, #atlasAskInput').evaluateAll((ns) => ns.filter((n) => n.getClientRects().length).filter((n) => { const r = n.getBoundingClientRect(); return r.height < 43.5 || r.width < 43.5; }).map((n) => n.id || n.textContent));
   expect(small).toEqual([]);
 });
+
+test('free text: a document request asks nothing; Replay clears the previous attempt\'s typed state', async ({ page }) => {
+  await openCA01(page); await page.locator('#atlasCallPassenger').click();
+  await page.locator('#atlasAskInput').fill('Can I see your passport?'); await page.locator('#atlasAskInput').press('Enter');
+  await expect(page.locator('#atlasAskStatus')).toContainText(/자료 영역|evidence area/);
+  expect(await page.evaluate(() => window.INADTest.state().atlas.sessions.CA.cases['SIM-CA-01'].asked)).toEqual([]);
+  // Finish the case with a typed question on screen, then replay it.
+  const clarify = CA01.questions.find((q) => q.id === 'clarify');
+  await page.locator('#atlasAskInput').fill(clarify.q.en); await page.locator('#atlasAskInput').press('Enter');
+  await expect(page.locator('#atlasAskStatus')).toContainText(/질문했습니다|Asked/);
+  await page.locator('#atlasAskInput').fill('draft that must not survive a replay');
+  await page.locator('#atlasSearchForm button[type="submit"]').click(); await page.locator('[data-record]').first().click();
+  for (const d of CA01.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
+  await page.locator('#atlasNotes').fill('Compared the ticket and the visit record; dates conflict.');
+  for (const t of CA01.tasks) await page.locator(`#task-${t.id}`).click();
+  await page.locator('#atlasPrepare').click(); await page.locator('#atlasOutcome').selectOption('review');
+  await page.locator('#atlasConfirmOutcome').click();
+  await page.locator('#atlasRestartCase').click(); await page.locator('#atlasRestartConfirm').click();
+  await page.locator('#atlasCallPassenger').click();
+  await expect(page.locator('#atlasAskStatus')).toBeEmpty();
+  await expect(page.locator('#atlasAskInput')).toHaveValue('');
+  await expect(page.locator('[data-ask-choice]')).toHaveCount(0);
+});

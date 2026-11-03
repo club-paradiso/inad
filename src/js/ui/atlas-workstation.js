@@ -23,7 +23,7 @@ let koreanTask = 'passenger';
 let callbacks;
 let restored = Promise.resolve();
 // Typed question draft and the last interpretation shown under it. UI-only: never saved or scored.
-let ask = { caseId: null, draft: '', result: null };
+let ask = { caseRef: null, draft: '', result: null };
 // Outcome labels come from the country pack; the three simulation outcomes are shared.
 const outcomes = () => Object.fromEntries(Object.entries(countryPack(state.countryId)?.outcomes || { complete: { ko: '검토 완료', en: 'Review complete' }, evidence: { ko: '보완 자료 요청', en: 'Request supporting evidence' }, review: { ko: '추가 검토', en: 'Further review' } }).map(([k, v]) => [k, text(v)]));
 const DIFFICULTY = { intro: ['입문', 'Intro'], standard: ['표준', 'Standard'], advanced: ['심화', 'Advanced'] };
@@ -113,25 +113,38 @@ function interviewHTML(c, v) {
   return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}${opening}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${askHTML}${questionsHTML}`);
 }
 function freeTextHTML(c, v, atCounter) {
-  if (ask.caseId !== c.id) ask = { caseId: c.id, draft: '', result: null };
+  if (ask.caseRef !== v) ask = { caseRef: v, draft: '', result: null };
   const disabled = !atCounter || v.completed ? 'disabled' : '';
   const qText = (id) => text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
   const r = ask.result;
   let status = '';
-  if (r?.kind === 'unknown') status = `<p>${l('질문을 알아듣지 못했습니다. 다르게 물어보거나 아래 목록에서 고르세요.', 'That question was not understood. Rephrase it or choose one below.')}</p>`;
+  if (r?.kind === 'document') status = `<p>${l('서류는 자료 영역에서 열어 확인합니다. 질문은 기록되지 않았습니다.', 'Open documents in the evidence area. No question was recorded.')}</p>`;
+  else if (r?.kind === 'unknown') status = `<p>${l('질문을 알아듣지 못했습니다. 다르게 물어보거나 아래 목록에서 고르세요.', 'That question was not understood. Rephrase it or choose one below.')}</p>`;
   else if (r?.kind === 'confirm') status = `<p>${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} “${esc(qText(r.questionId))}”</p><div class="atlas-row">${button('atlasAskConfirm', l('이 질문으로 묻기', 'Ask this'), `data-ask-choice="${r.questionId}" ${disabled}`)}${button('atlasAskCancel', l('아니요', 'No'))}</div>`;
   else if (r?.kind === 'ambiguous') status = `<p>${l('어느 질문인가요?', 'Which question did you mean?')}</p><div class="atlas-questions">${r.candidates.map((id) => button(`atlasAskChoice-${id}`, qText(id), `data-ask-choice="${id}" ${disabled}`)).join('')}</div>`;
   else if (r?.kind === 'question') status = `<p>${r.repeated ? l('이미 한 질문입니다. 기록된 답변을 확인하세요.', 'Already asked. See the recorded answer.') : l('질문했습니다', 'Asked')}: “${esc(qText(r.questionId))}”</p>`;
   return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button></div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
 }
+function questionText(id) {
+  const c = atlas.currentAtlasScenario();
+  return text([...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === id)?.q || { ko: '', en: '' });
+}
+// The status region is re-rendered, so the outcome is also announced explicitly, naming the question.
+function announceAsk(r) {
+  if (r.kind === 'question') announceA11y(`${r.repeated ? l('이미 한 질문입니다', 'Already asked') : l('답변을 기록했습니다', 'Answer recorded')}: ${questionText(r.questionId)}`);
+  else if (r.kind === 'confirm') announceA11y(`${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} ${questionText(r.questionId)}`);
+  else if (r.kind === 'ambiguous') announceA11y(`${l('어느 질문인가요?', 'Which question did you mean?')} ${r.candidates.map(questionText).join(' / ')}`);
+  else if (r.kind === 'document') announceA11y(l('서류는 자료 영역에서 확인합니다.', 'Open documents in the evidence area.'));
+  else if (r.kind === 'unknown') announceA11y(l('질문을 알아듣지 못했습니다.', 'Question not understood.'));
+}
 function submitAsk(input) {
   const r = atlas.submitAtlasUtterance(input);
   ask.result = r.kind === 'empty' ? null : r;
-  if (r.kind === 'question') { ask.draft = ''; announceA11y(r.repeated ? l('이미 한 질문입니다.', 'Already asked.') : l('답변을 기록했습니다.', 'Answer recorded.')); }
-  else if (r.kind === 'unknown') announceA11y(l('질문을 알아듣지 못했습니다.', 'Question not understood.'));
-  else if (r.kind === 'confirm' || r.kind === 'ambiguous') announceA11y(l('질문을 확인해 주세요.', 'Please confirm the question.'));
+  if (r.kind === 'question') ask.draft = '';
+  announceAsk(r);
   renderAtlas();
-  byId('atlasAskInput')?.focus();
+  // A choice is pending: put focus on it; otherwise keep typing.
+  ($('#atlasAskStatus [data-ask-choice]') || byId('atlasAskInput'))?.focus();
 }
 function taskHTML(c, v, title) {
   return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('연결 문서를 검토한 뒤 과업을 확인하세요. 자료 대조에는 진술이, 인계에는 메모가 필요합니다.', 'Review the linked document before checking a task. Evidence comparison needs a statement; handover needs a note.')}</p>` : ''}<p id="atlasTaskError" role="status"></p><ol class="atlas-tasks">${c.tasks.map((t, i) => `<li><div><b>${i + 1}. ${h(t.title)}</b><span>${v.tasks.includes(t.id) ? l('완료', 'Complete') : l('검토 필요', 'Review needed')}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}${button(`task-${t.id}`, l('확인 완료', 'Mark checked'), `data-check="${t.id}" ${v.completed || v.tasks.includes(t.id) ? 'disabled' : ''}`)}</li>`).join('')}</ol>`);
@@ -226,7 +239,7 @@ export function renderAtlas() {
   $$('[data-atlas-view]').forEach((b) => { b.onclick = () => { atlas.setAtlasView(b.dataset.atlasView); showTask(b.dataset.atlasView === 'counter' ? 'interview' : 'evidence'); }; });
   if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
   $$('[data-case]').forEach((b) => { b.onclick = () => { atlas.selectAtlasCase(b.dataset.case); byId('atlasCaseHeading').focus(); }; });
-  $$('[data-ask]').forEach((b) => { b.onclick = () => { ask.result = null; atlas.submitAtlasUtterance({ questionId: b.dataset.ask }); announceA11y(l('답변을 기록했습니다.', 'Answer recorded.')); }; });
+  $$('[data-ask]').forEach((b) => { b.onclick = () => { ask.result = null; announceAsk(atlas.submitAtlasUtterance({ questionId: b.dataset.ask })); }; });
   if (byId('atlasAskForm')) {
     byId('atlasAskForm').onsubmit = (e) => { e.preventDefault(); submitAsk({ text: byId('atlasAskInput').value }); };
     byId('atlasAskInput').oninput = (e) => { ask.draft = e.target.value; };

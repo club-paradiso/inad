@@ -99,3 +99,21 @@ test('the input method never changes the debrief (typed vs list)', () => {
   assert.equal(a.d.score, b.d.score);
   assert.equal(a.d.rating, b.d.rating);
 });
+
+// Review regressions: courtesies and generic openers never ask a case question silently; a request to
+// hand over a document is not a question; "before" in "days before the conference" is not a previous visit.
+test('greetings, generic openers and document requests never silently ask a case question', () => {
+  for (const c of ATLAS_SCENARIOS) {
+    open(c); atlas.callAtlasPassenger();
+    for (const t of ['Good afternoon', 'good evening', '처음 오셨어요?', 'thank you very much', '수고하셨습니다', 'who won the football last night', 'anything to declare?', 'Can I see your passport?', '여권 주세요', 'show me your ticket please']) {
+      const r = atlas.submitAtlasUtterance({ text: t });
+      assert.notEqual(r.kind, 'question', `${c.id}: ${t} → ${r.questionId}`);
+    }
+    assert.deepEqual(atlas.activeAtlasCase().asked, [], c.id);
+  }
+  const gb06 = ATLAS_SCENARIOS.find((x) => x.id === 'SIM-GB-06'); open(gb06); atlas.callAtlasPassenger();
+  assert.equal(atlas.submitAtlasUtterance({ text: 'Can I see your passport?' }).kind, 'document');
+  assert.equal(atlas.submitAtlasUtterance({ text: '여권 보여 주세요' }).kind, 'document');
+  const nz11 = ATLAS_SCENARIOS.find((x) => x.id === 'SIM-NZ-11'); open(nz11); atlas.callAtlasPassenger();
+  assert.notEqual(atlas.submitAtlasUtterance({ text: 'Have you been here before?' }).kind, 'question');
+});
