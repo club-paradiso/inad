@@ -217,3 +217,7 @@ body[data-country="NZ"] .atlas-tasks li { align-content: start; border-top: 4px 
 /* Fact chips use the shared .act control but lay out marker and label on one row. */
 .act.fact-chip { display: inline-flex; grid-auto-flow: column; align-items: center; min-height: 44px; }
 .atlas-fact-group { margin-bottom: var(--s-3); }
+/* Overseas free-text question (v11): sits above the question list in the interview zone. */
+.atlas-ask { margin: var(--s-3) 0; display: grid; gap: var(--s-1); }
+.atlas-ask #atlasAskStatus:not(:empty) { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+.atlas-ask #atlasAskStatus p { margin: 0 0 var(--s-1); }

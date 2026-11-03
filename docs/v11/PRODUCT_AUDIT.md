@@ -44,7 +44,7 @@ Status column refers to this v11 branch (`claude/youthful-shannon-okcuam`).
 | A-14 | P2 | Emoji in controls (📌 💬 🔒 💡 📄 🔍) | Any overseas screen | Decorative icons | Conflicts with design rules (no icon/badge lists, no decoration) | Text labels; locked follow-ups say "opens after a comparison" without revealing the question | Visual check | Fixed |
 | A-15 | P2 | Request panel used warning colour | NZ-02 request | Semantic colour outside decision desk | Design-invariant drift | Neutral surface | Visual check | Fixed |
 | A-16 | P2 | Overseas "tasks" are three manual check buttons per case | Any case | Retained checklist | Redundant clicks | Kept (save compatibility: completed v1 saves rely on the three task ids); flagged for UX iteration | — | Open (P2) |
-| A-17 | P2 | Overseas interview is button-only | Any case | v10 free-text/voice path is Korean-only | Lower conversational depth than Korea | Deferred: needs a per-case deterministic matcher; must not bypass engine | — | Open |
+| A-17 | P2 | Overseas interview is button-only | Any case | v10 free-text/voice path is Korean-only | Lower conversational depth than Korea | Per-case deterministic matcher (`engines/atlas-intent.js`) through `submitAtlasUtterance` | `atlas-free-text*.test.js`, `atlas-free-text.spec.js` | Fixed (§7) |
 | A-18 | P2 | Country-specific source register | `docs/v11/PROCEDURAL_SOURCES.md` | New official sources (eTA/ETA/NZeTA, NZ Act) blocked by this environment's network policy | Requirement-type cases rely on generic "travel authorisation record" wording | Recorded as NOT VERIFIED; UI wording neutral | Doc review | Open (blocked) |
 | A-19 | P3 | Footer shows internal source codes | Any overseas screen | Debug-style provenance string | Jargon | Kept (provenance is required); candidate for a "Sources" disclosure | — | Open |
 | A-20 | P3 | Korean start screen | First launch | Country entry is a plain secondary button | Overseas mode is easy to miss | Unchanged in this pass (Korean screens out of scope for change) | — | Open |
@@ -92,3 +92,22 @@ Thread: https://github.com/club-paradiso/inad/pull/27#discussion_r4420697921 —
 ### 6.1 Follow-up UX — selection kept while typing a search
 
 The #28 fix released a record-fact selection whenever the current query stopped listing its record. Because the search runs on every keystroke, a typo or a half-typed query dropped the selection. Records a search has listed (or that were opened) are now kept in `revealedRecords` for the case, like asked statements and issued requests, so refining or retyping a query never drops a selection. The field is optional and validated (unique, this case's record ids only); saves written before it existed fall back to the current-search rule, and the #28 load-time recovery still applies to them. Replay clears it. Tests: `tests/unit/atlas-record-search.test.js` ("typing a query keystroke by keystroke…", "revealedRecords is validated…"), `tests/e2e/atlas-record-search.spec.js` (types key by key).
+
+## 7. Overseas free-text questions (2026-11-03)
+
+Players can type a question in Korean or English in every overseas case. `submitAtlasUtterance()` is the single entry for typed text, clarification choices and the question list, and records only the case's canonical answer, so the input method never changes evidence or score (unit "the input method never changes the debrief"). Interpretation is deterministic (`engines/atlas-intent.js`): shared concepts that make sense overseas plus an overseas phrasing supplement (`src/data/atlas-dialogue-lexicon.js`), Korean bigrams and English topic tokens, scored only against the questions the player may ask now — a locked follow-up is never reachable or offered by typing (unit test over all 36 cases). Below 0.30 the text is not understood; below 0.50, or when only concepts match with no shared wording, the player confirms first; two close matches become a choice. Typed text is never saved.
+
+Rules that keep a wrong question from being recorded silently: below 0.30 the text is not understood; below 0.50, when only concepts match with no shared wording, or when the utterance's own topic is not one the question carries, the player confirms first; two close matches become a choice; "show me / hand over <document>" is answered as a document request and asks nothing.
+
+**Evaluation.** Two paraphrase sets, both written by separate authors who did not see the matcher:
+
+| Set | Use | Reached | Direct | Silently wrong question |
+|---|---|---|---|---|
+| Development, CA + GB (`atlas-utterances.fixture.js`) | tuned the overseas lexicon | 96.6% | 70.7% | 0 |
+| Development, NZ (same file) | meant to be held out, but its errors were viewed before the split | 88.0% | 69.0% | 0 |
+| **Held-out** (`atlas-utterances-heldout2.fixture.js`, 154 questions × ko/en) | measured once, never tuned on | **90.6%** | 68.8% | **0** |
+| Negatives (dev 20 + held-out 40, × 36 cases) | off-topic, greetings, generic openers | — | — | 0 (the only 6 hits are "have you been here before?" asking a real previous-visit question) |
+
+The first version claimed the NZ items were "never tuned on"; the independent review showed seven stems matched only NZ items and the earlier 91% figure depended on them. Those stems were removed and a second held-out set was commissioned; the table above reports that set once. "Reached" counts a direct ask, a confirmation or a clarification choice that holds the right question; floors are locked in `tests/unit/atlas-free-text-eval.test.js`. The Korean dialogue evaluation is unchanged (deterministic tuned 100%, held-out 100%).
+
+Not implemented overseas: voice input and model-assisted interpretation.

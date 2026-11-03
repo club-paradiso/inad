@@ -32,7 +32,7 @@ UX unification (#28) is partial — see "Not done".
 
 ## Not done / limitations (not claimed)
 
-- Overseas free-text or voice interview (Korean v10 only). Buttons only.
+- Overseas voice interview (Korean v10 only). Overseas free-text questions are implemented (deterministic; see `docs/v11/PRODUCT_AUDIT.md` §7); no model-assisted interpretation overseas.
 - The three manual "task" checks remain (kept for save compatibility).
 - Country-specific visual workstation variants beyond the existing layouts; Figma sync (no authorised Figma session in this environment).
 - Firefox/WebKit: not installed locally; covered by the CI `atlas-cross-browser` job (green on `bfbac02` for `atlas.spec.js`; from this commit it also runs the full-library reachability, queue, boot-race and GB-02/NZ-02 journeys). Korean flows run in Chromium only.
@@ -43,6 +43,6 @@ UX unification (#28) is partial — see "Not done".
 ## Next tasks
 
 1. Allow `www.canada.ca`, `www.gov.uk`, `www.immigration.govt.nz`, `www.legislation.govt.nz` and re-run source retrieval.
-2. Deterministic per-case free-text question matcher for overseas interviews (must route through `atlasAction('ask')`).
+2. Done: overseas free-text questions (`engines/atlas-intent.js`, `submitAtlasUtterance`). Next: widen the held-out paraphrase set before any further lexicon tuning.
 3. Replace manual task checks with derived checks behind a save migration.
 4. Extend the CI cross-browser matrix to Korean flows if needed.
