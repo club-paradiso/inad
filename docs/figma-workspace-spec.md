@@ -441,4 +441,8 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Section: `[Implemented] ATLAS · country switch confirmation · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84)).
   - Frames: 1440 × 1000 [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · 768 × 1024 [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · 390 × 844 bottom sheet [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340).
   - The desk behind the dialog uses the GB mode of the `ATLAS / Country desk` variables.
+- **Outcome review:** the "가상 결과 확인" dialog opened by "가상 결과 검토". The example is SIM-CA-01 with every review item done, "2차 심사 회부(가상)" chosen and a rationale typed, over the dimmed CA desk.
+  - Section: `[Implemented] ATLAS · outcome review · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84)).
+  - Frames: 1440 × 1000 [255:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-84) · 768 × 1024 [255:293](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-293) · 390 × 844 bottom sheet [255:374](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-374).
+  - The outcome labels are simulation training labels, not legal dispositions.
 - **Existing frames were not touched.**
