@@ -92,4 +92,5 @@ jobs:
           tests/e2e/atlas-record-search.spec.js
           tests/e2e/atlas-free-text.spec.js
           tests/e2e/atlas-voice.spec.js
-          -g 'voice|free text|record search:|all three authored cases reach a debrief|view, refresh and country round trips retain case evidence|Korean live interview resumes after country switch|responsive 390|every authored case is reachable|unsupported outcome gets explanatory feedback|review R2|SIM-GB-02|SIM-NZ-02'
+          tests/e2e/atlas-read-aloud.spec.js
+          -g 'read-aloud|voice|free text|record search:|all three authored cases reach a debrief|view, refresh and country round trips retain case evidence|Korean live interview resumes after country switch|responsive 390|every authored case is reachable|unsupported outcome gets explanatory feedback|review R2|SIM-GB-02|SIM-NZ-02'

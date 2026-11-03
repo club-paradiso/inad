@@ -8,9 +8,14 @@
 // callbacks a browser still fires after abort() (error 'aborted', then end), and any start that was
 // waiting for on-device language data, belong to an old session and are ignored: they can neither
 // write text, show a status, move focus nor open the microphone.
+//
+// Read-aloud (optional, shared `inad-tts` preference, off by default) speaks the case's canonical answer
+// and the opening statement in the interview language with the device's speech synthesis. Captions and
+// the transcript are always shown; speech is cancelled whenever the microphone starts, so the passenger's
+// voice is never recognised as the officer's question.
 import { preferences } from '../state.js';
 import { saveInterviewPreferences } from '../engines/save-engine.js';
-import { sttSupport, createRecognizer, onDeviceStatus, installOnDevice } from '../services/speech.js';
+import { sttSupport, createRecognizer, onDeviceStatus, installOnDevice, speakLine, stopSpeaking, ttsSupport } from '../services/speech.js';
 import { atlasText as text } from '../services/i18n.js';
 import { byId } from './dom.js';
 import { showModal, closeModal } from './modals.js';
@@ -18,13 +23,18 @@ import { announceA11y } from './toast.js';
 
 const l = (ko, en) => text({ ko, en });
 const LANGS = { ko: 'ko-KR', en: { CA: 'en-CA', GB: 'en-GB', NZ: 'en-NZ' } };
-let recognizer = null, generation = 0;
+let recognizer = null, generation = 0, startPending = false;
 
 export function voiceAvailable() { return sttSupport('browser').available; }
 export function voiceListening() { return !!recognizer?.active; }
 export function recognitionLang(countryId, interviewLanguage) { return interviewLanguage === 'ko' ? LANGS.ko : LANGS.en[countryId] || 'en-GB'; }
 // Ends any session (case change, replay, completion, dialogs, country switch, hidden tab). Nothing heard is kept.
-export function stopVoice() { generation++; const r = recognizer; recognizer = null; r?.abort(); }
+export function stopVoice() { generation++; startPending = false; const r = recognizer; recognizer = null; r?.abort(); }
+export function readAloudAvailable() { return ttsSupport(); }
+export function readAloudOn() { return !!preferences.tts && ttsSupport(); }
+export function setReadAloud(on) { preferences.tts = !!on; saveInterviewPreferences(); if (!on) stopSpeaking(); }
+export function readAloud(line, lang) { if (readAloudOn() && line && !recognizer?.active && !startPending) speakLine(line, { lang, rate: 0.98 }); }
+export function stopReading() { stopSpeaking(); }
 export function voiceSettingLabel() { return preferences.voice === 'local' ? l('기기 내 처리만', 'On this device only') : preferences.voice === 'browser' ? l('브라우저 음성 인식 허용', 'Browser recognition allowed') : l('사용 안 함', 'Off'); }
 
 // hooks: onText(transcript) while listening, onStarted(), onDone(transcript), onStatus(message).
@@ -37,8 +47,12 @@ export function toggleVoice(lang, hooks) {
 export function showVoiceSettings(onChange) { stopVoice(); showConsent(null, null, false, onChange); }
 
 async function start(lang, hooks) {
-  stopVoice();
+  stopVoice(); stopSpeaking();
   const mine = generation, current = () => mine === generation;
+  startPending = true;
+  try { await listen(lang, hooks, current); } finally { if (current()) startPending = false; }
+}
+async function listen(lang, hooks, current) {
   const support = sttSupport(preferences.voice);
   if (!support.available) {
     if (support.reason === 'no-on-device') return showConsent(lang, hooks, true);
@@ -70,6 +84,7 @@ async function start(lang, hooks) {
   });
   if (!rec && preferences.voice === 'local') return showConsent(lang, hooks, true);
   recognizer = rec;
+  stopSpeaking(); // anything spoken while the on-device check was pending must not reach the microphone
   if (!rec || !rec.start()) { if (recognizer === rec) recognizer = null; return hooks.onStatus(l('음성 인식을 시작하지 못했습니다. 직접 입력을 사용하세요.', 'Could not start speech recognition. Please type.')); }
   hooks.onStarted();
 }

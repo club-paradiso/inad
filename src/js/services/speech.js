@@ -52,7 +52,7 @@ export function createRecognizer({ lang = 'ko-KR', mode = 'local', onInterim, on
 }
 
 // ---- spoken replies ----------------------------------------------------------------------------------------
-export function ttsSupport() { return typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function'; }
+export function ttsSupport() { return typeof window !== 'undefined' && !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function'; }
 function pickVoice(lang) {
   const voices = window.speechSynthesis.getVoices() || []; const base = lang.slice(0, 2);
   const same = voices.filter((v) => (v.lang || '').toLowerCase().startsWith(base));
