@@ -442,10 +442,14 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - When this section grew to three rows, the sections below it that this automation made (switch confirmation, outcome review, debrief, case queue) moved down by the same amount.
   - The backdrop is one dim layer; the start screen behind it is omitted.
   - Native radios and select arrows are drawn as vectors, and the dialog carries the `--shadow-3` drop shadow.
-- **Country switch confirmation:** the "국가 변경 확인" dialog shown when a desk is left for another country. The example is the GB desk switching to New Zealand, with the GB desk dimmed behind the dialog.
+- **Country switch confirmation:** the "국가 변경 확인" dialog shown when a desk is left for another country. There are three examples, each with the departing desk dimmed behind the dialog: GB → NZ, CA → GB and NZ → CA.
   - Section: `[Implemented] ATLAS · country switch confirmation · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=251-84)).
-  - Frames: 1440 × 1000 [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · 768 × 1024 [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · 390 × 844 bottom sheet [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340).
-  - The desk behind the dialog uses the GB mode of the `ATLAS / Country desk` variables.
+  - Frames, one row per departing desk (1440 × 1000 · 768 × 1024 · 390 × 844 bottom sheet):
+    - GB → NZ: [252:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-84) · [252:236](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-236) · [252:340](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=252-340)
+    - CA → GB: [267:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-84) · [267:242](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-242) · [267:351](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=267-351)
+    - NZ → CA: [268:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-84) · [268:244](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-244) · [268:353](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=268-353)
+  - The dialog text is the same for every pair. What differs is the desk behind it, which uses the departing country's mode of the `ATLAS / Country desk` variables.
+  - When this section grew to three rows, the sections below it that this automation made (outcome review, debrief, case queue) moved down by the same amount.
 - **Outcome review:** the "가상 결과 확인" dialog opened by "가상 결과 검토", for CA, GB and NZ. The CA example is SIM-CA-01 with every review item done, "2차 심사 회부(가상)" chosen and a rationale typed, over the dimmed CA desk.
   - Section: `[Implemented] ATLAS · outcome review · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84)).
   - Frames, one row per desk (1440 × 1000 · 768 × 1024 · 390 × 844 bottom sheet):
