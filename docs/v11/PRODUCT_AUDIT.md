@@ -142,7 +142,9 @@ Each overseas country now has its own workstation look on the same DOM (one tree
   - The high-contrast setting and the OS "more contrast" setting keep their own chrome.
   - The colours are fictional identities, not agency branding.
   - Measured contrast: chrome text 14–15.5:1, muted chrome text ≥6.3:1, desk mark on white ≥5.6:1.
-- **Text cue:** a completed check is also stated in text ("Complete", in the desk colour). NZ phases carry visually hidden "Complete / Not yet" text.
+- **Text cue:** a completed check is also stated in visible text ("Complete", in the desk colour). NZ phases show "· Complete" or "· Not yet" as visible text.
+  - The phases form a sequence: a later phase is done only when the earlier ones are.
+  - In forced-colours mode the desk marks keep a done/open difference: a filled GB node, and double CA/NZ bars.
 - **Bug fix:** system focus at 1440 previously auto-placed all four zones in one grid row, leaving the lower ~40% of the screen empty (pre-existing). It is fixed by the per-country placements.
 - **Tests:** `tests/e2e/atlas-desks.spec.js`, also in the Firefox/WebKit gate. It covers:
   - distinct chrome with the same action colour;
@@ -153,3 +155,9 @@ Each overseas country now has its own workstation look on the same DOM (one tree
 
   Removing the NZ placement rule or the GB done-node rule fails it.
 - **Screenshots:** `docs/v11/screenshots/{ca,gb,nz}-{1440,1024,768,390}.png`. 1440 and 1024 use system focus; 768 and 390 use the evidence task.
+- **Independent review (fixed):**
+  - The desktop media query started at 1101 px, so fractional widths between 1100 and 1101 px (zoom, HiDPI) fell into neither layout. It now starts at 1100.02 px.
+  - NZ phase state was visible only through colour and weight. It is now stated in visible text.
+  - Phases were not chained. They now are.
+  - Forced-colours marks were added.
+- **Figma:** the Variables collection `ATLAS / Country desk` (KR/CA/GB/NZ) is synced. See `docs/figma-workspace-spec.md`.

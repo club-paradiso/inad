@@ -188,10 +188,12 @@ function refreshTasks() {
 // NZ activity desk: the three phases of the assigned activities, derived from the same checks (display only).
 function phaseState(c, v) {
   const done = Object.fromEntries(atlas.atlasTaskState(c, v).map((t) => [t.id, t.done]));
-  return [['link', v.reviewed.length > 0, l('자료 연결', 'Link evidence')], ['verify', !!(done.identity && done.evidence), l('확인', 'Verify')], ['handover', !!done.handover, l('미확인 사항 인계', 'Hand over unresolved points')]];
+  // Phases are a sequence: a later phase is done only once the earlier ones are.
+  const link = v.reviewed.length > 0, verify = link && !!(done.identity && done.evidence), handover = verify && !!done.handover;
+  return [['link', link, l('자료 연결', 'Link evidence')], ['verify', verify, l('확인', 'Verify')], ['handover', handover, l('미확인 사항 인계', 'Hand over unresolved points')]];
 }
 function phasesHTML(c, v) {
-  return `<ol class="atlas-phases" aria-labelledby="atlasPhasesLabel">${phaseState(c, v).map(([id, on, label]) => `<li id="phase-${id}" data-phase-state="${on ? 'done' : 'open'}">${esc(label)}<span class="sr-only"> · ${on ? l('완료', 'Complete') : l('진행 전', 'Not yet')}</span></li>`).join('')}</ol>`;
+  return `<ol class="atlas-phases" aria-labelledby="atlasPhasesLabel">${phaseState(c, v).map(([id, on, label]) => `<li id="phase-${id}" data-phase-state="${on ? 'done' : 'open'}">${esc(label)}<span> · ${on ? l('완료', 'Complete') : l('진행 전', 'Not yet')}</span></li>`).join('')}</ol>`;
 }
 // Counted from the derived checks, so the count always matches the rows (even before a button-era save syncs).
 function taskCount(c, state) { return `${state.filter((t) => t.done).length}/${c.tasks.length}`; }

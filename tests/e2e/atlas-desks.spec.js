@@ -76,9 +76,17 @@ test('country desks: completed checks are marked in each desk and stated in text
     if (country === 'NZ') {
       await expect(page.locator('#phase-link')).toHaveAttribute('data-phase-state', 'done');
       await expect(page.locator('#phase-handover')).toHaveAttribute('data-phase-state', 'open');
+      await expect(page.locator('#phase-verify')).toHaveAttribute('data-phase-state', 'open');
+      await expect(page.locator('#phase-verify span')).toBeVisible();
+      await expect(page.locator('#phase-verify span')).toHaveText(/진행 전|Not yet/);
+      // Phases are sequential: a note alone does not complete the hand-over while verification is open.
       await page.locator('#atlasNotes').fill('Application number on the cover differs; hand over.');
+      await expect(page.locator('#phase-handover')).toHaveAttribute('data-phase-state', 'open');
+      if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
+      await page.locator('[data-ask]').first().click();
+      await expect(page.locator('#phase-verify')).toHaveAttribute('data-phase-state', 'done');
       await expect(page.locator('#phase-handover')).toHaveAttribute('data-phase-state', 'done');
-      await expect(page.locator('#phase-handover .sr-only')).toHaveText(/완료|Complete/);
+      await expect(page.locator('#phase-handover span')).toHaveText(/완료|Complete/);
     }
   }
 });
@@ -90,6 +98,7 @@ for (const [width, height] of [[1024, 768], [768, 1024], [390, 844]]) {
       await openDesk(page, country);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       expect(await css(page, '#atlasHeader', 'border-bottom-color')).toBe(DESK[country]);
+      if (country === 'NZ' && width < 1024) await expect(page.locator('.atlas-tasks')).toHaveCSS('grid-template-columns', /^\S+$/); // one activity column
     }
   });
 }

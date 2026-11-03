@@ -416,4 +416,9 @@ These token additions come from the code (`src/styles/tokens.css`). The Figma Va
 | `color/bg/chrome-2` (`--chrome-2`) | #203746 | #21393d | #252b47 | #2e3426 |
 | `color/text/chrome-muted` (`--chrome-muted`) | #a9bac6 | #a6bfc2 | #b1b8d6 | #bcc4a6 |
 
-Existing variables are not renamed. The CA, GB and NZ chrome values override the shared chrome only when the high-contrast setting is off. Runtime evidence is in `docs/v11/screenshots/*`. Sync status is recorded below.
+Existing variables are not renamed. The CA, GB and NZ chrome values override the shared chrome only when the high-contrast setting is off. Runtime evidence is in `docs/v11/screenshots/*`.
+
+**Sync status (2026-11-03):** the new collection `ATLAS / Country desk` (`VariableCollectionId:236:2`) has modes KR, CA, GB and NZ, five variables (`236:3` to `236:7`), explicit scopes and WEB code syntax.
+- **KR mode:** each value is an alias of the existing `Color` variable (`color/action/primary`, `color/action/soft`, `color/bg/chrome`, `color/bg/chrome-2`, `color/text/chrome-muted`).
+- **Existing collections, frames and the `[Implemented] ATLAS · procedural foundations` section were not touched.**
+- **Not done:** editable country-desk frames, because screenshot upload to Figma was previously blocked by network policy. The runtime screenshots are the visual reference.
