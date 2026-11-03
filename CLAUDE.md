@@ -18,6 +18,7 @@
 - 엔진 → UI 통지는 `src/js/services/bus.js` 이벤트(`changed`, `log`, `ops`, `airportLive`, `behavior`, `fieldEvent`, `persistence`, `campaign`, `procedure:close`, `toast`, `announce`, `sound`, `pulse`).
 - 저장 스키마: `inad-meta-v54`(v2), `inad-progress-v54`(v1), `inad-campaign-v58`(v1), 번들 `INAD_SAVE_BUNDLE` schema 1. 변경 시 `save-engine.js`의 migrate 함수에 마이그레이션을 추가하고 키 이름은 유지.
 - 해외 사건(v11): 저장 키 `inad-atlas-v1`(payload v2, v1은 `atlas-engine.js migrateAtlasSave`로 명시적 이전). 사건은 `src/data/atlas/<ca|gb|nz>.js`에 선언형으로 작성하고 `engines/atlas-scenario-schema.js`가 검증·도달성 검사·동결한다(`docs/v11/SCENARIO_SCHEMA.md`, `node scripts/validate-atlas.js`). 사건 ID 분기 금지 — 호출·질문 선행조건·보완 요청·디브리핑은 모두 데이터로 정의한다. 국가별 사건 라이브러리는 빌드에서 별도 해시 파일로 분리되어 필요 시 로드된다.
+- 해외 자유 입력 질문: 모든 질문 경로(직접 입력·확인·선택지·목록)는 `atlas-engine.js submitAtlasUtterance()` 하나를 거치고, 기록되는 답은 사건의 정규 답변뿐이다. 해석(`engines/atlas-intent.js`, 어휘 `src/data/atlas-dialogue-lexicon.js`)은 결정적이며 현재 물을 수 있는 질문만 후보로 삼아 잠긴 후속 질문을 드러내지 않는다. 단어 겹침 없이 개념만 맞으면 확인을 거친다. 입력 원문은 저장하지 않는다. 뉴질랜드 문항(`tests/dialogue/atlas-utterances.fixture.js`)은 보류 세트이므로 어휘 튜닝에 쓰지 않는다.
 - 해외 결과 `complete/evidence/review`는 SIMULATION_RULE 훈련 라벨이며 법적 처분이 아니다. 근거와 맞지 않는 결론은 점수가 45로 제한된다.
 - 실시간 공항 운항정보는 운영 시뮬레이션 보조자료입니다. 승객 유입·대기열·현장 이벤트 압박에만 제한적으로 사용하며 법적 입국요건, 위험도, 허가·불허 판정에는 사용 금지. API 실패·키 미설정 시 정적 공항 프리셋으로 fail-safe 합니다.
 

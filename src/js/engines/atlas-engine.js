@@ -6,6 +6,7 @@ import { storeGetRaw, storeSet, parseJSON } from '../services/storage.js';
 import { bus } from '../services/bus.js';
 import { createEmptyGraph, validateGraphState, compareFacts, evaluateDebrief } from './atlas-graph-engine.js';
 import { validEncounter, callEncounter, finishEncounter } from './atlas-encounter.js';
+import { resolveAtlasUtterance, MAX_UTTERANCE } from './atlas-intent.js';
 
 export const ATLAS_KEY = 'inad-atlas-v1';
 export const COUNTRY_KEY = 'inad-country';
@@ -213,6 +214,22 @@ function releaseHiddenSelections(c, v) {
 export function atlasQuestionAvailable(c, v, id) {
   if (!allQuestions(c).some((q) => q.id === id)) return false;
   return !(c.investigativeQuestions || []).some((q) => q.id === id) || !!v.graph?.unlockedQuestions.includes(id);
+}
+export function atlasAvailableQuestions(c, v) { return allQuestions(c).filter((q) => atlasQuestionAvailable(c, v, q.id)); }
+// Every way of asking (typed text, a clarification choice, the question list) goes through here. Only the
+// case's canonical answer is ever recorded, so how a question was asked never changes evidence or score.
+// Free text is interpreted, never stored.
+export function submitAtlasUtterance({ text = '', questionId = null } = {}) {
+  const v = activeAtlasCase(), c = currentAtlasScenario();
+  if (!v || !c) return { kind: 'no-case' };
+  if (v.completed) return { kind: 'closed' };
+  if (v.encounter?.phase !== 'called') return { kind: 'not-called' };
+  const res = questionId !== null ? { kind: 'question', questionId }
+    : typeof text === 'string' && text.length <= MAX_UTTERANCE * 4 ? resolveAtlasUtterance(text, atlasAvailableQuestions(c, v)) : { kind: 'unknown' };
+  if (res.kind !== 'question') return res;
+  const repeated = v.asked.includes(res.questionId);
+  if (!atlasAction('ask', res.questionId)) return { kind: 'unknown' };
+  return { ...res, repeated };
 }
 export function atlasAction(action, value) {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return false;

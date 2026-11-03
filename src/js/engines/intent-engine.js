@@ -32,15 +32,15 @@ export function conceptsOf(text) {
   return out;
 }
 
-function koBigrams(text) {
+export function koBigrams(text) {
   let t = normalizeUtterance(text); for (const w of STOPWORDS_KO) t = t.split(w).join(' ');
   const out = new Set(); for (const word of t.split(/[^가-힣]+/)) for (let i = 0; i + 1 < word.length; i++) out.add(word.slice(i, i + 2));
   return out;
 }
-function enTokens(text) {
+export function enTokens(text) {
   return new Set(normalizeUtterance(text).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !STOPWORDS_EN.includes(w)).map((w) => w.slice(0, 5)));
 }
-const overlap = (a, b) => { if (!a.size || !b.size) return 0; let n = 0; for (const x of a) if (b.has(x)) n++; return n / Math.sqrt(a.size * b.size); };
+export const overlap = (a, b) => { if (!a.size || !b.size) return 0; let n = 0; for (const x of a) if (b.has(x)) n++; return n / Math.sqrt(a.size * b.size); };
 
 // Per-question profile, cached by question object (case data is immutable at runtime).
 const profiles = new WeakMap();
