@@ -147,6 +147,7 @@ test('review checks: complete on their own as the work is done, follow the note 
   await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
   await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Itinerary referenced but not received.');
   await expect(status('handover')).toHaveText(/^(완료|Complete)$/);              // updated while typing, no re-render
+  await expect(page.locator('#a11yLive')).toHaveText(/(완료|Complete)$/);           // one announcement as the check changes
   await expect(page.locator('#atlasTaskCount')).toHaveText(`2/${c.tasks.length}`);
   await page.locator('#atlasNotes').fill('short');
   await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
@@ -156,6 +157,10 @@ test('review checks: complete on their own as the work is done, follow the note 
   await expect(status('evidence')).toHaveText(/^(완료|Complete)$/);
   await page.reload();
   await expect(page.locator('body')).toHaveAttribute('data-country', 'GB');
+  for (const t of c.tasks) await expect(status(t.id)).toHaveText(/^(완료|Complete)$/);
+  await expect(page.locator('#atlasTaskCount')).toHaveText(`${c.tasks.length}/${c.tasks.length}`);  // A save from the button era (checks never pressed) shows the same derived rows and count.
+  await page.evaluate(() => { const raw = JSON.parse(localStorage.getItem('inad-atlas-v1')); raw.sessions.GB.cases['SIM-GB-01'].tasks = []; localStorage.setItem('inad-atlas-v1', JSON.stringify(raw)); });
+  await page.reload();
   for (const t of c.tasks) await expect(status(t.id)).toHaveText(/^(완료|Complete)$/);
   await expect(page.locator('#atlasTaskCount')).toHaveText(`${c.tasks.length}/${c.tasks.length}`);
 });

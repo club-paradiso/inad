@@ -173,12 +173,19 @@ function submitAsk(input) {
 function refreshTasks() {
   const c = atlas.currentAtlasScenario(), v = atlas.activeAtlasCase();
   if (!c || !v) return;
-  for (const t of atlas.atlasTaskState(c, v)) {
-    const el = byId(`task-status-${t.id}`);
-    if (el) { el.textContent = taskStatus(t); el.closest('li').dataset.taskState = t.done ? 'done' : 'open'; }
+  const state = atlas.atlasTaskState(c, v);
+  for (const t of state) {
+    const el = byId(`task-status-${t.id}`), li = el?.closest('li');
+    if (!li) continue;
+    const now = t.done ? 'done' : 'open', changedState = li.dataset.taskState !== now;
+    el.textContent = taskStatus(t); li.dataset.taskState = now;
+    // One polite announcement when a check changes, not one per keystroke.
+    if (changedState) announceA11y(`${text(c.tasks.find((x) => x.id === t.id).title)}: ${taskStatus(t)}`);
   }
-  const n = byId('atlasTaskCount'); if (n) n.textContent = `${v.tasks.length}/${c.tasks.length}`;
+  const n = byId('atlasTaskCount'); if (n) n.textContent = taskCount(c, state);
 }
+// Counted from the derived checks, so the count always matches the rows (even before a button-era save syncs).
+function taskCount(c, state) { return `${state.filter((t) => t.done).length}/${c.tasks.length}`; }
 function taskStatus(t) {
   return t.done ? l('완료', 'Complete') : { document: l('연결 문서 검토 필요', 'Linked document not reviewed yet'), interview: l('질문 또는 기록 대조 필요', 'Ask a question or compare a record'), notes: l('검토 메모 10자 이상 필요', 'Write a review note of at least 10 characters') }[t.missing] || l('검토 필요', 'Review needed');
 }
@@ -256,7 +263,7 @@ function assessmentHTML(c, v) {
     debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${esc(outcomes()[v.outcome])}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)} · ${d?.score ?? ''}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p><strong>${d?.outcomeCorrect ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</strong>${d?.outcomeFeedback ? ` · ${h(d.outcomeFeedback)}` : ''}</p>${d?.outcomeCorrect ? '' : `<p>${l('근거에 맞는 결론', 'Supported outcome')}: ${esc(outcomes()[c.expectedOutcome])}</p>`}<p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div>${actions}</div>`;
   }
 
-  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · <span id="atlasTaskCount">${v.tasks.length}/${c.tasks.length}</span> ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
+  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · <span id="atlasTaskCount">${taskCount(c, atlas.atlasTaskState(c, v))}</span> ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
 }
 export function renderAtlas() {
   if (state.countryId === 'KR') { focusView(); return; }
