@@ -445,4 +445,9 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Section: `[Implemented] ATLAS · outcome review · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=254-84)).
   - Frames: 1440 × 1000 [255:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-84) · 768 × 1024 [255:293](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-293) · 390 × 844 bottom sheet [255:374](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=255-374).
   - The outcome labels are simulation training labels, not legal dispositions.
+- **Debrief:** the in-desk debrief shown after the outcome is confirmed. The example is SIM-CA-01 completed with "2차 심사 회부(가상)", the rating "추가 대조 권장 · 45", the route, the evidence-match line, feedback, the typed rationale, and the next-case and replay buttons.
+  - Section: `[Implemented] ATLAS · debrief · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=256-84)).
+  - Frames: 1440 × 1000 system focus [257:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-84) · 768 × 1024 review task [257:276](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-276) · 390 × 844 review task [257:349](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=257-349).
+  - At 1440 the debrief sits in the scrolling assessment zone and is clipped there, the same as at runtime. At 768 and 390 the review task is scrolled to the debrief.
+  - The score of 45 is the real result of the short path used for the capture, and the rating and outcome are simulation training labels, not legal dispositions.
 - **Existing frames were not touched.**
