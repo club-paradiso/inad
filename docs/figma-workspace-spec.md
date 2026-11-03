@@ -433,4 +433,8 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - Each frame sets the `ATLAS / Country desk` mode for its country, and its chrome, desk-mark and desk-soft fills are bound to those variables (15–25 bound fills per frame). Switching a frame's mode recolours it.
   - `html_to_figma` was not usable because `mcp.figma.com` is blocked by this environment's network policy, so the frames were built with the Plugin API.
   - Disabled buttons (an already-asked question, a locked follow-up, compare/clear with nothing selected) carry the runtime `.act:disabled` opacity of .45.
+- **Country selection:** the dialog that opens from the start screen's "국가 선택", with Canada chosen. It is in its own section, `[Implemented] ATLAS · country selection · 2026-11-03` ([https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=249-84)).
+  - Frames: 1440 × 1000 [250:84](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-84) · 768 × 1024 [250:155](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-155) · 390 × 844 [250:226](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=250-226).
+  - The backdrop is one dim layer; the start screen behind it is omitted.
+  - Native radios and select arrows are drawn as vectors, and the dialog carries the `--shadow-3` drop shadow.
 - **Existing frames were not touched.**
