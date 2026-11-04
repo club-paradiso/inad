@@ -4,12 +4,15 @@ import { state } from '../state.js';
 export function clampScore(v) { return Math.max(0, Math.min(100, Math.round(v))); }
 export function procedureAverage() { if (!state.reports.length) return 100; return Math.round(state.reports.reduce((a, r) => a + r.procedure, 0) / state.reports.length); }
 
-// Processing efficiency is intentionally a secondary score in Training/Standard.
-// Accuracy and procedure should dominate while players are still learning the workflow.
+// Judgement quality dominates (P2): `accuracy` is the decision score built from verdict
+// correctness and scored mistakes (including thin-review advisories). `procedure` — the share of
+// listed review steps performed — is deliberately a minor component (≤ .12): completing a
+// checklist is not the skill being assessed, and skipping a useless step must not outweigh a
+// correct, well-grounded decision. Efficiency stays secondary in learning modes.
 export function scoringWeights() {
-  if (state.difficulty === 'training') return { accuracy: .50, procedure: .30, efficiency: .10, proportionality: .10 };
-  if (state.difficulty === 'standard') return { accuracy: .48, procedure: .28, efficiency: .14, proportionality: .10 };
-  return { accuracy: .45, procedure: .25, efficiency: .20, proportionality: .10 };
+  if (state.difficulty === 'training') return { accuracy: .62, procedure: .12, efficiency: .10, proportionality: .16 };
+  if (state.difficulty === 'standard') return { accuracy: .60, procedure: .12, efficiency: .14, proportionality: .14 };
+  return { accuracy: .58, procedure: .10, efficiency: .20, proportionality: .12 };
 }
 export function overallScore() {
   const w = scoringWeights();

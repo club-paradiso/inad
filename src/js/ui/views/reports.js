@@ -26,8 +26,11 @@ const li = (items, fn) => (items.length ? `<ul>${items.map(fn).join('')}</ul>` :
 export function debriefHTML(d, { full = true, lesson = full } = {}) {
   if (!d) return '';
   const iv = d.interview; const src = iv ? `대화 ${iv.turns}회 · 직접 입력 ${iv.counts.text} · 음성 ${iv.counts.voice} · 제안 ${iv.counts.suggestion + iv.counts.clarify} · 목록 ${iv.counts.list}${iv.unmatched ? ` · 알아듣지 못한 질문 ${iv.unmatched}` : ''}` : '';
-  const missedSteps = [...d.questions.missed.map((x) => ({ t: x.q, s: x.gated.length ? `먼저 필요: ${x.gated.join(' · ')}` : '' })), ...d.procedure.missing.map((x) => ({ t: x, s: '절차' }))];
-  return `<section class="debrief" aria-label="사건 디브리핑"><div class="debrief-basis"><b>결정 근거 · ${esc(d.basis.label)}</b><span>${esc(d.basis.law)}${d.basis.code ? ` · ${esc(d.basis.code)}` : ''}</span></div>
+  const missedSteps = [...d.questions.missed.map((x) => ({ t: x.q, s: x.gated.length ? `관련 확인: ${x.gated.join(' · ')}` : '' })), ...d.procedure.missing.map((x) => ({ t: x, s: '절차' }))];
+  // Core first (P2-2): one headline + the key-evidence balance; the detail sections follow for
+  // players who want them. Debriefs saved by older builds have no `core` and simply skip this.
+  const core = d.core ? `<div class="debrief-core"><b>${esc(d.core.headline)}</b><span>핵심 단서 ${d.core.keyFound}/${d.core.keyTotal}${d.core.missedKey.length ? ` · 놓친 핵심: ${esc(d.core.missedKey.join(' · '))}` : ''}</span></div>` : '';
+  return `<section class="debrief" aria-label="사건 디브리핑"><div class="debrief-basis"><b>결정 근거 · ${esc(d.basis.label)}</b><span>${esc(d.basis.law)}${d.basis.code ? ` · ${esc(d.basis.code)}` : ''}</span></div>${core}
   ${d.evidence.found.length || d.evidence.missed.length ? `<div class="debrief-cols"><div><h3>확보한 단서 ${d.evidence.found.length}</h3>${li(d.evidence.found, (x) => `<li>${esc(x.title)}<small>${esc(x.via)}</small></li>`)}</div><div class="missed"><h3>놓친 핵심 단서 ${d.evidence.missed.length}</h3>${li(d.evidence.missed, (x) => `<li><b>${esc(x.title)}</b> — ${esc(x.text)}<small>${esc(x.via)}</small></li>`)}</div></div>` : ''}
   ${full ? `<div class="debrief-cols"><div><h3>판단에 쓰인 질문</h3>${li(d.questions.meaningful, (x) => `<li>${esc(x)}</li>`)}</div><div class="missed"><h3>하지 않은 질문·절차</h3>${li(missedSteps, (x) => `<li>${esc(x.t)}${x.s ? `<small>${esc(x.s)}</small>` : ''}</li>`)}</div></div>` : ''}
   ${d.offTrack.length ? `<div><h3>바로잡힌 판단 시도</h3>${li(d.offTrack, (x) => `<li>${esc(x)}</li>`)}</div>` : ''}

@@ -36,8 +36,25 @@ export function buildDebrief(c, record) {
   const steps = required.filter((x) => !x.startsWith('QUESTION_'));
   const procedure = { done: steps.filter((x) => done.has(x)).map((x) => describeAction(x, c)), missing: steps.filter((x) => !done.has(x)).map((x) => describeAction(x, c)) };
   const offTrack = (record.mistakes || []).map((m) => m.msg || String(m));
+  const basis = decisiveBasis(c);
+  const keyTotal = clues.filter((x) => x.key).length, keyFound = clues.filter((x) => x.key && found.has(x.id)).length;
+  // Core summary (P2-2): the few lines a player reads first — the decision, its basis, the key
+  // evidence balance and the single most important miss. Everything else stays in the detail
+  // sections below; the core never introduces facts the detail does not contain.
+  const core = {
+    decision: record.label || '-', basisLabel: basis.label, basisLaw: basis.law,
+    keyFound, keyTotal,
+    missedKey: evidenceMissed.slice(0, 2).map((x) => x.title),
+    procedureMissing: procedure.missing.length,
+    mistakes: offTrack.length,
+    headline: offTrack.length ? offTrack[0]
+      : evidenceMissed.length ? `핵심 단서 ${evidenceMissed.length}건을 확인하지 못했습니다: ${evidenceMissed[0].title}`
+      : procedure.missing.length ? `판단은 근거와 맞지만 확인 절차 ${procedure.missing.length}건이 남았습니다.`
+      : '확인된 사실과 법적 근거에 맞는 판단입니다.'
+  };
   return {
-    decision: record.label || '-', basis: decisiveBasis(c),
+    core,
+    decision: record.label || '-', basis,
     evidence: { found: evidenceFound, missed: evidenceMissed },
     questions: { meaningful, missed: missedQuestions, total: asked.size },
     procedure, offTrack,
