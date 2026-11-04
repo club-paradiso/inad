@@ -191,7 +191,9 @@ function liveInterviewFlow(retry = false) {
   // First passenger of the session: 안내 모드 coaching applies (no strikes, one guard), the v9 screen tour does not.
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'live_retry' : 'live_start' });
-  beginCase();
+  // Live Interview promises immediate access to the passenger. Do not place an
+  // intercepting 1-second queue-call overlay over the first question or language controls.
+  beginCase(true);
 }
 // Quick Shift: six passengers, 안내 coaching throughout (all within the first six), nothing saved.
 function quickShiftFlow(retry = false) {
