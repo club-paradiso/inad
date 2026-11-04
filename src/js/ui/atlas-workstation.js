@@ -17,6 +17,7 @@ import { exportSave, ensureImportInput } from './views/system-center.js';
 import { storeGetRaw } from '../services/storage.js';
 import { voiceAvailable, voiceListening, toggleVoice, stopVoice, recognitionLang, showVoiceSettings, voiceSettingLabel, readAloud, readAloudOn, readAloudAvailable, setReadAloud, stopReading } from './atlas-voice.js';
 import { stopLiveListening } from './live-interview.js';
+import { syncAtlasPortrait, actAtlasLine, stopAtlasActing, disposeAtlasPortrait } from './atlas-passenger-stage.js';
 
 const l = (ko, en) => text({ ko, en });
 const h = (value) => esc(text(value));
@@ -29,7 +30,7 @@ let ask = { caseRef: null, draft: '', result: null, note: '' };
 // Stops listening and, because an ended session's own events are ignored, refreshes the mic state itself.
 // Text a session wrote while it was still listening is discarded with it; a finished transcript stays for review.
 function endVoice() {
-  const was = voiceListening(); stopVoice(); stopReading();
+  const was = voiceListening(); stopVoice(); stopReading(); stopAtlasActing();
   if (ask.heardLive) { ask.draft = ''; ask.heardLive = false; }
   if (was && state.countryId !== 'KR') { ask.note = ''; renderAtlas(); }
 }
@@ -59,6 +60,7 @@ function mountCountry() {
   endVoice();
   const foreign = state.countryId !== 'KR';
   if (foreign) stopLiveListening();
+  else disposeAtlasPortrait();
   document.body.dataset.country = state.countryId;
   if (foreign) document.body.dataset.atlas = '1';
   else delete document.body.dataset.atlas;
@@ -108,8 +110,13 @@ function queueHTML(p, c) {
 function personHTML(c, v, p) {
   const called = v.encounter?.phase === 'called', closed = v.completed || v.encounter?.phase === 'completed';
   const call = closed ? `<p class="atlas-muted">${l('면담 종료', 'Interview closed')}</p>` : called ? `<p role="status" class="atlas-state">${l('대면 조사 중 · 가상 승객', 'At counter · simulated passenger')}</p>` : button('atlasCallPassenger', l('가상 승객 호출', 'Call simulated passenger'), 'class="act primary"');
+  const portraitVisible = called || closed;
+  const audio = portraitVisible && !closed ? (readAloudAvailable()
+    ? `<div class="atlas-audio-actions">${button('atlasHearToggle', readAloudOn() ? l('답변 음성 끄기', 'Mute passenger voice') : l('답변 음성 켜기', 'Enable passenger voice'), `aria-pressed="${readAloudOn()}"`)}${button('atlasHearAgain', l('승객 말 다시 듣기', 'Replay passenger speech'))}</div>`
+    : `<p class="atlas-muted">${l('이 브라우저에서는 음성 재생을 지원하지 않습니다.', 'This browser cannot play speech.')}</p>`) : '';
+  const stageHTML = `<div class="atlas-person-stage"><div id="atlasPortraitSlot" class="atlas-portrait-slot"></div>${portraitVisible ? audio : `<p class="atlas-stage-waiting">${l('호출하면 가상 승객의 얼굴이 나타납니다.', 'Call the passenger to reveal the fictional portrait.')}</p>`}<p class="atlas-stage-credit">${l('합성 연출용 인물 이미지 · 신원 증빙 아님', 'Fictional casting artwork · not identity evidence')}</p></div>`;
   const profile = `<dl><dt>${l('대상 식별자', 'Person ID')}</dt><dd class="mono">${c.personId}</dd><dt>${l('현재 사건', 'Current case')}</dt><dd class="mono">${c.id}</dd><dt>${l('난이도', 'Difficulty')}</dt><dd>${esc(diffText(c.difficulty))}</dd>${(c.profile || []).map((row) => `<dt>${h(row.label)}</dt><dd>${h(row.value)}</dd>`).join('')}<dt>${l('가상 근무지', 'Fictional station')}</dt><dd>${h(p.airports.find((a) => a.id === state.airportId)?.name)}</dd></dl>`;
-  return box(l('사람과 사건', 'Person and case'), `${call}<p class="atlas-person">${esc(c.name)}</p>${profile}<p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + queueHTML(p, c) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
+  return box(l('사람과 사건', 'Person and case'), `${call}${stageHTML}<p class="atlas-person">${esc(c.name)}</p>${profile}<p>${h(c.brief)}</p><p class="atlas-muted">${l('합성 자료 · 법률 판정 아님', 'Synthetic data · no legal decisions')}</p>`) + queueHTML(p, c) + (p.id === 'NZ' ? box(l('신청 맥락', 'Application context'), `<p>${l('배정 활동 검토 · 활동 완료가 비자 발급 아님', 'Review assigned activity · completion is not a visa grant')}</p>`) : '');
 }
 function interviewHTML(c, v) {
   const language = atlas.activeAtlasSession().interviewLanguage;
@@ -149,7 +156,10 @@ function speakResult(r) {
   if (r.kind !== 'question' || r.repeated) return;
   const c = atlas.currentAtlasScenario(), session = atlas.activeAtlasSession();
   const q = [...c.questions, ...(c.investigativeQuestions || [])].find((x) => x.id === r.questionId);
-  if (q) readAloud(q.answer[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage));
+  if (q) {
+    actAtlasLine(q.answer[session.interviewLanguage], session.interviewLanguage);
+    readAloud(q.answer[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage));
+  }
 }
 function announceAsk(r) {
   if (r.kind === 'question') announceA11y(`${r.repeated ? l('이미 한 질문입니다', 'Already asked') : l('답변을 기록했습니다', 'Answer recorded')}: ${questionText(r.questionId)}`);
@@ -283,6 +293,7 @@ export function renderAtlas() {
   const key = focusKey(), scroll = $$('#mainContent > .zone').map((z) => z.scrollTop);
   byId('atlasHeader').innerHTML = `<div><strong>INAD · ${h(p.name)}</strong><span id="atlasCaseHeading" tabindex="-1">${h(p.title)} · ${c.id} · ${h(c.title)}</span></div><nav aria-label="${l('국가별 작업대 메뉴', 'Country workstation menu')}">${button('atlasCountry', l('국가 선택', 'Country selection'))}${button('atlasSettings', l('설정', 'Settings'))}${button('atlasData', l('저장·내보내기', 'Save and export'))}${button('atlasLanguage', getLocale() === 'ko' ? 'English UI' : '한국어 UI')}</nav><div class="atlas-view-switch" role="group" aria-label="${l('작업 초점', 'Workspace focus')}">${button('atlasCounter', l('대면', 'Counter'), 'data-atlas-view="counter"')}${button('atlasSystem', l('전산', 'System'), 'data-atlas-view="system"')}<span>${l('합성 사건 · 법률 판정 미제공', 'Synthetic cases · legal decisions unavailable')}</span></div>`;
   $('.zone-person').innerHTML = personHTML(c, v, p);
+  syncAtlasPortrait(c, v.completed || v.encounter?.phase === 'called');
   $('.zone-interview').innerHTML = interviewHTML(c, v);
   const tasks = taskHTML(c, v, p.id === 'NZ' ? l('배정 활동', 'Assigned activities') : l('담당 과업', 'Assigned tasks'));
   const dock = compareDockHTML(c, v);
@@ -293,7 +304,37 @@ export function renderAtlas() {
   byId('atlasCountry').onclick = () => openCountrySelector(); byId('atlasSettings').onclick = showAtlasSettings; byId('atlasData').onclick = showAtlasData;
   byId('atlasLanguage').onclick = () => setLocale(getLocale() === 'ko' ? 'en' : 'ko');
   $$('[data-atlas-view]').forEach((b) => { b.onclick = () => { atlas.setAtlasView(b.dataset.atlasView); showTask(b.dataset.atlasView === 'counter' ? 'interview' : 'evidence'); }; });
-  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => { if (atlas.callAtlasPassenger()) { const session = atlas.activeAtlasSession(); readAloud(c.opening?.[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage)); atlas.setAtlasView('counter'); showTask('interview'); announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.')); } };
+  const replayPassenger = () => {
+    const session = atlas.activeAtlasSession();
+    const qid = v.asked[v.asked.length - 1];
+    const question = [...c.questions, ...(c.investigativeQuestions || [])].find((q) => q.id === qid);
+    const line = question?.answer[session.interviewLanguage] || c.opening?.[session.interviewLanguage];
+    actAtlasLine(line, session.interviewLanguage);
+    readAloud(line, recognitionLang(state.countryId, session.interviewLanguage));
+  };
+  if (byId('atlasCallPassenger')) byId('atlasCallPassenger').onclick = () => {
+    if (atlas.callAtlasPassenger()) {
+      atlas.setAtlasView('counter'); showTask('interview');
+      bus.emit('sound', { cue: 'call' });
+      const session = atlas.activeAtlasSession();
+      actAtlasLine(c.opening?.[session.interviewLanguage], session.interviewLanguage);
+      readAloud(c.opening?.[session.interviewLanguage], recognitionLang(state.countryId, session.interviewLanguage));
+      announceA11y(l('가상 승객을 호출했습니다.', 'Simulated passenger called.'));
+    }
+  };
+  if (byId('atlasHearToggle')) byId('atlasHearToggle').onclick = () => {
+    const on = !readAloudOn();
+    setReadAloud(on);
+    if (!on) stopAtlasActing();
+    renderAtlas();
+    if (on) replayPassenger();
+    byId('atlasHearToggle')?.focus();
+  };
+  if (byId('atlasHearAgain')) byId('atlasHearAgain').onclick = () => {
+    if (!readAloudOn()) { setReadAloud(true); renderAtlas(); }
+    replayPassenger();
+    byId('atlasHearAgain')?.focus();
+  };
   $$('[data-case]').forEach((b) => { b.onclick = () => { atlas.selectAtlasCase(b.dataset.case); byId('atlasCaseHeading').focus(); }; });
   $$('[data-ask]').forEach((b) => { b.onclick = () => { endVoice(); ask.result = null; const r = atlas.submitAtlasUtterance({ questionId: b.dataset.ask }); announceAsk(r); speakResult(r); }; });
   if (byId('atlasAskForm')) {
