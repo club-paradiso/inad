@@ -49,7 +49,7 @@ export function renderDocs({ onSelect, onZoom, onReview }) {
   const disabled = state.ended ? ' disabled' : '';
   const active = (key) => status === key ? ' aria-pressed="true"' : ' aria-pressed="false"';
   byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·검토·판정은 서로 다릅니다.', 'Opening, reviewing and deciding are separate.'))}</span></div>
-  <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div>${documentHTML(d, c, traveler, pp)}</div>
+  <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
   <section class="doc-review-panel" aria-label="${tUI('서류 검토 체크리스트', 'Document review checklist')}">
     <div class="doc-review-heading"><div><h3>${tUI('무엇을 확인해야 하나요?', 'What should I check?')}</h3><span>${esc(statusLabel)}</span></div><button type="button" id="docGuideBtn">${tUI('관련 업무지침', 'Relevant work guide')}</button></div>
     <ol class="doc-review-checks">${plan.checks.map((step) => `<li>${esc(isEn() ? step.en : step.ko)}</li>`).join('')}</ol>
@@ -62,6 +62,7 @@ export function renderDocs({ onSelect, onZoom, onReview }) {
   </section>`;
   byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, traveler, pp));
   byId('docGuideBtn').onclick = () => openWorkGuide(plan.guideId);
+  byId('docGuideQuickBtn').onclick = () => openWorkGuide(plan.guideId);
   $$('#docview [data-review]').forEach((b) => { b.onclick = () => onReview(state.selectedDoc, b.dataset.review); });
 }
 export function focusSelectedDoc() { const item = $$('#doclist .docitem')[state.selectedDoc]; if (item) item.focus(); }
