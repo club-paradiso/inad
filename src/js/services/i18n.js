@@ -12,6 +12,9 @@ let observer = null;
 let initialized = false;
 
 const EXACT = new Map([
+  ['질문은 이 사건에 준비된 대화 범위에서 이해합니다. 잘 안 통하면 제안 질문을 선택하세요.', 'This interview recognises questions within the current scenario. If your wording is not understood, choose a suggested question.'],
+  ['예: 방문 목적이 무엇입니까?', 'e.g. What is the purpose of your visit?'],
+  ['다음 할 일', 'Next action'],
   ['대상자', 'Traveler'],
   ['인터뷰', 'Interview'],
   ['자료', 'Evidence'],
