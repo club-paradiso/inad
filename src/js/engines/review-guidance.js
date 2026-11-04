@@ -1,5 +1,5 @@
 // Presentation-only inspection workflow guidance. Never reads case resolution, hidden evidence or required verdict actions.
-// The player still performs questions/lookups and evaluates the actual document.
+// The player still performs questions/lookups and reviews submitted materials.
 const LOOKUPS = {
   history: ['출입국기록', 'Entry history'],
   visa: ['사증·입국자격', 'Visa / status'],
