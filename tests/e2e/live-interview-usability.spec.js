@@ -11,7 +11,7 @@ async function start(page) {
 
 test('one-click live start has no blocking callout, and a language barrier suggests an interpreter', async ({ page }) => {
   await start(page);
-  await expect(page.locator('#callout')).not.toHaveClass(/\\bon\\b/);
+  await expect(page.locator('#callout')).not.toHaveClass(/\bon\b/);
   await expect(page.locator('#liveNextButton')).toContainText(/이 질문하기|Ask/);
   await page.locator('#liveNextButton').click();
   await expect(page.locator('#log .msg.pending')).toHaveCount(0);
