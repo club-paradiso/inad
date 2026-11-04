@@ -71,7 +71,15 @@ function renderNextStep(suggestions, onSuggest) {
   const next = suggestions.find((s) => s.q)?.q;
   let step, detail, label, action;
   const hasQuestion = state.asked.size > 0;
-  if (!hasQuestion && next) {
+  // An unanswered question caused by a language barrier must not be proposed over
+  // and over. The existing suggestion engine already exposes the safe next action.
+  const needsInterpreter = suggestions.some((entry) => entry.action === 'interpreter');
+  if (needsInterpreter) {
+    step = t('2 · 통역 연결', '2 · Connect interpreter');
+    detail = t('질문이 전달되지 않았습니다. 먼저 통역을 연결하고 다시 질문하세요.', 'The traveler did not understand. Connect an interpreter before asking again.');
+    label = t('통역 연결', 'Call interpreter');
+    action = () => { showTask('interview'); byId('langInterp')?.click(); };
+  } else if (!hasQuestion && next) {
     step = t('1 · 첫 질문', '1 · First question'); detail = t('준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.', 'Start with an available question, or try your own phrasing.');
     label = t('이 질문하기 · ', 'Ask · ') + next.q;
     action = () => onSuggest(next, false);
