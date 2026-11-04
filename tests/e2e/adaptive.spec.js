@@ -119,7 +119,7 @@ for (const vp of VIEWPORTS) {
     await noOverflow(page, 'evidence'); await shot(page, `${vp.name}-evidence`);
     // assessment + decision desk
     await task(page, 'assessment');
-    await inViewport(page, ['#readyPct', '#matrix', '#clearBtn', '#secondaryBtn', '#refuseBtn', '#sjpBtn']);
+    await inViewport(page, ['#readyHint', '#matrix', '#clearBtn', '#secondaryBtn', '#refuseBtn', '#sjpBtn']);
     if (vp.kind === 'phone') await touchTargets(page, ['#clearBtn', '#refuseBtn'], 44);
     await noOverflow(page, 'assessment'); await shot(page, `${vp.name}-assessment`);
     // secondary procedure (continuation of inspection)

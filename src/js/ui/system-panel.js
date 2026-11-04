@@ -3,7 +3,7 @@ import { $, byId, esc, fmtClock } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
-import { evidenceNow, readiness, ACTION_NAMES } from '../engines/legal-engine.js';
+import { evidenceNow, ACTION_NAMES } from '../engines/legal-engine.js';
 import { clueStats } from '../engines/clue-engine.js';
 import { lookupName } from '../engines/case-engine.js';
 import { classifyEntryBasis, ketaStatus, arrivalDeclarationStatus } from '../engines/decision-model.js';
@@ -52,9 +52,11 @@ export function renderClueBoard() {
 export function renderMatrix() {
   const c = current(); const e = evidenceNow(c, state);
   byId('matrix').innerHTML = Object.entries(e).map(([k, v]) => `<div class="ev ${v[0]}"><label>${esc(k)}</label><b>${esc(v[1])}</b><p title="${esc(v[2])}">${esc(v[2])}</p></div>`).join('');
-  const cs = clueStats(c); const r = readiness(c, state.performed, c.clues ? cs : null);
-  byId('readyPct').textContent = r.pct + '%'; byId('readyFill').style.width = r.pct + '%';
-  let hint = r.pct >= 95 ? '필요한 확인이 충분합니다. 전체 사실관계와 법적 근거를 종합해 판단하십시오.' : `필수 절차 ${r.hit}/${r.needed}${c.clues ? ` · 핵심 단서 ${cs.keyGot.length}/${cs.keys.length}` : ''} · 질문·조회로 사실관계를 더 확인하십시오.`;
+  // Status, not a gate (P0-3): what has actually been checked so far, in plain counts. There is no
+  // readiness percentage and nothing here enables or disables the decision buttons — a decision
+  // can be made at any point, and whatever was left unchecked shows up in the case feedback.
+  const cs = clueStats(c);
+  let hint = `질문 ${state.asked.size}개 · 조회 ${state.looked.size}개${c.clues ? ` · 핵심 단서 ${cs.keyGot.length}/${cs.keys.length}` : ''} · 판단은 언제든 내릴 수 있고, 부족한 확인은 결과 피드백에 반영됩니다.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);

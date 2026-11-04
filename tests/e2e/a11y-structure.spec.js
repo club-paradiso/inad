@@ -154,7 +154,12 @@ test.describe('접근성 구조', () => {
     await H.startShift(page);
     await expect(page.locator('.statusbar .strike-count')).toHaveText('0/6');
     await expect(page.locator('.statusbar .strike-dots .strike')).toHaveCount(6);
-    await page.locator('#clearBtn').click(); // admitting before the required checks is an inspection error
+    // A strike comes from a factually wrong verdict: admit a passenger whose case must be refused.
+    const queue = await H.getQueue(page);
+    let found = false;
+    for (const q of queue) { await H.jumpTo(page, q.index); const c = await H.currentCase(page); if (c?.resolution?.type === 'REFUSE') { found = true; break; } }
+    expect(found).toBe(true);
+    await page.locator('#clearBtn').click();
     await expect.poll(async () => (await H.getState(page)).strikes).toBe(1);
     await expect(page.locator('.statusbar .strike-count')).toHaveText('1/6');
     await expect(page.locator('.statusbar .strike-dots .strike.on')).toHaveCount(1);

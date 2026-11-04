@@ -64,7 +64,7 @@ function renderAll() {
   if (state.countryId !== 'KR') { renderAtlas(); return; }
   if (!current()) return;
   const focus = focusKey();
-  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); cues.paperOpen(); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html) => { cues.paperOpen(); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); }, onReview: (i, status) => caseEngine.setDocumentReview(i, status) });
+  renderTop(); renderQueue(); renderPassenger(); renderLog(); renderQuestions(onAsk, { onSuggest: (q) => submitTurn({ questionId: q.id, source: 'suggestion' }), onAction: (a) => { if (a === 'interpreter') byId('langInterp').click(); } }); syncAssistButton(); renderDocs({ onSelect: (i) => { showWorkbenchTab('docs'); caseEngine.selectDocument(i); cues.paperOpen(); notify.pulse('#docview .doc-stage', 'scan-active', 520); }, onZoom: (d, html, i) => { cues.paperOpen(); if (Number.isInteger(i) && state.documentReviews?.[i] !== 'followup') caseEngine.setDocumentReview(i, 'reviewed'); showModal('문서 확대 · ' + d.t, `<div class="doc-modal-wrap">${html}</div>`, { size: 'wide' }); }, onReview: (i, status) => caseEngine.setDocumentReview(i, status) });
   renderMatrix(); renderEntry(); renderTerminal(); renderStatementLockDock(); renderCoachBanner(); renderActions({ onRefugee: refugeeFlow, onSjp: () => openProc('sjp'), onReopen: (mode) => openProc(mode) }); renderStoryStrip();
   restoreFocus(focus);
 }

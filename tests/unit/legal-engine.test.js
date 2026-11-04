@@ -6,11 +6,17 @@ import { CASES } from '../../src/data/cases.js';
 
 const byId = (id) => CASES.find((c) => c.id === id);
 
-test('CLEAR is only valid when the case resolves to CLEAR and all required actions are performed', () => {
+test('CLEAR is an error only when it contradicts the facts; thin review is recorded, not blocked', () => {
   const c = byId('ICN-S1-001');
-  assert.equal(legal.validateClear(c, []).ok, false);
-  assert.equal(legal.validateClear(c, []).penalty.pts, 6);
-  assert.equal(legal.validateClear(c, c.required).ok, true);
+  // New product requirement (UX simplification P0-2): a decision is always available. Missing
+  // review steps come back as `thin` + an advisory score, never as a block on the decision itself.
+  const thin = legal.validateClear(c, []);
+  assert.equal(thin.ok, true);
+  assert.equal(thin.thin, true);
+  assert.deepEqual(thin.missing, c.required);
+  assert.equal(thin.advisory.pts, 6);
+  const full = legal.validateClear(c, c.required);
+  assert.equal(full.ok, true); assert.equal(full.thin, undefined);
   const refuse = byId('ICN-S2-005');
   const v = legal.validateClear(refuse, refuse.required);
   assert.equal(v.ok, false); assert.equal(v.penalty.pts, 12);
@@ -18,11 +24,14 @@ test('CLEAR is only valid when the case resolves to CLEAR and all required actio
   assert.equal(legal.validateClear(arrest, arrest.required).penalty.pts, 18);
 });
 
-test('refusal requires the statutory reason that matches the facts and the prior procedure', () => {
+test('refusal requires the statutory reason that matches the facts; thin review is recorded, not blocked', () => {
   const c = byId('ICN-S2-005');
   assert.equal(legal.validateRefusal(c, 'SIM-A11-SEC', c.required).ok, false, 'wrong ground');
-  assert.equal(legal.validateRefusal(c, 'SIM-A12-PUR', []).ok, false, 'missing prerequisites');
-  assert.equal(legal.validateRefusal(c, 'SIM-A12-PUR', []).penalty.pts, 7);
+  const thin = legal.validateRefusal(c, 'SIM-A12-PUR', []);
+  assert.equal(thin.ok, true, 'missing review steps no longer block a refusal the examiner chooses');
+  assert.equal(thin.thin, true);
+  assert.equal(thin.advisory.pts, 7);
+  assert.equal(thin.reason[2], '출입국관리법 제12조제3항제2호 및 제4항');
   const ok = legal.validateRefusal(c, 'SIM-A12-PUR', c.required);
   assert.equal(ok.ok, true); assert.equal(ok.reason[2], '출입국관리법 제12조제3항제2호 및 제4항');
   const bio = byId('ICN-S3-011');

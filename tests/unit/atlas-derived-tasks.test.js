@@ -1,5 +1,5 @@
-// v11: the overseas review checks complete themselves from what the player has done. They require
-// exactly what the former "Mark checked" buttons required, so scores and completion are unchanged,
+// The overseas review checks complete themselves from what the player has done (opening a
+// document records its review; there is no "mark checked" step), notes never gate anything,
 // and the saved `tasks` list keeps its meaning (no save migration).
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -50,17 +50,26 @@ test('a record comparison satisfies the evidence check without a question, as th
   assert.equal(checks().evidence, 'done');
 });
 
-test('clearing or shortening the note undoes the handover check and blocks completion again', () => {
+test('notes are a working memo, never a gate: clearing or shortening one changes nothing', () => {
+  // New product requirement (UX simplification P0): no required free-text input. The handover
+  // check follows the linked document review alone, and completion is gated only by the call.
   const c = open('GB'); prepare(c);
   assert.deepEqual(atlas.atlasMissing(), []);
-  assert.deepEqual(atlas.activeAtlasCase().tasks, c.tasks.map((t) => t.id)); // the note itself completed handover
+  assert.deepEqual(atlas.activeAtlasCase().tasks, c.tasks.map((t) => t.id));
   atlas.atlasAction('notes', 'too short');
-  assert.equal(checks().handover, 'notes');
-  assert.ok(!atlas.activeAtlasCase().tasks.includes('handover'));
-  assert.ok(atlas.atlasMissing().includes('tasks'));
-  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Sources compared; unresolved points documented.'), false);
-  atlas.atlasAction('notes', NOTE);
-  assert.equal(atlas.completeAtlas(c.expectedOutcome, 'Sources compared; unresolved points documented.'), true);
+  assert.equal(checks().handover, 'done');
+  assert.ok(atlas.activeAtlasCase().tasks.includes('handover'));
+  assert.deepEqual(atlas.atlasMissing(), []);
+  atlas.atlasAction('notes', '');
+  assert.equal(atlas.completeAtlas(c.expectedOutcome, ''), true, 'even an empty rationale completes once the passenger was called and an outcome chosen');
+});
+
+test('opening a document records its review automatically — no separate mark step', () => {
+  const c = open('CA');
+  const doc = (id) => c.tasks.find((t) => t.id === id).documentId;
+  atlas.atlasAction('document', doc('identity'));
+  assert.equal(checks().identity, 'done');
+  assert.ok(atlas.activeAtlasCase().reviewed.includes(doc('identity')));
 });
 
 test('an in-progress save from the button era (no checks marked) completes without any extra step', () => {
@@ -85,6 +94,19 @@ test('a completed case keeps exactly what it saved: later edits cannot change it
   atlas.selectAtlasCase(c.id);
   assert.deepEqual(atlas.activeAtlasCase().tasks, before);
   assert.ok(checks().handover === 'done');
+});
+
+test('a locked investigative question can be put, but stays withheld and unrecorded until its comparison', () => {
+  const c = open('CA', 'SIM-CA-01');
+  const locked = (c.investigativeQuestions || [])[0];
+  assert.ok(locked, 'case has an investigative question');
+  const r = atlas.submitAtlasUtterance({ questionId: locked.id });
+  assert.equal(r.kind, 'withheld');
+  assert.ok(!atlas.activeAtlasCase().asked.includes(locked.id), 'nothing recorded as asked');
+  assert.deepEqual(atlas.activeAtlasCase().graph.unlockedQuestions, [], 'no fabricated unlock');
+  assert.equal(atlas.validateAtlasSave(atlas.atlasSnapshot()), true, 'save stays valid');
+  // The engine action itself stays strict: asked[] can never contain an un-unlocked question.
+  assert.equal(atlas.atlasAction('ask', locked.id), false);
 });
 
 test('atlasAction("task") only reports a check; it cannot mark one', () => {
