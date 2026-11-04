@@ -157,6 +157,9 @@ function applyThinDecision(v) {
 export function decideClear() {
   const c = current(); const v = legal.validateClear(c, state.performed);
   if (!v.ok) return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) };
+  // Guided opening cases surface the shortfall once as a coaching warning (no penalty, no record);
+  // deciding again lets the thin decision stand with its feedback.
+  if (v.thin && guidedGuardApplies()) return { ok: false, guard: v.advisory.msg };
   applyThinDecision(v);
   spendWork(7, 'decision'); evaluateRushed(c); state.stage = 'ADMITTED'; state.ended = true; actionMark('CLEAR');
   notify.sound('clear'); notify.announce('심사결정', '입국 허가 결정을 기록했습니다.', 'CLEAR', 1900); notify.pulse('#clearBtn', 'action-hit', 300); bus.emit('changed');
@@ -166,6 +169,7 @@ export function decideClear() {
 export function decideRefusal(code) {
   const c = current(); const v = legal.validateRefusal(c, code, state.performed);
   if (!v.ok) return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) };
+  if (v.thin && guidedGuardApplies()) return { ok: false, guard: v.advisory.msg };
   applyThinDecision(v);
   spendWork(9, 'decision'); evaluateRushed(c); state.stage = 'ENTRY_REFUSED'; state.ended = true; actionMark('ENTRY_REFUSED');
   notify.sound('refuse'); notify.announce('심사결정', '입국 불허가 결정을 기록했습니다.', 'INAD', 2200); notify.pulse('#refuseBtn', 'action-hit', 300); bus.emit('changed');

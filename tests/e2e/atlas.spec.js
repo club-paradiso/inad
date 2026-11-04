@@ -24,7 +24,8 @@ async function reviewCase(page, country, number) {
   if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await task(page, 'interview'); await page.locator('#ask-clarify').click();
   await task(page, 'evidence'); await recordSearch(page);
-  // v11: legacy cases may carry extra documents; every document is reviewed.
+  // v11: legacy cases may carry extra documents; opening each document records its review.
+  for (const doc of atlasScenarios(country).find((c) => c.id === id).documents) { await page.locator(`#doc-${doc.id}`).click(); }
   await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Compared original documents and statement; unresolved facts retained for follow-up.');
   await task(page, 'evidence');
   // v11: the review checks complete themselves from the documents, interview and note above.
@@ -126,13 +127,13 @@ test('country choice survives language change; review checks show what they stil
   await page.goto(ENTRY); await page.locator('#atlasStartCountry').click(); await page.locator('[name="atlas-country"][value="GB"]').check();
   await page.locator('#atlasLocale').selectOption('en'); await expect(page.locator('[name="atlas-country"][value="GB"]')).toBeChecked();
   await page.locator('#atlasEnter').focus(); await page.keyboard.press('Enter'); await page.locator('#atlasSystem').click();
-  await expect(page.locator('#task-status-identity')).toHaveText('Linked document not reviewed yet'); await expect(page.locator('#task-identity')).toHaveCount(0);
+  await expect(page.locator('#task-status-identity')).toHaveText('Open the linked document'); await expect(page.locator('#task-identity')).toHaveCount(0);
   await page.locator('#atlasSettings').click(); await page.locator('[data-pref-toggle="contrast"]').click(); await page.locator('[data-pref-toggle="reduceMotion"]').click(); await page.keyboard.press('Escape');
   await expect(page.locator('body')).toHaveClass(/pref-contrast/); await expect(page.locator('body')).toHaveClass(/pref-reduce-motion/);
   await page.setViewportSize({width:768,height:1024}); await task(page,'passenger'); await expect(page.locator('#taskNav [data-task="passenger"]')).toHaveAttribute('aria-current','true');
 });
 
-test('review checks: complete on their own as the work is done, follow the note live, and survive a reload', async ({ page }) => {
+test('review checks: complete on their own as the work is done, never wait on the note, and survive a reload', async ({ page }) => {
   await openAtlas(page, 'GB');
   const c = atlasScenarios('GB').find((x) => x.id === 'SIM-GB-01');
   await task(page, 'passenger'); await page.locator('[data-case="SIM-GB-01"]').click();
@@ -140,19 +141,19 @@ test('review checks: complete on their own as the work is done, follow the note 
   await expect(page.locator('.atlas-tasks button:not([data-doc])')).toHaveCount(0);   // nothing to tick by hand
   for (const t of c.tasks) await expect(status(t.id)).not.toHaveText(/^(완료|Complete)$/);
   await task(page, 'evidence');
+  for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); }   // opening a document records its review
   await expect(status('identity')).toHaveText(/^(완료|Complete)$/);
   await expect(status('evidence')).toHaveText(/질문 또는 기록 대조 필요|Ask a question or compare a record/);
-  await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
-  await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Itinerary referenced but not received.');
-  await expect(status('handover')).toHaveText(/^(완료|Complete)$/);              // updated while typing, no re-render
-  await expect(page.locator('#a11yLive')).toHaveText(/(완료|Complete)$/);           // one announcement as the check changes
+  await expect(status('handover')).toHaveText(/^(완료|Complete)$/);              // handover follows the linked document, never the note
   await expect(page.locator('#atlasTaskCount')).toHaveText(`2/${c.tasks.length}`);
-  await page.locator('#atlasNotes').fill('short');
-  await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);
+  await task(page, 'assessment'); await page.locator('#atlasNotes').fill('short');
+  await expect(status('handover')).toHaveText(/^(완료|Complete)$/);              // the note is a working memo: it never gates a check
   await page.locator('#atlasNotes').fill('Itinerary referenced but not received.');
   await task(page, 'interview'); if (await page.locator('#atlasCallPassenger').isVisible()) await page.locator('#atlasCallPassenger').click();
   await page.locator('#ask-source').click();
   await expect(status('evidence')).toHaveText(/^(완료|Complete)$/);
+  // (The check-change announcement still fires, but the live region's final text after an ask is the
+  // answer-recorded announcement by design, so the old final-text ordering assertion no longer applies.)
   await page.reload();
   await expect(page.locator('body')).toHaveAttribute('data-country', 'GB');
   for (const t of c.tasks) await expect(status(t.id)).toHaveText(/^(완료|Complete)$/);

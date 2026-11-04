@@ -58,6 +58,7 @@ async function play(page, c, outcome) {
   const trap = new Set(c.requests.filter((r) => !c.assessment.resolve.requests.includes(r.id)).map((r) => r.id));
   const reachable = c.comparisons.filter((x) => !x.facts.some((id) => trap.has(c.facts.find((f) => f.id === id).requestId)));
   expect(done.size).toBe(reachable.length);
+  for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); }   // opening a document records its review
   await page.locator('#atlasNotes').fill('Compared the sources; outcome and unresolved points recorded.');
   for (const t of c.tasks) await expect(page.locator(`#task-status-${t.id}`)).toHaveText(/^(완료|Complete)$/);
   await page.locator('#atlasPrepare').click();
