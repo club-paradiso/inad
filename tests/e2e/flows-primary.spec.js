@@ -41,6 +41,16 @@ test.describe('일반 입국심사 흐름', () => {
     await H.startShift(page);
     await H.jumpTo(page, idx);
     await page.locator('#clearBtn').click();
+    if (process.env.INAD_TARGET === 'legacy') {
+      // Frozen v6.1 parity: the old guard still blocks the decision and records a supervision strike.
+      await expect(page.locator('#toast')).toContainText('감찰 경고');
+      const st = await H.getState(page);
+      expect(st.strikes).toBe(1);
+      expect(st.ended).toBe(false);
+      expect(st.mistakes.length).toBe(1);
+      await H.expectNoErrors(errors);
+      return;
+    }
     // A guided opening case may first surface the one-time coaching warning; dismiss it and decide again.
     if (!(await H.getState(page)).ended) { await page.locator('#modalClose').click(); await page.locator('#clearBtn').click(); }
     const st = await H.getState(page);
