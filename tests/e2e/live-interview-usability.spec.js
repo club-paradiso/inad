@@ -78,3 +78,15 @@ test('the mic recognition language follows interview language, not English UI', 
   await page.locator('#voiceBrowser').click();
   await expect.poll(() => page.evaluate(() => window.__heardLang)).toBe('ko-KR');
 });
+
+test('on a phone, the passenger portrait exposes an immediate interview entry action', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await start(page);
+  const cta = page.locator('#boothInterviewCta');
+  await expect(cta).toBeVisible();
+  await expect(cta).toContainText(/인터뷰 시작|Start interview/);
+  await cta.click();
+  await expect(page.locator('body')).toHaveAttribute('data-task', 'interview');
+  await expect(page.locator('#askInput')).toBeVisible();
+  await expect(page.locator('#liveNextStep')).toBeVisible();
+});
