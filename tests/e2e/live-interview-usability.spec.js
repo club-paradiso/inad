@@ -9,6 +9,18 @@ async function start(page) {
   await expect(page.locator('body')).toHaveClass(/mode-case/);
 }
 
+test('one-click live start has no blocking callout, and a language barrier suggests an interpreter', async ({ page }) => {
+  await start(page);
+  await expect(page.locator('#callout')).not.toHaveClass(/\\bon\\b/);
+  await expect(page.locator('#liveNextButton')).toContainText(/이 질문하기|Ask/);
+  await page.locator('#liveNextButton').click();
+  await expect(page.locator('#log .msg.pending')).toHaveCount(0);
+  await expect(page.locator('#liveNextButton')).toContainText(/통역 연결|Call interpreter/);
+  await page.locator('#liveNextButton').click();
+  expect((await H.getState(page)).language.interpreterActive).toBe(true);
+  await expect(page.locator('#liveNextButton')).toContainText(/이 질문하기|Ask/);
+});
+
 test('beginner next step offers one safe question, then moves to evidence without an automatic decision', async ({ page }) => {
   await start(page);
   await expect(page.locator('#liveNextStep')).toBeVisible();
