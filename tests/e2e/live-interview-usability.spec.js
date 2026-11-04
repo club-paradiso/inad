@@ -13,7 +13,9 @@ test('one-click live start has no blocking callout, and a language barrier sugge
   await start(page);
   await expect(page.locator('#callout')).not.toHaveClass(/\bon\b/);
   await expect(page.locator('#liveNextButton')).toContainText(/이 질문하기|Ask/);
-  await page.locator('#liveNextButton').click();
+  // This fixed live case has language level L2: basic questions can be understood,
+  // but financial questions require L3 until an interpreter joins.
+  await page.locator('#questions .qbtn[data-qid="funds"]').click();
   await expect(page.locator('#log .msg.pending')).toHaveCount(0);
   await expect(page.locator('#liveNextButton')).toContainText(/통역 연결|Call interpreter/);
   await page.locator('#liveNextButton').click();
