@@ -271,3 +271,17 @@ body[data-country="NZ"] .atlas-tasks li[data-task-state="done"] { border-top-col
 .atlas-ask { margin: var(--s-3) 0; display: grid; gap: var(--s-1); }
 .atlas-ask #atlasAskStatus:not(:empty) { padding: var(--s-2); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
 .atlas-ask #atlasAskStatus p { margin: 0 0 var(--s-1); }
+
+/* ATLAS foreign passenger booth: reuse the Korean live-portrait and spoken-line stage. */
+.atlas-person-stage { margin: 12px 0 16px; background: var(--booth); color: var(--booth-text); overflow: hidden; }
+.atlas-portrait-slot { width: 100%; }
+.atlas-stage-portrait { aspect-ratio: 4 / 5; width: 100%; max-width: none; overflow: clip; background: var(--booth-2); }
+.atlas-stage-portrait .stage-caption { text-align: left; pointer-events: none; }
+.atlas-stage-portrait .stage-state { pointer-events: none; }
+.atlas-stage-waiting { display: grid; place-items: center; min-height: 120px; padding: 16px; text-align: center; color: var(--booth-muted); }
+.atlas-stage-credit { padding: 0 12px 10px; font-size: 11px; line-height: 1.5; color: var(--booth-muted); }
+.atlas-audio-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 12px 4px; }
+.atlas-audio-actions .act { flex: 1 1 auto; min-height: 44px; white-space: normal; background: var(--booth-2); color: var(--booth-text); border-color: var(--booth-line); }
+.atlas-audio-actions .act[aria-pressed="true"] { border-color: var(--booth-muted); text-decoration: underline; text-underline-offset: 3px; }
+.atlas-audio-actions .act:hover { color: var(--booth-text); }
+.atlas-audio-actions .act:focus-visible { outline: 2px solid var(--booth-text); outline-offset: 2px; }
