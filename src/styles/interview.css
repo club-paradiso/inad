@@ -317,3 +317,16 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
   }
   .booth-interview-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 }
+
+/* Five explicit grid tracks are required: the guidance card and scope explanation precede
+   the existing language controls, tabs and scrollable questions. Implicit tracks put the
+   tab strip on top of the language buttons, making them impossible to click. */
+.composer { grid-template-rows: auto auto auto max-content minmax(0, 1fr); }
+.composer > .live-next-step { grid-row: 1; }
+.composer > .live-input-scope { grid-row: 2; }
+.composer > .language-toolbar { grid-row: 3; }
+.composer > .qtabs { grid-row: 4; }
+.composer > .qs { grid-row: 5; }
+@media (max-width: 767px) {
+  .composer:has(.live-next-step:not([hidden])) { max-height: min(480px, 65dvh); }
+}
