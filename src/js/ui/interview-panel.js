@@ -10,6 +10,7 @@ import { questionUnlocked } from '../engines/clue-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
+import { showTask } from './task-nav.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -53,6 +54,47 @@ export function renderLog() {
   byId('logCount').textContent = `${logs.length}건`; if (grew || atBottom) e.scrollTop = e.scrollHeight; else e.scrollTop = keep;
 }
 
+// Beginner wayfinding is presentation only: it never submits a verdict or reveals hidden facts.
+// Only already-unlocked suggested questions are offered, and experienced players keep the full desk.
+function renderNextStep(suggestions, onSuggest) {
+  const el = byId('liveNextStep');
+  const scope = byId('liveInputScope');
+  const isLive = state.sessionMode === 'case' || state.sessionMode === 'quick';
+  if (scope) scope.hidden = !isLive;
+  if (!el) return;
+  const guided = state.started && !state.ended && state.guidance === 'guided' && assistLevel() !== 'immersive';
+  el.hidden = !guided;
+  if (!guided) { el.replaceChildren(); return; }
+
+  const next = suggestions.find((s) => s.q)?.q;
+  let step, detail, label, action;
+  const hasQuestion = state.asked.size > 0;
+  if (!hasQuestion && next) {
+    step = '1 · 첫 질문'; detail = '준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.';
+    label = '이 질문하기 · ' + next.q;
+    action = () => onSuggest(next, false);
+  } else if (!state.looked.size) {
+    step = '2 · 자료 확인'; detail = '승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.';
+    label = '자료 화면으로';
+    action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
+  } else if (next && !state.discoveredClues.size) {
+    step = '3 · 추가 질문'; detail = '확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.';
+    label = '다음 질문 · ' + next.q;
+    action = () => onSuggest(next, false);
+  } else if (state.discoveredClues.size) {
+    step = '4 · 판단 검토'; detail = '확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.';
+    label = '판단 화면으로';
+    action = () => showTask('assessment', { focus: true });
+  } else {
+    step = '3 · 자료 대조'; detail = '서류와 진술을 비교하고, 미확인 내용이 있는지 살펴보세요.';
+    label = '자료 화면으로';
+    action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
+  }
+
+  el.innerHTML = `<div class="live-next-copy"><small>쉬운 진행</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
+  byId('liveNextButton').onclick = action;
+}
+
 // ---- questions: 제안 (contextual) + one tab per category ----------------------------------------------
 let view = SUGGEST, viewCase = null;
 export function currentSuggestions() {
@@ -65,6 +107,7 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
   if (viewCase !== c.id) { viewCase = c.id; view = SUGGEST; }
   if (!cats.includes(state.qcat)) state.qcat = cats[0];
   const level = assistLevel(); const sugg = currentSuggestions();
+  renderNextStep(sugg, onSuggest);
   const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => questionUnlocked(q) && !state.asked.has(q.id)).length; return { key: x, label: x, extra: `${done}/${list.length}${open ? ' · ' + open + ' 가능' : ''}` }; })];
   // APG tabs: one Tab stop (the selected tab), arrows/Home/End move and select, #questions is the tab panel.
   byId('qtabs').innerHTML = tabs.map((x, i) => { const on = x.key === SUGGEST ? view === SUGGEST : view !== SUGGEST && x.key === state.qcat; const ci = i - 1; return `<button type="button" class="qtab ${x.key === SUGGEST ? 'qtab-suggest ' : ''}${on ? 'on' : ''}" role="tab" id="qtab-${i}" aria-controls="questions" aria-selected="${on}" tabindex="${on ? 0 : -1}" data-cat="${esc(x.key)}"${x.key === SUGGEST ? '' : ` data-hotkey="${Math.min(6, ci + 1)}"`}>${esc(x.label)} <span class="qtab-count">${esc(x.extra)}</span></button>`; }).join('');
