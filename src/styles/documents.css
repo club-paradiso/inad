@@ -157,5 +157,5 @@
 /* Keep the case-specific public work guide discoverable beside document actions. */
 .doc-toolbar { flex-wrap: wrap; gap: 7px; }
 .doc-toolbar-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.doc-toolbar-actions .doc-zoom { min-height: 36px; }
+.doc-toolbar-actions .doc-zoom { min-height: var(--size-touch); }
 @media (max-width: 767px) { .doc-toolbar-actions .doc-zoom { min-height: var(--size-touch); } }
