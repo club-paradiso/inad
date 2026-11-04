@@ -28,7 +28,7 @@ export function caseMinimum(c = current()) { return legal.caseMinimum(c, languag
 
 export function initCase(skipCall = false) {
   const c = current();
-  Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
+  Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, documentReviews: {}, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
   if (state.guidance === 'guided' && state.caseIndex < 6) state.guidedGuardUsed = false;
   state.behavior = makeBehavior(c); state.language = languageProfileFor(c); state.party = travelPartyFor(c);
   bus.emit('procedure:close');
@@ -76,6 +76,17 @@ export function lookup(kind) {
 }
 
 export function selectDocument(i) { const c = current(); if (!c.docs[i]) return; state.selectedDoc = i; const dd = c.docs[i], mark = 'DOC_READ_' + i; if (!state.performed.includes(mark)) { actionMark(mark); spendWork(5, 'document'); } discoverTriggeredClues('DOC_' + dd.k); bus.emit('changed'); }
+// Explicit reviewer notes are separate from DOC_READ_, required actions, clues and verdicts.
+// Reviewing a document never proves it authentic or scores a legal requirement by itself.
+export function setDocumentReview(i, status) {
+  const c = current();
+  if (!c?.docs?.[i] || state.ended || !['reviewed', 'followup', 'unreviewed'].includes(status)) return false;
+  if (!state.documentReviews || typeof state.documentReviews !== 'object') state.documentReviews = {};
+  if (status === 'unreviewed') delete state.documentReviews[i];
+  else state.documentReviews[i] = status;
+  bus.emit('changed');
+  return true;
+}
 export function cycleDocument(delta) { const c = current(); if (!c || !c.docs || !c.docs.length) return; state.selectedDoc = (state.selectedDoc + delta + c.docs.length) % c.docs.length; bus.emit('changed'); notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`); }
 
 export function recordMistake(msg, pts) { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, at: Date.now() }); }
