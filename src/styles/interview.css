@@ -330,3 +330,11 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 @media (max-width: 767px) {
   .composer:has(.live-next-step:not([hidden])) { max-height: min(480px, 65dvh); }
 }
+
+/* Unlock prerequisites name only currently accessible questions and public lookups. */
+.question-prereqs { display: grid; gap: 6px; margin: 0 8px 8px; padding: 9px 11px; border: 1px solid var(--border-subtle); border-left: 3px solid var(--info); border-radius: var(--r-1); background: var(--surface-2); font-size: var(--fs-label); }
+.question-prereqs > strong { font-size: var(--fs-label); }
+.question-prereq-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px 8px; color: var(--text-2); }
+.question-prereq-row span { min-width: 0; flex: 1 1 140px; line-height: 1.45; overflow-wrap: anywhere; }
+.question-prereq-row button { min-height: 36px; padding: 5px 9px; color: var(--accent-text); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-weight: 600; font-size: inherit; }
+.question-prereq-row button:hover { border-color: var(--accent); }

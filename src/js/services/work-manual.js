@@ -39,6 +39,11 @@ export function openWorkManual(query = lastQuery) {
   if (src) src.onclick = () => openSourceSummary();
 }
 
+export function openWorkGuide(id) {
+  if (!workGuideById(id)) { openWorkManual(); return; }
+  openGuide(id);
+}
+
 function openGuide(id) {
   const g = workGuideById(id); if (!g) return;
   const steps = isEn() ? g.stepsEn : g.stepsKo;

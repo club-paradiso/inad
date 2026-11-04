@@ -4,6 +4,8 @@ import { state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
 import { docIcon, uiIcon } from './icons.js';
+import { documentReviewPlan } from '../engines/review-guidance.js';
+import { openWorkGuide } from '../services/work-manual.js';
 
 export function docFieldMap(d) { const m = {}; (d.fields || []).forEach((r) => { m[r[0]] = r[1]; }); return m; }
 export function docFieldRows(d, limit = 8) { return (d.fields || []).slice(0, limit).map((r, i) => `<div class="doc-field ${i === 0 ? 'wide' : ''}" data-doc-key="${esc(d.k)}" data-field-name="${esc(r[0])}" data-field-val="${esc(r[1])}"><span class="field-label">${esc(r[0])}</span><span class="field-value" title="${esc(r[1])}">${esc(r[1])}</span></div>`).join(''); }
@@ -23,13 +25,44 @@ export function documentHTML(d, c, t, pp) {
   return `<div class="docsheet doc-letter${cls}"><div class="letter-head"><div><span class="micro">SUPPORTING DOCUMENT · ${esc(k)}</span><br><b>${esc(d.t)}</b></div><div class="letter-seal" aria-hidden="true">SIM</div></div><div class="letter-body"><p>입국심사를 위해 제출된 보조자료입니다. 진술 및 전산조회 결과와 교차검증하십시오.</p><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
 }
 
-export function renderDocs({ onSelect, onZoom }) {
-  const c = current(), t = getTraveler(c.travelerId);
-  byId('doclist').innerHTML = c.docs.map((d, i) => `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small><span class="doc-code">${esc(d.k)}</span>${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}</small></span></button>`).join('');
+const isEn = () => document.documentElement.lang === 'en' || document.documentElement.dataset.locale === 'en';
+const tUI = (ko, en) => isEn() ? en : ko;
+
+// Review marks are user annotations, not automatic authenticity checks, statutory findings or verdict inputs.
+export function renderDocs({ onSelect, onZoom, onReview }) {
+  const c = current(), traveler = getTraveler(c.travelerId);
+  const reviews = state.documentReviews || {};
+  const tally = Object.values(reviews).filter((s) => s === 'reviewed' || s === 'followup').length;
+  byId('doclist').innerHTML = c.docs.map((d, i) => {
+    const status = reviews[i];
+    const statusLabel = status === 'reviewed' ? tUI('대조 기록', 'Cross-checked') : status === 'followup' ? tUI('후속 확인', 'Follow-up') : tUI('미검토', 'Not reviewed');
+    return `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''} ${status ? 'doc-review-' + status : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small><span class="doc-code">${esc(d.k)}</span>${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}<span class="doc-review-tag">${esc(statusLabel)}</span></small></span></button>`;
+  }).join('');
   $$('.docitem').forEach((b) => { b.onclick = () => onSelect(+b.dataset.i); });
   markOverflow(byId('doclist'));
-  const d = c.docs[state.selectedDoc]; if (!d) return; const pp = getTraveler(c.passportPortraitId || c.travelerId);
-  byId('docview').innerHTML = `<div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? '추가 확인 필요' : '제출자료'}</span></div><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} 확대</button></div>${documentHTML(d, c, t, pp)}</div>`;
-  byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, t, pp));
+
+  const d = c.docs[state.selectedDoc]; if (!d) return;
+  const pp = getTraveler(c.passportPortraitId || c.travelerId);
+  const plan = documentReviewPlan(d);
+  const status = reviews[state.selectedDoc] || 'unreviewed';
+  const statusLabel = status === 'reviewed' ? tUI('대조 완료로 기록됨', 'Recorded as cross-checked') : status === 'followup' ? tUI('추가 확인 필요로 기록됨', 'Recorded for follow-up') : tUI('검토 기록 없음', 'No review recorded');
+  const disabled = state.ended ? ' disabled' : '';
+  const active = (key) => status === key ? ' aria-pressed="true"' : ' aria-pressed="false"';
+  byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·검토·판정은 서로 다릅니다.', 'Opening, reviewing and deciding are separate.'))}</span></div>
+  <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
+  <section class="doc-review-panel" aria-label="${tUI('서류 검토 체크리스트', 'Document review checklist')}">
+    <div class="doc-review-heading"><div><h3>${tUI('무엇을 확인해야 하나요?', 'What should I check?')}</h3><span>${esc(statusLabel)}</span></div><button type="button" id="docGuideBtn">${tUI('관련 업무지침', 'Relevant work guide')}</button></div>
+    <ol class="doc-review-checks">${plan.checks.map((step) => `<li>${esc(isEn() ? step.en : step.ko)}</li>`).join('')}</ol>
+    <p class="doc-review-note">${tUI('아래 표시는 직접 검토한 내용을 정리하기 위한 교육용 메모입니다. 자료의 진위가 자동 판정되거나 심사 점수가 변경되지 않습니다.', 'These are manual training notes only. They do not automatically validate authenticity or affect the legal outcome or score.')}</p>
+    <div class="doc-review-actions" role="group" aria-label="${tUI('서류 검토 결과 기록', 'Record document review')}">
+      <button type="button" id="docReviewDone" data-review="reviewed"${active('reviewed')}${disabled}>${tUI('대조 완료로 기록', 'Record cross-check')}</button>
+      <button type="button" id="docReviewFollowup" data-review="followup"${active('followup')}${disabled}>${tUI('추가 확인 필요', 'Needs follow-up')}</button>
+      <button type="button" id="docReviewClear" data-review="unreviewed"${active('unreviewed')}${disabled}>${tUI('검토 표시 취소', 'Clear review mark')}</button>
+    </div>
+  </section>`;
+  byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, traveler, pp));
+  byId('docGuideBtn').onclick = () => openWorkGuide(plan.guideId);
+  byId('docGuideQuickBtn').onclick = () => openWorkGuide(plan.guideId);
+  $$('#docview [data-review]').forEach((b) => { b.onclick = () => onReview(state.selectedDoc, b.dataset.review); });
 }
 export function focusSelectedDoc() { const item = $$('#doclist .docitem')[state.selectedDoc]; if (item) item.focus(); }

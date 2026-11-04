@@ -12,6 +12,7 @@ import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
 import { getLocale } from '../services/i18n.js';
+import { unmetQuestionPrerequisites } from '../engines/review-guidance.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -140,10 +141,31 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
   }
   const qs = c.questions.filter((q) => q.cat === state.qcat);
   qs.forEach((q) => {
-    const unlocked = questionUnlocked(q); const b = document.createElement('button'); const wasAsked = state.asked.has(q.id);
+    const unlocked = questionUnlocked(q), missing = unlocked ? [] : unmetQuestionPrerequisites(q, c, state.performed);
+    const b = document.createElement('button'), wasAsked = state.asked.has(q.id);
     b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (unlocked ? '' : 'locked') + (wasAsked ? ' asked' : ''); b.disabled = state.ended || !unlocked;
-    b.innerHTML = !unlocked ? `선행 확인 후 추가 질문 가능<em>${esc(q.cat)} · 관련 단서를 먼저 확인하십시오</em>` : wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
+    b.innerHTML = !unlocked ? `${getLocale() === 'en' ? 'Additional question unavailable yet' : '선행 확인 후 추가 질문 가능'}<em>${esc(q.cat)} · ${getLocale() === 'en' ? `${missing.length} prerequisite(s) remaining` : `선행 확인 ${missing.length}건 남음`}</em>` : wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
     b.onclick = () => onAsk(q, wasAsked); box.appendChild(b);
+    if (!unlocked && !state.ended && missing.length) {
+      const en = getLocale() === 'en', d = document.createElement('div');
+      d.className = 'question-prereqs'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', en ? 'How to unlock this question' : '질문 잠금 해제 조건');
+      d.innerHTML = `<strong>${en ? 'Complete first' : '먼저 필요한 확인'}</strong>${missing.map((item, i) => `<div class="question-prereq-row"><span>${esc(en ? item.en : item.ko)}</span>${item.target && item.kind !== 'other' ? `<button type="button" data-prereq-index="${i}">${item.kind === 'lookup' ? en ? 'Open lookup' : '조회 화면 열기' : en ? 'Find question' : '선행 질문 찾기'}</button>` : ''}</div>`).join('')}`;
+      d.querySelectorAll('[data-prereq-index]').forEach((button) => {
+        button.onclick = () => {
+          const target = missing[Number(button.dataset.prereqIndex)];
+          if (target.kind === 'lookup') {
+            showTask('evidence', { focus: true });
+            const lookupButton = document.querySelector(`.lookup-tabs [data-lu="${target.target}"]`);
+            lookupButton?.focus();
+          } else if (target.kind === 'question') {
+            state.qcat = target.category; view = 'cat';
+            renderQuestions(onAsk, { onSuggest, onAction });
+            byId('questions')?.querySelectorAll('[data-qid]').forEach((candidate) => { if (candidate.dataset.qid === target.target) candidate.focus(); });
+          }
+        };
+      });
+      box.appendChild(d);
+    }
   });
 }
 // Number shortcuts pick a *category* (1 = first category); the 제안 tab is reached with the arrows or a click.
