@@ -14,9 +14,8 @@ import { setStageState, reactionDelay, actLine, stopActing, resetStage } from '.
 import { showModal, closeModal } from './modals.js';
 import { toast } from './toast.js';
 import { sttSupport, createRecognizer, onDeviceStatus, installOnDevice, speakLine, stopSpeaking, ttsSupport } from '../services/speech.js';
-import { storeGet } from '../services/storage.js';
 
-let pendingTimer = 0, recognizer = null, onRender = () => {}, turnGen = 0, starting = false;
+let pendingTimer = 0, recognizer = null, onRender = () => {}, turnGen = 0, starting = false, micGen = 0;
 const reduced = () => document.body.classList.contains('pref-reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ASSIST_TEXT = { guided: '안내', standard: '표준', professional: '전문', immersive: '몰입' };
 
@@ -36,7 +35,14 @@ export function submitTurn(opts = {}) {
       classifyRemote(c.id, text).then((m) => {
         if (gen !== turnGen) return;
         setStatus(''); if (current() !== c || state.ended) { setStageState('idle'); return; }
-        runTurn({ text, source, questionId: m.questionId || null, via: m.questionId ? 'model' : null });
+        // Remote classification can only suggest a canonical question. Never submit a guessed ID
+        // silently: it could put a question the officer did not ask into the official record.
+        if (m.questionId && c.questions.some((q) => q.id === m.questionId && questionUnlocked(q))) {
+          setStageState('listening');
+          offerConfirm(m.questionId, text, source);
+        } else runTurn({ text, source });
+      }).catch(() => {
+        if (gen === turnGen && current() === c && !state.ended) runTurn({ text, source });
       });
       return { kind: 'pending' };
     }
@@ -52,6 +58,12 @@ function runTurn({ text = '', questionId = null, source = 'text', via = null } =
   holdReplies(from, reduced() ? 0 : 1500);
   if (!reduced()) setStageState('thinking');
   const r = submitUtterance({ text, questionId, source, via });
+  // Preserve misunderstood/uncertain questions for correction. Clear only once a request
+  // was actually accepted, and never erase text the user typed during an async request.
+  if (['answer', 'meta', 'document', 'public'].includes(r?.kind) && text) {
+    const input = byId('askInput');
+    if (input?.value.trim() === text.trim()) { input.value = ''; delete input.dataset.source; }
+  }
   if (!r || r.kind === 'empty' || r.kind === 'ended' || r.kind === 'none') { releaseReplies(); setStageState('idle'); return r; }
   if (r.kind === 'confirm') { releaseReplies(); setStageState('listening'); offerConfirm(r.candidates[0], r.text, source); return r; }
   const delay = reduced() ? 0 : reactionDelay(r.mood || 'plain');
@@ -95,7 +107,8 @@ function offerRepeat(id) {
 }
 
 // ---- voice ---------------------------------------------------------------------------------------------
-function sttLang() { const l = state.language; if (l && l.mode === 'en' && !l.interpreterActive) return 'en-US'; return storeGet('inad-locale', 'ko') === 'en' ? 'en-US' : 'ko-KR'; }
+// Speech recognition follows the examiner's question language, never the UI locale.
+function sttLang() { const l = state.language; return l?.mode === 'en' && !l.interpreterActive ? 'en-US' : 'ko-KR'; }
 function setMic(on) {
   const b = byId('micBtn');
   if (!b) return;
@@ -105,10 +118,15 @@ function setMic(on) {
 }
 function stopListening() { recognizer?.stop(); }
 async function startListening() {
-  if (starting || recognizer?.active) return; starting = true;
-  try { await beginListening(); } finally { starting = false; }
+  if (starting || recognizer?.active) return;
+  const mine = ++micGen; starting = true;
+  try { await beginListening(mine); } finally { if (mine === micGen) starting = false; }
 }
-async function beginListening() {
+async function beginListening(mine) {
+  // A country/case transition during an on-device language-pack download must not
+  // bring the old microphone back after the user has left the interview.
+  const currentMic = () => mine === micGen && state.countryId === 'KR' && state.started && !state.ended;
+  if (!currentMic()) return;
   const support = sttSupport(preferences.voice);
   if (!support.available) {
     if (support.reason === 'no-on-device') { showVoiceConsent('no-on-device'); return; }
@@ -118,17 +136,19 @@ async function beginListening() {
   const lang = sttLang();
   if (preferences.voice === 'local') {
     const st = await onDeviceStatus(lang);
-    if (st === 'downloadable') { setStatus('기기 내 음성 인식 언어 데이터를 내려받는 중입니다…'); const ok = await installOnDevice(lang); if (!ok) { setStatus(''); showVoiceConsent('no-on-device'); return; } setStatus(''); }
+    if (!currentMic()) return;
+    if (st === 'downloadable') { setStatus('기기 내 음성 인식 언어 데이터를 내려받는 중입니다…'); const ok = await installOnDevice(lang); if (!currentMic()) return; if (!ok) { setStatus(''); showVoiceConsent('no-on-device'); return; } setStatus(''); }
     else if (st === 'unavailable') { showVoiceConsent('no-on-device'); return; }
   }
   const input = byId('askInput');
   recognizer = createRecognizer({
     lang, mode: preferences.voice,
-    onInterim: (t) => { input.value = t; },
-    onFinal: (t) => { input.value = t; },
-    onError: (code) => { setMic(false); setStatus(code === 'not-allowed' || code === 'service-not-allowed' ? '마이크 권한이 없어 음성 질문을 사용할 수 없습니다. 직접 입력은 계속 사용할 수 있습니다.' : code === 'no-speech' ? '음성이 들리지 않았습니다. 다시 말하거나 직접 입력하십시오.' : '음성 인식이 중단되었습니다. 직접 입력은 계속 사용할 수 있습니다.'); setStageState('idle'); },
-    onEnd: () => { setMic(false); recognizer = null; if (input.value.trim()) { setStatus('인식된 문장을 확인·수정한 뒤 [질문]을 누르십시오.'); input.focus(); input.dataset.source = 'voice'; } setStageState('idle'); }
+    onInterim: (t) => { if (currentMic()) input.value = t; },
+    onFinal: (t) => { if (currentMic()) input.value = t; },
+    onError: (code) => { if (!currentMic() || code === 'aborted') return; setMic(false); setStatus(code === 'not-allowed' || code === 'service-not-allowed' ? '마이크 권한이 없어 음성 질문을 사용할 수 없습니다. 직접 입력은 계속 사용할 수 있습니다.' : code === 'no-speech' ? '음성이 들리지 않았습니다. 다시 말하거나 직접 입력하십시오.' : '음성 인식이 중단되었습니다. 직접 입력은 계속 사용할 수 있습니다.'); setStageState('idle'); },
+    onEnd: () => { if (!currentMic()) return; setMic(false); recognizer = null; if (input.value.trim()) { setStatus('인식된 문장을 확인·수정한 뒤 [질문]을 누르십시오.'); input.focus(); input.dataset.source = 'voice'; } setStageState('idle'); }
   });
+  if (!currentMic()) return;
   if (!recognizer && preferences.voice === 'local') { showVoiceConsent('no-on-device'); return; }
   if (!recognizer || !recognizer.start()) { recognizer = null; setMic(false); toast('음성 인식을 시작하지 못했습니다. 직접 입력을 사용하십시오.'); return; }
   setMic(true); setStageState('listening'); setStatus('말씀하십시오. 다시 누르면 멈춥니다.'); // #askStatus is the one live announcement
@@ -164,11 +184,16 @@ export function bindLiveInterview({ render } = {}) {
   const form = byId('askForm'), input = byId('askInput');
   form.addEventListener('submit', (e) => {
     e.preventDefault(); const text = input.value.trim(); if (!text) { input.focus(); return; }
-    const source = input.dataset.source === 'voice' ? 'voice' : 'text'; delete input.dataset.source; input.value = '';
+    const source = input.dataset.source === 'voice' ? 'voice' : 'text';
     submitTurn({ text, source }); input.focus();
   });
   // a corrected transcript is still a spoken question; clearing the box ends that
-  input.addEventListener('input', () => { if (!input.value) delete input.dataset.source; setStageState(input.value ? 'listening' : 'idle'); });
+  input.addEventListener('input', () => {
+    if (!input.value) delete input.dataset.source;
+    // An old proposed interpretation must not survive an edited question.
+    if (byId('askStatus')?.querySelector('[data-confirm]')) setStatus('');
+    setStageState(input.value ? 'listening' : 'idle');
+  });
   input.addEventListener('blur', () => { if (!input.value) setStageState('idle'); });
   const mic = byId('micBtn');
   if (!sttSupport('browser').available) mic.hidden = true;
@@ -177,5 +202,9 @@ export function bindLiveInterview({ render } = {}) {
   checkModel();
 }
 // Stops a Korean push-to-talk session without clearing the question box (e.g. when an overseas desk opens).
-export function stopLiveListening() { if (!recognizer) return; recognizer.abort(); recognizer = null; setMic(false); }
-export function resetLiveInterview() { turnGen++; flush(); resetStage(); stopSpeaking(); recognizer?.abort(); recognizer = null; setMic(false); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }
+export function stopLiveListening() {
+  micGen++; starting = false;
+  const old = recognizer; recognizer = null;
+  old?.abort(); setMic(false);
+}
+export function resetLiveInterview() { turnGen++; flush(); resetStage(); stopSpeaking(); stopLiveListening(); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }

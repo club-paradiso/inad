@@ -290,3 +290,43 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 }
 
 
+
+/* A single safe next action in guided play. The full workstation stays accessible. */
+.live-next-step { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.live-next-step[hidden], .live-input-scope[hidden] { display: none; }
+.live-next-copy { flex: 1 1 180px; min-width: 0; }
+.live-next-copy small { display: block; font-size: var(--fs-meta); color: var(--text-3); }
+.live-next-copy strong { display: block; font-size: var(--fs-compact); }
+.live-next-copy p { margin: 2px 0 0; color: var(--text-2); font-size: var(--fs-label); line-height: 1.45; }
+.live-next-button { flex: 0 1 auto; min-width: 44px; min-height: 44px; max-width: 100%; padding: 8px 10px; text-align: left; border: 1px solid var(--accent); border-radius: var(--r-1); background: var(--accent); color: var(--text-inverse); font-size: var(--fs-compact); font-weight: 700; overflow-wrap: anywhere; }
+.live-next-button:hover { background: var(--accent-hover); }
+.live-next-button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.live-input-scope { padding: 6px 12px; margin: 0; color: var(--text-3); font-size: var(--fs-label); line-height: 1.45; background: var(--surface); }
+@media (max-width: 767px) { .live-next-step { display: grid; } .live-next-button { width: 100%; } }
+
+/* An obvious first action on a phone, directly on the portrait instead of behind task tabs. */
+.booth-interview-cta { display: none; }
+.booth-interview-cta[hidden] { display: none !important; }
+@media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
+  .booth-interview-cta:not([hidden]) {
+    display: block; position: absolute; z-index: 3; top: 12px; right: 12px;
+    max-width: calc(100% - 24px); min-height: 44px; padding: 9px 13px;
+    color: #fff; background: #215778; border: 1px solid rgba(255,255,255,.75);
+    border-radius: var(--r-2); box-shadow: 0 3px 12px rgba(0,0,0,.35);
+    font: inherit; font-size: var(--fs-compact); font-weight: 700;
+  }
+  .booth-interview-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+}
+
+/* Five explicit grid tracks are required: the guidance card and scope explanation precede
+   the existing language controls, tabs and scrollable questions. Implicit tracks put the
+   tab strip on top of the language buttons, making them impossible to click. */
+.composer { grid-template-rows: auto auto auto max-content minmax(0, 1fr); }
+.composer > .live-next-step { grid-row: 1; }
+.composer > .live-input-scope { grid-row: 2; }
+.composer > .language-toolbar { grid-row: 3; }
+.composer > .qtabs { grid-row: 4; }
+.composer > .qs { grid-row: 5; }
+@media (max-width: 767px) {
+  .composer:has(.live-next-step:not([hidden])) { max-height: min(480px, 65dvh); }
+}

@@ -10,6 +10,8 @@ import { questionUnlocked } from '../engines/clue-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
+import { showTask } from './task-nav.js';
+import { getLocale } from '../services/i18n.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -53,6 +55,48 @@ export function renderLog() {
   byId('logCount').textContent = `${logs.length}건`; if (grew || atBottom) e.scrollTop = e.scrollHeight; else e.scrollTop = keep;
 }
 
+// Beginner wayfinding is presentation only: it never submits a verdict or reveals hidden facts.
+// Only already-unlocked suggested questions are offered, and experienced players keep the full desk.
+function renderNextStep(suggestions, onSuggest) {
+  const el = byId('liveNextStep');
+  const scope = byId('liveInputScope');
+  const isLive = state.sessionMode === 'case' || state.sessionMode === 'quick';
+  if (scope) scope.hidden = !isLive;
+  if (!el) return;
+  const guided = state.started && !state.ended && state.guidance === 'guided' && assistLevel() !== 'immersive';
+  el.hidden = !guided;
+  if (!guided) { el.replaceChildren(); return; }
+
+  const t = (ko, en) => getLocale() === 'en' ? en : ko;
+  const next = suggestions.find((s) => s.q)?.q;
+  let step, detail, label, action;
+  const hasQuestion = state.asked.size > 0;
+  if (!hasQuestion && next) {
+    step = t('1 · 첫 질문', '1 · First question'); detail = t('준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.', 'Start with an available question, or try your own phrasing.');
+    label = t('이 질문하기 · ', 'Ask · ') + next.q;
+    action = () => onSuggest(next, false);
+  } else if (!state.looked.size) {
+    step = t('2 · 자료 확인', '2 · Review evidence'); detail = t('승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.', 'Compare the reply with documents; records are available in Evidence.');
+    label = t('자료 화면으로', 'Open evidence');
+    action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
+  } else if (next && !state.discoveredClues.size) {
+    step = t('3 · 추가 질문', '3 · Follow up'); detail = t('확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.', 'Compare the documents and statements, then continue with a relevant question.');
+    label = t('다음 질문 · ', 'Next question · ') + next.q;
+    action = () => onSuggest(next, false);
+  } else if (state.discoveredClues.size) {
+    step = t('4 · 판단 검토', '4 · Review assessment'); detail = t('확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.', 'Review the evidence and basis. You must make any decision yourself.');
+    label = t('판단 화면으로', 'Open assessment');
+    action = () => showTask('assessment', { focus: true });
+  } else {
+    step = t('3 · 자료 대조', '3 · Cross-check evidence'); detail = t('서류와 진술을 비교하고, 미확인 내용이 있는지 살펴보세요.', 'Compare documents and statements; check for unresolved facts.');
+    label = t('자료 화면으로', 'Open evidence');
+    action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
+  }
+
+  el.innerHTML = `<div class="live-next-copy"><small>${esc(t('쉬운 진행', 'Guided steps'))}</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
+  byId('liveNextButton').onclick = action;
+}
+
 // ---- questions: 제안 (contextual) + one tab per category ----------------------------------------------
 let view = SUGGEST, viewCase = null;
 export function currentSuggestions() {
@@ -65,6 +109,7 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
   if (viewCase !== c.id) { viewCase = c.id; view = SUGGEST; }
   if (!cats.includes(state.qcat)) state.qcat = cats[0];
   const level = assistLevel(); const sugg = currentSuggestions();
+  renderNextStep(sugg, onSuggest);
   const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => questionUnlocked(q) && !state.asked.has(q.id)).length; return { key: x, label: x, extra: `${done}/${list.length}${open ? ' · ' + open + ' 가능' : ''}` }; })];
   // APG tabs: one Tab stop (the selected tab), arrows/Home/End move and select, #questions is the tab panel.
   byId('qtabs').innerHTML = tabs.map((x, i) => { const on = x.key === SUGGEST ? view === SUGGEST : view !== SUGGEST && x.key === state.qcat; const ci = i - 1; return `<button type="button" class="qtab ${x.key === SUGGEST ? 'qtab-suggest ' : ''}${on ? 'on' : ''}" role="tab" id="qtab-${i}" aria-controls="questions" aria-selected="${on}" tabindex="${on ? 0 : -1}" data-cat="${esc(x.key)}"${x.key === SUGGEST ? '' : ` data-hotkey="${Math.min(6, ci + 1)}"`}>${esc(x.label)} <span class="qtab-count">${esc(x.extra)}</span></button>`; }).join('');

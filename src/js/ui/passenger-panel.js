@@ -8,12 +8,25 @@ import { languageLabel, languageModeLabel, currentLanguageLevel } from '../engin
 import { stageText } from '../engines/legal-engine.js';
 import { travelPartyFor, partyStatusForTraveler } from '../engines/companion-engine.js';
 import { syncStage } from './passenger-stage.js';
+import { showTask } from './task-nav.js';
+import { getLocale } from '../services/i18n.js';
 
 export function renderPassenger() {
   const c = current(), t = getTraveler(c.travelerId);
   byId('caseId').innerHTML = `심사번호 <span class="mono">${esc(screeningNo())}</span>`; byId('pName').textContent = t.name.korean; byId('pRoman').textContent = t.name.latin; byId('pNat').textContent = `${t.nationality.korean} · ${t.nationality.code}`;
   byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = c.purpose; byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
   syncStage(t);
+  const entry = byId('boothInterviewCta');
+  if (entry) {
+    entry.hidden = !state.started || state.ended || !['case', 'quick'].includes(state.sessionMode);
+    entry.textContent = getLocale() === 'en'
+      ? (state.asked.size ? 'Back to interview' : 'Start interview')
+      : (state.asked.size ? '인터뷰로 돌아가기' : '인터뷰 시작');
+    entry.onclick = () => {
+      showTask('interview');
+      byId('askInput')?.focus({ preventScroll: true });
+    };
+  }
   renderBehavior(); renderLanguage(); renderParty();
   renderCaseBar(c, t);
 }
