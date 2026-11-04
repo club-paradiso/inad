@@ -25,7 +25,6 @@ async function reviewCase(page, country, number) {
   await task(page, 'interview'); await page.locator('#ask-clarify').click();
   await task(page, 'evidence'); await recordSearch(page);
   // v11: legacy cases may carry extra documents; every document is reviewed.
-  for (const doc of atlasScenarios(country).find((c) => c.id === id).documents) { await page.locator(`#doc-${doc.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await task(page, 'assessment'); await page.locator('#atlasNotes').fill('Compared original documents and statement; unresolved facts retained for follow-up.');
   await task(page, 'evidence');
   // v11: the review checks complete themselves from the documents, interview and note above.
@@ -141,7 +140,6 @@ test('review checks: complete on their own as the work is done, follow the note 
   await expect(page.locator('.atlas-tasks button:not([data-doc])')).toHaveCount(0);   // nothing to tick by hand
   for (const t of c.tasks) await expect(status(t.id)).not.toHaveText(/^(완료|Complete)$/);
   await task(page, 'evidence');
-  for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await expect(status('identity')).toHaveText(/^(완료|Complete)$/);
   await expect(status('evidence')).toHaveText(/질문 또는 기록 대조 필요|Ask a question or compare a record/);
   await expect(status('handover')).toHaveText(/검토 메모 10자 이상 필요|Write a review note of at least 10 characters/);

@@ -39,7 +39,11 @@ export function atlasCaseValid(v, c) {
     c.documents.some((d) => d.id === v.selectedDoc) && plain(v.pages) && Object.keys(v.pages).length === c.documents.length && c.documents.every((d) => Number.isInteger(v.pages[d.id]) && v.pages[d.id] >= 0 && v.pages[d.id] < d.pages.length) &&
     [100, 125, 150].includes(v.zoom) && bounded(v.search, 120) && typeof v.searched === 'boolean' && (v.selectedRecord === null || c.records.some((r) => r.id === v.selectedRecord)) && (v.revealedRecords === undefined || list(v.revealedRecords, c.records.map((r) => r.id))) && bounded(v.notes, 4000) && bounded(v.rationale, 4000) &&
     (v.outcome === null || OUTCOMES.includes(v.outcome)) && typeof v.completed === 'boolean' && (v.legacyDocuments === undefined || (v.legacyDocuments === 2 && v.completed)) &&
-    (!v.completed || (v.outcome !== null && (v.reviewed.length === c.documents.length || (v.legacyDocuments === 2 && c.documents.slice(0, 2).every((d) => v.reviewed.includes(d.id)))) && v.asked.length > 0 && v.selectedRecord !== null && v.tasks.length === c.tasks.length && v.notes.trim().length >= 10 && v.rationale.trim().length >= 10)) &&
+    // Completion validity (UX simplification P0): a completed case needs its chosen outcome — nothing
+    // else. How much was reviewed/asked/noted is scored by the debrief, never a validity condition,
+    // so a thin-but-honest attempt can never corrupt or lock a save. Older completed saves (which met
+    // the stricter checklist) still validate, and graph/encounter integrity below is unchanged.
+    (!v.completed || v.outcome !== null) &&
     (v.graph === undefined || (validateGraphState(v.graph) && graphConsistent(v, c))) &&
     (v.encounter === undefined || (validEncounter(v.encounter) && (v.encounter.phase === 'completed') === v.completed));
 }
@@ -154,15 +158,17 @@ export function noteAtlasExternalWrite(raw) {
   bus.emit('atlas:changed');
   return true;
 }
-// The three review checks are derived from what the player has done (v11): the linked document reviewed,
-// plus for "evidence" a question asked or a comparison made, and for "handover" a note of 10+ characters.
-// These are the same conditions the former "Mark checked" buttons required. The saved `tasks` list keeps
-// its meaning and is kept in step for unfinished cases; a completed case keeps exactly what it saved.
+// The three review checks are derived from what the player has done: the linked document reviewed
+// (opening a document records the review — there is no separate "mark reviewed" step), plus for
+// "evidence" a question asked or a comparison made. Notes are the player's own working memo and
+// never gate a check or a completion (UX simplification P0/P1: no required free-text input).
+// The saved `tasks` list keeps its meaning and is kept in step for unfinished cases; a completed
+// case keeps exactly what it saved.
 export function atlasTaskState(c, v) {
   return c.tasks.map((t) => {
     const missing = !v.reviewed.includes(t.documentId) ? 'document'
       : t.id === 'evidence' && !v.asked.length && !v.graph?.discoveries?.length ? 'interview'
-      : t.id === 'handover' && v.notes.trim().length < 10 ? 'notes' : null;
+      : null;
     return { id: t.id, documentId: t.documentId, done: v.completed ? v.tasks.includes(t.id) : !missing, missing: v.completed ? null : missing };
   });
 }
@@ -243,6 +249,13 @@ export function submitAtlasUtterance({ text = '', questionId = null } = {}) {
   const res = questionId !== null ? { kind: 'question', questionId }
     : typeof text === 'string' && text.length <= MAX_UTTERANCE * 4 ? resolveAtlasUtterance(text, atlasAvailableQuestions(c, v)) : { kind: 'unknown' };
   if (res.kind !== 'question') return res;
+  // Free access, gated disclosure (same rule as the Korean desk): an investigative question whose
+  // unlocking comparison has not happened yet may still be PUT — the passenger stays with what is
+  // on record. Nothing is recorded as asked, so save/graph integrity is untouched, and free text
+  // still never resolves to a locked question (the resolver only sees available questions above).
+  if (questionId !== null && !atlasQuestionAvailable(c, v, res.questionId)) {
+    return allQuestions(c).some((q) => q.id === res.questionId) ? { kind: 'withheld', questionId: res.questionId } : { kind: 'unknown' };
+  }
   const repeated = v.asked.includes(res.questionId);
   if (!atlasAction('ask', res.questionId)) return { kind: 'unknown' };
   return { ...res, repeated };
@@ -250,13 +263,16 @@ export function submitAtlasUtterance({ text = '', questionId = null } = {}) {
 export function atlasAction(action, value) {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return false;
   const d = c.documents.find((x) => x.id === v.selectedDoc);
-  if (action === 'document' && c.documents.some((x) => x.id === value)) v.selectedDoc = value;
+  // Opening a document records its review automatically (P1 auto-record): the workstation renders
+  // the document in full on open, so a separate "mark reviewed" click would be pure repetition.
+  // The explicit 'review' action below stays for compatibility with existing callers/tests.
+  if (action === 'document' && c.documents.some((x) => x.id === value)) { v.selectedDoc = value; if (!v.completed && !v.reviewed.includes(value)) v.reviewed.push(value); }
   else if (action === 'page' && Number.isInteger(value) && value >= 0 && value < d.pages.length) v.pages[d.id] = value;
   else if (action === 'zoom' && [100, 125, 150].includes(value)) v.zoom = value;
   // Records a search lists stay revealed, so typing or refining a query never drops a
   // selection. The release only applies to saves from before revealedRecords existed.
   else if (action === 'search' && bounded(value, 120)) { seedRevealed(c, v); v.search = value; v.searched = true; revealRecords(c, v, c.records.filter((r) => atlasRecordMatches(c, r, value)).map((r) => r.id)); releaseHiddenSelections(c, v); }
-  else if (action === 'record' && c.records.some((r) => r.id === value)) { seedRevealed(c, v); v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; revealRecords(c, v, [value]); releaseHiddenSelections(c, v); }
+  else if (action === 'record' && c.records.some((r) => r.id === value)) { seedRevealed(c, v); v.selectedRecord = value; v.selectedDoc = c.records.find((r) => r.id === value).documentId; if (!v.completed && !v.reviewed.includes(v.selectedDoc)) v.reviewed.push(v.selectedDoc); revealRecords(c, v, [value]); releaseHiddenSelections(c, v); }
   else if (v.completed) return false;
   else if (action === 'ask') {
     // Every case: the person must be at the counter before any question is put.
@@ -340,20 +356,18 @@ export function callAtlasPassenger() {
   if (!encounter) return false;
   v.encounter = encounter; changed(); return true;
 }
+// What still BLOCKS a simulated outcome: only the passenger call — the one step that is the
+// encounter itself. Everything else (documents unreviewed, no question asked, no record opened,
+// short or empty notes) is feedback the debrief scores, never a gate (UX simplification P0).
 export function atlasMissing() {
   const v = activeAtlasCase(), c = currentAtlasScenario(); if (!v || !c) return ['case'];
   return [
-    ...(v.encounter?.phase !== 'called' && !v.completed ? ['encounter'] : []),
-    ...(v.reviewed.length < c.documents.length ? ['documents'] : []),
-    ...(!v.asked.length ? ['interview'] : []),
-    ...(!v.selectedRecord ? ['record'] : []),
-    ...(v.notes.trim().length < 10 ? ['notes'] : []),
-    ...(atlasTaskState(c, v).some((t) => !t.done) ? ['tasks'] : [])
+    ...(v.encounter?.phase !== 'called' && !v.completed ? ['encounter'] : [])
   ];
 }
 export function completeAtlas(outcome, rationale) {
   const v = activeAtlasCase(), c = currentAtlasScenario();
-  if (!v || !c || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000) || rationale.trim().length < 10) return false;
+  if (!v || !c || v.completed || atlasMissing().length || !OUTCOMES.includes(outcome) || !bounded(rationale, 4000)) return false;
   const next = finishEncounter(v.encounter); if (!next) return false;
   syncTasks(); // a case loaded from an older save may not have synced its checks yet
   v.encounter = next; v.outcome = outcome; v.rationale = rationale.trim(); v.completed = true; changed(); return true;

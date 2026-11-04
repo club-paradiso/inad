@@ -88,7 +88,6 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     // Complete reviews and tasks
     for (const suffix of ['DOC1', 'DOC2']) {
       await page.locator(`#doc-SIM-CA-01-${suffix}`).click();
-      await page.locator('#atlasReviewDoc').click();
     }
     await page.locator('#atlasSearchForm button[type="submit"]').click();
     await page.locator('[data-record]').first().click();
@@ -387,9 +386,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     // 2. Documents examination
     await task(page, 'evidence');
     await page.locator('#doc-SIM-CA-01-DOC1').click();
-    await page.locator('#atlasReviewDoc').click();
     await page.locator('#doc-SIM-CA-01-DOC2').click();
-    await page.locator('#atlasReviewDoc').click();
 
     // 3. Evidence comparison: Conflict between ticket and visit record
     await page.locator('#fact-SIM-CA-01-F-VISIT').click();
@@ -468,9 +465,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
     // 2. Review documents, search records and fill notes in attempt to bypass calling
     await task(page, 'evidence');
     await page.locator('#doc-SIM-CA-01-DOC1').click();
-    await page.locator('#atlasReviewDoc').click();
     await page.locator('#doc-SIM-CA-01-DOC2').click();
-    await page.locator('#atlasReviewDoc').click();
 
     await page.locator('#atlasSearchForm button[type="submit"]').click();
     await page.locator('[data-record]').first().click();

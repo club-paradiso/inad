@@ -91,7 +91,6 @@ test('free text: a document request asks nothing; Replay clears the previous att
   await expect(page.locator('#atlasAskStatus')).toContainText(/질문했습니다|Asked/);
   await page.locator('#atlasAskInput').fill('draft that must not survive a replay');
   await page.locator('#atlasSearchForm button[type="submit"]').click(); await page.locator('[data-record]').first().click();
-  for (const d of CA01.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await page.locator('#atlasNotes').fill('Compared the ticket and the visit record; dates conflict.');
   await page.locator('#atlasPrepare').click(); await page.locator('#atlasOutcome').selectOption('review');
   await page.locator('#atlasConfirmOutcome').click();
