@@ -11,6 +11,7 @@ import { suggestQuestions } from '../engines/suggestion-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
+import { getLocale } from '../services/i18n.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -66,32 +67,33 @@ function renderNextStep(suggestions, onSuggest) {
   el.hidden = !guided;
   if (!guided) { el.replaceChildren(); return; }
 
+  const t = (ko, en) => getLocale() === 'en' ? en : ko;
   const next = suggestions.find((s) => s.q)?.q;
   let step, detail, label, action;
   const hasQuestion = state.asked.size > 0;
   if (!hasQuestion && next) {
-    step = '1 · 첫 질문'; detail = '준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.';
-    label = '이 질문하기 · ' + next.q;
+    step = t('1 · 첫 질문', '1 · First question'); detail = t('준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.', 'Start with an available question, or try your own phrasing.');
+    label = t('이 질문하기 · ', 'Ask · ') + next.q;
     action = () => onSuggest(next, false);
   } else if (!state.looked.size) {
-    step = '2 · 자료 확인'; detail = '승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.';
-    label = '자료 화면으로';
+    step = t('2 · 자료 확인', '2 · Review evidence'); detail = t('승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.', 'Compare the reply with documents; records are available in Evidence.');
+    label = t('자료 화면으로', 'Open evidence');
     action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
   } else if (next && !state.discoveredClues.size) {
-    step = '3 · 추가 질문'; detail = '확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.';
-    label = '다음 질문 · ' + next.q;
+    step = t('3 · 추가 질문', '3 · Follow up'); detail = t('확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.', 'Compare the documents and statements, then continue with a relevant question.');
+    label = t('다음 질문 · ', 'Next question · ') + next.q;
     action = () => onSuggest(next, false);
   } else if (state.discoveredClues.size) {
-    step = '4 · 판단 검토'; detail = '확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.';
-    label = '판단 화면으로';
+    step = t('4 · 판단 검토', '4 · Review assessment'); detail = t('확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.', 'Review the evidence and basis. You must make any decision yourself.');
+    label = t('판단 화면으로', 'Open assessment');
     action = () => showTask('assessment', { focus: true });
   } else {
-    step = '3 · 자료 대조'; detail = '서류와 진술을 비교하고, 미확인 내용이 있는지 살펴보세요.';
-    label = '자료 화면으로';
+    step = t('3 · 자료 대조', '3 · Cross-check evidence'); detail = t('서류와 진술을 비교하고, 미확인 내용이 있는지 살펴보세요.', 'Compare documents and statements; check for unresolved facts.');
+    label = t('자료 화면으로', 'Open evidence');
     action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
   }
 
-  el.innerHTML = `<div class="live-next-copy"><small>쉬운 진행</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
+  el.innerHTML = `<div class="live-next-copy"><small>${esc(t('쉬운 진행', 'Guided steps'))}</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
   byId('liveNextButton').onclick = action;
 }
 
