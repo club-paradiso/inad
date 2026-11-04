@@ -7,6 +7,8 @@ async function start(page) {
   await H.openGame(page);
   await page.locator('#liveStartBtn').click();
   await expect(page.locator('body')).toHaveClass(/mode-case/);
+  // The queue callout must never intercept a one-click live conversation.
+  await expect(page.locator('#callout')).not.toHaveClass(/\bon\b/);
 }
 
 test('beginner next step offers one safe question, then moves to evidence without an automatic decision', async ({ page }) => {
