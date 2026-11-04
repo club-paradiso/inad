@@ -6,13 +6,11 @@ import { $, $$, byId, esc, withFocus, markOverflow } from './dom.js';
 import { state, assistLevel } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
-import { questionUnlocked } from '../engines/clue-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
 import { getLocale } from '../services/i18n.js';
-import { unmetQuestionPrerequisites } from '../engines/review-guidance.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -112,14 +110,14 @@ export function currentSuggestions() {
   const c = current(); if (!c) return [];
   return suggestQuestions(c, { performed: state.performed, asked: state.asked, level: assistLevel(), lastKind: liveRecord()?.lastKind || null, interpreterActive: !!state.language?.interpreterActive, languageMiss: liveRecord()?.languageMiss || 0, ended: state.ended });
 }
-const REASON = { followup: '이어서 확인', open: '' };
+const REASON = { followup: '이어서 확인', open: '', later: '지금 물어볼 수 있음' };
 export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} } = {}) {
   const c = current(); const cats = [...new Set(c.questions.map((q) => q.cat))];
   if (viewCase !== c.id) { viewCase = c.id; view = SUGGEST; }
   if (!cats.includes(state.qcat)) state.qcat = cats[0];
   const level = assistLevel(); const sugg = currentSuggestions();
   renderNextStep(sugg, onSuggest);
-  const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => questionUnlocked(q) && !state.asked.has(q.id)).length; return { key: x, label: x, extra: `${done}/${list.length}${open ? ' · ' + open + ' 가능' : ''}` }; })];
+  const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => !state.asked.has(q.id)).length; return { key: x, label: x, extra: `${done}/${list.length}${open ? ' · ' + open + ' 남음' : ''}` }; })];
   // APG tabs: one Tab stop (the selected tab), arrows/Home/End move and select, #questions is the tab panel.
   byId('qtabs').innerHTML = tabs.map((x, i) => { const on = x.key === SUGGEST ? view === SUGGEST : view !== SUGGEST && x.key === state.qcat; const ci = i - 1; return `<button type="button" class="qtab ${x.key === SUGGEST ? 'qtab-suggest ' : ''}${on ? 'on' : ''}" role="tab" id="qtab-${i}" aria-controls="questions" aria-selected="${on}" tabindex="${on ? 0 : -1}" data-cat="${esc(x.key)}"${x.key === SUGGEST ? '' : ` data-hotkey="${Math.min(6, ci + 1)}"`}>${esc(x.label)} <span class="qtab-count">${esc(x.extra)}</span></button>`; }).join('');
   $$('#qtabs .qtab').forEach((b) => { b.onclick = () => { if (b.dataset.cat === SUGGEST) view = SUGGEST; else { view = 'cat'; state.qcat = b.dataset.cat; } withFocus(() => renderQuestions(onAsk, { onSuggest, onAction })); }; });
@@ -139,33 +137,15 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
     }
     return;
   }
+  // Every question is askable at any time, in any order. A question whose answer is not yet
+  // disclosable simply gets the passenger's on-record response (interview-engine `withheld`);
+  // there is no lock, no prerequisite list and no disabled button to work around.
   const qs = c.questions.filter((q) => q.cat === state.qcat);
   qs.forEach((q) => {
-    const unlocked = questionUnlocked(q), missing = unlocked ? [] : unmetQuestionPrerequisites(q, c, state.performed);
     const b = document.createElement('button'), wasAsked = state.asked.has(q.id);
-    b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (unlocked ? '' : 'locked') + (wasAsked ? ' asked' : ''); b.disabled = state.ended || !unlocked;
-    b.innerHTML = !unlocked ? `${getLocale() === 'en' ? 'Additional question unavailable yet' : '선행 확인 후 추가 질문 가능'}<em>${esc(q.cat)} · ${getLocale() === 'en' ? `${missing.length} prerequisite(s) remaining` : `선행 확인 ${missing.length}건 남음`}</em>` : wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
+    b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (wasAsked ? ' asked' : ''); b.disabled = state.ended;
+    b.innerHTML = wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
     b.onclick = () => onAsk(q, wasAsked); box.appendChild(b);
-    if (!unlocked && !state.ended && missing.length) {
-      const en = getLocale() === 'en', d = document.createElement('div');
-      d.className = 'question-prereqs'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', en ? 'How to unlock this question' : '질문 잠금 해제 조건');
-      d.innerHTML = `<strong>${en ? 'Complete first' : '먼저 필요한 확인'}</strong>${missing.map((item, i) => `<div class="question-prereq-row"><span>${esc(en ? item.en : item.ko)}</span>${item.target && item.kind !== 'other' ? `<button type="button" data-prereq-index="${i}">${item.kind === 'lookup' ? en ? 'Open lookup' : '조회 화면 열기' : en ? 'Find question' : '선행 질문 찾기'}</button>` : ''}</div>`).join('')}`;
-      d.querySelectorAll('[data-prereq-index]').forEach((button) => {
-        button.onclick = () => {
-          const target = missing[Number(button.dataset.prereqIndex)];
-          if (target.kind === 'lookup') {
-            showTask('evidence', { focus: true });
-            const lookupButton = document.querySelector(`.lookup-tabs [data-lu="${target.target}"]`);
-            lookupButton?.focus();
-          } else if (target.kind === 'question') {
-            state.qcat = target.category; view = 'cat';
-            renderQuestions(onAsk, { onSuggest, onAction });
-            byId('questions')?.querySelectorAll('[data-qid]').forEach((candidate) => { if (candidate.dataset.qid === target.target) candidate.focus(); });
-          }
-        };
-      });
-      box.appendChild(d);
-    }
   });
 }
 // Number shortcuts pick a *category* (1 = first category); the 제안 tab is reached with the arrows or a click.

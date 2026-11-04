@@ -11,6 +11,7 @@ import { spendWork, maybeStartFieldEvent, advanceFieldEventAfterCase, simulatedB
 import { makeBehavior, behaviorAdjust, behaviorOnQuestion, behaviorResponse } from './behavior-engine.js';
 import { languageProfileFor, handleLanguageBarrier, languageModeLabel, requestInterpreter } from './language-engine.js';
 import { clueStats, discoverTriggeredClues, questionUnlocked } from './clue-engine.js';
+import { personaFor } from '../../data/personas.js';
 import { travelPartyFor, archivePartyStatement, partyLookupResult } from './companion-engine.js';
 import { addLog } from './log.js';
 import { saveProgressSnapshot, saveBestGrade, loadMeta, saveMeta, clearProgressSave } from './save-engine.js';
@@ -46,7 +47,17 @@ export function initCase(skipCall = false) {
 }
 
 export function ask(q, repeat = false) {
-  if (!questionUnlocked(q)) return { ok: false, locked: true };
+  // Free access, gated disclosure: any question may be asked at any time. Until its disclosure
+  // conditions are met the passenger stays with what is already on record — nothing is marked
+  // asked or performed, no clue is discovered, and the turn costs nothing (the same invariant the
+  // interview layer guarantees for evidence-free turns). The canonical answer is never produced.
+  if (!questionUnlocked(q)) {
+    const c = current(); const persona = personaFor(c.id);
+    const line = String(persona.withheld?.[q.id] || persona.withheldDefault || '').replace('{initial}', c.initial || '');
+    addLog('officer', q.q); if (line) addLog('alien', line);
+    bus.emit('changed');
+    return { ok: true, withheld: true };
+  }
   const already = state.asked.has(q.id); repeat = repeat || already;
   if (!handleLanguageBarrier(q)) return { ok: false, language: true };
   if (state.language?.interpreterActive) state.language.assistedTurns++;
@@ -133,9 +144,20 @@ function evaluateRushed(c) {
   addLog('alert', `성급한 판단 경고: 이 사건의 확인량에 비해 결론이 매우 빠릅니다. 최소 확인권고 ${min}초 / 현재 ${state.caseWorkSeconds}초.`); return true;
 }
 
+// A decision made on thin review still stands (the examiner owns it): the shortfall is recorded as
+// a scored mistake — no strike, no block — and the debrief explains exactly what was left unchecked.
+function applyThinDecision(v) {
+  if (!v.thin) return;
+  const applied = Math.max(1, Math.round(v.advisory.pts * penaltyPolicy().factor));
+  recordMistake(v.advisory.msg, applied);
+  state.score = clampScore(state.score - applied);
+  addLog('alert', `확인 부족 결정: ${v.advisory.msg} 결정은 그대로 기록되며, 부족한 확인은 사건 평가와 피드백에 반영됩니다.`);
+}
+
 export function decideClear() {
   const c = current(); const v = legal.validateClear(c, state.performed);
-  if (!v.ok) { if (v.guard && guidedGuardApplies()) return { ok: false, guard: v.penalty.msg }; return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) }; }
+  if (!v.ok) return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) };
+  applyThinDecision(v);
   spendWork(7, 'decision'); evaluateRushed(c); state.stage = 'ADMITTED'; state.ended = true; actionMark('CLEAR');
   notify.sound('clear'); notify.announce('심사결정', '입국 허가 결정을 기록했습니다.', 'CLEAR', 1900); notify.pulse('#clearBtn', 'action-hit', 300); bus.emit('changed');
   return { ok: true, doc: { title: '입국심사 완료', rows: [['성명', c.name], ['국적', c.nat], ['결정', '입국 허가'], ['입국근거', c.basis], ['심사관', 'ICN-8841']], foot: '출입국관리법 제12조에 따른 입국심사를 완료했습니다.' }, finish: '입국 허가' };
@@ -143,7 +165,8 @@ export function decideClear() {
 
 export function decideRefusal(code) {
   const c = current(); const v = legal.validateRefusal(c, code, state.performed);
-  if (!v.ok) { if (v.guard && guidedGuardApplies()) return { ok: false, guard: v.penalty.msg }; return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) }; }
+  if (!v.ok) return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) };
+  applyThinDecision(v);
   spendWork(9, 'decision'); evaluateRushed(c); state.stage = 'ENTRY_REFUSED'; state.ended = true; actionMark('ENTRY_REFUSED');
   notify.sound('refuse'); notify.announce('심사결정', '입국 불허가 결정을 기록했습니다.', 'INAD', 2200); notify.pulse('#refuseBtn', 'action-hit', 300); bus.emit('changed');
   const rr = v.reason;

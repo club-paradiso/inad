@@ -13,12 +13,18 @@ export function suggestQuestions(c, { performed = [], asked = new Set(), level =
   const limit = ASSIST_LIMIT[level] ?? 3; const out = [];
   // Communication first: when a question was not understood, the next useful step is the interpreter.
   if (level !== 'immersive' && level !== 'professional' && !interpreterActive && (lastKind === 'language' || languageMiss >= 2)) out.push({ action: 'interpreter', reason: 'communication' });
-  const open = (c.questions || []).map((q, i) => ({ q, i })).filter(({ q }) => !asked.has(q.id) && questionUnlocked(q, performed));
+  const unasked = (c.questions || []).map((q, i) => ({ q, i })).filter(({ q }) => !asked.has(q.id));
+  const open = unasked.filter(({ q }) => questionUnlocked(q, performed));
   // Follow-ups whose condition is met come first, most recently opened first (the last requirement performed latest).
   const openedAt = (q) => Math.max(...(q.requires || []).map((r) => performed.lastIndexOf(r)));
   const follow = open.filter(({ q }) => (q.requires || []).length).sort((a, b) => openedAt(b.q) - openedAt(a.q) || a.i - b.i);
   const basic = open.filter(({ q }) => !(q.requires || []).length);
   for (const { q } of follow) out.push({ q, reason: 'followup' });
   for (const { q } of basic) out.push({ q, reason: 'open' });
+  // Questions whose answers are not disclosable yet are still askable (the passenger will stay with
+  // what is on record), so they may fill leftover suggestion slots — ranked last, never displacing
+  // a question that would actually produce an answer. Ranking still uses only visible state.
+  const later = unasked.filter(({ q }) => !questionUnlocked(q, performed));
+  for (const { q } of later) out.push({ q, reason: 'later' });
   return out.slice(0, Math.max(0, limit));
 }
