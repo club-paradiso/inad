@@ -13,6 +13,7 @@ import { languageProfileFor, handleLanguageBarrier, languageModeLabel, requestIn
 import { clueStats, discoverTriggeredClues, questionUnlocked } from './clue-engine.js';
 import { travelPartyFor, archivePartyStatement, partyLookupResult } from './companion-engine.js';
 import { addLog } from './log.js';
+import { availableCompareSources, safeComparisonNote } from './comparison-ledger.js';
 import { saveProgressSnapshot, saveBestGrade, loadMeta, saveMeta, clearProgressSave } from './save-engine.js';
 import { applySessionCareer, applyDailyMissions, evaluateAchievements, achievementById, challengeEvaluation, challengeCfg, gradeRank } from './achievement-engine.js';
 import { advanceCampaign, finalizeStoryForCase, storyIsAnchor, storyChapterDef, recordStoryAction, campaignArc } from './campaign-engine.js';
@@ -28,7 +29,7 @@ export function caseMinimum(c = current()) { return legal.caseMinimum(c, languag
 
 export function initCase(skipCall = false) {
   const c = current();
-  Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, documentReviews: {}, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
+  Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, documentReviews: {}, comparisonNotes: {}, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
   if (state.guidance === 'guided' && state.caseIndex < 6) state.guidedGuardUsed = false;
   state.behavior = makeBehavior(c); state.language = languageProfileFor(c); state.party = travelPartyFor(c);
   bus.emit('procedure:close');
@@ -87,6 +88,19 @@ export function setDocumentReview(i, status) {
   bus.emit('changed');
   return true;
 }
+// Manual comparison records are separate from case actions, statutory findings and scoring.
+export function recordComparison(docIndex, sourceId, status, note = '') {
+  const c = current();
+  if (state.ended || !c?.docs?.[docIndex] || !['checked', 'followup', 'clear'].includes(status)) return false;
+  if (!availableCompareSources(state).some((item) => item.id === sourceId)) return false;
+  if (!state.comparisonNotes || typeof state.comparisonNotes !== 'object') state.comparisonNotes = {};
+  const key = docIndex + '|' + sourceId;
+  if (status === 'clear') delete state.comparisonNotes[key];
+  else state.comparisonNotes[key] = { docIndex, sourceId, status, note: safeComparisonNote(note) };
+  bus.emit('changed');
+  return true;
+}
+
 export function cycleDocument(delta) { const c = current(); if (!c || !c.docs || !c.docs.length) return; state.selectedDoc = (state.selectedDoc + delta + c.docs.length) % c.docs.length; bus.emit('changed'); notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`); }
 
 export function recordMistake(msg, pts) { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, at: Date.now() }); }
