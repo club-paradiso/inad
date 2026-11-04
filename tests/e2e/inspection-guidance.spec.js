@@ -26,6 +26,7 @@ test('questions are askable in any order: an early follow-up stays withheld unti
   await expect(page.locator('#log .msg.alien').last()).toBeVisible();
   // Do the real work in a different order than the catalogue implies, then ask again.
   await page.evaluate(() => window.INADTest.say('방문 목적이 뭡니까', 'text'));
+  await page.locator('#langInterp').click(); // occupation needs the interpreter in this case
   await page.evaluate(() => window.INADTest.say('베트남에서 무슨 일 하세요?', 'text'));
   await page.locator('.lookup-tabs [data-lu="contact"]').click();
   await page.locator('#qtabs .qtab[data-cat="추가소명"]').click();
