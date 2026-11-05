@@ -132,7 +132,7 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
     onCompare(state.selectedDoc, comparisonDraft.sourceId, b.dataset.compare, noteArea?.value || '');
     if (b.dataset.compare === 'clear') comparisonDraft.note = '';
   }; });
-  $('#docview [data-review]').forEach((b) => { b.onclick = () => onReview(state.selectedDoc, b.dataset.review); });
+  $$('#docview [data-review]').forEach((b) => { b.onclick = () => onReview(state.selectedDoc, b.dataset.review); });
   refreshStatementLockCandidates();
 }
 export function focusSelectedDoc() { const item = $$('#doclist .docitem')[state.selectedDoc]; if (item) item.focus(); }
