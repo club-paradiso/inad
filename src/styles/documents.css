@@ -188,3 +188,43 @@
   .cross-pair { grid-template-columns: 1fr; gap: 0; }
   .cross-column + .cross-column { border-top: 1px solid var(--border); }
 }
+
+
+/* Return/onward evidence: an issued ticket is distinct from the inbound boarding pass and PNR record. */
+.ticket-return-overview { margin-top: 14px; padding: 10px 12px; border: 1px solid #ced8e0; border-radius: 4px; background: #f1f5f8; color: #283c4b; }
+.ticket-return-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: var(--fs-label); }
+.ticket-return-head span { font-weight: 700; font-size: var(--fs-meta); }
+.ticket-return-route { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin: 7px 0; font: 750 15px/1.4 var(--mono); }
+.ticket-return-route strong { margin-left: auto; font-size: var(--fs-compact); }
+.ticket-return-arrow { color: #547083; }
+.ticket-return-overview > small { color: #536674; font-size: var(--fs-meta); line-height: 1.45; }
+.ticket-return-overview > p { margin: 6px 0; font-size: var(--fs-label); }
+
+.return-evidence-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; margin: 0 12px 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--surface-2); }
+.return-evidence-copy { display: grid; gap: 3px; min-width: 0; }
+.return-evidence-copy > b { font-size: var(--fs-compact); }
+.return-evidence-copy > small { font-size: var(--fs-meta); color: var(--text-2); }
+.return-evidence-copy > p { margin: 3px 0 0; font-size: var(--fs-label); line-height: 1.5; color: var(--text-2); }
+.return-request-btn { min-height: 36px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: var(--r-1); background: var(--accent); color: var(--text-inverse); font-size: var(--fs-label); font-weight: 700; cursor: pointer; }
+.return-request-btn:disabled { color: var(--text-2); background: var(--elevated); border-color: var(--border); cursor: default; }
+.return-request-btn:not(:disabled):hover { background: var(--accent-hover); }
+.return-proof-paper { grid-column: 1 / -1; border: 1px solid #b6c6d5; border-radius: var(--r-1); padding: 0 14px 12px; background: #f9fbfe; color: #1d374b; overflow-wrap: anywhere; }
+.return-proof-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin: 0 -14px 12px; padding: 11px 14px; background: #234966; color: #fff; font-size: var(--fs-compact); font-weight: 800; }
+.return-proof-stamp { font-size: var(--fs-meta); font-weight: 600; }
+.return-proof-flight { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font: 800 20px/1.5 var(--mono); }
+.return-proof-flight strong { margin-left: auto; font-size: 16px; }
+.return-proof-arrow { color: #597e9a; }
+.return-proof-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; margin: 10px 0; }
+.return-proof-fields > div { min-width: 0; }
+.return-proof-fields dt { color: #587085; font-size: var(--fs-meta); }
+.return-proof-fields dd { margin: 2px 0; font: 700 var(--fs-label)/1.5 var(--font); overflow-wrap: anywhere; }
+.return-proof-disclaimer { margin: 12px 0 0; color: #4b6072; font-size: var(--fs-meta); line-height: 1.5; }
+.return-proof-unavailable { grid-column: 1 / -1; padding: 10px 12px; border: 1px dashed var(--border-strong); border-radius: var(--r-1); color: var(--text-2); background: var(--surface); font-size: var(--fs-label); line-height: 1.5; }
+.return-proof-unavailable p { margin: 4px 0 0; }
+@media (max-width: 550px) {
+  .return-evidence-panel { grid-template-columns: minmax(0, 1fr); }
+  .return-request-btn { width: 100%; min-height: 44px; }
+  .return-proof-fields { grid-template-columns: 1fr; }
+  .return-proof-flight { font-size: 17px; }
+  .ticket-return-head { flex-wrap: wrap; }
+}
