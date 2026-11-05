@@ -112,13 +112,13 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
     byId('crossSourceName').textContent = source ? isEn() ? source.en : source.ko : '';
     byId('crossSourceText').textContent = source?.text || '';
     noteArea.value = comparisonDraft.note;
-    $('#crossPanel [data-compare]').forEach((b) => {
+    $$('#crossPanel [data-compare]').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.compare === old?.status));
       if (b.dataset.compare === 'clear') b.disabled = !old || state.ended;
     });
   };
   if (noteArea) noteArea.oninput = () => { comparisonDraft.note = noteArea.value; };
-  $('#crossPanel [data-compare]').forEach((b) => { b.onclick = () => {
+  $$('#crossPanel [data-compare]').forEach((b) => { b.onclick = () => {
     if (!comparisonDraft.sourceId || !onCompare) return;
     onCompare(state.selectedDoc, comparisonDraft.sourceId, b.dataset.compare, noteArea?.value || '');
     if (b.dataset.compare === 'clear') comparisonDraft.note = '';
