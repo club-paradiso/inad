@@ -104,3 +104,29 @@ test('evidence matrix resolves case-specific warnings only after verification', 
   const after = legal.evidenceNow(c, { looked: new Set(['pnr', 'contact']), asked: new Set(['friend']) });
   assert.equal(after['입국목적'][0], 'ok');
 });
+
+test('legal-engine P0-3: thin decision advisory messages translate raw action tokens into natural Korean labels', () => {
+  const c = byId('ICN-S2-005');
+  const thin = legal.validateRefusal(c, 'SIM-A12-PUR', []);
+  assert.equal(thin.ok, true);
+  assert.equal(thin.thin, true);
+  assert.doesNotMatch(thin.advisory.msg, /QUESTION_|LOOKUP_|SECONDARY/);
+  assert.match(thin.advisory.msg, /입국재심/);
+  assert.match(thin.advisory.msg, /전산 조회 · 국내관계/);
+});
+
+test('legal-engine P1-1: Statement Lock + unlocked follow-up interrogation satisfies routine question checklist without thin penalty', () => {
+  const c = byId('ICN-S2-005');
+  const performedWithLock = [
+    'SECONDARY',
+    'QUESTION_contact',
+    'LOOKUP_contact',
+    'LOCK_contact_anomaly',
+    'UNLOCK_Q_jobOffer',
+    'QUESTION_jobOffer',
+    'LOCK_visa_job_conflict'
+  ];
+  const verdict = legal.validateRefusal(c, 'SIM-A12-PUR', performedWithLock);
+  assert.equal(verdict.ok, true);
+  assert.equal(verdict.thin, undefined);
+});

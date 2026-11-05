@@ -7,6 +7,7 @@ import { state, assistLevel } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
 import { suggestQuestions } from '../engines/suggestion-engine.js';
+import { communicationReady } from '../engines/language-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
@@ -67,7 +68,9 @@ function renderNextStep(suggestions, onSuggest) {
   if (!guided) { el.replaceChildren(); return; }
 
   const t = (ko, en) => getLocale() === 'en' ? en : ko;
-  const next = suggestions.find((s) => s.q)?.q;
+  // P1-3: Prefer a question that can be understood at the current language level for the guided next-step CTA
+  const communicableNext = suggestions.find((s) => s.q && communicationReady(s.q).ok)?.q;
+  const next = communicableNext || suggestions.find((s) => s.q)?.q;
   let step, detail, label, action;
   const hasQuestion = state.asked.size > 0;
   // An unanswered question caused by a language barrier must not be proposed over
@@ -81,7 +84,10 @@ function renderNextStep(suggestions, onSuggest) {
   } else if (!hasQuestion && next) {
     step = t('1 · 첫 질문', '1 · First question'); detail = t('준비된 질문으로 대화를 시작하세요. 다른 표현으로 직접 물어도 됩니다.', 'Start with an available question, or try your own phrasing.');
     label = t('이 질문하기 · ', 'Ask · ') + next.q;
-    action = () => onSuggest(next, false);
+    action = () => {
+      if (!communicationReady(next).ok && state.language && !state.language.interpreterActive) byId('langInterp')?.click();
+      onSuggest(next, false);
+    };
   } else if (!state.looked.size) {
     step = t('2 · 자료 확인', '2 · Review evidence'); detail = t('승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.', 'Compare the reply with documents; records are available in Evidence.');
     label = t('자료 화면으로', 'Open evidence');
@@ -89,7 +95,10 @@ function renderNextStep(suggestions, onSuggest) {
   } else if (next && !state.discoveredClues.size) {
     step = t('3 · 추가 질문', '3 · Follow up'); detail = t('확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.', 'Compare the documents and statements, then continue with a relevant question.');
     label = t('다음 질문 · ', 'Next question · ') + next.q;
-    action = () => onSuggest(next, false);
+    action = () => {
+      if (!communicationReady(next).ok && state.language && !state.language.interpreterActive) byId('langInterp')?.click();
+      onSuggest(next, false);
+    };
   } else if (state.discoveredClues.size) {
     step = t('4 · 판단 검토', '4 · Review assessment'); detail = t('확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.', 'Review the evidence and basis. You must make any decision yourself.');
     label = t('판단 화면으로', 'Open assessment');
@@ -111,6 +120,28 @@ export function currentSuggestions() {
   return suggestQuestions(c, { performed: state.performed, asked: state.asked, level: assistLevel(), lastKind: liveRecord()?.lastKind || null, interpreterActive: !!state.language?.interpreterActive, languageMiss: liveRecord()?.languageMiss || 0, ended: state.ended });
 }
 const REASON = { followup: '이어서 확인', open: '', later: '지금 물어볼 수 있음' };
+// Keep the interpreter action outside the question button: nested controls can accidentally
+// intercept ordinary clicks and bypass the language barrier in desktop and mobile E2E flows.
+function appendInterviewQuestion(box, questionButton, q, needsInterp, ask) {
+  if (!needsInterp) { box.appendChild(questionButton); return; }
+  const group = document.createElement('div');
+  group.className = 'qbtn-with-interp';
+  group.appendChild(questionButton);
+  const interpret = document.createElement('button');
+  interpret.type = 'button';
+  interpret.className = 'qbtn-interp-link';
+  interpret.dataset.interpAsk = q.id;
+  interpret.textContent = '통역 연결 후 질문';
+  interpret.setAttribute('aria-label', `통역 연결 후 질문: ${q.q}`);
+  interpret.disabled = state.ended;
+  interpret.onclick = () => {
+    if (!state.language?.interpreterActive) byId('langInterp')?.click();
+    ask();
+  };
+  group.appendChild(interpret);
+  box.appendChild(group);
+}
+
 export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} } = {}) {
   const c = current(); const cats = [...new Set(c.questions.map((q) => q.cat))];
   if (viewCase !== c.id) { viewCase = c.id; view = SUGGEST; }
@@ -132,8 +163,16 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
     for (const s of sugg) {
       const b = document.createElement('button'); b.type = 'button'; b.disabled = state.ended;
       if (s.action === 'interpreter') { b.className = 'qbtn suggest action'; b.dataset.action = 'interpreter'; b.innerHTML = `${esc(state.language?.primary || '')} 통역 연결<em>의사소통 · 질문이 충분히 전달되지 않았습니다</em>`; b.onclick = () => onAction('interpreter'); }
-      else { const q = s.q; b.className = `qbtn suggest ${s.reason}`; b.dataset.qid = q.id; b.innerHTML = `${esc(q.q)}<em>${esc(q.cat)}${REASON[s.reason] ? ' · ' + REASON[s.reason] : ''}</em>`; b.onclick = () => onSuggest(q, false); }
-      box.appendChild(b);
+      else {
+        const q = s.q; const comm = communicationReady(q);
+        const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
+        const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
+        b.className = `qbtn suggest ${s.reason}${needsInterp ? ' needs-interp' : ''}`; b.dataset.qid = q.id;
+        b.innerHTML = `${esc(q.q)}<em>${esc(q.cat)}${REASON[s.reason] ? ' · ' + REASON[s.reason] : ''}${langBadge}</em>`;
+        b.onclick = () => onSuggest(q, false);
+        appendInterviewQuestion(box, b, q, needsInterp, () => onSuggest(q, false));
+      }
+      if (s.action === 'interpreter') box.appendChild(b);
     }
     return;
   }
@@ -143,9 +182,16 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
   const qs = c.questions.filter((q) => q.cat === state.qcat);
   qs.forEach((q) => {
     const b = document.createElement('button'), wasAsked = state.asked.has(q.id);
-    b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (wasAsked ? ' asked' : ''); b.disabled = state.ended;
-    b.innerHTML = wasAsked ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영</em>` : `${esc(q.q)}<em>${esc(q.cat)}${q.requires ? ' · 추가 질문' : ''}</em>`;
-    b.onclick = () => onAsk(q, wasAsked); box.appendChild(b);
+    const comm = communicationReady(q);
+    const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
+    const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
+    const unlockedByLock = state.performed.includes(`UNLOCK_Q_${q.id}`);
+    b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (wasAsked ? ' asked' : '') + (needsInterp ? ' needs-interp' : '') + (unlockedByLock ? ' lock-unlocked' : ''); b.disabled = state.ended;
+    b.innerHTML = wasAsked
+      ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영${langBadge}</em>`
+      : `${esc(q.q)}<em>${esc(q.cat)}${unlockedByLock ? ' · 모순 추궁 해금' : (q.requires ? ' · 추가 질문' : '')}${langBadge}</em>`;
+    b.onclick = () => onAsk(q, wasAsked);
+    appendInterviewQuestion(box, b, q, needsInterp, () => onAsk(q, wasAsked));
   });
 }
 // Number shortcuts pick a *category* (1 = first category); the 제안 tab is reached with the arrows or a click.

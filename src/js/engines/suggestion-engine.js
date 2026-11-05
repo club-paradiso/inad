@@ -15,10 +15,14 @@ export function suggestQuestions(c, { performed = [], asked = new Set(), level =
   if (level !== 'immersive' && level !== 'professional' && !interpreterActive && (lastKind === 'language' || languageMiss >= 2)) out.push({ action: 'interpreter', reason: 'communication' });
   const unasked = (c.questions || []).map((q, i) => ({ q, i })).filter(({ q }) => !asked.has(q.id));
   const open = unasked.filter(({ q }) => questionUnlocked(q, performed));
-  // Follow-ups whose condition is met come first, most recently opened first (the last requirement performed latest).
-  const openedAt = (q) => Math.max(...(q.requires || []).map((r) => performed.lastIndexOf(r)));
-  const follow = open.filter(({ q }) => (q.requires || []).length).sort((a, b) => openedAt(b.q) - openedAt(a.q) || a.i - b.i);
-  const basic = open.filter(({ q }) => !(q.requires || []).length);
+  // Follow-ups whose condition is met (including Statement Lock `UNLOCK_Q_<id>`) come first, most recently opened first.
+  const isFollowUp = (q) => (q.requires || []).length > 0 || performed.includes(`UNLOCK_Q_${q.id}`);
+  const openedAt = (q) => Math.max(
+    performed.lastIndexOf(`UNLOCK_Q_${q.id}`),
+    ...(q.requires || []).map((r) => performed.lastIndexOf(r))
+  );
+  const follow = open.filter(({ q }) => isFollowUp(q)).sort((a, b) => openedAt(b.q) - openedAt(a.q) || a.i - b.i);
+  const basic = open.filter(({ q }) => !isFollowUp(q));
   for (const { q } of follow) out.push({ q, reason: 'followup' });
   for (const { q } of basic) out.push({ q, reason: 'open' });
   // Questions whose answers are not disclosable yet are still askable (the passenger will stay with

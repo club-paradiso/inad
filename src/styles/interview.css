@@ -140,7 +140,7 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
   .language-toolbar .language-status { display: none; }
   .ask-bar { padding: 6px 10px; }
   .ask-bar input, .mic-btn, .ask-send { height: 32px; }
-  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(auto, 1.45fr); }
+  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(210px, 2fr); }
 }
 @media (prefers-reduced-motion: reduce) { .stage-caption { transition: none; } }
 body.pref-reduce-motion .stage-caption { transition: none; }
@@ -341,3 +341,34 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 .question-prereq-row span { min-width: 0; flex: 1 1 140px; line-height: 1.45; overflow-wrap: anywhere; }
 .question-prereq-row button { min-height: 36px; padding: 5px 9px; color: var(--accent-text); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-weight: 600; font-size: inherit; }
 .question-prereq-row button:hover { border-color: var(--accent); }
+
+/* P1-3 & P1-1: Language barrier badge, one-click interpreter auto-connect pill, and lock-unlocked question styling */
+.qbtn.needs-interp { border-left: 3px solid var(--warning); }
+.qbtn-lang-badge { color: var(--warning); font-weight: 700; font-style: normal; }
+.qbtn-with-interp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
+}
+.qbtn-with-interp > .qbtn { width: 100%; min-width: 0; text-align: left; }
+.qbtn-with-interp > .qbtn-interp-link { align-self: stretch; min-width: 88px; }
+@media (max-width: 430px) {
+  .qbtn-with-interp { grid-template-columns: minmax(0, 1fr); }
+  .qbtn-with-interp > .qbtn-interp-link { min-height: 36px; }
+}
+.qbtn-interp-link {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: var(--r-1);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  font-style: normal;
+  cursor: pointer;
+}
+.qbtn-interp-link:hover { background: var(--accent); color: var(--text-inverse); }
+.qbtn.lock-unlocked { border-left: 3px solid var(--accent); }
