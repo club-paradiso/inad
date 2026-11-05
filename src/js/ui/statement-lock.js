@@ -5,7 +5,7 @@
 import { $, $$, byId, esc } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
-import { evaluateStatementLock, resolveLogQuestionId, LOCK_RESULTS } from '../engines/statement-lock-engine.js';
+import { evaluateStatementLock, resolveLogQuestionId, statementDocumentCandidates, LOCK_RESULTS } from '../engines/statement-lock-engine.js';
 import { cues } from '../services/audio.js';
 import { bus } from '../services/bus.js';
 import { setStageState } from './passenger-stage.js';
@@ -62,9 +62,16 @@ export function compareWithTarget(target) {
   };
 
   if (result.ok) {
-    if (cues.lockConflict) cues.lockConflict();
-    else cues.alert();
-    setStageState('hesitant', 2800);
+    const corroborated = result.severity === LOCK_RESULTS.CONSISTENT;
+    if (corroborated) {
+      if (cues.lockConsistent) cues.lockConsistent();
+      else cues.toggle(true);
+      setStageState('relieved', 2200);
+    } else {
+      if (cues.lockConflict) cues.lockConflict();
+      else cues.alert();
+      setStageState('hesitant', 2800);
+    }
     // Brief pulse on the affected message
     const msgEl = $(`#log .msg[data-i="${activeLock.logIndex}"]`);
     if (msgEl) {
@@ -92,6 +99,7 @@ export function compareWithTarget(target) {
   }, result.ok ? 7000 : 4500);
 
   bus.emit('changed');
+  return result;
 }
 
 export function renderStatementLockDock() {
@@ -112,8 +120,10 @@ export function renderStatementLockDock() {
       ? '<span class="lock-tag critical">결정적 모순</span>'
       : lastResult.severity === LOCK_RESULTS.CONFLICT
       ? '<span class="lock-tag conflict">모순 확인</span>'
+      : isSuccess && lastResult.severity === LOCK_RESULTS.CONSISTENT
+      ? '<span class="lock-tag success">일치 확인</span>'
       : isSuccess
-      ? '<span class="lock-tag success">불일치 확인</span>'
+      ? '<span class="lock-tag conflict">추가 확인</span>'
       : '<span class="lock-tag neutral">모순 없음</span>';
 
     dock.className = `statement-lock-dock ${isSuccess ? 'lock-matched' : 'lock-unmatched'}`;
@@ -158,8 +168,85 @@ export function renderStatementLockDock() {
   if (cancelBtn) cancelBtn.onclick = clearStatementLock;
 }
 
+// Subtle hints are intentionally limited to guided mode and to submitted documents.
+// Never highlight a lookup-dependent field until that lookup was actually performed.
+export function refreshStatementLockCandidates() {
+  const c = current(), qid = activeLock?.questionId;
+  const guided = Boolean(activeLock && c && state.guidance === 'guided');
+  const candidates = guided ? statementDocumentCandidates(c, qid) : [];
+  const matches = (key, fieldName) => candidates.some((item) =>
+    item.key === key && (!item.fieldPattern || item.fieldPattern.test(fieldName || '')));
+  document.querySelectorAll('.doc-field[data-doc-key]').forEach((field) => {
+    field.classList.toggle('lock-candidate', guided && matches(field.dataset.docKey, field.dataset.fieldName));
+  });
+  document.querySelectorAll('#doclist .docitem, #docTabs .tab').forEach((tab) => {
+    const idx = Number(tab.dataset.i);
+    const key = Number.isInteger(idx) && idx >= 0 ? c?.docs?.[idx]?.k : tab.dataset.docKey;
+    tab.classList.toggle('lock-candidate', guided && candidates.some((item) => item.key === key));
+  });
+}
+
 function highlightLockTargets(active) {
   document.body.classList.toggle('statement-lock-mode', active);
+  refreshStatementLockCandidates();
+}
+
+function showDocumentCompareResult(result) {
+  const view = byId('docview');
+  if (!view || !result) return;
+  view.querySelector('.doc-lock-feedback')?.remove();
+  const notice = document.createElement('div');
+  notice.className = 'doc-lock-feedback';
+  notice.setAttribute('role', 'status');
+  const heading = document.createElement('strong');
+  heading.textContent = result.title || (result.ok ? '대조 완료' : '대조 결과');
+  const detail = document.createElement('span');
+  detail.textContent = result.description || result.message || '';
+  notice.append(heading, detail);
+  view.prepend(notice);
+}
+
+function beginDocumentComparison(field, target) {
+  document.querySelector('#docStatementPicker')?.remove();
+  const finish = (index) => {
+    if (!activeLock) selectStatementForLock(index);
+    const result = compareWithTarget(target);
+    showDocumentCompareResult(result);
+  };
+  if (activeLock) { finish(activeLock.logIndex); return; }
+  const statements = (state.logs || []).map((log, i) => ({ log, i }))
+    .filter(({ log }) => log?.type === 'alien' && log.text && !log.pending)
+    .slice(-8).reverse();
+
+  // One available statement is unambiguous; otherwise let the player choose,
+  // rather than secretly using an unrelated utterance.
+  if (statements.length === 1) { finish(statements[0].i); return; }
+
+  const picker = document.createElement('div');
+  picker.id = 'docStatementPicker';
+  picker.className = 'doc-statement-picker';
+  picker.setAttribute('role', 'group');
+  picker.setAttribute('aria-label', '대조할 진술 선택');
+  const title = document.createElement('strong');
+  title.textContent = statements.length ? '대조할 피심사인 진술 선택' : '먼저 인터뷰에서 진술을 받아 주세요';
+  picker.appendChild(title);
+  for (const { log, i } of statements) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'doc-compare-statement';
+    b.dataset.compareLog = String(i);
+    b.textContent = log.text.slice(0, 105);
+    b.onclick = () => finish(i);
+    picker.appendChild(b);
+  }
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'doc-compare-cancel';
+  close.textContent = '닫기';
+  close.onclick = () => picker.remove();
+  picker.appendChild(close);
+  field.insertAdjacentElement('afterend', picker);
+  picker.querySelector('button')?.focus();
 }
 
 // Binds global document and terminal click handlers for Statement Lock
@@ -183,6 +270,22 @@ export function bindStatementLockListeners() {
         } else {
           selectStatementForLock(idx);
         }
+      }
+      return;
+    }
+
+    // The document action works in either direction; it does not require a pinned
+    // statement first. The comparison picker only offers utterances already heard.
+    const docCompare = e.target.closest('.doc-compare-btn');
+    if (docCompare) {
+      const field = docCompare.closest('.doc-field[data-doc-key]');
+      if (field) {
+        e.preventDefault();
+        e.stopPropagation();
+        beginDocumentComparison(field, {
+          type: 'doc', key: field.dataset.docKey,
+          fieldName: field.dataset.fieldName, fieldValue: field.dataset.fieldVal
+        });
       }
       return;
     }
@@ -227,6 +330,7 @@ export function bindStatementLockListeners() {
 
   // Clear lock on case initialization
   bus.on('case:init', () => {
+    document.querySelector('#docStatementPicker')?.remove();
     activeLock = null;
     lastResult = null;
     clearTimeout(resultTimer);

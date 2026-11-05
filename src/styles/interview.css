@@ -372,3 +372,49 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 }
 .qbtn-interp-link:hover { background: var(--accent); color: var(--text-inverse); }
 .qbtn.lock-unlocked { border-left: 3px solid var(--accent); }
+
+
+/* P1-4: contextual, accessible document-to-dialogue comparison controls */
+.doc-field[data-doc-key] { position: relative; padding-right: 28px; }
+.doc-compare-btn {
+  position: absolute; top: 0; right: 0; width: 25px; height: 25px;
+  display: inline-grid; place-items: center; font-size: 15px; font-weight: 700;
+  border: 1px solid var(--border); border-radius: var(--r-1);
+  background: var(--elevated); color: var(--text-2); cursor: pointer;
+}
+.doc-compare-btn:hover, .doc-compare-btn:focus-visible {
+  border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text);
+}
+.doc-compare-btn:disabled { opacity: .4; cursor: default; }
+body.statement-lock-mode .doc-field.lock-candidate {
+  outline: 1px dashed var(--accent); outline-offset: 2px; border-radius: 3px;
+  background: var(--accent-soft);
+}
+body.statement-lock-mode #doclist .docitem.lock-candidate,
+body.statement-lock-mode #docTabs .tab.lock-candidate {
+  border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent);
+}
+.doc-statement-picker {
+  grid-column: 1 / -1; display: flex; flex-direction: column; gap: 5px;
+  padding: 10px; margin: 6px 0; border: 1px solid var(--accent);
+  border-radius: var(--r-1); background: var(--surface); color: var(--text);
+  box-shadow: var(--shadow-sm); min-width: 0;
+}
+.doc-statement-picker > strong { font-size: var(--fs-label); }
+.doc-compare-statement, .doc-compare-cancel {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--r-1); text-align: left; cursor: pointer;
+  color: var(--text); background: var(--elevated); font-size: var(--fs-label);
+  overflow-wrap: anywhere;
+}
+.doc-compare-statement:hover, .doc-compare-statement:focus-visible {
+  border-color: var(--accent); background: var(--accent-soft);
+}
+.doc-compare-cancel { width: fit-content; align-self: flex-end; color: var(--text-2); }
+.doc-lock-feedback {
+  display: grid; gap: 3px; padding: 10px 12px; border-left: 3px solid var(--accent);
+  border-radius: var(--r-1); background: var(--accent-soft); color: var(--text);
+  font-size: var(--fs-label); line-height: 1.5;
+}
+.doc-lock-feedback > span { color: var(--text-2); overflow-wrap: anywhere; }
+@media (pointer: coarse) { .doc-compare-btn { min-width: 36px; min-height: 36px; } }
