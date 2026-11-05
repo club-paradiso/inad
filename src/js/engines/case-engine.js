@@ -14,6 +14,7 @@ import { clueStats, discoverTriggeredClues, questionUnlocked } from './clue-engi
 import { personaFor } from '../../data/personas.js';
 import { travelPartyFor, archivePartyStatement, partyLookupResult } from './companion-engine.js';
 import { addLog } from './log.js';
+import { returnItineraryFor } from './return-itinerary-engine.js';
 import { availableCompareSources, safeComparisonNote } from './comparison-ledger.js';
 import { saveProgressSnapshot, saveBestGrade, loadMeta, saveMeta, clearProgressSave } from './save-engine.js';
 import { applySessionCareer, applyDailyMissions, evaluateAchievements, achievementById, challengeEvaluation, challengeCfg, gradeRank } from './achievement-engine.js';
@@ -85,6 +86,23 @@ export function lookup(kind) {
   if (kind === 'forensic') { state.forensic = true; actionMark('FORENSIC_REVIEW'); }
   bus.emit('changed'); notify.sound('lookup', t); notify.pulse('#terminal', 'lookup-pulse', 430);
   return { ok: true, tone: t, text };
+}
+
+// Submission is a separate player action, not an automatic legal requirement or an
+// implicit PNR lookup. The response comes only from evidence actually present in the case.
+export function requestReturnDocument() {
+  const c = current();
+  if (!c || state.ended) return { ok: false, reason: 'inactive' };
+  const evidence = returnItineraryFor(c, { looked: state.looked });
+  if (state.performed.includes('DOC_REQUEST_RETURN')) {
+    return { ok: true, repeated: true, evidence };
+  }
+  actionMark('DOC_REQUEST_RETURN');
+  addLog('officer', '귀국 또는 제3국행 전자항공권이나 예약확인서를 보여주시겠습니까?');
+  addLog('alien', evidence.response);
+  // Do not mark LOOKUP_pnr, reveal hidden clues, alter scoring or infer a refusal.
+  bus.emit('changed');
+  return { ok: true, evidence };
 }
 
 export function selectDocument(i) { const c = current(); if (!c.docs[i]) return; state.selectedDoc = i; const dd = c.docs[i], mark = 'DOC_READ_' + i; if (!state.performed.includes(mark)) { actionMark(mark); spendWork(5, 'document'); } discoverTriggeredClues('DOC_' + dd.k); bus.emit('changed'); }
