@@ -339,44 +339,113 @@ const CASE_CONTRADICTIONS = {
   ]
 };
 
-// Generic matching rules for cases without bespoke scripts
+// Procedural cases use only contradictions supported by the displayed record.
+// A mismatch is a reason to ask again, NOT a finding of fraud or a statutory refusal.
+function shownField(c, key, pattern) {
+  const doc = (c.docs || []).find((d) => d.k === key);
+  return (doc?.fields || []).filter(([label]) => pattern.test(String(label)))
+    .map(([, value]) => String(value)).join(' ');
+}
+
+function isFieldTarget(target, key, pattern) {
+  return target.type === 'doc' && target.key === key &&
+    (!target.fieldName || pattern.test(target.fieldName));
+}
+
+function normalMismatch(id, title, desc) {
+  return { matched: true, id, title, desc, severity: LOCK_RESULTS.DISCREPANCY,
+    actionToken: `LOCK_${id.toLowerCase()}`, stressDelta: 6 };
+}
+
+// For evidence still under review, do not infer an applicant's intent from nationality,
+// risk labels, or facts the player has not inspected.
 function evaluateGenericContradiction(sourceStatement, targetItem, c) {
+  if (!String(c?.id || '').startsWith('NORMAL-')) return { matched: false };
   const text = String(sourceStatement.text || '').toLowerCase();
-  
-  // Checking PNR one-way vs return ticket claim
-  if (targetItem.type === 'doc' && targetItem.key === 'PNR') {
-    if ((text.includes('귀국') || text.includes('돌아갈')) && /none|없음/i.test(c.return || '')) {
-      return {
-        matched: true,
-        id: 'GENERIC_PNR_RETURN_CONFLICT',
-        title: '귀국편 예약 상태 불일치',
-        desc: '진술 내용과 실제 항공 예약 기록상 귀국편 상태가 일치하지 않습니다.',
-        severity: LOCK_RESULTS.CONFLICT,
-        actionToken: 'LOCK_pnr_conflict',
-        stressDelta: 10
-      };
+  const qid = sourceStatement.questionId || resolveLogQuestionId(sourceStatement, c);
+
+  // 1. Statement asserts a booked return, but the displayed PNR explicitly denies it.
+  if (qid === 'return' && isFieldTarget(targetItem, 'PNR', /귀국|출국|이동|예약상태|상태/)) {
+    const claim = /귀국|돌아|왕복|발권|예약|출국|return|ticket|flight/.test(text);
+    const pnr = shownField(c, 'PNR', /귀국|출국|이동|예약상태|상태/);
+    if (claim && /미발권|취소|없음|no return|not ticketed|cancelled|unconfirmed/i.test(pnr)) {
+      return normalMismatch('GENERIC_PNR_RETURN', '귀국 예약 진술·기록 불일치',
+        '귀국편 발권 진술과 화면에 표시된 실제 예약 상태가 다릅니다. 추가 확인이 필요합니다.');
     }
   }
 
-  // Checking e-Arrival purpose vs statement
-  if (targetItem.type === 'doc' && targetItem.key === 'E-ARRIVAL') {
-    const earr = (c.docs || []).find((d) => d.k === 'E-ARRIVAL');
-    const fields = earr?.fields || [];
-    const declaredStay = fields.find((f) => f[0] === '체류지')?.[1] || '';
-    if (declaredStay && text.includes('호텔') && !declaredStay.includes('호텔') && !declaredStay.includes('HOTEL')) {
-      return {
-        matched: true,
-        id: 'GENERIC_STAY_CONFLICT',
-        title: '신고 체류지와 진술 불일치',
-        desc: '전자입국신고서에 신고된 체류지와 인터뷰 진술상의 숙박 형태가 일치하지 않습니다.',
-        severity: LOCK_RESULTS.DISCREPANCY,
-        actionToken: 'LOCK_stay_discrepancy',
-        stressDelta: 10
-      };
+  // 2. Hotel vs private home is a concrete lodging-type difference. A different
+  // spelling or language for the same address is not sufficient for a mismatch.
+  if (['hotel', 'stay', 'address'].includes(qid) &&
+      isFieldTarget(targetItem, 'E-ARRIVAL', /체류지|숙소|숙박/)) {
+    const lodging = shownField(c, 'E-ARRIVAL', /체류지|숙소|숙박/).toLowerCase();
+    const saidHotel = /호텔|hotel/.test(text);
+    const filedHotel = /호텔|hotel/.test(lodging);
+    const saidHome = /자택|개인주택|친구 집|지인 집|private home|friend.s home/.test(text);
+    const filedHome = /자택|개인주택|친구 집|지인 집|private home|friend.s home/.test(lodging);
+    if (lodging && ((saidHotel && filedHome) || (saidHome && filedHotel))) {
+      return normalMismatch('GENERIC_STAY', '신고 숙소 유형과 진술 불일치',
+        '신고된 체류지의 숙소 유형과 인터뷰 진술이 달라 추가 확인이 필요합니다.');
+    }
+  }
+
+  // 3. Flag an explicit mismatch between a stated cash amount and the displayed
+  // funds record, contextualized by the stated number of days. No universal
+  // "minimum KRW/day" is fabricated for immigration eligibility.
+  if (qid === 'funds' && targetItem.type === 'doc' &&
+      /FUNDS|BANK|E-ARRIVAL|FINANCIAL/i.test(targetItem.key || '') &&
+      (!targetItem.fieldName || /현금|잔액|금액|체재비|자금|funds|balance|cash/i.test(targetItem.fieldName))) {
+    const amountFrom = (s) => {
+      const v = String(s).replaceAll(',', '');
+      const m = v.match(/(\d+(?:\.\d+)?)\s*(억원|천만원|백만원|만원|원|krw)/i);
+      if (!m) return null;
+      return Number(m[1]) * ({ 억원: 100000000, 천만원: 10000000, 백만원: 1000000, 만원: 10000, 원: 1, krw: 1 }[m[2].toLowerCase()] || 1);
+    };
+    const recorded = shownField(c, targetItem.key, /현금|잔액|금액|체재비|자금|funds|balance|cash/i);
+    const spoken = amountFrom(text), documented = amountFrom(recorded);
+    const stayDays = Number(String(c.stay || '').match(/\d+/)?.[0] || 0);
+    if (spoken !== null && documented !== null && stayDays > 0 && documented < spoken) {
+      return normalMismatch('GENERIC_FUNDS', '체재비 진술과 증빙 금액 불일치',
+        `${stayDays}일 체류 예정이며 진술한 금액과 제시된 자금 증빙 금액이 다릅니다. 확인이 필요합니다.`);
+    }
+  }
+
+  // 4. Tourist admission basis vs an explicit plan for paid domestic work.
+  if (['purpose', 'detail', 'work', 'jobOffer', 'occupation'].includes(qid) &&
+      targetItem.type === 'doc' && ['VISA', 'ENTRY BASIS'].includes(targetItem.key)) {
+    const basis = shownField(c, targetItem.key, /체류자격|사증|입국기반|종류|목적|구분/);
+    const tourist = /C-3-9|TOURIST|TOURISM|관광/i.test(basis);
+    const paidWork = /(?:일을|근무|취업|알바|월급|급여|사례비|시급|돈을 받아|현금으로).{0,28}(?:받|하|일|벌|지급)|(?:paid work|salary|wage|employment)/i.test(text);
+    if (tourist && paidWork) {
+      return normalMismatch('GENERIC_VISA_PURPOSE', '관광 목적과 유상활동 진술 불일치',
+        '제시된 관광 입국기반과 국내 유상활동 계획에 관한 진술이 달라 추가 확인이 필요합니다.');
     }
   }
 
   return { matched: false };
+}
+
+// Only suggest visible document fields for the already-selected passenger statement,
+// and only when a guide is enabled. A required lookup must precede any hint.
+export function statementDocumentCandidates(c, questionId) {
+  if (!c || !questionId) return [];
+  const out = [];
+  for (const rule of CASE_CONTRADICTIONS[c.id] || []) {
+    if (!rule.statementQuestions.includes(questionId)) continue;
+    for (const target of rule.matchTargets) {
+      if (target.type === 'doc' && (!target.requiresLooked || hasPerformedLookup(target.requiresLooked))) {
+        out.push({ key: target.key, fieldPattern: target.fieldPattern || null });
+      }
+    }
+  }
+  // A generic case has no authored hidden-answer catalogue.
+  if (String(c.id).startsWith('NORMAL-')) {
+    const map = { return: ['PNR'], stay: ['E-ARRIVAL'], hotel: ['E-ARRIVAL'],
+      address: ['E-ARRIVAL'], funds: ['FUNDS', 'BANK', 'E-ARRIVAL', 'FINANCIAL'],
+      purpose: ['VISA', 'ENTRY BASIS'], detail: ['VISA', 'ENTRY BASIS'] };
+    for (const key of map[questionId] || []) out.push({ key, fieldPattern: null });
+  }
+  return out;
 }
 
 // Find question ID associated with an alien statement log
@@ -470,7 +539,8 @@ function applySuccessfulLock(rule, c) {
     if (rule.stressDelta && state.behavior) {
       behaviorAdjust(rule.stressDelta, -Math.floor(rule.stressDelta * 0.6), 'statement-lock');
     }
-    addLog('alert', `[진술 대조 확인] ${rule.title} — ${rule.desc}`);
+    const confirmation = rule.severity === LOCK_RESULTS.CONSISTENT;
+    addLog(confirmation ? 'system' : 'alert', `${confirmation ? '[교차검증 완료]' : '[진술 대조 확인]'} ${rule.title} — ${rule.desc}`);
     if (newlyUnlocked.length && c?.questions) {
       const qLabels = newlyUnlocked.map((id) => c.questions.find((x) => x.id === id)?.q || id).join(' · ');
       addLog('system', `[추궁 질문 해금] 모순 포착으로 추가 추궁 질문이 개방되었습니다: ${qLabels}`);
