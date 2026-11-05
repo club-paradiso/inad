@@ -120,6 +120,28 @@ export function currentSuggestions() {
   return suggestQuestions(c, { performed: state.performed, asked: state.asked, level: assistLevel(), lastKind: liveRecord()?.lastKind || null, interpreterActive: !!state.language?.interpreterActive, languageMiss: liveRecord()?.languageMiss || 0, ended: state.ended });
 }
 const REASON = { followup: '이어서 확인', open: '', later: '지금 물어볼 수 있음' };
+// Keep the interpreter action outside the question button: nested controls can accidentally
+// intercept ordinary clicks and bypass the language barrier in desktop and mobile E2E flows.
+function appendInterviewQuestion(box, questionButton, q, needsInterp, ask) {
+  if (!needsInterp) { box.appendChild(questionButton); return; }
+  const group = document.createElement('div');
+  group.className = 'qbtn-with-interp';
+  group.appendChild(questionButton);
+  const interpret = document.createElement('button');
+  interpret.type = 'button';
+  interpret.className = 'qbtn-interp-link';
+  interpret.dataset.interpAsk = q.id;
+  interpret.textContent = '통역 연결 후 질문';
+  interpret.setAttribute('aria-label', `통역 연결 후 질문: ${q.q}`);
+  interpret.disabled = state.ended;
+  interpret.onclick = () => {
+    if (!state.language?.interpreterActive) byId('langInterp')?.click();
+    ask();
+  };
+  group.appendChild(interpret);
+  box.appendChild(group);
+}
+
 export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} } = {}) {
   const c = current(); const cats = [...new Set(c.questions.map((q) => q.cat))];
   if (viewCase !== c.id) { viewCase = c.id; view = SUGGEST; }
@@ -144,16 +166,13 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
       else {
         const q = s.q; const comm = communicationReady(q);
         const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
-        const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span> <span class="qbtn-interp-link" data-interp-ask="${esc(q.id)}" role="button" tabindex="0" title="통역 연결 후 즉시 질문">통역 자동연결</span>` : '';
+        const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
         b.className = `qbtn suggest ${s.reason}${needsInterp ? ' needs-interp' : ''}`; b.dataset.qid = q.id;
         b.innerHTML = `${esc(q.q)}<em>${esc(q.cat)}${REASON[s.reason] ? ' · ' + REASON[s.reason] : ''}${langBadge}</em>`;
-        b.onclick = (e) => {
-          const autoLink = e.target?.closest?.('[data-interp-ask]');
-          if (autoLink && !state.language?.interpreterActive) byId('langInterp')?.click();
-          onSuggest(q, false);
-        };
+        b.onclick = () => onSuggest(q, false);
+        appendInterviewQuestion(box, b, q, needsInterp, () => onSuggest(q, false));
       }
-      box.appendChild(b);
+      if (s.action === 'interpreter') box.appendChild(b);
     }
     return;
   }
@@ -165,18 +184,14 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
     const b = document.createElement('button'), wasAsked = state.asked.has(q.id);
     const comm = communicationReady(q);
     const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
-    const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span> <span class="qbtn-interp-link" data-interp-ask="${esc(q.id)}" role="button" tabindex="0" title="통역 연결 후 즉시 질문">통역 자동연결</span>` : '';
+    const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
     const unlockedByLock = state.performed.includes(`UNLOCK_Q_${q.id}`);
     b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (wasAsked ? ' asked' : '') + (needsInterp ? ' needs-interp' : '') + (unlockedByLock ? ' lock-unlocked' : ''); b.disabled = state.ended;
     b.innerHTML = wasAsked
       ? `${esc(q.q)}<em>${esc(q.cat)} · 재질문 · 반복 질문은 효율에 반영${langBadge}</em>`
       : `${esc(q.q)}<em>${esc(q.cat)}${unlockedByLock ? ' · 모순 추궁 해금' : (q.requires ? ' · 추가 질문' : '')}${langBadge}</em>`;
-    b.onclick = (e) => {
-      const autoLink = e.target?.closest?.('[data-interp-ask]');
-      if (autoLink && !state.language?.interpreterActive) byId('langInterp')?.click();
-      onAsk(q, wasAsked);
-    };
-    box.appendChild(b);
+    b.onclick = () => onAsk(q, wasAsked);
+    appendInterviewQuestion(box, b, q, needsInterp, () => onAsk(q, wasAsked));
   });
 }
 // Number shortcuts pick a *category* (1 = first category); the 제안 tab is reached with the arrows or a click.
