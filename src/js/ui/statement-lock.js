@@ -62,9 +62,16 @@ export function compareWithTarget(target) {
   };
 
   if (result.ok) {
-    if (cues.lockConflict) cues.lockConflict();
-    else cues.alert();
-    setStageState('hesitant', 2800);
+    const corroborated = result.severity === LOCK_RESULTS.CONSISTENT;
+    if (corroborated) {
+      if (cues.lockConsistent) cues.lockConsistent();
+      else cues.toggle(true);
+      setStageState('relieved', 2200);
+    } else {
+      if (cues.lockConflict) cues.lockConflict();
+      else cues.alert();
+      setStageState('hesitant', 2800);
+    }
     // Brief pulse on the affected message
     const msgEl = $(`#log .msg[data-i="${activeLock.logIndex}"]`);
     if (msgEl) {
@@ -113,8 +120,10 @@ export function renderStatementLockDock() {
       ? '<span class="lock-tag critical">결정적 모순</span>'
       : lastResult.severity === LOCK_RESULTS.CONFLICT
       ? '<span class="lock-tag conflict">모순 확인</span>'
+      : isSuccess && lastResult.severity === LOCK_RESULTS.CONSISTENT
+      ? '<span class="lock-tag success">일치 확인</span>'
       : isSuccess
-      ? '<span class="lock-tag success">불일치 확인</span>'
+      ? '<span class="lock-tag conflict">추가 확인</span>'
       : '<span class="lock-tag neutral">모순 없음</span>';
 
     dock.className = `statement-lock-dock ${isSuccess ? 'lock-matched' : 'lock-unmatched'}`;
