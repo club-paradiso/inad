@@ -162,3 +162,71 @@ test('statement-lock: ICN-S3-012 deportation history vs watchlist detects critic
   assert.equal(r.clueId, 'km4');
   assert.equal(state.discoveredClues.has('km4'), true);
 });
+
+test('statement-lock P0-1: successful lock updates stress and rapport as finite numbers (never NaN)', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S2-005');
+  state.performed = [];
+  state.discoveredClues = new Set();
+  state.looked = new Set(['contact']);
+  state.behavior = { stress: 41, rapport: 74, lastStress: 41, lastRapport: 74, lastEvent: '' };
+
+  const source = { questionId: 'contact', text: '친구의 친구입니다. 정확한 이름은 모릅니다.', logIndex: 2 };
+  const target = { type: 'lookup', kind: 'contact' };
+
+  const r = evaluateStatementLock(source, target, c);
+  assert.equal(r.ok, true);
+  assert.equal(Number.isFinite(state.behavior.stress), true);
+  assert.equal(state.behavior.stress, 61);
+  assert.equal(state.behavior.rapport, 62);
+});
+
+test('statement-lock P0-2: E-ARRIVAL contact field lock requires prior contact lookup before revealing broker clue tm4', () => {
+  const c = CASES.find((x) => x.id === 'ICN-S2-005');
+  state.performed = [];
+  state.discoveredClues = new Set();
+  state.looked = new Set();
+
+  const source = { questionId: 'contact', text: '친구의 친구입니다. 정확한 이름은 모릅니다.', logIndex: 2 };
+  const docTarget = { type: 'doc', key: 'E-ARRIVAL', fieldName: '국내 연락처' };
+
+  // Without lookup('contact'), matching against E-ARRIVAL 연락처 must NOT leak tm4
+  const blocked = evaluateStatementLock(source, docTarget, c);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.reason, LOCK_RESULTS.UNRELATED);
+  assert.equal(state.discoveredClues.has('tm4'), false);
+  assert.equal(state.performed.includes('LOCK_contact_anomaly'), false);
+
+  // Once contact lookup is performed, matching against E-ARRIVAL 연락처 succeeds
+  state.looked.add('contact');
+  const allowed = evaluateStatementLock(source, docTarget, c);
+  assert.equal(allowed.ok, true);
+  assert.equal(allowed.clueId, 'tm4');
+  assert.equal(state.discoveredClues.has('tm4'), true);
+});
+
+test('statement-lock P1-1: successful lock records UNLOCK_Q_<id> and immediately unlocks gated follow-up questions', async () => {
+  const { questionUnlocked } = await import('../../src/js/engines/clue-engine.js');
+  const { suggestQuestions } = await import('../../src/js/engines/suggestion-engine.js');
+  const c = CASES.find((x) => x.id === 'ICN-S2-005');
+  state.performed = ['QUESTION_contact', 'LOOKUP_contact'];
+  state.asked = new Set(['contact']);
+  state.discoveredClues = new Set();
+  state.looked = new Set(['contact']);
+
+  const qJobOffer = c.questions.find((q) => q.id === 'jobOffer');
+  // Before Statement Lock, jobOffer requires QUESTION_occupation + LOOKUP_contact, so it is NOT unlocked yet
+  assert.equal(questionUnlocked(qJobOffer, state.performed), false);
+
+  const source = { questionId: 'contact', text: '친구의 친구입니다. 정확한 이름은 모릅니다.', logIndex: 2 };
+  const target = { type: 'lookup', kind: 'contact' };
+  const r = evaluateStatementLock(source, target, c);
+
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.unlockedQuestions, ['addressOwner', 'jobOffer']);
+  assert.equal(state.performed.includes('UNLOCK_Q_jobOffer'), true);
+  assert.equal(questionUnlocked(qJobOffer, state.performed), true);
+
+  // Suggest engine immediately surfaces unlocked follow-up questions at the top
+  const sugg = suggestQuestions(c, { performed: state.performed, asked: state.asked, level: 'guided' });
+  assert.ok(['addressOwner', 'jobOffer'].includes(sugg[0].q.id));
+});

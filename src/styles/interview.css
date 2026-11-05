@@ -341,3 +341,22 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 .question-prereq-row span { min-width: 0; flex: 1 1 140px; line-height: 1.45; overflow-wrap: anywhere; }
 .question-prereq-row button { min-height: 36px; padding: 5px 9px; color: var(--accent-text); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-weight: 600; font-size: inherit; }
 .question-prereq-row button:hover { border-color: var(--accent); }
+
+/* P1-3 & P1-1: Language barrier badge, one-click interpreter auto-connect pill, and lock-unlocked question styling */
+.qbtn.needs-interp { border-left: 3px solid var(--warning); }
+.qbtn-lang-badge { color: var(--warning); font-weight: 700; font-style: normal; }
+.qbtn-interp-link {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: var(--r-1);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  font-style: normal;
+  cursor: pointer;
+}
+.qbtn-interp-link:hover { background: var(--accent); color: var(--text-inverse); }
+.qbtn.lock-unlocked { border-left: 3px solid var(--accent); }

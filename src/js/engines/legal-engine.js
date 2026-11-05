@@ -4,18 +4,46 @@
 //
 // Distinct procedures are kept distinct on purpose: 입국심사 · 입국재심 · 입국불허 · 제11조 입국금지 ·
 // 난민 회부심사 · 불회부 · 출입국사범 조사 · 긴급체포 · 송환지시 · 출국대기실. There is no single "DEPORT".
-// Nationality only feeds entry-basis calculation; behaviour, language and party membership never feed a verdict.
+// Nationality only feeds entry-basis calculation; demeanour, language and party membership never feed a verdict.
 import { REFUSAL_REASONS } from '../../data/legal-baseline.js';
 
 export const STAGES = { PRIMARY: '일반심사', SECONDARY: '입국재심', REFUGEE: '난민 회부심사', INVESTIGATION: '출입국사범 조사', ARREST_REVIEW: '긴급체포 요건 검토', ENTRY_REFUSED: '입국 불허', ADMITTED: '입국 허가', ARRESTED: '긴급체포' };
 export const ACTION_NAMES = { SECONDARY: '입국재심', INVESTIGATION: '사범조사', ARREST_REVIEW: '체포요건검토', REFUGEE_CLAIM: '난민신청접수', REFERRAL_SCREENING: '회부심사', NON_REFERRAL: '불회부', RETURN_TO_ENTRY: '입국심사복귀' };
+export const LOOKUP_NAMES = { history: '출입국기록', visa: '사증·입국자격', pnr: '항공 PNR', contact: '국내관계', party: '동행인 교차검증', public: '공개정보', forensic: '문서감식' };
 export const refusalReasons = REFUSAL_REASONS;
 export const refusalReason = (code) => REFUSAL_REASONS.find((r) => r[0] === code) || null;
 
+// Plain-language description of how an action / clue trigger is reached (shared across legal & debrief engines).
+export function describeAction(token, c) {
+  if (!token) return '';
+  if (token === 'INIT') return '심사 시작 시 확인';
+  if (token.startsWith('LOCK_')) return '진술·증거 모순 대조';
+  if (token.startsWith('UNLOCK_Q_')) { const q = (c?.questions || []).find((x) => x.id === token.slice(9)); return q ? `추궁 질문 해금 · ${q.q}` : token; }
+  if (token.startsWith('QUESTION_')) { const q = (c?.questions || []).find((x) => x.id === token.slice(9)); return q ? `질문 · ${q.q}` : token; }
+  if (token.startsWith('LOOKUP_')) return `전산 조회 · ${LOOKUP_NAMES[token.slice(7)] || token.slice(7)}`;
+  if (token.startsWith('DOC_')) { const d = (c?.docs || []).find((x) => x.k === token.slice(4)); return `서류 확인 · ${d?.t || token.slice(4)}`; }
+  return ACTION_NAMES[token] || token;
+}
+
 export function stageText(stage) { return STAGES[stage] || stage; }
 export function caseLawRef(c) { if (!c) return '출입국관리법 제12조'; if (c.special === 'refugee') return '난민법 제6조 · 난민법 시행령 제5조'; if (c.special === 'forgery') return '출입국관리법 제47·48조 · 형사소송법 제200조의3'; if (c.resolution?.type === 'REFUSE') { const rr = refusalReason(c.resolution.reason); if (rr) return rr[2]; } return '출입국관리법 제12조'; }
-export function missingRequirements(c, performed) { return (c.required || []).filter((x) => !performed.includes(x)); }
-export function procedureCompliance(c, performed) { const required = c.required || []; const hit = required.filter((x) => performed.includes(x)).length; return required.length ? Math.round(hit / required.length * 100) : 100; }
+export function missingRequirements(c, performed) {
+  const hasLock = Array.isArray(performed) && performed.some((x) => x.startsWith('LOCK_'));
+  const unlockedAsked = hasLock && performed.some((u) => u.startsWith('UNLOCK_Q_') && performed.includes('QUESTION_' + u.slice(9)));
+  return (c.required || []).filter((x) => {
+    if (performed.includes(x)) return false;
+    // P1-1: When the examiner has established a contradiction via Statement Lock (`LOCK_*`) and completed
+    // either the unlocked follow-up interrogation (`UNLOCK_Q_<id>` + `QUESTION_<id>`) or the case's required
+    // system lookups, routine background question/lookup items no longer penalize the verdict as `thin`.
+    if (hasLock && (x.startsWith('QUESTION_') || (unlockedAsked && x.startsWith('LOOKUP_') && x !== 'LOOKUP_forensic'))) {
+      const reqLookups = (c.required || []).filter((r) => r.startsWith('LOOKUP_'));
+      const lookupsDone = reqLookups.length > 0 && reqLookups.every((r) => performed.includes(r));
+      if (unlockedAsked || lookupsDone) return false;
+    }
+    return true;
+  });
+}
+export function procedureCompliance(c, performed) { const required = c.required || []; const miss = missingRequirements(c, performed).length; const hit = Math.max(0, required.length - miss); return required.length ? Math.round(hit / required.length * 100) : 100; }
 
 // Minimum expected work (seconds) for a case, derived from its required actions and resolution.
 export function expectedMinimumWork(c, languageProfile) {
@@ -38,7 +66,9 @@ export function evidenceNow(c, { looked, asked }) {
 }
 // Readiness hint (0–100). A hint only — never an automatic verdict.
 export function readiness(c, performed, clueStat) {
-  const needed = (c.required || []).length || 1; const hit = (c.required || []).filter((x) => performed.includes(x)).length;
+  const needed = (c.required || []).length || 1;
+  const miss = missingRequirements(c, performed).length;
+  const hit = Math.max(0, (c.required || []).length - miss);
   let pct = Math.round(Math.min(100, (hit / needed) * 100));
   if (c.clues && clueStat && clueStat.keys.length) { const kp = clueStat.keyGot.length / clueStat.keys.length * 100; pct = Math.round(pct * .75 + kp * .25); }
   if (c.resolution.type === 'CLEAR' && (c.required || []).length === 0) pct = 100;
@@ -56,13 +86,13 @@ export function validateSecondary(c, stage) { if (stage !== 'PRIMARY') return { 
 export function validateClear(c, performed) {
   if (c.resolution.type !== 'CLEAR') return { ok: false, penalty: { msg: '사실관계를 충분히 확인하지 않고 입국허가를 결정했습니다.', pts: c.resolution.type === 'ARREST' ? 18 : 12 } };
   const m = missingRequirements(c, performed);
-  if (m.length) return { ok: true, thin: true, missing: m, advisory: { msg: `확인이 부족한 상태에서 입국허가를 결정했습니다. 남은 확인: ${m.join(', ')}`, pts: 6 } };
+  if (m.length) return { ok: true, thin: true, missing: m, advisory: { msg: `확인이 부족한 상태에서 입국허가를 결정했습니다. 남은 확인: ${m.map((t) => describeAction(t, c)).join(', ')}`, pts: 6 } };
   return { ok: true };
 }
 export function validateRefusal(c, code, performed) {
   if (c.resolution.type !== 'REFUSE' || c.resolution.reason !== code) return { ok: false, penalty: { msg: '선택한 입국불허 사유가 이 사건의 사실관계와 맞지 않습니다.', pts: 10 } };
   const m = missingRequirements(c, performed);
-  if (m.length) return { ok: true, thin: true, missing: m, reason: refusalReason(code), advisory: { msg: `확인이 부족한 상태에서 입국불허를 결정했습니다. 남은 확인: ${m.join(', ')}`, pts: 7 } };
+  if (m.length) return { ok: true, thin: true, missing: m, reason: refusalReason(code), advisory: { msg: `확인이 부족한 상태에서 입국불허를 결정했습니다. 남은 확인: ${m.map((t) => describeAction(t, c)).join(', ')}`, pts: 7 } };
   return { ok: true, reason: refusalReason(code) };
 }
 export function validateSjpEntry(c, stage) {

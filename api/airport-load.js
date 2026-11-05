@@ -80,7 +80,7 @@ export function inUpcomingWindow(value, nowMinutes, windowMinutes = WINDOW_MINUT
   const delta = flightMinutes + dayOffset - nowMinutes;
   return delta >= 0 && delta <= windowMinutes;
 }
-export function koreaDateKey(now = new Date()) { const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now); return p.replace(/-/g, ''); }
+export function koreaDateKey(now = new Date()) { const ms = now instanceof Date ? now.getTime() : Number(now); const kst = new Date(ms + 9 * 3600 * 1000); return kst.toISOString().slice(0, 10).replace(/-/g, ''); }
 
 function arrayify(value) {
   if (Array.isArray(value)) return value;

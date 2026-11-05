@@ -31,7 +31,7 @@ const CASE_CONTRADICTIONS = {
       statementQuestions: ['contact', 'addressOwner'],
       matchTargets: [
         { type: 'lookup', kind: 'contact' },
-        { type: 'doc', key: 'E-ARRIVAL', fieldPattern: /연락처/ }
+        { type: 'doc', key: 'E-ARRIVAL', fieldPattern: /연락처/, requiresLooked: 'contact' }
       ],
       severity: LOCK_RESULTS.CONFLICT,
       clueId: 'tm4',
@@ -316,6 +316,13 @@ export function resolveLogQuestionId(logItem, c = current()) {
   return found ? found.id : null;
 }
 
+function hasPerformedLookup(kind) {
+  if (!kind) return true;
+  if (state.looked instanceof Set && state.looked.has(kind)) return true;
+  if (Array.isArray(state.performed) && state.performed.includes(`LOOKUP_${kind}`)) return true;
+  return false;
+}
+
 // Compare a selected statement with a target item (document, lookup, or statement)
 export function evaluateStatementLock(sourceStatement, targetItem, c = current()) {
   if (!sourceStatement || !targetItem || !c) {
@@ -336,6 +343,14 @@ export function evaluateStatementLock(sourceStatement, targetItem, c = current()
       if (mt.type === targetItem.type) {
         if (mt.type === 'doc' && mt.key === targetItem.key) {
           if (!mt.fieldPattern || (targetItem.fieldName && mt.fieldPattern.test(targetItem.fieldName))) {
+            if (mt.requiresLooked && !hasPerformedLookup(mt.requiresLooked)) {
+              return {
+                ok: false,
+                reason: LOCK_RESULTS.UNRELATED,
+                title: '전산 조회 선행 필요',
+                message: '전산망 조회를 먼저 수행하여 사실 관계를 확인하십시오.'
+              };
+            }
             return applySuccessfulLock(rule, c);
           }
         } else if (mt.type === 'lookup' && mt.kind === targetItem.kind) {
@@ -364,16 +379,29 @@ export function evaluateStatementLock(sourceStatement, targetItem, c = current()
 function applySuccessfulLock(rule, c) {
   const token = rule.actionToken || `LOCK_${rule.id}`;
   const alreadyDone = state.performed.includes(token);
+  const unlockedQuestions = Array.isArray(rule.unlockQuestions) ? rule.unlockQuestions.slice() : [];
 
   if (!alreadyDone) {
     state.performed.push(token);
     if (rule.clueId && !state.discoveredClues.has(rule.clueId)) {
       state.discoveredClues.add(rule.clueId);
     }
+    const newlyUnlocked = [];
+    for (const qid of unlockedQuestions) {
+      const uToken = `UNLOCK_Q_${qid}`;
+      if (!state.performed.includes(uToken)) {
+        state.performed.push(uToken);
+        if (!state.asked?.has?.(qid)) newlyUnlocked.push(qid);
+      }
+    }
     if (rule.stressDelta && state.behavior) {
-      behaviorAdjust({ stress: rule.stressDelta, rapport: -Math.floor(rule.stressDelta * 0.6) });
+      behaviorAdjust(rule.stressDelta, -Math.floor(rule.stressDelta * 0.6), 'statement-lock');
     }
     addLog('alert', `[진술 대조 확인] ${rule.title} — ${rule.desc}`);
+    if (newlyUnlocked.length && c?.questions) {
+      const qLabels = newlyUnlocked.map((id) => c.questions.find((x) => x.id === id)?.q || id).join(' · ');
+      addLog('system', `[추궁 질문 해금] 모순 포착으로 추가 추궁 질문이 개방되었습니다: ${qLabels}`);
+    }
     bus.emit('analytics', { name: 'statement_lock_success', ruleId: rule.id, caseId: c.id });
     bus.emit('changed');
   }
@@ -385,6 +413,7 @@ function applySuccessfulLock(rule, c) {
     title: rule.title,
     description: rule.desc,
     clueId: rule.clueId || null,
+    unlockedQuestions,
     isFirstDiscovery: !alreadyDone
   };
 }

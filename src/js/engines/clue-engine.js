@@ -10,8 +10,12 @@ import { addLog } from './log.js';
 
 export function clueCatalog(c = current()) { return c?.clues || []; }
 export function discoverTriggeredClues(trigger) { let found = 0; for (const c of clueCatalog()) { if (c.trigger === trigger && !state.discoveredClues.has(c.id)) { state.discoveredClues.add(c.id); found++; if (c.kind === 'conflict' || c.kind === 'critical') addLog('alert', `단서 연결: ${c.title} — ${c.text}`); } } return found; }
-// True when the passenger can actually answer this question from what has been established so far.
-export function disclosureReady(q, performed = state.performed) { return !(q.requires || []).some((x) => !performed.includes(x)); }
+// True when the passenger can actually answer this question from what has been established so far
+// (either all static `requires` actions are in `performed`, or a Statement Lock rule unlocked `UNLOCK_Q_<id>`).
+export function disclosureReady(q, performed = state.performed) {
+  if (q?.id && Array.isArray(performed) && performed.includes(`UNLOCK_Q_${q.id}`)) return true;
+  return !(q.requires || []).some((x) => !performed.includes(x));
+}
 // Backwards-compatible name: existing callers/tests read this as "the answer would be disclosed".
 export function questionUnlocked(q, performed = state.performed) { return disclosureReady(q, performed); }
 export function clueStats(c = current()) { const all = clueCatalog(c), got = all.filter((x) => state.discoveredClues.has(x.id)), keys = all.filter((x) => x.key), keyGot = keys.filter((x) => state.discoveredClues.has(x.id)); return { all, got, keys, keyGot }; }
