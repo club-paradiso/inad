@@ -50,7 +50,9 @@ export function renderStrikes() {
 export function renderTop() {
   const c = current(); if (!c) return;
   setText('caseCount', `${String(state.stats.processed).padStart(2, '0')} / ${session.queue.length}`);
-  setText('shiftLabel', c.shift === 1 ? '제1근무조 · 기초 심사' : c.shift === 2 ? '제2근무조 · 재심·목적 확인' : '제3근무조 · 특수사건');
+  // Duty team only. The '기초 심사 · 재심·목적 확인 · 특수사건' suffix restated the stage family the
+  // case bar already shows; the one fact that appears nowhere else is which shift this case belongs to.
+  setText('shiftLabel', `제${c.shift}근무조`);
   renderStrikes();
   renderAudioButton();
   setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);

@@ -44,10 +44,16 @@ export function renderTerminal() {
   shownQueries.list = list; shownQueries.n = list.length;
 }
 const rank = (t) => t === '정상' ? 0 : t === '주의' ? 1 : t === '경고' ? 2 : 3;
+// One clue-card renderer for both clue surfaces (the judgment-panel board and the procedure
+// screen's panel): same cards, same limit of four, so a clue looks identical wherever it appears.
+// The two surfaces keep their own heads — counts live in the board head, not repeated elsewhere.
+export function clueCardsHTML(st, emptyText) {
+  const cards = st.got.slice().reverse().slice(0, 4).map((x) => `<div class="clue ${esc(x.kind || 'context')}"><strong>${esc(x.title)}${x.key ? '<span class="cluekey">핵심</span>' : ''}</strong><p>${esc(x.text)}</p></div>`).join('');
+  return cards || `<div class="clueempty">${esc(emptyText)}</div>`;
+}
 export function renderClueBoard() {
   const el = byId('clueBoard'); if (!el) return; const c = current(); if (!c.clues) { el.innerHTML = ''; return; } const st = clueStats(c);
-  const cards = st.got.slice().reverse().slice(0, 4).map((x) => `<div class="clue ${esc(x.kind || 'context')}"><strong>${esc(x.title)}${x.key ? '<span class="cluekey">핵심</span>' : ''}</strong><p>${esc(x.text)}</p></div>`).join('');
-  el.innerHTML = `<div class="cluehead"><span>단서</span><b>핵심 ${st.keyGot.length}/${st.keys.length} · 전체 ${st.got.length}/${st.all.length}</b></div><div class="cluecards">${cards || '<div class="clueempty">질문·전산조회·서류 확인으로 단서가 이어집니다.</div>'}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
+  el.innerHTML = `<div class="cluehead"><span>단서</span><b>핵심 ${st.keyGot.length}/${st.keys.length} · 전체 ${st.got.length}/${st.all.length}</b></div><div class="cluecards">${clueCardsHTML(st, '질문·전산조회·서류 확인으로 단서가 이어집니다.')}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
 }
 export function renderMatrix() {
   const c = current(); const e = evidenceNow(c, state);
@@ -55,8 +61,9 @@ export function renderMatrix() {
   // Status, not a gate (P0-3): what has actually been checked so far, in plain counts. There is no
   // readiness percentage and nothing here enables or disables the decision buttons — a decision
   // can be made at any point, and whatever was left unchecked shows up in the case feedback.
-  const cs = clueStats(c);
-  let hint = `질문 ${state.asked.size}개 · 조회 ${state.looked.size}개${c.clues ? ` · 핵심 단서 ${cs.keyGot.length}/${cs.keys.length}` : ''} · 판단은 언제든 내릴 수 있고, 부족한 확인은 결과 피드백에 반영됩니다.`;
+  // Counts here are work counts only (questions · lookups). Clue counts live in the clue board's
+  // head directly below — repeating them in this line made the same number appear twice per panel.
+  let hint = `질문 ${state.asked.size}개 · 조회 ${state.looked.size}개 · 판단은 언제든 내릴 수 있고, 부족한 확인은 결과 피드백에 반영됩니다.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
