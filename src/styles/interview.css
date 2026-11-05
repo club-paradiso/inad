@@ -345,6 +345,18 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 /* P1-3 & P1-1: Language barrier badge, one-click interpreter auto-connect pill, and lock-unlocked question styling */
 .qbtn.needs-interp { border-left: 3px solid var(--warning); }
 .qbtn-lang-badge { color: var(--warning); font-weight: 700; font-style: normal; }
+.qbtn-with-interp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
+}
+.qbtn-with-interp > .qbtn { width: 100%; min-width: 0; text-align: left; }
+.qbtn-with-interp > .qbtn-interp-link { align-self: stretch; min-width: 88px; }
+@media (max-width: 430px) {
+  .qbtn-with-interp { grid-template-columns: minmax(0, 1fr); }
+  .qbtn-with-interp > .qbtn-interp-link { min-height: 36px; }
+}
 .qbtn-interp-link {
   display: inline-block;
   margin-left: 4px;
