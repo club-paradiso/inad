@@ -203,7 +203,11 @@ export function buildTravelParties(seed, queue) {
       const c = x.c;
       c.lookups = c.lookups || {}; c.lookups.party = ['정상', '동행인 교차검증은 연결된 동행여행 기록에서 동적으로 계산됩니다.'];
       c.arrival = lead.arrival; c.carrier = lead.carrier; c.stay = stay;
-      for (const d of (c.docs || [])) { if (d.k === 'PNR') { const r = (d.fields || []).find((y) => y[0] === '입국편'); if (r) r[1] = lead.arrival.split(' · ')[0]; d.fields.push(['공동 PNR', party.sharedPNR]); } if (d.k === 'HOTEL' || d.k === 'STAY') { const r = (d.fields || []).find((y) => /숙박|숙소|체류지/.test(y[0])); if (r) r[1] = party.hotel; } }
+      // Shared booking also means one consistent onward flight across the party.
+      c.return = lead.return;
+      const returnAnswer = c.questions.find((q) => q.id === 'return');
+      if (returnAnswer && lead.return !== '—') returnAnswer.a = `공동 예약된 ${lead.return} 항공편으로 돌아갑니다.`;
+      for (const d of (c.docs || [])) { if (d.k === 'PNR') { const r = (d.fields || []).find((y) => y[0] === '입국편'); if (r) r[1] = lead.arrival.split(' · ')[0]; const back = (d.fields || []).find((y) => y[0] === '귀국편'); if (back && lead.return !== '—') back[1] = lead.return.split(' · ')[0]; const onward = (d.fields || []).find((y) => y[0] === '출국여정'); if (onward) onward[1] = lead.return.split(' · ')[1] || onward[1]; d.fields.push(['공동 PNR', party.sharedPNR]); } if (d.k === 'HOTEL' || d.k === 'STAY') { const r = (d.fields || []).find((y) => /숙박|숙소|체류지/.test(y[0])); if (r) r[1] = party.hotel; } }
       if (!c.questions.some((q) => q.id === 'partyRelation')) c.questions.push({ id: 'partyRelation', cat: '국내관계', q: '함께 입국한 동행인이 있습니까? 관계를 설명해 주십시오.', a: `${party.label}으로 함께 왔습니다. 저는 ${rel} 관계입니다.`, reveal: 'party' });
       if (!c.questions.some((q) => q.id === 'partyPlan')) c.questions.push({ id: 'partyPlan', cat: '여행·체류', q: '동행인들과 체류 일정과 숙소가 모두 같습니까?', a: party.mode === 'minor-resolved' && i === chosen.length - 1 ? `기본 숙소와 귀국편은 같지만 하루는 개인 일정으로 따로 움직입니다.` : `네. 기본 숙소와 귀국 일정은 같습니다. 일부 자유시간만 다를 수 있습니다.`, reveal: 'party', requires: ['QUESTION_partyRelation'] });
       if (!c.questions.some((q) => q.id === 'partyBooking')) c.questions.push({ id: 'partyBooking', cat: '추가소명', q: '공동 예약의 대표자와 예약번호를 확인할 수 있습니까?', a: `대표 예약자는 ${getTraveler(chosen[0].q.travelerId).name.korean}이고 공동 예약번호는 ${party.sharedPNR}입니다.`, reveal: 'party', requires: ['QUESTION_partyRelation'] });
