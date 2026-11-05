@@ -5,6 +5,7 @@ import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
 import { docIcon, uiIcon } from './icons.js';
 import { documentReviewPlan } from '../engines/review-guidance.js';
+import { availableCompareSources, comparisonSummary } from '../engines/comparison-ledger.js';
 import { openWorkGuide } from '../services/work-manual.js';
 
 export function docFieldMap(d) { const m = {}; (d.fields || []).forEach((r) => { m[r[0]] = r[1]; }); return m; }
@@ -29,7 +30,9 @@ const isEn = () => document.documentElement.lang === 'en' || document.documentEl
 const tUI = (ko, en) => isEn() ? en : ko;
 
 // Review marks are user annotations, not automatic authenticity checks, statutory findings or verdict inputs.
-export function renderDocs({ onSelect, onZoom, onReview }) {
+// Transient input only; the actual comparison ledger is stored case-locally by the engine.
+let comparisonDraft = { owner: null, docIndex: -1, sourceId: '', note: '' };
+export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
   const c = current(), traveler = getTraveler(c.travelerId);
   const reviews = state.documentReviews || {};
   const tally = Object.values(reviews).filter((s) => s === 'reviewed' || s === 'followup').length;
@@ -50,9 +53,19 @@ export function renderDocs({ onSelect, onZoom, onReview }) {
   const status = reviews[state.selectedDoc] || 'unreviewed';
   const openedSel = state.performed.includes('DOC_READ_' + state.selectedDoc);
   const statusLabel = status === 'reviewed' ? tUI('대조 기록됨 · 확대 보기로 자동 기록', 'Cross-checked · recorded from the enlarged view') : status === 'followup' ? tUI('추가 확인 필요로 표시됨', 'Flagged for follow-up') : openedSel ? tUI('열람 기록됨 · 확대해서 보면 대조로 기록됩니다', 'Opened · enlarge to record a cross-check') : tUI('아직 열람하지 않음', 'Not opened yet');
+  const sources = availableCompareSources(state), summary = comparisonSummary(state);
+  if (comparisonDraft.owner !== state.comparisonNotes || comparisonDraft.docIndex !== state.selectedDoc) {
+    comparisonDraft = { owner: state.comparisonNotes, docIndex: state.selectedDoc, sourceId: sources[0]?.id || '', note: '' };
+  }
+  if (!sources.some((source) => source.id === comparisonDraft.sourceId)) comparisonDraft.sourceId = sources[0]?.id || '';
+  const selectedSource = sources.find((source) => source.id === comparisonDraft.sourceId);
+  const selectedKey = state.selectedDoc + '|' + comparisonDraft.sourceId;
+  const savedComparison = (state.comparisonNotes || {})[selectedKey];
+  const openComparison = byId('crossPanel')?.open || false;
+  const docComparisons = Object.values(state.comparisonNotes || {}).filter((row) => row.docIndex === state.selectedDoc);
   const disabled = state.ended ? ' disabled' : '';
   const active = (key) => status === key ? ' aria-pressed="true"' : ' aria-pressed="false"';
-  byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·대조는 자동 기록됩니다.', 'Opening and cross-checking are recorded automatically.'))}</span></div>
+  byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·대조는 자동 기록됩니다.', 'Opening and cross-checking are recorded automatically.'))}${summary.followup ? ' · ' + esc(tUI('미확인 대조 ' + summary.followup + '건', summary.followup + ' cross-check(s) need follow-up')) : ''}</span></div>
   <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
   <section class="doc-review-panel" aria-label="${tUI('서류 검토 체크리스트', 'Document review checklist')}">
     <div class="doc-review-heading"><div><h3>${tUI('무엇을 확인해야 하나요?', 'What should I check?')}</h3><span>${esc(statusLabel)}</span></div><button type="button" id="docGuideBtn">${tUI('관련 업무지침', 'Relevant work guide')}</button></div>
@@ -61,10 +74,57 @@ export function renderDocs({ onSelect, onZoom, onReview }) {
     <div class="doc-review-actions" role="group" aria-label="${tUI('서류 후속 확인 표시', 'Flag document for follow-up')}">
       <button type="button" id="docReviewFollowup" data-review="${status === 'followup' ? 'unreviewed' : 'followup'}"${active('followup')}${disabled}>${status === 'followup' ? tUI('추가 확인 표시 취소', 'Clear follow-up flag') : tUI('추가 확인 필요로 표시', 'Flag for follow-up')}</button>
     </div>
-  </section>`;
+  </section>
+  <details class="cross-panel" id="crossPanel"${openComparison ? ' open' : ''}>
+    <summary>${tUI('진술·서류·조회 결과 대조', 'Compare statements, documents and records')} <small>${summary.total ? esc(tUI('기록 ' + summary.total + '건 · 미확인 ' + summary.followup + '건', summary.total + ' notes · ' + summary.followup + ' need follow-up')) : tUI('직접 비교하고 기록하기', 'Review and annotate')}</small></summary>
+    <div class="cross-panel-body">
+      <p class="doc-review-note">${tUI('승객이 실제로 말한 내용과 이미 실행한 조회 결과만 표시합니다. 자료 간 차이를 자동으로 범죄·위조 또는 입국불허 사유로 판정하지 않습니다.', 'Only actual passenger statements and completed lookups appear here. Differences are not automatically treated as fraud, an offense or grounds for refusal.')}</p>
+      <label class="cross-source-label" for="crossSource">${tUI('현재 서류와 비교할 자료', 'Source to compare with this document')}
+        <select id="crossSource"${sources.length ? '' : ' disabled'}>${sources.map((item) => `<option value="${esc(item.id)}"${item.id === comparisonDraft.sourceId ? ' selected' : ''}>${esc(isEn() ? item.en : item.ko)}</option>`).join('')}</select>
+      </label>
+      <div class="cross-pair">
+        <div class="cross-column"><strong>${esc(tUI('제출서류', 'Submitted document'))} · ${esc(d.t)}</strong><dl>${(d.fields || []).slice(0, 7).map((item) => `<div><dt>${esc(item[0])}</dt><dd>${esc(item[1])}</dd></div>`).join('')}</dl></div>
+        <div class="cross-column"><strong id="crossSourceName">${selectedSource ? esc(isEn() ? selectedSource.en : selectedSource.ko) : tUI('아직 확인된 진술·조회가 없습니다', 'No recorded statement or lookup yet')}</strong><p id="crossSourceText">${esc(selectedSource?.text || tUI('먼저 인터뷰 또는 전산 조회를 진행하세요.', 'Ask a question or perform a lookup first.'))}</p></div>
+      </div>
+      <label class="cross-note-label" for="crossNote">${tUI('대조 메모 (선택)', 'Comparison note (optional)')}
+        <textarea id="crossNote" maxlength="240" rows="2" placeholder="${tUI('어떤 정보가 일치하거나 추가 확인이 필요한지 기록', 'Record the point to check or reconcile')}">${esc(comparisonDraft.note || savedComparison?.note || '')}</textarea>
+      </label>
+      <div class="doc-review-actions cross-actions" role="group" aria-label="${tUI('대조 결과 메모', 'Record comparison result')}">
+        <button type="button" data-compare="checked"${savedComparison?.status === 'checked' ? ' aria-pressed="true"' : ' aria-pressed="false"'}${disabled || (!selectedSource ? ' disabled' : '')}>${tUI('대조 확인 기록', 'Record review')}</button>
+        <button type="button" data-compare="followup"${savedComparison?.status === 'followup' ? ' aria-pressed="true"' : ' aria-pressed="false"'}${disabled || (!selectedSource ? ' disabled' : '')}>${tUI('미확인으로 기록', 'Mark unresolved')}</button>
+        <button type="button" data-compare="clear"${disabled || (!savedComparison ? ' disabled' : '')}>${tUI('대조 기록 삭제', 'Delete comparison note')}</button>
+      </div>
+      <div class="cross-existing" aria-live="polite"><strong>${tUI('이 서류의 대조 기록', 'Comparison notes for this document')} · ${docComparisons.length}</strong>
+        ${docComparisons.length ? `<ul>${docComparisons.map((item) => {
+          const ref = sources.find((source) => source.id === item.sourceId);
+          return `<li><b>${item.status === 'followup' ? tUI('미확인', 'Unresolved') : tUI('대조 기록', 'Reviewed')}</b><span>${esc(ref ? isEn() ? ref.en : ref.ko : item.sourceId)}</span>${item.note ? `<p>${esc(item.note)}</p>` : ''}</li>`;
+        }).join('')}</ul>` : `<p>${tUI('기록된 비교가 없습니다.', 'No comparisons recorded.')}</p>`}
+      </div>
+    </div>
+  </details>`;
   byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, traveler, pp), state.selectedDoc);
   byId('docGuideBtn').onclick = () => openWorkGuide(plan.guideId);
   byId('docGuideQuickBtn').onclick = () => openWorkGuide(plan.guideId);
+  const sourceSelect = byId('crossSource'), noteArea = byId('crossNote');
+  if (sourceSelect) sourceSelect.onchange = () => {
+    comparisonDraft.sourceId = sourceSelect.value;
+    const source = sources.find((item) => item.id === sourceSelect.value);
+    const old = (state.comparisonNotes || {})[state.selectedDoc + '|' + sourceSelect.value];
+    comparisonDraft.note = old?.note || '';
+    byId('crossSourceName').textContent = source ? isEn() ? source.en : source.ko : '';
+    byId('crossSourceText').textContent = source?.text || '';
+    noteArea.value = comparisonDraft.note;
+    $$('#crossPanel [data-compare]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.compare === old?.status));
+      if (b.dataset.compare === 'clear') b.disabled = !old || state.ended;
+    });
+  };
+  if (noteArea) noteArea.oninput = () => { comparisonDraft.note = noteArea.value; };
+  $$('#crossPanel [data-compare]').forEach((b) => { b.onclick = () => {
+    if (!comparisonDraft.sourceId || !onCompare) return;
+    onCompare(state.selectedDoc, comparisonDraft.sourceId, b.dataset.compare, noteArea?.value || '');
+    if (b.dataset.compare === 'clear') comparisonDraft.note = '';
+  }; });
   $$('#docview [data-review]').forEach((b) => { b.onclick = () => onReview(state.selectedDoc, b.dataset.review); });
 }
 export function focusSelectedDoc() { const item = $$('#doclist .docitem')[state.selectedDoc]; if (item) item.focus(); }

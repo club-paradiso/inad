@@ -8,6 +8,7 @@ import { clueStats } from '../engines/clue-engine.js';
 import { lookupName } from '../engines/case-engine.js';
 import { classifyEntryBasis, ketaStatus, arrivalDeclarationStatus } from '../engines/decision-model.js';
 import { renderBasisPanel } from './decision-basis.js';
+import { comparisonSummary } from '../engines/comparison-ledger.js';
 
 export function bioInfo(c) { const raw = parseFloat((c.bio.match(/[0-9]+(?:\.[0-9]+)?/) || ['99.0'])[0]); return { raw, bad: raw < 85 || /불일치|오류/.test(c.bio), label: isNaN(raw) ? '—' : raw.toFixed(1) + '%' }; }
 
@@ -70,6 +71,12 @@ export function renderMatrix() {
   const done = state.performed.map((x) => ACTION_NAMES[x] || x.replace('QUESTION_', '문답:').replace('LOOKUP_', '조회:'));
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';
   byId('flowCount').textContent = `${done.length}개 완료`;
-  const note = byId('caseNote'); if (note) note.innerHTML = '단서의 존재만으로 불허·체포를 결정하지 마십시오. 서로 독립된 진술·서류·전산정보를 교차검증해야 합니다.' + (c.clues ? '<span class="case-depth-note"> 사건 심화 모드 · 핵심 단서와 주변 정보가 섞여 있습니다.</span>' : '');
+  const note = byId('caseNote');
+  if (note) {
+    const comparison = comparisonSummary(state);
+    note.innerHTML = '단서의 존재만으로 불허·체포를 결정하지 마십시오. 서로 독립된 진술·서류·전산정보를 교차검증해야 합니다.' +
+      (c.clues ? '<span class="case-depth-note"> 사건 심화 모드 · 핵심 단서와 주변 정보가 섞여 있습니다.</span>' : '') +
+      (comparison.followup ? '<span class="case-depth-note"> 수동 대조 메모: 미확인 사항 ' + comparison.followup + '건 (판단 준비도·법적 판단과 별개).</span>' : '');
+  }
   renderBasisPanel(); renderClueBoard();
 }
