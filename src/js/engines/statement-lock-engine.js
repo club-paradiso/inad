@@ -22,6 +22,79 @@ export const LOCK_RESULTS = {
 
 // Canonical contradiction rules per case
 const CASE_CONTRADICTIONS = {
+  // Positive cross-checks on lawful admissions are evidence confirmations, not accusations.
+  'ICN-S1-001': [
+    { id: 'S1_001_PURPOSE', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '컨퍼런스 방문 목적이 전자입국신고의 회의·상용방문 목적과 일치합니다.',
+      statementQuestions: ['purpose'], matchTargets: [{ type: 'doc', key: 'E-ARRIVAL', fieldPattern: /^입국목적$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'rv2', actionToken: 'LOCK_s1_001_purpose',
+      stressDelta: 0, unlockQuestions: ['agenda'] },
+    { id: 'S1_001_RETURN', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '귀국편 진술과 항공예약 기록의 KE081편이 일치합니다.',
+      statementQuestions: ['return'], matchTargets: [{ type: 'doc', key: 'PNR', fieldPattern: /^귀국편$/, requiresLooked: 'pnr' }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'rv6', actionToken: 'LOCK_s1_001_return',
+      stressDelta: 0, unlockQuestions: ['funds'] }
+  ],
+  'ICN-S1-002': [
+    { id: 'S1_002_HOTEL', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '호텔 예약확인서에 여행객 본인 명의의 투숙 정보가 기재되어 있습니다.',
+      statementQuestions: ['hotel'], matchTargets: [{ type: 'doc', key: 'HOTEL', fieldPattern: /^투숙객$/, requiresLooked: 'contact' }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'mt5', actionToken: 'LOCK_s1_002_hotel',
+      stressDelta: 0, unlockQuestions: ['budget'] },
+    { id: 'S1_002_RETURN', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '4일 후 귀국한다는 진술과 OZ102편 예약 기록이 일치합니다.',
+      statementQuestions: ['return'], matchTargets: [{ type: 'doc', key: 'PNR', fieldPattern: /^출국$/, requiresLooked: 'pnr' }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'mt4', actionToken: 'LOCK_s1_002_return',
+      stressDelta: 0, unlockQuestions: ['study'] }
+  ],
+  'ICN-S1-003': [
+    { id: 'S1_003_RESIDENCE', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '유효 F-2 체류카드 소지 진술과 제시된 등록증의 체류자격이 일치합니다.',
+      statementQuestions: ['residence'], matchTargets: [{ type: 'doc', key: 'RESIDENCE CARD', fieldPattern: /^체류자격$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'jp2', actionToken: 'LOCK_s1_003_residence',
+      stressDelta: 0, unlockQuestions: ['trip'] },
+    { id: 'S1_003_ADDRESS', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '서울 마포구 체류지 진술과 등록증에 기재된 체류지가 일치합니다.',
+      statementQuestions: ['address'], matchTargets: [{ type: 'doc', key: 'RESIDENCE CARD', fieldPattern: /^체류지$/, requiresLooked: 'contact' }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'jp5', actionToken: 'LOCK_s1_003_address',
+      stressDelta: 0, unlockQuestions: ['job'] }
+  ],
+  'ICN-S1-004': [
+    { id: 'S1_004_ABTC', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: 'ABTC와 여권의 기재번호가 일치한다는 진술을 제출된 ABTC 자료로 확인했습니다.',
+      statementQuestions: ['abtc'], matchTargets: [{ type: 'doc', key: 'ABTC', fieldPattern: /^여권번호$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'nl1', actionToken: 'LOCK_s1_004_abtc',
+      stressDelta: 0, unlockQuestions: ['kor'] },
+    { id: 'S1_004_KOR', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '한국(KOR) 승인 진술과 ABTC 승인국 표기가 일치합니다.',
+      statementQuestions: ['kor'], matchTargets: [{ type: 'doc', key: 'ABTC', fieldPattern: /^승인국$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'nl2', actionToken: 'LOCK_s1_004_kor',
+      stressDelta: 0, unlockQuestions: ['agenda'] }
+  ],
+  'ICN-S2-006': [
+    { id: 'S2_006_BOOKING', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '친구가 예약한 호텔 바우처의 동반 투숙객 명단에 피심사인 성명이 기재되어 있습니다.',
+      statementQuestions: ['bookingName'], matchTargets: [{ type: 'doc', key: 'HOTEL', fieldPattern: /^투숙객$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'sr2', actionToken: 'LOCK_s2_006_booking',
+      stressDelta: 0, unlockQuestions: ['itinerary'] },
+    { id: 'S2_006_RETURN', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: 'GA879편으로 돌아간다는 진술과 동반 예약 항공권의 출국편이 일치합니다.',
+      statementQuestions: ['return'], matchTargets: [{ type: 'doc', key: 'PNR', fieldPattern: /^출국$/, requiresLooked: 'pnr' }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'sr3', actionToken: 'LOCK_s2_006_return',
+      stressDelta: 0, unlockQuestions: ['work'] }
+  ],
+  'ICN-S2-008': [
+    { id: 'S2_008_COMPANY', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '방문 거래처로 진술한 Hanseong Robotics가 초청장에 기재되어 있습니다.',
+      statementQuestions: ['company'], matchTargets: [{ type: 'doc', key: 'INVITATION', fieldPattern: /^초청사$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'lw1', actionToken: 'LOCK_s2_008_company',
+      stressDelta: 0, unlockQuestions: ['schedule'] },
+    { id: 'S2_008_PURPOSE', title: '[교차검증 완료] 진술-자료 일치 확인',
+      desc: '제품 검수·회의 목적에 관한 진술과 초청장에 적힌 활동 목적이 일치합니다.',
+      statementQuestions: ['purpose'], matchTargets: [{ type: 'doc', key: 'INVITATION', fieldPattern: /^목적$/ }],
+      severity: LOCK_RESULTS.CONSISTENT, clueId: 'lw3', actionToken: 'LOCK_s2_008_purpose',
+      stressDelta: 0, unlockQuestions: ['inspection'] }
+  ],
   'ICN-S2-005': [
     // 1. Contact number linked to illegal employment broker vs "friend's friend"
     {
