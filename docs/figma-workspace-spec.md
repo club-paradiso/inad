@@ -477,3 +477,26 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - GB and NZ show the same moment: the first case finished with its expected outcome, then "다음 사건". Each frame uses its country's variable mode, and the GB task-rail nodes are rotated vector diamonds.
   - The person zone is scrolled to the queue. The current case uses the shared accent-soft selection, not a desk colour, and the queue is a list of buttons, not a ranking.
 - **Existing frames were not touched.**
+
+## 12. 상태 표시 통합 — 코드 → Figma 동기화 (2026-11-05)
+
+코드가 먼저 바뀌었다(브랜치 `feat/status-display-consolidation`, PR #41 후속). 바뀐 것은 표시층뿐이며
+토큰·컴포넌트 구조는 그대로다. 감사 전문과 캡처는 `docs/audit/status-consolidation-2026-11/README.md`.
+
+- **동기화 대상 (코드 변경)**: ① 결정 패널 힌트 `#actionHint` — 단계 재진술("일반심사 중" 등)을 제거하고
+  결정 가능 상태·다음 행동 전용 문구로 교체. ② 상단 근무조 `#shiftLabel` — "제N근무조 · 기초 심사/재심·목적
+  확인/특수사건" → "제N근무조". ③ 절차 화면 대상자 카드의 단계 태그(`.proc-tag.accent`) 삭제.
+  ④ 판단 패널 확인 현황 힌트에서 핵심 단서 카운트 제거(단서 보드 헤드와 중복).
+  ⑤ 단서 카드를 판단 패널·절차 화면 공용 렌더러 `clueCardsHTML()`로 통합(최대 4장).
+  stepper·단계 칩·감찰 표시는 뷰포트 상호배타로 유지(감사표 참조).
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] Status display consolidation · 2026-11-05`
+  ([269:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=269-2247)) — 통합 내역 주석과
+  실제 크기 프레임 4개: 인터뷰 1440 ([269:2249](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=269-2249)) ·
+  판단 1440 ([269:2251](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=269-2251)) ·
+  판단 1024 ([269:2253](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=269-2253)) ·
+  인터뷰 390 ([269:2255](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=269-2255)).
+  자동화가 만든 새 노드만 추가했고 기존 프레임·컴포넌트·변수는 수정하지 않았다.
+- **미완료 · 이미지**: 프레임은 실제 크기의 빈 프레임 + source-note(저장소 경로) 상태다. `upload_assets`
+  POST가 200과 imageHash를 반환했지만 파일 안에서 그 해시로 이미지를 조회할 수 없어(`getImageByHash` null)
+  채움이 닿지 않았다 — §10과 같은 방식으로 남긴다. 원본: `docs/audit/status-consolidation-2026-11/*.png`
+  (로컬 dist 빌드 캡처 12장: KR 인터뷰·판단 · Atlas CA 데스크 × 4뷰포트).
