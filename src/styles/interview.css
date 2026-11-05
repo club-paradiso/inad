@@ -140,10 +140,7 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
   .language-toolbar .language-status { display: none; }
   .ask-bar { padding: 6px 10px; }
   .ask-bar input, .mic-btn, .ask-send { height: 32px; }
-  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(auto, 1.45fr); }
-  /* Keep the full first question and a preview of the next visible at 1024×768.
-     The extra space is taken from unused transcript flex height, not touch targets. */
-  .panel-interview > .composer { max-height: min(390px, 50dvh); }
+  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(210px, 2fr); }
 }
 @media (prefers-reduced-motion: reduce) { .stage-caption { transition: none; } }
 body.pref-reduce-motion .stage-caption { transition: none; }
