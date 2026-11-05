@@ -157,6 +157,9 @@ body.mode-case :is(.opsbar, .workload, .ops-toggle, #dailyBtn) { display: none; 
 .debrief-basis { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); }
 .debrief-basis b { display: block; font-size: var(--fs-body); }
 .debrief-basis span { font-size: var(--fs-label); color: var(--text-2); }
+.debrief-core { padding: 10px 12px; border-left: 3px solid var(--warning, var(--accent)); background: var(--surface-2); }
+.debrief-core b { display: block; font-size: var(--fs-body); }
+.debrief-core span { font-size: var(--fs-label); color: var(--text-2); }
 .debrief-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .debrief ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .debrief li { font-size: var(--fs-compact); line-height: 1.45; padding-left: 12px; position: relative; }

@@ -64,7 +64,7 @@ test('country desks: completed checks are marked in each desk and stated in text
     const c = atlasScenarios(country)[0];
     await openDesk(page, country);
     if (country === 'GB') { if (!await page.locator('.atlas-history').evaluate((el) => el.open)) await page.locator('.atlas-history summary').click(); }
-    for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
+    for (const d of c.documents) { await page.locator(`#doc-${d.id}`).click(); }   // opening a document records its review
     const identity = page.locator('li:has(#task-status-identity)');
     await expect(identity).toHaveAttribute('data-task-state', 'done');
     await expect(page.locator('#task-status-identity')).toHaveText(/^(완료|Complete)$/);

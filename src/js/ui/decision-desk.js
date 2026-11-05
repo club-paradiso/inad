@@ -6,7 +6,6 @@
 import { byId } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
-import { stageText } from '../engines/legal-engine.js';
 import { notify } from '../services/bus.js';
 
 export const ARM_MS = 4000;
@@ -58,8 +57,11 @@ export function renderActions({ onRefugee, onSjp, onReopen }) {
   if (a) { byId('specialTitle').textContent = a.title; byId('specialSub').textContent = a.sub; }
   sp.hidden = !a; sp.dataset.kind = a?.kind || ''; sp.onclick = !run ? null : a.legal ? guardDecision(run) : run;
   // Disabled decisions say why (visible hint + aria-describedby), instead of only dimming.
+  // The hint covers only what this desk controls — decision availability and the next action.
+  // The current stage is displayed once, in the case bar (stepper / stage chip); restating it
+  // here made the panel header a second stage display.
   const hint = byId('actionHint');
-  hint.textContent = state.ended ? '결정 기록됨 · 후속 절차 또는 다음 승객' : state.stage === 'PRIMARY' ? '일반심사 중' : state.stage === 'REFUGEE' ? '난민 회부 여부 결정 후 입국 판단' : state.stage === 'SECONDARY' ? '입국재심 진행 중 · 재심 인계 완료' : stageText(state.stage) + ' 진행 중';
+  hint.textContent = state.ended ? '결정 기록됨 · 후속 절차 또는 다음 승객' : state.stage === 'PRIMARY' ? '' : state.stage === 'REFUGEE' ? '난민 회부 여부 결정 후 입국 판단' : state.stage === 'SECONDARY' ? '입국재심 인계 완료 · 재심 화면에서 확인한 뒤 결정하십시오' : '전용 절차 진행 중 · 해당 절차를 마친 뒤 결정하십시오';
   ['clearBtn', 'secondaryBtn', 'refuseBtn', 'sjpBtn'].forEach((id) => { const b = byId(id); if (b.disabled) b.setAttribute('aria-describedby', 'actionHint'); else b.removeAttribute('aria-describedby'); });
   if (armed && (armed.disabled || armed.hidden || !armed.isConnected)) disarm();
 }

@@ -8,13 +8,22 @@ import { scoringWeights, operationalScore } from '../../src/js/engines/score-eng
 test('processing efficiency has lower scoring weight in learning modes', () => {
   state.difficulty = 'training';
   assert.equal(scoringWeights().efficiency, .10);
-  assert.equal(scoringWeights().accuracy + scoringWeights().procedure, .80);
 
   state.difficulty = 'standard';
   assert.equal(scoringWeights().efficiency, .14);
 
   state.difficulty = 'realistic';
   assert.equal(scoringWeights().efficiency, .20);
+});
+
+test('judgement quality dominates: procedure completion is a minor scoring component (P2)', () => {
+  for (const d of ['training', 'standard', 'realistic']) {
+    state.difficulty = d;
+    const w = scoringWeights();
+    assert.ok(w.procedure <= .12, `${d}: procedure weight ${w.procedure} must stay minor`);
+    assert.ok(w.accuracy >= .55, `${d}: accuracy (decision quality) dominates`);
+    assert.ok(Math.abs(w.accuracy + w.procedure + w.efficiency + w.proportionality - 1) < 1e-9, `${d}: weights sum to 1`);
+  }
 });
 
 test('learning modes have more time and less arrival pressure', () => {

@@ -34,17 +34,28 @@ test.describe('일반 입국심사 흐름', () => {
     await H.expectNoErrors(errors);
   });
 
-  test('1b. 필수 확인 전 입국허가는 감찰 오류로 기록되고 사건은 계속된다', async ({ page }) => {
+  test('1b. 필수 확인 전 입국허가도 결정은 성립하고, 부족한 확인은 오류로 기록된다', async ({ page }) => {
     const errors = await H.openGame(page);
     await H.setSeed(page, SEED);
     const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S1-001');
     await H.startShift(page);
     await H.jumpTo(page, idx);
     await page.locator('#clearBtn').click();
-    await expect(page.locator('#toast')).toContainText('감찰 경고');
+    if (process.env.INAD_TARGET === 'legacy') {
+      // Frozen v6.1 parity: the old guard still blocks the decision and records a supervision strike.
+      await expect(page.locator('#toast')).toContainText('감찰 경고');
+      const st = await H.getState(page);
+      expect(st.strikes).toBe(1);
+      expect(st.ended).toBe(false);
+      expect(st.mistakes.length).toBe(1);
+      await H.expectNoErrors(errors);
+      return;
+    }
+    // A guided opening case may first surface the one-time coaching warning; dismiss it and decide again.
+    if (!(await H.getState(page)).ended) { await page.locator('#modalClose').click(); await page.locator('#clearBtn').click(); }
     const st = await H.getState(page);
-    expect(st.strikes).toBe(1);
-    expect(st.ended).toBe(false);
+    expect(st.ended).toBe(true);
+    expect(st.strikes).toBe(0);
     expect(st.mistakes.length).toBe(1);
     await H.expectNoErrors(errors);
   });

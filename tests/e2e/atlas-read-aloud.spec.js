@@ -118,7 +118,6 @@ test('read-aloud stops on Replay and switching to Korea, and nothing is spoken t
   if (!await page.locator('.atlas-history').evaluate((el) => el.open)) await page.locator('.atlas-history summary').click();
   await page.locator('#atlasSearchForm button[type="submit"]').click();
   await page.locator('[data-record]').first().click();
-  for (const d of GB01.documents) { await page.locator(`#doc-${d.id}`).click(); await page.locator('#atlasReviewDoc').click(); }
   await page.locator('#atlasNotes').fill('Handover note references an itinerary that was not received.');
   await page.locator('#atlasPrepare').click(); await page.locator('#atlasOutcome').selectOption('evidence');
   await page.locator('#atlasConfirmOutcome').click();

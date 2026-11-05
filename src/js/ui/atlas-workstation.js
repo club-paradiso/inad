@@ -128,7 +128,10 @@ function interviewHTML(c, v) {
   const opening = atCounter || v.completed ? `<div class="atlas-opening"><b>${l('첫 진술', 'Opening statement')}</b><p lang="${language}">${esc(c.opening?.[language] || '')}</p></div>` : '';
   const ask = (q) => button(`ask-${q.id}`, text(q.q), `data-ask="${q.id}" ${!atCounter || v.completed || v.asked.includes(q.id) ? 'disabled' : ''}`);
   const askHTML = freeTextHTML(c, v, atCounter);
-  const questionsHTML = `<div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">${c.questions.map(ask).join('')}${investigative.map((q) => atlas.atlasQuestionAvailable(c, v, q.id) ? ask(q) : `<button type="button" class="act locked-q" disabled aria-disabled="true" id="ask-${q.id}">${l('후속 질문 · 자료 대조 후 열림', 'Follow-up · opens after a comparison')}</button>`).join('')}</div>`;
+  // Investigative questions are askable like any other (same button, same path): until their
+  // comparison has happened the passenger stays with what is on record (a `withheld` result),
+  // and the answer becomes available once the evidence supports it. No locked placeholder.
+  const questionsHTML = `<div class="atlas-questions" role="group" aria-label="${l('질문 선택', 'Question choices')}">${c.questions.map(ask).join('')}${investigative.map(ask).join('')}</div>`;
   return box(l('인터뷰 기록', 'Interview record'), `<p class="atlas-muted">${l('합성 대화 연습', 'Synthetic dialogue')}</p>${noticeHTML}${opening}<div class="atlas-transcript" aria-label="${l('질문 기록', 'Transcript')}">${v.asked.length ? v.asked.map((id) => { const q = [...c.questions, ...investigative].find((x) => x.id === id); return q ? `<div><b>${esc(q.q[language])}</b><p lang="${language}">${esc(q.answer[language])}</p></div>` : ''; }).join('') : `<p>${l('질문 대기', 'No questions yet')}</p>`}</div>${stmtFactsHTML}${askHTML}${questionsHTML}`);
 }
 function freeTextHTML(c, v, atCounter) {
@@ -143,6 +146,7 @@ function freeTextHTML(c, v, atCounter) {
   else if (r?.kind === 'unknown') status = `<p>${l('질문을 알아듣지 못했습니다. 다르게 물어보거나 아래 목록에서 고르세요.', 'That question was not understood. Rephrase it or choose one below.')}</p>`;
   else if (r?.kind === 'confirm') status = `<p>${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} “${esc(qText(r.questionId))}”</p><div class="atlas-row">${button('atlasAskConfirm', l('이 질문으로 묻기', 'Ask this'), `data-ask-choice="${r.questionId}" ${disabled}`)}${button('atlasAskCancel', l('아니요', 'No'))}</div>`;
   else if (r?.kind === 'ambiguous') status = `<p>${l('어느 질문인가요?', 'Which question did you mean?')}</p><div class="atlas-questions">${r.candidates.map((id) => button(`atlasAskChoice-${id}`, qText(id), `data-ask-choice="${id}" ${disabled}`)).join('')}</div>`;
+  else if (r?.kind === 'withheld') status = `<p>${l('아직 구체적으로 답하지 않습니다. 관련 자료를 대조하면 답이 달라질 수 있습니다. 질문은 기록되지 않았습니다.', 'No specific answer yet. Comparing the related evidence may change the answer. Nothing was recorded.')}: “${esc(qText(r.questionId))}”</p>`;
   else if (r?.kind === 'question') status = `<p>${r.repeated ? l('이미 한 질문입니다. 기록된 답변을 확인하세요.', 'Already asked. See the recorded answer.') : l('질문했습니다', 'Asked')}: “${esc(qText(r.questionId))}”</p>`;
   return `<form id="atlasAskForm" class="atlas-ask" novalidate><label for="atlasAskInput">${l('직접 질문', 'Ask in your own words')}</label><div class="atlas-search"><input id="atlasAskInput" maxlength="240" autocomplete="off" value="${esc(ask.draft)}" ${disabled}><button class="act" type="submit" ${disabled}>${l('질문', 'Ask')}</button>${voiceAvailable() ? `<button type="button" class="act" id="atlasAskMic" aria-pressed="${voiceListening()}" ${disabled}>${l('말하기', 'Speak')}</button>` : ''}</div><div id="atlasAskStatus" role="status" aria-live="polite">${status}</div></form>`;
 }
@@ -166,6 +170,7 @@ function announceAsk(r) {
   else if (r.kind === 'confirm') announceA11y(`${l('이 질문을 하려는 건가요?', 'Did you mean this question?')} ${questionText(r.questionId)}`);
   else if (r.kind === 'ambiguous') announceA11y(`${l('어느 질문인가요?', 'Which question did you mean?')} ${r.candidates.map(questionText).join(' / ')}`);
   else if (r.kind === 'document') announceA11y(l('서류는 자료 영역에서 확인합니다.', 'Open documents in the evidence area.'));
+  else if (r.kind === 'withheld') announceA11y(l('아직 구체적으로 답하지 않습니다. 관련 자료를 대조하면 답이 달라질 수 있습니다.', 'No specific answer yet. Comparing the related evidence may change the answer.'));
   else if (r.kind === 'unknown') announceA11y(l('질문을 알아듣지 못했습니다.', 'Question not understood.'));
 }
 function submitAsk(input) {
@@ -208,11 +213,11 @@ function phasesHTML(c, v) {
 // Counted from the derived checks, so the count always matches the rows (even before a button-era save syncs).
 function taskCount(c, state) { return `${state.filter((t) => t.done).length}/${c.tasks.length}`; }
 function taskStatus(t) {
-  return t.done ? l('완료', 'Complete') : { document: l('연결 문서 검토 필요', 'Linked document not reviewed yet'), interview: l('질문 또는 기록 대조 필요', 'Ask a question or compare a record'), notes: l('검토 메모 10자 이상 필요', 'Write a review note of at least 10 characters') }[t.missing] || l('검토 필요', 'Review needed');
+  return t.done ? l('완료', 'Complete') : { document: l('연결 문서 열기', 'Open the linked document'), interview: l('질문 또는 기록 대조 필요', 'Ask a question or compare a record') }[t.missing] || l('검토 필요', 'Review needed');
 }
 function taskHTML(c, v, title) {
   const state = atlas.atlasTaskState(c, v);
-  return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('과업은 직접 표시하지 않아도 됩니다. 연결 문서를 검토하면 완료되며, 자료 대조는 질문이나 기록 대조가, 인계는 메모가 함께 필요합니다.', 'Checks complete on their own once the linked document is reviewed; evidence comparison also needs a question or a record comparison, and handover needs a note.')}</p>` : ''}<ol class="atlas-tasks">${c.tasks.map((t, i) => `<li data-task-state="${state[i].done ? 'done' : 'open'}"><div><b>${i + 1}. ${h(t.title)}</b><span id="task-status-${t.id}">${esc(taskStatus(state[i]))}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}</li>`).join('')}</ol>`);
+  return box(title, ` ${atlas.activeAtlasSession().difficulty === 'guided' ? `<p class="atlas-muted">${l('과업은 직접 표시하지 않아도 됩니다. 연결 문서를 열면 검토가 자동 기록되고, 자료 대조는 질문이나 기록 대조로 완료됩니다.', 'Checks complete on their own: opening the linked document records its review, and the evidence check needs a question or a record comparison.')}</p>` : ''}<ol class="atlas-tasks">${c.tasks.map((t, i) => `<li data-task-state="${state[i].done ? 'done' : 'open'}"><div><b>${i + 1}. ${h(t.title)}</b><span id="task-status-${t.id}">${esc(taskStatus(state[i]))}</span></div>${button(`task-link-${t.id}`, l('자료 열기', 'Open evidence'), `data-doc="${t.documentId}"`)}</li>`).join('')}</ol>`);
 }
 function recordsHTML(c, v) {
   const query = v.search.toLowerCase(), records = v.searched ? c.records.filter((r) => atlas.atlasRecordMatches(c, r, query)) : [];
@@ -229,7 +234,7 @@ function documentsHTML(c, v) {
     <div class="atlas-fact-group"><small><strong>${l('이 서류의 대조 항목', 'Facts in this document')}:</strong></small><div class="atlas-fact-chips">
       ${docFacts.map((f) => factChip(f, v.graph?.selectedFacts?.includes(f.id))).join('')}
     </div></div>` : '';
-  return box(l('문서 검토', 'Document review'), `<div class="atlas-doc-tabs">${c.documents.map((doc) => button(`doc-${doc.id}`, text(doc.title), `data-doc="${doc.id}" aria-pressed="${doc.id === d.id}"`)).join('')}</div><div class="atlas-doc-tools">${button('atlasPrevPage', l('이전 쪽', 'Previous page'), page === 0 ? 'disabled' : '')}<span>${page + 1} / ${d.pages.length}</span>${button('atlasNextPage', l('다음 쪽', 'Next page'), page === d.pages.length - 1 ? 'disabled' : '')}<label>${l('확대', 'Zoom')}<select id="atlasZoom">${[100, 125, 150].map((z) => `<option ${z === v.zoom ? 'selected' : ''} value="${z}">${z}%</option>`).join('')}</select></label></div><article class="atlas-document" style="font-size:${v.zoom}%" aria-label="${h(d.title)}"><small>${l('가상 문서 대조', 'Synthetic document')}</small><h3>${h(d.title)}</h3><p class="mono">${d.id}</p><p>${h(d.pages[page])}</p></article>${factsHTML}<div class="atlas-row"><span>${v.reviewed.includes(d.id) ? l('검토 완료', 'Reviewed') : l('미검토', 'Not reviewed')}</span>${button('atlasReviewDoc', l('검토 자료로 기록', 'Record reviewed'), v.completed || v.reviewed.includes(d.id) ? 'disabled' : '')}</div>`);
+  return box(l('문서 검토', 'Document review'), `<div class="atlas-doc-tabs">${c.documents.map((doc) => button(`doc-${doc.id}`, text(doc.title), `data-doc="${doc.id}" aria-pressed="${doc.id === d.id}"`)).join('')}</div><div class="atlas-doc-tools">${button('atlasPrevPage', l('이전 쪽', 'Previous page'), page === 0 ? 'disabled' : '')}<span>${page + 1} / ${d.pages.length}</span>${button('atlasNextPage', l('다음 쪽', 'Next page'), page === d.pages.length - 1 ? 'disabled' : '')}<label>${l('확대', 'Zoom')}<select id="atlasZoom">${[100, 125, 150].map((z) => `<option ${z === v.zoom ? 'selected' : ''} value="${z}">${z}%</option>`).join('')}</select></label></div><article class="atlas-document" style="font-size:${v.zoom}%" aria-label="${h(d.title)}"><small>${l('가상 문서 대조', 'Synthetic document')}</small><h3>${h(d.title)}</h3><p class="mono">${d.id}</p><p>${h(d.pages[page])}</p></article>${factsHTML}<div class="atlas-row"><span>${v.reviewed.includes(d.id) ? l('검토 기록됨 · 자료를 열면 자동 기록', 'Review recorded · automatic on open') : l('미검토', 'Not reviewed')}</span></div>`);
 }
 function compareDockHTML(c, v) {
   const g = v.graph || { selectedFacts: [], discoveries: [], evidenceRequests: [], unlockedQuestions: [] };
@@ -270,8 +275,8 @@ function assessmentHTML(c, v) {
   const crossCheckNote = !hasCrossCheck ? '' : v.asked.includes('crosscheck')
     ? l('추가 원문 교차 질문 확인됨', 'Case-specific source cross-check completed')
     : l('선택 과제: 추가 교차 질문 가능', 'Optional task: cross-check question available');
-  // The derived review checks follow from the items above them, so they are not listed twice.
-  const missing = atlas.atlasMissing().filter((k) => k !== 'tasks'), names = { encounter: l('가상 승객 호출', 'Call simulated passenger'), documents: l('문서 검토', 'Document review'), interview: l('인터뷰', 'Interview'), record: l('기록 선택', 'Record selection'), notes: l('검토 메모 10자 이상', 'Review note of at least 10 characters'), tasks: l('과업 확인', 'Task checks') };
+  // Only the passenger call can still be outstanding; everything else is debrief feedback.
+  const missing = atlas.atlasMissing(), names = { encounter: l('가상 승객 호출', 'Call simulated passenger') };
 
   let debriefHTML = '';
   if (v.completed) {
@@ -284,7 +289,7 @@ function assessmentHTML(c, v) {
     debriefHTML = `<div class="atlas-debrief" tabindex="-1"><div class="debrief-head"><h3>${l('연습 결과', 'Debrief')}: ${esc(outcomes()[v.outcome])}</h3><span class="debrief-rating rating-${d?.rating || 'competent'}">${esc(rating)} · ${d?.score ?? ''}</span></div><p class="debrief-route"><strong>${l('경로', 'Route')}:</strong> ${esc(route)}</p><p><strong>${d?.outcomeCorrect ? l('근거 일치', 'Matches evidence') : l('근거 재확인 필요', 'Check evidence')}</strong>${d?.outcomeFeedback ? ` · ${h(d.outcomeFeedback)}` : ''}</p>${d?.outcomeCorrect ? '' : `<p>${l('근거에 맞는 결론', 'Supported outcome')}: ${esc(outcomes()[c.expectedOutcome])}</p>`}<p>${h(c.debrief)}</p>${fbs}<div class="debrief-rationale"><strong>${l('판단 근거', 'Rationale')}:</strong><p>${esc(v.rationale)}</p></div>${actions}</div>`;
   }
 
-  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · <span id="atlasTaskCount">${taskCount(c, atlas.atlasTaskState(c, v))}</span> ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('남은 검토', 'Still to review')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다.', 'Ready to review a simulated outcome.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
+  return box(l('검토 메모', 'Review notes'), `<label for="atlasNotes">${l('확인 사실 · 근거 · 다음 행동', 'Facts · evidence · next action')}</label><textarea id="atlasNotes" maxlength="4000" rows="7" ${v.completed ? 'readonly' : ''}>${esc(v.notes)}</textarea><p id="atlasSaveStatus" role="status">${esc(saveLabel())}</p>${button('atlasSaveRetry', l('저장 재시도', 'Retry save'))}`) + box(l('결과 준비', 'Outcome preparation'), `<p>${v.reviewed.length}/${c.documents.length} ${l('자료 검토', 'documents reviewed')} · <span id="atlasTaskCount">${taskCount(c, atlas.atlasTaskState(c, v))}</span> ${l('과업 완료', 'tasks checked')}</p>${crossCheckNote ? `<p class="atlas-muted">${esc(crossCheckNote)}</p>` : ''}${missing.length ? `<p>${l('먼저 할 일', 'First step')}</p><ul>${missing.map((k) => `<li>${names[k]}</li>`).join('')}</ul>` : `<p>${l('가상 결과를 검토할 수 있습니다. 확인하지 않은 자료는 결과 피드백에 반영됩니다.', 'Ready to review a simulated outcome. Anything left unchecked is reflected in the debrief.')}</p>`}${v.completed ? debriefHTML : `<button type="button" class="act primary" id="atlasPrepare">${l('가상 결과 검토', 'Review simulated outcome')}</button>`}<p class="atlas-muted">${l('가상 규칙 · 실제 처분이 아닙니다.', 'Simulation rule · not an actual disposition.')}</p>`);
 }
 export function renderAtlas() {
   if (state.countryId === 'KR') { focusView(); return; }
@@ -372,7 +377,6 @@ export function renderAtlas() {
   const d = c.documents.find((x) => x.id === v.selectedDoc);
   byId('atlasPrevPage').onclick = () => atlas.atlasAction('page', v.pages[d.id] - 1); byId('atlasNextPage').onclick = () => atlas.atlasAction('page', v.pages[d.id] + 1);
   byId('atlasZoom').onchange = (e) => atlas.atlasAction('zoom', Number(e.target.value));
-  byId('atlasReviewDoc').onclick = () => atlas.atlasAction('review', d.id);
   byId('atlasNotes').oninput = (e) => { atlas.atlasAction('notes', e.target.value); byId('atlasSaveStatus').textContent = saveLabel(); refreshTasks(); };
   byId('atlasSaveRetry').onclick = () => { atlas.persistAtlas(); renderAtlas(); };
   if (byId('atlasPrepare')) byId('atlasPrepare').onclick = prepareOutcome;
@@ -410,11 +414,11 @@ function showAtlasData() {
 function prepareOutcome() {
   endVoice();
   const missing = atlas.atlasMissing();
-  if (missing.length) { renderAtlas(); announceA11y(l('남은 문서·인터뷰·기록·메모·과업을 확인하세요.', 'Complete the outstanding document, interview, record, note and task checks.')); return; }
+  if (missing.length) { renderAtlas(); announceA11y(l('먼저 가상 승객을 호출하세요.', 'Call the simulated passenger first.')); return; }
   const c = atlas.currentAtlasScenario(), v = atlas.activeAtlasCase();
   showModal(l('가상 결과 확인', 'Confirm simulated outcome'), `<div data-i18n-control><p>${esc(c.name)} · ${c.id}</p><p>${l('연습 기록을 완료합니다. 실제 법적 처분은 발생하지 않습니다.', 'Complete the exercise record. No legal disposition is made.')}</p><label for="atlasOutcome">${l('가상 결과', 'Simulated outcome')}</label><select id="atlasOutcome"><option value="">${l('결론을 선택하세요', 'Choose an outcome')}</option>${Object.entries(outcomes()).map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('')}</select><label for="atlasRationale">${l('판단 근거와 남은 사항', 'Rationale and unresolved points')}</label><textarea id="atlasRationale" rows="5" maxlength="4000">${esc(v.notes)}</textarea><p id="atlasOutcomeError" role="alert"></p><div class="modal-actions">${button('atlasOutcomeCancel', l('취소', 'Cancel'), 'data-autofocus')}<button type="button" class="act primary" id="atlasConfirmOutcome">${l('연습 기록 완료', 'Complete exercise record')}</button></div></div>`);
   byId('atlasOutcomeCancel').onclick = closeModal;
-  byId('atlasConfirmOutcome').onclick = () => { if (atlas.completeAtlas(byId('atlasOutcome').value, byId('atlasRationale').value)) { closeModal(); showTask('assessment'); $('.atlas-debrief')?.setAttribute('tabindex', '-1'); $('.atlas-debrief')?.focus(); } else byId('atlasOutcomeError').textContent = l('결론을 고르고 근거를 10자 이상 입력하세요.', 'Choose an outcome and enter at least 10 characters of rationale.'); };
+  byId('atlasConfirmOutcome').onclick = () => { if (atlas.completeAtlas(byId('atlasOutcome').value, byId('atlasRationale').value)) { closeModal(); showTask('assessment'); $('.atlas-debrief')?.setAttribute('tabindex', '-1'); $('.atlas-debrief')?.focus(); } else byId('atlasOutcomeError').textContent = l('결론을 고르세요. 근거는 선택 사항이며, 적으면 평가에 반영됩니다.', 'Choose an outcome. A rationale is optional and is reflected in the rating.'); };
 }
 function confirmRestart() {
   endVoice();

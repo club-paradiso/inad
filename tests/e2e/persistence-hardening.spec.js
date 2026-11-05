@@ -81,8 +81,11 @@ test.describe('저장 데이터 손상·복원 경계', () => {
     const errors = await H.openGame(page);
     await startAndPlayOne(page);
     await H.nextCase(page); await H.afterNext(page);
-    await page.locator('#clearBtn').click(); // premature admission → supervision strike
-    expect((await H.getState(page)).strikes).toBe(1);
+    await page.locator('#clearBtn').click(); // premature admission: the decision stands, the shortfall is recorded as a mistake
+    if (await page.locator('#modalClose').isVisible().catch(() => false) && !(await H.getState(page)).ended) { await page.locator('#modalClose').click(); await page.locator('#clearBtn').click(); }
+    const st = await H.getState(page);
+    expect(st.mistakes.length).toBeGreaterThanOrEqual(1);
+    if (st.ended) { await H.continueDoc(page); await H.nextCase(page); await H.afterNext(page); }
     await page.keyboard.press('KeyL');
     await expect(page.locator('#modalTitle')).toContainText('근무기록');
     await expect(page.locator('#recordResume')).toHaveCount(0);

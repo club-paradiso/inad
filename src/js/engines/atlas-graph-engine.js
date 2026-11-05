@@ -101,8 +101,11 @@ export function evaluateDebrief(scenario, caseState) {
     const r = (scenario.requests || []).find((x) => x.id === id);
     fb({ ko: `불필요한 보완 요청: ${r?.title.ko || id}`, en: `Unnecessary request: ${r?.title.en || id}` });
   }
+  // Judgement quality dominates (P2): identifying the discrepancy and completing the evidence
+  // follow-up are worth 35 each; document coverage is proportional (no all-documents cliff —
+  // opening every document was never itself a finding), and a written rationale earns the rest.
   let score = (discrepancyIdentified ? 35 : 10) + (followUpCompleted ? 35 : 5) +
-    (reviewed.length >= scenario.documents.length ? 20 : 5) +
+    Math.round(20 * Math.min(1, reviewed.length / Math.max(1, scenario.documents.length))) +
     (typeof caseState.rationale === 'string' && caseState.rationale.trim().length >= 10 ? 10 : 0) -
     10 * unnecessaryRequests.length;
   const outcome = ['complete', 'evidence', 'review'].includes(caseState.outcome) ? caseState.outcome : null;

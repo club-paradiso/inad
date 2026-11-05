@@ -107,6 +107,12 @@ test.describe('절차 화면', () => {
     await H.setSeed(page, SEED);
     await H.chooseStartOption(page, '[data-difficulty="realistic"]');
     await H.startShift(page);
+    // Strikes come from factually wrong verdicts: admitting a passenger whose case must be refused
+    // is a supervision error each time, and the case stays open for another attempt.
+    const queue = await H.getQueue(page);
+    let found = false;
+    for (const q of queue) { await H.jumpTo(page, q.index); const c = await H.currentCase(page); if (c?.resolution?.type === 'REFUSE') { found = true; break; } }
+    expect(found).toBe(true);
     for (let i = 0; i < 3; i++) { if (await page.locator('#modal').evaluate((m) => m.classList.contains('on'))) break; await page.locator('#clearBtn').click(); }
     await expect(page.locator('#modalTitle')).toHaveText('감찰 누적 3회 · 근무 종료');
     await H.expectNoErrors(errors);

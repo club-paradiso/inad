@@ -48,16 +48,21 @@ export function readiness(c, performed, clueStat) {
 // ---- Decisions -------------------------------------------------------------------------------
 export function validateSecondary(c, stage) { if (stage !== 'PRIMARY') return { ok: false }; return { ok: true, proportionate: (c.required || []).includes('SECONDARY') }; }
 
+// Decision validation. A verdict that contradicts the established facts (wrong outcome, or a refusal
+// ground that does not match) stays an error. Missing review steps no longer BLOCK a decision the
+// examiner chooses to make: the decision is recorded, the shortfall is returned as `thin` so the
+// case engine can score it and the debrief can explain it. Statutory elements are untouched —
+// investigation, arrest review/execution, interpreter and SJP entry keep their hard requirements.
 export function validateClear(c, performed) {
   if (c.resolution.type !== 'CLEAR') return { ok: false, penalty: { msg: '사실관계를 충분히 확인하지 않고 입국허가를 결정했습니다.', pts: c.resolution.type === 'ARREST' ? 18 : 12 } };
   const m = missingRequirements(c, performed);
-  if (m.length) return { ok: false, missing: m, guard: true, penalty: { msg: `필수 확인절차가 남아 있습니다: ${m.join(', ')}`, pts: 6 } };
+  if (m.length) return { ok: true, thin: true, missing: m, advisory: { msg: `확인이 부족한 상태에서 입국허가를 결정했습니다. 남은 확인: ${m.join(', ')}`, pts: 6 } };
   return { ok: true };
 }
 export function validateRefusal(c, code, performed) {
   if (c.resolution.type !== 'REFUSE' || c.resolution.reason !== code) return { ok: false, penalty: { msg: '선택한 입국불허 사유가 이 사건의 사실관계와 맞지 않습니다.', pts: 10 } };
   const m = missingRequirements(c, performed);
-  if (m.length) return { ok: false, missing: m, guard: true, penalty: { msg: `필수 선행절차가 누락되었습니다: ${m.join(', ')}`, pts: 7 } };
+  if (m.length) return { ok: true, thin: true, missing: m, reason: refusalReason(code), advisory: { msg: `확인이 부족한 상태에서 입국불허를 결정했습니다. 남은 확인: ${m.join(', ')}`, pts: 7 } };
   return { ok: true, reason: refusalReason(code) };
 }
 export function validateSjpEntry(c, stage) {
