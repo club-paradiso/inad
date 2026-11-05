@@ -8,6 +8,7 @@ import { documentReviewPlan } from '../engines/review-guidance.js';
 import { availableCompareSources, comparisonSummary } from '../engines/comparison-ledger.js';
 import { openWorkGuide } from '../services/work-manual.js';
 import { refreshStatementLockCandidates } from './statement-lock.js';
+import { returnItineraryFor } from '../engines/return-itinerary-engine.js';
 
 export function docFieldMap(d) { const m = {}; (d.fields || []).forEach((r) => { m[r[0]] = r[1]; }); return m; }
 export function docFieldRows(d, limit = 8) {
@@ -20,11 +21,60 @@ export function docFieldRows(d, limit = 8) {
 export function simMrz(t, c) { const code = (t.nationality.code || c.code || 'XXX').slice(0, 3).padEnd(3, 'X'); const nm = (t.name.latin || c.name || 'TRAVELER').toUpperCase().replace(/[^A-Z ]/g, '').replace(/ +/g, '<').replace(' ', '<<'); const l1 = ('P<' + code + nm).padEnd(44, '<').slice(0, 44); const sex = (t.passport.sex || c.sex || 'X').slice(0, 1); const dob = (t.passport.birthDate || c.dob || '1990-01-01').replaceAll('-', '').slice(2); const exp = (t.passport.expiry || '2033-01-01').replaceAll('-', '').slice(2); const l2 = ((t.passport.number || c.passport || 'SIM000000').replace(/\s/g, '') + '<' + code + dob + sex + exp).padEnd(44, '<').slice(0, 44); return [l1, l2]; }
 export function flightRoute(c, d) { const fm = docFieldMap(d); const raw = fm['입국편'] || fm['입국'] || fm['편명'] || c.arrival || ''; const source = (c.arrival || '').match(/([A-Z]{3})\s*→\s*([A-Z]{3})/); return { flight: (raw.match(/[A-Z]{1,3}\d{2,4}/) || [raw.split(' · ')[0] || 'FLIGHT'])[0], from: source ? source[1] : 'ORG', to: source ? source[2] : 'ICN' }; }
 
+function renderBookingDocument(d, c, t) {
+  const fr = flightRoute(c, d);
+  const e = returnItineraryFor(c);
+  const onward = d.k === 'PNR' ? `<div class="ticket-return-overview" data-return-status="${esc(e.status)}">
+    <div class="ticket-return-head"><b>귀국·후속 이동 예약</b><span>${esc(e.statusLabel)}</span></div>
+    ${e.flight ? `<div class="ticket-return-route"><span>ICN</span><span class="ticket-return-arrow" aria-hidden="true">→</span><span>${esc(e.destination || '목적지 확인 필요')}</span><strong>${esc(e.flight)}</strong></div>` : `<p>${esc(e.statusLabel)} · 승객에게 증빙을 요청할 수 있습니다.</p>`}
+    <small>PNR 예약정보와 발권된 전자항공권은 서로 다른 증빙입니다.</small>
+  </div>` : '';
+  return `<div class="docsheet doc-ticket${d.alert ? ' alert' : ''}">
+    <div class="ticket-main"><div class="ticket-airline"><div><span class="micro">ARRIVAL ITINERARY / RESERVATION</span><br><b>${esc(c.carrier || 'AIRLINE')}</b></div><span class="micro">${esc(d.k)}</span></div>
+    <div class="ticket-route"><div class="airport">${esc(fr.from)}</div><div class="route-line"></div><div class="airport">${esc(fr.to)}</div></div>
+    <div class="ticket-meta">${(d.fields || []).slice(0, 8).map(([label, value]) =>
+      `<div class="doc-field" data-doc-key="${esc(d.k)}" data-field-name="${esc(label)}" data-field-val="${esc(value)}"><span class="field-label">${esc(label)}</span><div class="field-value">${esc(value)}</div><button type="button" class="doc-compare-btn" aria-label="${esc(label)} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button></div>`).join('')}</div>
+    ${onward}</div><div class="ticket-stub"><div><small>ARRIVAL FLIGHT</small><br><b>${esc(fr.flight)}</b></div><div class="barcode" aria-hidden="true"></div><small>${esc(t.name.latin)}<br>${screeningNo()}</small></div>
+  </div>`;
+}
+
+function renderReturnEvidencePanel(c) {
+  const proof = returnItineraryFor(c, { looked: state.looked });
+  const requested = state.performed.includes('DOC_REQUEST_RETURN');
+  const disabled = (requested || state.ended) ? ' disabled' : '';
+  const status = requested ? proof.statusLabel : tUI('승객에게 요청 전', 'Not yet requested');
+  let result = '';
+  if (requested) {
+    if (proof.presentable) {
+      result = `<div class="return-proof-paper" aria-label="${esc(proof.title)}" data-return-proof="${esc(proof.status)}">
+        <div class="return-proof-top"><span>${esc(proof.title)}</span><span class="return-proof-stamp">${esc(proof.statusLabel)}</span></div>
+        <div class="return-proof-flight"><span>ICN</span><span class="return-proof-arrow" aria-hidden="true">→</span><span>${esc(proof.destination || tUI('도착지 확인 필요', 'Destination unconfirmed'))}</span>
+          <strong>${esc(proof.flight || tUI('편명 미확인', 'Flight unknown'))}</strong></div>
+        <dl class="return-proof-fields">${proof.rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>
+        <p class="return-proof-disclaimer">${tUI('승객 제출본 · 진위 및 발권 상태는 별도의 전산 대조로 확인하세요. 항공권 소지 여부만으로 처분하지 마세요.', 'Passenger-provided record. Verify issuance with the system. Ticket possession alone does not determine admission.')}</p>
+      </div>`;
+    } else {
+      result = `<div class="return-proof-unavailable" data-return-proof="${esc(proof.status)}" role="status">
+        ${esc(proof.response)}
+        ${proof.agency ? `<p>${tUI('항공 PNR을 조회하면 단체예약자료를 추가 확인할 수 있습니다.', 'Check the airline PNR to verify the group booking.')}</p>` : ''}
+      </div>`;
+    }
+  }
+  return `<section class="return-evidence-panel" aria-label="${tUI('귀국·후속 이동 증빙 제출', 'Return or onward travel document request')}">
+    <div class="return-evidence-copy"><b>${tUI('귀국·후속 이동 서류', 'Return / onward travel evidence')}</b>
+      <small>${esc(status)}</small>
+      <p>${tUI('필요하면 승객에게 전자항공권 또는 예약확인서를 직접 요청하세요. 예약확정과 발권완료는 다릅니다.', 'Ask for an e-ticket or booking confirmation. A reservation is not an issued ticket.')}</p>
+    </div>
+    <button type="button" id="requestReturnDocument" class="return-request-btn"${disabled}>${requested ? tUI('서류 요청 기록됨', 'Request recorded') : tUI('귀국편 서류 요청', 'Request travel document')}</button>
+    ${result}
+  </section>`;
+}
+
 export function documentHTML(d, c, t, pp) {
   const k = d.k, fm = docFieldMap(d), cls = d.alert ? ' alert' : '';
   if (k === 'PASSPORT') { const mrz = simMrz(pp, c); return `<div class="docsheet doc-passport${cls}"><div class="passport-head"><div><div class="micro">TRAVEL DOCUMENT · SIMULATION</div><div class="passport-country">${esc(t.nationality.english || t.nationality.korean)}</div></div><div class="passport-kind"><b>PASSPORT</b><span class="micro">${esc(t.nationality.code)} · ${esc(t.passport.type || '일반여권')}</span></div></div><div class="passport-main"><div class="passport-photo-wrap"><img class="passport-photo" src="${pp.portrait}" alt="여권 사진"></div><div class="passport-fields"><div class="passport-name"><span class="field-label">Name / 성명</span><div class="field-value">${esc(t.name.latin)}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div><div class="mrz" aria-label="기계판독영역">${esc(mrz[0])}<br>${esc(mrz[1])}</div></div>`; }
   if (k === 'E-ARRIVAL') return `<div class="docsheet doc-earrival${cls}"><div class="ea-head"><div><b>전자입국신고</b><div class="ea-sub">e-Arrival Card · Republic of Korea</div></div><span>${screeningNo()}</span></div><div class="ea-body"><div><div class="ea-status">제출 완료 · 전자신고</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div><div><div class="fake-qr" aria-hidden="true"></div><div class="ea-ref">REF ${screeningNo().replace(/\D/g, '').padStart(6, '0')}</div></div></div></div>`;
-  if (k === 'PNR' || k === 'BOARDING') { const fr = flightRoute(c, d); return `<div class="docsheet doc-ticket${cls}"><div class="ticket-main"><div class="ticket-airline"><div><span class="micro">PASSENGER ITINERARY / RESERVATION</span><br><b>${esc(c.carrier || 'AIRLINE')}</b></div><span class="micro">${esc(k)}</span></div><div class="ticket-route"><div class="airport">${esc(fr.from)}</div><div class="route-line"></div><div class="airport">${esc(fr.to)}</div></div><div class="ticket-meta">${(d.fields || []).slice(0, 6).map((r) => `<div class="doc-field" data-doc-key="${esc(d.k)}" data-field-name="${esc(r[0])}" data-field-val="${esc(r[1])}"><span class="field-label">${esc(r[0])}</span><div class="field-value">${esc(r[1])}</div><button type="button" class="doc-compare-btn" aria-label="${esc(r[0])} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button></div>`).join('')}</div></div><div class="ticket-stub"><div><small>FLIGHT</small><br><b>${esc(fr.flight)}</b></div><div class="barcode" aria-hidden="true"></div><small>${esc(t.name.latin)}<br>${screeningNo()}</small></div></div>`; }
+  if (k === 'PNR' || k === 'BOARDING') return renderBookingDocument(d, c, t);
   if (k === 'HOTEL' || k === 'STAY') return `<div class="docsheet doc-hotel${cls}"><div class="hotel-visual"><b>숙박 예약확인</b></div><div class="hotel-body"><span class="micro">ACCOMMODATION CONFIRMATION</span><h3>${esc(fm['호텔'] || fm['숙소'] || fm['체류지'] || fm['주소'] || '체류지 확인자료')}</h3><div class="hotel-status">예약·체류자료 확인</div><div class="hotel-dates">${(d.fields || []).slice(0, 2).map((r) => `<div><span class="field-label">${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
   if (k === 'VISA' || k === 'ENTRY BASIS') return `<div class="docsheet doc-visa${cls}"><div class="visa-frame"><div class="visa-side"><div class="vmark">KOR</div><span class="micro">ENTRY AUTHORIZATION</span><br><b>${esc(k === 'VISA' ? '사증' : '입국자격')}</b></div><div class="visa-body"><div class="visa-valid">${d.alert ? '추가 확인' : '유효 / 확인'}</div><span class="micro">REPUBLIC OF KOREA · SIMULATION</span><div class="visa-title">${esc(fm['체류자격'] || fm['사증'] || fm['구분'] || c.basis || d.t)}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div></div>`;
   if (k === 'RESIDENCE CARD' || k === 'ABTC') return `<div class="docsheet doc-idcard${cls}"><div><img class="id-photo" src="${pp.portrait}" alt="신분증 사진"><div class="id-chip" aria-hidden="true"></div><span class="micro">SIMULATION ID</span></div><div><div class="id-head">${esc(d.t)}</div><div class="passport-name"><span class="field-label">Name</span><div class="field-value">${esc(t.name.latin)}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
@@ -39,7 +89,7 @@ const tUI = (ko, en) => isEn() ? en : ko;
 // Review marks are user annotations, not automatic authenticity checks, statutory findings or verdict inputs.
 // Transient input only; the actual comparison ledger is stored case-locally by the engine.
 let comparisonDraft = { owner: null, docIndex: -1, sourceId: '', note: '' };
-export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
+export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestReturn }) {
   const c = current(), traveler = getTraveler(c.travelerId);
   const reviews = state.documentReviews || {};
   const tally = Object.values(reviews).filter((s) => s === 'reviewed' || s === 'followup').length;
@@ -74,6 +124,7 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
   const active = (key) => status === key ? ' aria-pressed="true"' : ' aria-pressed="false"';
   byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·대조는 자동 기록됩니다.', 'Opening and cross-checking are recorded automatically.'))}${summary.followup ? ' · ' + esc(tUI('미확인 대조 ' + summary.followup + '건', summary.followup + ' cross-check(s) need follow-up')) : ''}</span></div>
   <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
+  ${renderReturnEvidencePanel(c)}
   <section class="doc-review-panel" aria-label="${tUI('서류 검토 체크리스트', 'Document review checklist')}">
     <div class="doc-review-heading"><div><h3>${tUI('무엇을 확인해야 하나요?', 'What should I check?')}</h3><span>${esc(statusLabel)}</span></div><button type="button" id="docGuideBtn">${tUI('관련 업무지침', 'Relevant work guide')}</button></div>
     <ol class="doc-review-checks">${plan.checks.map((step) => `<li>${esc(isEn() ? step.en : step.ko)}</li>`).join('')}</ol>
@@ -110,6 +161,7 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare }) {
     </div>
   </details>`;
   byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, traveler, pp), state.selectedDoc);
+  byId('requestReturnDocument').onclick = () => onRequestReturn?.();
   byId('docGuideBtn').onclick = () => openWorkGuide(plan.guideId);
   byId('docGuideQuickBtn').onclick = () => openWorkGuide(plan.guideId);
   const sourceSelect = byId('crossSource'), noteArea = byId('crossNote');
