@@ -33,7 +33,7 @@ function renderBookingDocument(d, c, t) {
   return `<div class="docsheet doc-ticket${d.alert ? ' alert' : ''}">
     <div class="ticket-main"><div class="ticket-airline"><div><span class="micro">ARRIVAL ITINERARY / RESERVATION</span><br><b>${esc(c.carrier || 'AIRLINE')}</b></div><span class="micro">${esc(d.k)}</span></div>
     <div class="ticket-route"><div class="airport">${esc(fr.from)}</div><div class="route-line"></div><div class="airport">${esc(fr.to)}</div></div>
-    <div class="ticket-meta">${(d.fields || []).slice(0, 8).map(([label, value]) =>
+    <div class="ticket-meta">${(d.fields || []).map(([label, value]) =>
       `<div class="doc-field" data-doc-key="${esc(d.k)}" data-field-name="${esc(label)}" data-field-val="${esc(value)}"><span class="field-label">${esc(label)}</span><div class="field-value">${esc(value)}</div><button type="button" class="doc-compare-btn" aria-label="${esc(label)} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button></div>`).join('')}</div>
     ${onward}</div><div class="ticket-stub"><div><small>ARRIVAL FLIGHT</small><br><b>${esc(fr.flight)}</b></div><div class="barcode" aria-hidden="true"></div><small>${esc(t.name.latin)}<br>${screeningNo()}</small></div>
   </div>`;
@@ -108,7 +108,7 @@ function renderDocumentRequestPanel(doc, index) {
       '게임 내 입국근거 요약입니다. 별도의 공식 발급 문서로 간주하지 마세요.'}</div>`;
   }
   const asked = state.performed.includes('DOC_REQUEST_' + index);
-  return `<section class="doc-request-panel" aria-label="서류 재제시 요청"><div><b>${asked ? '재제시 요청 기록됨' : '제시 서류 확인'}</b><p>${asked ? '승객에게 다시 제시하도록 요청했습니다. 대화 기록과 서류 내용을 대조하세요.' :
+  return `<section class="doc-request-panel" aria-label="서류 재제시 요청"><div><b>${asked ? '재제시 요청 기록됨' : '제시 서류 확인'}</b><p id="docRequestStatus" role="status" tabindex="-1">${asked ? '승객에게 다시 제시하도록 요청했습니다. 대화 기록과 서류 내용을 대조하세요.' :
     '서류가 사건자료에 표시되어 있어도 승객에게 직접 다시 제시하도록 요청할 수 있습니다.'}</p></div><button type="button" id="docRequestOriginal" ${asked || state.ended ? 'disabled' : ''}>${asked ? '요청 완료' : '승객에게 서류 제시 요청'}</button></section>`;
 }
 
@@ -119,7 +119,7 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestRet
   byId('doclist').innerHTML = c.docs.map((d, i) => {
     const status = reviews[i];
     // Review state is recorded automatically (P1): opening a document logs the viewing, opening
-    // the enlarged view logs the cross-check. Only the follow-up flag is a manual mark.
+    // the enlarged view logs an enlarged review, not evidence corroboration.
     const opened = state.performed.includes('DOC_READ_' + i);
     const statusLabel = status === 'reviewed' ? tUI('확대 검토', 'Enlarged review') : status === 'followup' ? tUI('후속 확인', 'Follow-up') : opened ? tUI('열람됨', 'Opened') : tUI('미열람', 'Not opened');
     return `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''} ${status ? 'doc-review-' + status : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small><span class="doc-code">${esc(d.k)}</span>${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}<span class="doc-review-tag">${esc(statusLabel)}</span></small></span></button>`;
