@@ -15,6 +15,7 @@ import { personaFor } from '../../data/personas.js';
 import { travelPartyFor, archivePartyStatement, partyLookupResult } from './companion-engine.js';
 import { addLog } from './log.js';
 import { returnItineraryFor } from './return-itinerary-engine.js';
+import { documentRequestCopy } from './document-evidence-model.js';
 import { availableCompareSources, safeComparisonNote } from './comparison-ledger.js';
 import { saveProgressSnapshot, saveBestGrade, loadMeta, saveMeta, clearProgressSave } from './save-engine.js';
 import { applySessionCareer, applyDailyMissions, evaluateAchievements, achievementById, challengeEvaluation, challengeCfg, gradeRank } from './achievement-engine.js';
@@ -90,6 +91,26 @@ export function lookup(kind) {
 
 // Submission is a separate player action, not an automatic legal requirement or an
 // implicit PNR lookup. The response comes only from evidence actually present in the case.
+// An optional interaction, not a mandatory submission step or a finding of authenticity.
+// Internal lookup results and synthesized entry-basis summaries cannot be requested from
+// the traveler as if they were physical paperwork.
+export function requestCaseDocument(index) {
+  const c = current();
+  if (!c || state.ended || !Number.isInteger(index) || index < 0) return { ok: false, reason: 'inactive' };
+  const document = c.docs?.[index];
+  const reply = documentRequestCopy(document);
+  if (!reply) return { ok: false, reason: 'not-requestable' };
+  const mark = 'DOC_REQUEST_' + index;
+  if (state.performed.includes(mark)) return { ok: true, repeated: true, name: reply.name };
+  actionMark(mark);
+  addLog('officer', reply.question);
+  addLog('alien', reply.response);
+  // This creates a conversation event only. It does not mark a document as
+  // authenticated, read, cross-checked, or change any legal decision.
+  bus.emit('changed');
+  return { ok: true, name: reply.name };
+}
+
 export function requestReturnDocument() {
   const c = current();
   if (!c || state.ended) return { ok: false, reason: 'inactive' };
