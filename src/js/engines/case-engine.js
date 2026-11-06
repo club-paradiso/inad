@@ -151,7 +151,15 @@ export function recordComparison(docIndex, sourceId, status, note = '') {
   return true;
 }
 
-export function cycleDocument(delta) { const c = current(); if (!c || !c.docs || !c.docs.length) return; state.selectedDoc = (state.selectedDoc + delta + c.docs.length) % c.docs.length; bus.emit('changed'); notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`); }
+export function cycleDocument(delta) {
+  const c = current();
+  if (!c?.docs?.length) return;
+  const nextIndex = (state.selectedDoc + delta + c.docs.length) % c.docs.length;
+  // Keyboard prev/next is an actual opening of a document, just like clicking
+  // a document in the list. It must not silently bypass the review log.
+  selectDocument(nextIndex);
+  notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`);
+}
 
 export function recordMistake(msg, pts) { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, at: Date.now() }); }
 export function penaltyPolicy() {
