@@ -63,12 +63,14 @@ test('mobile document request remains touch-accessible and every evidence field 
   const errors = await H.openGame(page);
   await H.setSeed(page, 314159);
   await H.startShift(page);
+  const evidenceTab = page.locator('#taskNav button[data-task="evidence"]');
+  if (await evidenceTab.isVisible()) await evidenceTab.click();
   const btn = page.locator('#docRequestOriginal');
   await expect(btn).toBeVisible();
   const box = await btn.boundingBox();
   expect(box.height).toBeGreaterThanOrEqual(44);
   await btn.click();
-  await expect(page.locator('#docRequestStatus')).toContainText('재시');
+  await expect(page.locator('#docRequestStatus')).toContainText('다시 제시');
   await expect(page.locator('#docRequestStatus')).toBeFocused();
   await H.expectNoErrors(errors);
 });
