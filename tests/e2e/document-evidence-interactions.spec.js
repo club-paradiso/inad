@@ -62,7 +62,12 @@ test('mobile document request remains touch-accessible and every evidence field 
   await page.setViewportSize({ width: 390, height: 844 });
   const errors = await H.openGame(page);
   await H.setSeed(page, 314159);
-  await H.startShift(page);
+  // A phone defaults to the evidence task. The transcript is hidden, so the
+  // generic desktop start helper's visible-log assertion is not applicable.
+  await H.chooseStartOption(page, '[data-guidance="expert"]');
+  await page.locator('#startBtn').click();
+  await page.locator('#briefStart').click();
+  await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
   const evidenceTab = page.locator('#taskNav button[data-task="evidence"]');
   if (await evidenceTab.isVisible()) await evidenceTab.click();
   const btn = page.locator('#docRequestOriginal');
@@ -80,11 +85,10 @@ test('keyboard document cycling is recorded the same as clicking the next docume
   const errors = await H.openGame(page);
   await H.setSeed(page, 271828);
   await H.startShift(page);
-  const before = await H.getState(page);
-  expect(before.selectedDoc).toBe(0);
+  await expect(page.locator('#doclist .docitem.on')).toHaveAttribute('data-i', '0');
   await page.keyboard.press(']');
+  await expect(page.locator('#doclist .docitem.on')).toHaveAttribute('data-i', '1');
   const after = await H.getState(page);
-  expect(after.selectedDoc).toBe(1);
   expect(after.performed).toContain('DOC_READ_1');
   await expect(page.locator('#doclist .docitem[data-i="1"]')).toHaveClass(/on/);
   await H.expectNoErrors(errors);
