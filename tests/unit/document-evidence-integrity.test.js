@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import './setup.js';
 import { CASES } from '../../src/data/cases.js';
 import { getTraveler } from '../../src/js/engines/traveler-engine.js';
-import { documentHTML, docFieldRows } from '../../src/js/ui/document-workbench.js';
+// The document renderer is browser-facing; stub only the import-time document
+// listener and locale, then validate the pure HTML output in node:test.
+globalThis.document ||= {
+  addEventListener() {},
+  documentElement: { lang: 'ko', dataset: {} },
+  querySelector() { return null; },
+  getElementById() { return null; }
+};
+const { documentHTML, docFieldRows } = await import('../../src/js/ui/document-workbench.js');
 import {
   documentFields, documentNameOnRecord, documentRecordKind, documentIsRequestable,
   documentDisplayStatus, biometricDisplay, documentRequestCopy
