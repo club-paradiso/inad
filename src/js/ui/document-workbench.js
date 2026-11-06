@@ -9,16 +9,17 @@ import { availableCompareSources, comparisonSummary } from '../engines/compariso
 import { openWorkGuide } from '../services/work-manual.js';
 import { refreshStatementLockCandidates } from './statement-lock.js';
 import { returnItineraryFor } from '../engines/return-itinerary-engine.js';
+import { documentFields, documentNameOnRecord, documentRecordKind, documentIsRequestable, documentDisplayStatus, biometricDisplay } from '../engines/document-evidence-model.js';
 
 export function docFieldMap(d) { const m = {}; (d.fields || []).forEach((r) => { m[r[0]] = r[1]; }); return m; }
-export function docFieldRows(d, limit = 8) {
+export function docFieldRows(d, limit = Infinity) {
   return (d.fields || []).slice(0, limit).map((r, i) =>
     `<div class="doc-field ${i === 0 ? 'wide' : ''}" data-doc-key="${esc(d.k)}" data-field-name="${esc(r[0])}" data-field-val="${esc(r[1])}">
       <span class="field-label">${esc(r[0])}</span><span class="field-value" title="${esc(r[1])}">${esc(r[1])}</span>
       <button type="button" class="doc-compare-btn" aria-label="${esc(r[0])} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button>
     </div>`).join('');
 }
-export function simMrz(t, c) { const code = (t.nationality.code || c.code || 'XXX').slice(0, 3).padEnd(3, 'X'); const nm = (t.name.latin || c.name || 'TRAVELER').toUpperCase().replace(/[^A-Z ]/g, '').replace(/ +/g, '<').replace(' ', '<<'); const l1 = ('P<' + code + nm).padEnd(44, '<').slice(0, 44); const sex = (t.passport.sex || c.sex || 'X').slice(0, 1); const dob = (t.passport.birthDate || c.dob || '1990-01-01').replaceAll('-', '').slice(2); const exp = (t.passport.expiry || '2033-01-01').replaceAll('-', '').slice(2); const l2 = ((t.passport.number || c.passport || 'SIM000000').replace(/\s/g, '') + '<' + code + dob + sex + exp).padEnd(44, '<').slice(0, 44); return [l1, l2]; }
+export function simMrz(t, c, d = null) { const fields = documentFields(d); const code = (t.nationality.code || c.code || 'XXX').slice(0, 3).padEnd(3, 'X'); const nm = (documentNameOnRecord(d) || 'UNRECORDED').toUpperCase().replace(/[^A-Z ]/g, '').replace(/ +/g, '<').replace(' ', '<<'); const l1 = ('P<' + code + nm).padEnd(44, '<').slice(0, 44); const sex = (t.passport.sex || c.sex || 'X').slice(0, 1); const dob = (t.passport.birthDate || c.dob || '1990-01-01').replaceAll('-', '').slice(2); const exp = (fields['만료일'] || '0000-00-00').replaceAll('-', '').slice(2); const l2 = ((fields['여권번호'] || 'UNRECORDED').replace(/\s/g, '') + '<' + code + dob + sex + exp).padEnd(44, '<').slice(0, 44); return [l1, l2]; }
 export function flightRoute(c, d) { const fm = docFieldMap(d); const raw = fm['입국편'] || fm['입국'] || fm['편명'] || c.arrival || ''; const source = (c.arrival || '').match(/([A-Z]{3})\s*→\s*([A-Z]{3})/); return { flight: (raw.match(/[A-Z]{1,3}\d{2,4}/) || [raw.split(' · ')[0] || 'FLIGHT'])[0], from: source ? source[1] : 'ORG', to: source ? source[2] : 'ICN' }; }
 
 function renderBookingDocument(d, c, t) {
@@ -32,7 +33,7 @@ function renderBookingDocument(d, c, t) {
   return `<div class="docsheet doc-ticket${d.alert ? ' alert' : ''}">
     <div class="ticket-main"><div class="ticket-airline"><div><span class="micro">ARRIVAL ITINERARY / RESERVATION</span><br><b>${esc(c.carrier || 'AIRLINE')}</b></div><span class="micro">${esc(d.k)}</span></div>
     <div class="ticket-route"><div class="airport">${esc(fr.from)}</div><div class="route-line"></div><div class="airport">${esc(fr.to)}</div></div>
-    <div class="ticket-meta">${(d.fields || []).slice(0, 8).map(([label, value]) =>
+    <div class="ticket-meta">${(d.fields || []).map(([label, value]) =>
       `<div class="doc-field" data-doc-key="${esc(d.k)}" data-field-name="${esc(label)}" data-field-val="${esc(value)}"><span class="field-label">${esc(label)}</span><div class="field-value">${esc(value)}</div><button type="button" class="doc-compare-btn" aria-label="${esc(label)} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button></div>`).join('')}</div>
     ${onward}</div><div class="ticket-stub"><div><small>ARRIVAL FLIGHT</small><br><b>${esc(fr.flight)}</b></div><div class="barcode" aria-hidden="true"></div><small>${esc(t.name.latin)}<br>${screeningNo()}</small></div>
   </div>`;
@@ -72,13 +73,21 @@ function renderReturnEvidencePanel(c) {
 
 export function documentHTML(d, c, t, pp) {
   const k = d.k, fm = docFieldMap(d), cls = d.alert ? ' alert' : '';
-  if (k === 'PASSPORT') { const mrz = simMrz(pp, c); return `<div class="docsheet doc-passport${cls}"><div class="passport-head"><div><div class="micro">TRAVEL DOCUMENT · SIMULATION</div><div class="passport-country">${esc(t.nationality.english || t.nationality.korean)}</div></div><div class="passport-kind"><b>PASSPORT</b><span class="micro">${esc(t.nationality.code)} · ${esc(t.passport.type || '일반여권')}</span></div></div><div class="passport-main"><div class="passport-photo-wrap"><img class="passport-photo" src="${pp.portrait}" alt="여권 사진"></div><div class="passport-fields"><div class="passport-name"><span class="field-label">Name / 성명</span><div class="field-value">${esc(t.name.latin)}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div><div class="mrz" aria-label="기계판독영역">${esc(mrz[0])}<br>${esc(mrz[1])}</div></div>`; }
-  if (k === 'E-ARRIVAL') return `<div class="docsheet doc-earrival${cls}"><div class="ea-head"><div><b>전자입국신고</b><div class="ea-sub">e-Arrival Card · Republic of Korea</div></div><span>${screeningNo()}</span></div><div class="ea-body"><div><div class="ea-status">제출 완료 · 전자신고</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div><div><div class="fake-qr" aria-hidden="true"></div><div class="ea-ref">REF ${screeningNo().replace(/\D/g, '').padStart(6, '0')}</div></div></div></div>`;
+  if (k === 'PASSPORT') { const mrz = simMrz(pp, c, d); return `<div class="docsheet doc-passport${cls}"><div class="passport-head"><div><div class="micro">TRAVEL DOCUMENT · SIMULATION</div><div class="passport-country">${esc(fm['국적'] || '국적 미기재')}</div></div><div class="passport-kind"><b>PASSPORT</b><span class="micro">${esc(t.nationality.code)} · ${esc(t.passport.type || '일반여권')}</span></div></div><div class="passport-main"><div class="passport-photo-wrap"><img class="passport-photo" src="${pp.portrait}" alt="여권 사진"></div><div class="passport-fields"><div class="passport-name"><span class="field-label">Name / 서류상 성명</span><div class="field-value">${esc(documentNameOnRecord(d) || '성명 미기재')}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div><div class="mrz" aria-label="게임용 재구성 MRZ, 유효성 판정 불가">${esc(mrz[0])}<br>${esc(mrz[1])}</div><p class="doc-footnote">게임용 MRZ 재구성 · 원본 진위·체크디지트 검증과 무관</p></div>`; }
+  if (k === 'E-ARRIVAL') return `<div class="docsheet doc-earrival${cls}"><div class="ea-head"><div><b>전자입국신고</b><div class="ea-sub">e-Arrival Card · Republic of Korea</div></div><span>${screeningNo()}</span></div><div class="ea-body"><div><div class="ea-status">${esc(documentDisplayStatus(d))}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div><div><div class="fake-qr" aria-hidden="true"></div><div class="ea-ref">SIMULATION · ${screeningNo()}</div></div></div></div>`;
   if (k === 'PNR' || k === 'BOARDING') return renderBookingDocument(d, c, t);
-  if (k === 'HOTEL' || k === 'STAY') return `<div class="docsheet doc-hotel${cls}"><div class="hotel-visual"><b>숙박 예약확인</b></div><div class="hotel-body"><span class="micro">ACCOMMODATION CONFIRMATION</span><h3>${esc(fm['호텔'] || fm['숙소'] || fm['체류지'] || fm['주소'] || '체류지 확인자료')}</h3><div class="hotel-status">예약·체류자료 확인</div><div class="hotel-dates">${(d.fields || []).slice(0, 2).map((r) => `<div><span class="field-label">${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
-  if (k === 'VISA' || k === 'ENTRY BASIS') return `<div class="docsheet doc-visa${cls}"><div class="visa-frame"><div class="visa-side"><div class="vmark">KOR</div><span class="micro">ENTRY AUTHORIZATION</span><br><b>${esc(k === 'VISA' ? '사증' : '입국자격')}</b></div><div class="visa-body"><div class="visa-valid">${d.alert ? '추가 확인' : '유효 / 확인'}</div><span class="micro">REPUBLIC OF KOREA · SIMULATION</span><div class="visa-title">${esc(fm['체류자격'] || fm['사증'] || fm['구분'] || c.basis || d.t)}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div></div>`;
-  if (k === 'RESIDENCE CARD' || k === 'ABTC') return `<div class="docsheet doc-idcard${cls}"><div><img class="id-photo" src="${pp.portrait}" alt="신분증 사진"><div class="id-chip" aria-hidden="true"></div><span class="micro">SIMULATION ID</span></div><div><div class="id-head">${esc(d.t)}</div><div class="passport-name"><span class="field-label">Name</span><div class="field-value">${esc(t.name.latin)}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
-  if (k === 'BIOMETRIC') { const raw = parseFloat((c.bio.match(/[0-9]+(?:\.[0-9]+)?/) || ['99'])[0]), bad = raw < 85 || /불일치|오류/.test(c.bio); return `<div class="docsheet doc-biometric${cls}"><span class="micro">BIOMETRIC VERIFICATION RECORD</span><h3>생체정보 본인확인 기록</h3><div class="biometric-doc-pair"><img src="${pp.portrait}" alt="여권 사진"><div class="biometric-doc-score ${bad ? 'bad' : ''}">${bad ? '불일치' : '일치'}<br>${isNaN(raw) ? '—' : raw.toFixed(1) + '%'}</div><img src="${t.portrait}" alt="실시간 촬영"></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div>`; }
+  if (k === 'HOTEL' || k === 'STAY') {
+    const isStay = k === 'STAY';
+    const place = fm['호텔'] || fm['숙소'] || fm['체류지'] || fm['주소'] ||
+      (isStay ? '거소 주소 미기재' : '숙박시설 명칭 미기재');
+    return `<div class="docsheet doc-hotel${cls}"><div class="hotel-visual"><b>${isStay ? '국내 거소자료' : '숙박 예약자료'}</b></div><div class="hotel-body"><span class="micro">${isStay ? 'RESIDENCE / STAY RECORD · SIMULATION' : 'ACCOMMODATION RECORD · SIMULATION'}</span><h3>${esc(place)}</h3><div class="hotel-status">${esc(documentDisplayStatus(d))}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
+  }
+  if (k === 'VISA' || k === 'ENTRY BASIS') return `<div class="docsheet doc-visa${cls}"><div class="visa-frame"><div class="visa-side"><div class="vmark">KOR</div><span class="micro">${k === 'VISA' ? 'VISA RECORD · SIMULATION' : 'ENTRY BASIS SUMMARY · NOT A VISA'}</span><br><b>${esc(k === 'VISA' ? '사증' : '입국자격')}</b></div><div class="visa-body"><div class="visa-valid">${esc(documentDisplayStatus(d))}</div><span class="micro">REPUBLIC OF KOREA · SIMULATION</span><div class="visa-title">${esc(fm['체류자격'] || fm['사증'] || fm['구분'] || c.basis || d.t)}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div></div>`;
+  if (k === 'RESIDENCE CARD' || k === 'ABTC') return `<div class="docsheet doc-idcard${cls}"><div><img class="id-photo" src="${pp.portrait}" alt="신분증 사진"><div class="id-chip" aria-hidden="true"></div><span class="micro">SIMULATION ID</span></div><div><div class="id-head">${esc(d.t)}</div><div class="passport-name"><span class="field-label">서류상 성명</span><div class="field-value">${esc(documentNameOnRecord(d) || '성명란 미기재 · 별도 대조 필요')}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
+  if (k === 'BIOMETRIC') {
+    const result = biometricDisplay(d);
+    return `<div class="docsheet doc-biometric${cls}"><span class="micro">BIOMETRIC RECORD · SIMULATION</span><h3>생체정보 본인확인 기록</h3><div class="biometric-doc-pair"><img src="${pp.portrait}" alt="게임용 여권 이미지 참고"><div class="biometric-doc-score ${result.mismatch || result.refused ? 'bad' : ''}">${esc(result.label)}<br>${esc(result.face || '수치 미기재')}</div><img src="${t.portrait}" alt="게임용 승객 이미지 참고"></div><div class="doc-grid-fields">${docFieldRows(d)}</div><p class="doc-footnote">${esc(result.note)}</p></div>`;
+  }
   if (k === 'WATCHLIST') return `<div class="docsheet doc-watch${cls}"><div class="watch-banner"><div class="watch-symbol"><span>${d.alert ? '!' : '✓'}</span></div>${d.alert ? '규제정보 추가 확인 필요' : '규제정보 조회 완료'}</div><div class="doc-grid-fields">${docFieldRows(d)}</div><p class="doc-footnote">본 화면은 게임용 가상 조회 결과이며 실제 비공개 규제코드를 재현하지 않습니다.</p></div>`;
   return `<div class="docsheet doc-letter${cls}"><div class="letter-head"><div><span class="micro">SUPPORTING DOCUMENT · ${esc(k)}</span><br><b>${esc(d.t)}</b></div><div class="letter-seal" aria-hidden="true">SIM</div></div><div class="letter-body"><p>입국심사를 위해 제출된 보조자료입니다. 진술 및 전산조회 결과와 교차검증하십시오.</p><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
 }
@@ -89,16 +98,30 @@ const tUI = (ko, en) => isEn() ? en : ko;
 // Review marks are user annotations, not automatic authenticity checks, statutory findings or verdict inputs.
 // Transient input only; the actual comparison ledger is stored case-locally by the engine.
 let comparisonDraft = { owner: null, docIndex: -1, sourceId: '', note: '' };
-export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestReturn }) {
+// Existing case-file documents stay inspectable; this is a real, optional passenger
+// re-presentation action. Internal lookups and synthetic summaries are never handed
+// over by the traveler.
+function renderDocumentRequestPanel(doc, index) {
+  if (!documentIsRequestable(doc)) {
+    return `<div class="doc-origin-note">${documentRecordKind(doc) === 'internal' ?
+      '기관 내부 조회 결과입니다. 승객에게 제출을 요청하는 서류가 아닙니다.' :
+      '게임 내 입국근거 요약입니다. 별도의 공식 발급 문서로 간주하지 마세요.'}</div>`;
+  }
+  const asked = state.performed.includes('DOC_REQUEST_' + index);
+  return `<section class="doc-request-panel" aria-label="서류 재제시 요청"><div><b>${asked ? '재제시 요청 기록됨' : '제시 서류 확인'}</b><p id="docRequestStatus" role="status" tabindex="-1">${asked ? '승객에게 다시 제시하도록 요청했습니다. 대화 기록과 서류 내용을 대조하세요.' :
+    '서류가 사건자료에 표시되어 있어도 승객에게 직접 다시 제시하도록 요청할 수 있습니다.'}</p></div><button type="button" id="docRequestOriginal" ${asked || state.ended ? 'disabled' : ''}>${asked ? '요청 완료' : '승객에게 서류 제시 요청'}</button></section>`;
+}
+
+export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestReturn, onRequestDocument }) {
   const c = current(), traveler = getTraveler(c.travelerId);
   const reviews = state.documentReviews || {};
   const tally = Object.values(reviews).filter((s) => s === 'reviewed' || s === 'followup').length;
   byId('doclist').innerHTML = c.docs.map((d, i) => {
     const status = reviews[i];
     // Review state is recorded automatically (P1): opening a document logs the viewing, opening
-    // the enlarged view logs the cross-check. Only the follow-up flag is a manual mark.
+    // the enlarged view logs an enlarged review, not evidence corroboration.
     const opened = state.performed.includes('DOC_READ_' + i);
-    const statusLabel = status === 'reviewed' ? tUI('대조 기록', 'Cross-checked') : status === 'followup' ? tUI('후속 확인', 'Follow-up') : opened ? tUI('열람됨', 'Opened') : tUI('미열람', 'Not opened');
+    const statusLabel = status === 'reviewed' ? tUI('확대 검토', 'Enlarged review') : status === 'followup' ? tUI('후속 확인', 'Follow-up') : opened ? tUI('열람됨', 'Opened') : tUI('미열람', 'Not opened');
     return `<button type="button" class="docitem ${i === state.selectedDoc ? 'on' : ''} ${d.alert ? 'alert' : ''} ${status ? 'doc-review-' + status : ''}" data-i="${i}" aria-pressed="${i === state.selectedDoc}"><span class="docico" aria-hidden="true">${docIcon(d.k)}</span><span class="doctext"><strong>${esc(d.t)}</strong><small><span class="doc-code">${esc(d.k)}</span>${d.alert ? '<em class="doc-flag">추가 확인</em>' : ''}<span class="doc-review-tag">${esc(statusLabel)}</span></small></span></button>`;
   }).join('');
   $$('.docitem').forEach((b) => { b.onclick = () => onSelect(+b.dataset.i); });
@@ -109,7 +132,7 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestRet
   const plan = documentReviewPlan(d);
   const status = reviews[state.selectedDoc] || 'unreviewed';
   const openedSel = state.performed.includes('DOC_READ_' + state.selectedDoc);
-  const statusLabel = status === 'reviewed' ? tUI('대조 기록됨 · 확대 보기로 자동 기록', 'Cross-checked · recorded from the enlarged view') : status === 'followup' ? tUI('추가 확인 필요로 표시됨', 'Flagged for follow-up') : openedSel ? tUI('열람 기록됨 · 확대해서 보면 대조로 기록됩니다', 'Opened · enlarge to record a cross-check') : tUI('아직 열람하지 않음', 'Not opened yet');
+  const statusLabel = status === 'reviewed' ? tUI('확대 검토 기록됨 · 진위 확정 아님', 'Enlarged review recorded · not authenticated') : status === 'followup' ? tUI('추가 확인 필요로 표시됨', 'Flagged for follow-up') : openedSel ? tUI('열람 기록됨 · 확대 검토는 별도 기록', 'Opened · enlarge to record a review') : tUI('아직 열람하지 않음', 'Not opened yet');
   const sources = availableCompareSources(state), summary = comparisonSummary(state);
   if (comparisonDraft.owner !== state.comparisonNotes || comparisonDraft.docIndex !== state.selectedDoc) {
     comparisonDraft = { owner: state.comparisonNotes, docIndex: state.selectedDoc, sourceId: sources[0]?.id || '', note: '' };
@@ -122,13 +145,14 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestRet
   const docComparisons = Object.values(state.comparisonNotes || {}).filter((row) => row.docIndex === state.selectedDoc);
   const disabled = state.ended ? ' disabled' : '';
   const active = (key) => status === key ? ' aria-pressed="true"' : ' aria-pressed="false"';
-  byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·대조는 자동 기록됩니다.', 'Opening and cross-checking are recorded automatically.'))}${summary.followup ? ' · ' + esc(tUI('미확인 대조 ' + summary.followup + '건', summary.followup + ' cross-check(s) need follow-up')) : ''}</span></div>
-  <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity ${d.alert ? 'alert' : ''}">${d.alert ? tUI('추가 확인 필요', 'Follow-up flagged') : tUI('제출자료', 'Submitted document')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
+  byId('docview').innerHTML = `<div class="doc-review-overview"><b>${esc(tUI('서류 검토 기록', 'Document review log'))} ${tally}/${c.docs.length}</b><span>${esc(tUI('열람·확대 검토 기록 · 진위 미확정', 'Opening and enlarged review logged · not authenticated'))}${summary.followup ? ' · ' + esc(tUI('미확인 대조 ' + summary.followup + '건', summary.followup + ' cross-check(s) need follow-up')) : ''}</span></div>
+  <div class="doc-stage"><div class="doc-toolbar"><div class="doc-toolbar-left"><span class="doc-type-badge">${esc(d.k)}</span><span class="doc-validity review-pending ${d.alert ? 'alert' : ''}" data-record-kind="${esc(documentRecordKind(d))}">${esc(documentRecordKind(d) === 'internal' ? '기관 내부 기록 · 검토 필요' : documentRecordKind(d) === 'summary' ? '입국근거 요약 · 공식 증명서 아님' : '제출 자료 · 진위 미확인')}</span></div><div class="doc-toolbar-actions"><button type="button" class="doc-zoom" id="docGuideQuickBtn">${tUI('업무지침', 'Work guide')}</button><button type="button" class="doc-zoom" id="docZoom">${uiIcon('zoom')} ${tUI('확대', 'Enlarge')}</button></div></div>${documentHTML(d, c, traveler, pp)}</div>
   ${renderReturnEvidencePanel(c)}
+  ${renderDocumentRequestPanel(d, state.selectedDoc)}
   <section class="doc-review-panel" aria-label="${tUI('서류 검토 체크리스트', 'Document review checklist')}">
     <div class="doc-review-heading"><div><h3>${tUI('무엇을 확인해야 하나요?', 'What should I check?')}</h3><span>${esc(statusLabel)}</span></div><button type="button" id="docGuideBtn">${tUI('관련 업무지침', 'Relevant work guide')}</button></div>
     <ol class="doc-review-checks">${plan.checks.map((step) => `<li>${esc(isEn() ? step.en : step.ko)}</li>`).join('')}</ol>
-    <p class="doc-review-note">${tUI('열람과 대조는 행동 그대로 자동 기록됩니다. 자료의 진위가 자동 판정되지는 않습니다.', 'Viewing and cross-checking are recorded as they happen. Authenticity is never auto-judged.')}</p>
+    <p class="doc-review-note">${tUI('서류 열람·확대 검토만 기록됩니다. 진술·전산 대조 결과는 아래에서 별도 기록하며, 진위가 자동 판정되지는 않습니다.', 'Opening and enlarged review are logged. Cross-checks require separate records below; authenticity is never auto-judged.')}</p>
     <div class="doc-review-actions" role="group" aria-label="${tUI('서류 후속 확인 표시', 'Flag document for follow-up')}">
       <button type="button" id="docReviewFollowup" data-review="${status === 'followup' ? 'unreviewed' : 'followup'}"${active('followup')}${disabled}>${status === 'followup' ? tUI('추가 확인 표시 취소', 'Clear follow-up flag') : tUI('추가 확인 필요로 표시', 'Flag for follow-up')}</button>
     </div>
@@ -161,6 +185,8 @@ export function renderDocs({ onSelect, onZoom, onReview, onCompare, onRequestRet
     </div>
   </details>`;
   byId('docZoom').onclick = () => onZoom(d, documentHTML(d, c, traveler, pp), state.selectedDoc);
+  const requestBtn = byId('docRequestOriginal');
+  if (requestBtn) requestBtn.onclick = () => onRequestDocument?.(state.selectedDoc);
   byId('requestReturnDocument').onclick = () => onRequestReturn?.();
   byId('docGuideBtn').onclick = () => openWorkGuide(plan.guideId);
   byId('docGuideQuickBtn').onclick = () => openWorkGuide(plan.guideId);

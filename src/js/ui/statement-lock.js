@@ -191,8 +191,10 @@ function highlightLockTargets(active) {
   refreshStatementLockCandidates();
 }
 
-function showDocumentCompareResult(result) {
-  const view = byId('docview');
+function showDocumentCompareResult(result, field = null) {
+  // Enlarged-document modals contain their own live compare controls. Keep
+  // feedback with the active document instead of writing behind the modal.
+  const view = field?.closest('.doc-modal-wrap') || byId('docview');
   if (!view || !result) return;
   view.querySelector('.doc-lock-feedback')?.remove();
   const notice = document.createElement('div');
@@ -211,7 +213,7 @@ function beginDocumentComparison(field, target) {
   const finish = (index) => {
     if (!activeLock) selectStatementForLock(index);
     const result = compareWithTarget(target);
-    showDocumentCompareResult(result);
+    showDocumentCompareResult(result, field);
   };
   if (activeLock) { finish(activeLock.logIndex); return; }
   const statements = (state.logs || []).map((log, i) => ({ log, i }))
@@ -297,12 +299,13 @@ export function bindStatementLockListeners() {
     if (fieldEl) {
       e.preventDefault();
       e.stopPropagation();
-      compareWithTarget({
+      const result = compareWithTarget({
         type: 'doc',
         key: fieldEl.dataset.docKey,
         fieldName: fieldEl.dataset.fieldName,
         fieldValue: fieldEl.dataset.fieldVal
       });
+      showDocumentCompareResult(result, fieldEl);
       return;
     }
 
