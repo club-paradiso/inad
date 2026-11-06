@@ -74,3 +74,37 @@ test('mobile document request remains touch-accessible and every evidence field 
   await expect(page.locator('#docRequestStatus')).toBeFocused();
   await H.expectNoErrors(errors);
 });
+
+
+test('keyboard document cycling is recorded the same as clicking the next document', async ({ page }) => {
+  const errors = await H.openGame(page);
+  await H.setSeed(page, 271828);
+  await H.startShift(page);
+  const before = await H.getState(page);
+  expect(before.selectedDoc).toBe(0);
+  await page.keyboard.press(']');
+  const after = await H.getState(page);
+  expect(after.selectedDoc).toBe(1);
+  expect(after.performed).toContain('DOC_READ_1');
+  await expect(page.locator('#doclist .docitem[data-i="1"]')).toHaveClass(/on/);
+  await H.expectNoErrors(errors);
+});
+
+test('document comparison inside an enlarged modal displays its result inside that modal', async ({ page }) => {
+  const errors = await H.openGame(page);
+  await page.locator('#liveStartBtn').click();
+  await page.locator('#langInterp').click();
+  await H.ask(page, 'purpose');
+  await H.ask(page, 'occupation');
+  await H.lookup(page, 'contact');
+  await H.ask(page, 'jobOffer');
+  const answer = page.locator('#log .msg.alien', { hasText: '공장 일' });
+  await answer.locator('.msg-lock-btn').click();
+  await page.locator('#doclist .docitem', { hasText: '사증' }).click();
+  await page.locator('#docZoom').click();
+  const modal = page.locator('#modal .doc-modal-wrap');
+  await expect(modal).toBeVisible();
+  await modal.locator('.doc-field[data-doc-key="VISA"] .doc-compare-btn').first().click();
+  await expect(modal.locator('.doc-lock-feedback')).toContainText('관광 사증과 취업 의도 불일치');
+  await H.expectNoErrors(errors);
+});
