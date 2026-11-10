@@ -89,6 +89,8 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
 .ask-send:hover { background: var(--accent-hover); }
 .ask-status { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--fs-label); color: var(--text-3); min-height: 0; }
 .ask-status:empty { display: none; }
+/* NPC layer: one quiet line when the optional model could not help (no provider details, no alarm colour) */
+.ask-status .ask-note { flex-basis: 100%; color: var(--text-3); }
 .ask-status button { min-height: 28px; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--elevated); font-size: var(--fs-compact); color: var(--text); text-align: left; }
 .ask-status button:hover { border-color: var(--accent); }
 /* suggestions are a quieter list than the full question catalogue */
