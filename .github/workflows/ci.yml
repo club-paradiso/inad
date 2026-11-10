@@ -65,7 +65,9 @@ jobs:
     # Runs the complete overseas case flow, persistence, country switching and mobile layout,
     # and (v11) plays every authored CA/GB/NZ case through the UI.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Playwright --with-deps can spend >19 minutes installing Firefox system packages
+    # on a cold GitHub runner; keep enough time for the actual browser tests.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
