@@ -1,18 +1,31 @@
-// Dialogue evaluation harness (docs/v10-ai-architecture.md §6).
+// Dialogue evaluation harness (docs/v10-ai-architecture.md §6, docs/npc-intelligence/MODEL_EVALUATION.md).
 //
-//   node scripts/eval-dialogue.js                 deterministic intent engine only (no network)
-//   INAD_LLM_BASE_URL=… INAD_LLM_MODEL=… [INAD_LLM_API_KEY=…] node scripts/eval-dialogue.js --provider
-//                                                 + the model alone and the shipped hybrid (model only when the
-//                                                   deterministic engine cannot place the utterance), with latency
+//   node scripts/eval-dialogue.js                 deterministic only (no network): v10 fixtures, the 2026-11 NPC
+//                                                 held-out corpus (single lines + multi-turn dialogues), the dev
+//                                                 corpus, hidden-fact leakage sweep, factual-consistency sweep
+//   node scripts/eval-dialogue.js --mock          + the full /api/npc path against a MOCK OpenAI-compatible server in
+//                                                 each failure mode: provider error rate, deterministic-fallback
+//                                                 success (evidence identical to the no-model run), pipeline latency.
+//                                                 The mock is not a model; its numbers are never model results.
+//   INAD_LLM_BASE_URL=… INAD_LLM_MODEL=… [INAD_LLM_API_KEY=… INAD_NPC_PROVIDER=… INAD_LLM_DISABLE_THINKING=1]
+//   node scripts/eval-dialogue.js --provider      + a LIVE model: model-alone and hybrid accuracy, wrong-question
+//                                                 routes, invalid outputs, injection resistance, acting validity,
+//                                                 latency p50/p95
 //   --json                                        machine-readable output
 //
-// Measured per run: accuracy, wrong-question routes (the costly error: a question the examiner did not ask gets
-// recorded), schema-invalid outputs, injection resistance, latency p50/p95. Selecting a production model is done
-// by running this suite against each candidate (ADR-002); results go to docs/v10-qa.md.
+// Held-out sets are never used for tuning. Results go to docs/npc-intelligence/MODEL_EVALUATION.md.
 import { CASES } from '../src/data/cases.js';
 import { resolveUtterance } from '../src/js/engines/intent-engine.js';
+import { checkLine } from '../src/js/engines/dialogue-guard.js';
 import { INTENT_CASES } from '../tests/dialogue/intents.fixture.js';
-import { providerConfig, questionMenu, classifyWithProvider, cleanUtterance } from '../api/npc.js';
+import { NPC_HELDOUT_SINGLE, NPC_HELDOUT_DIALOGUES } from '../tests/dialogue/npc-heldout-2026-11.fixture.js';
+import { NPC_DEV_SINGLE, NPC_DEV_DIALOGUES } from '../tests/dialogue/npc-dev.fixture.js';
+import { openCase, playTurn, routeMatches, wrongRoute, evidenceSnapshot } from '../tests/dialogue/npc-runner.js';
+import { state } from '../src/js/state.js';
+import { submitUtterance } from '../src/js/engines/interview-engine.js';
+import { PERSONAS } from '../src/data/personas.js';
+import handler, { resetNpcState } from '../api/npc.js';
+import { createMockLlm } from './mock-llm-server.js';
 
 // Utterances that try to steer the classifier; the right answer is the question actually asked, or null.
 export const INJECTION = [
@@ -26,15 +39,79 @@ export const INJECTION = [
 const pct = (n, d) => (d ? `${((n / d) * 100).toFixed(1)}%` : '-');
 const quant = (xs, q) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
 const flat = () => Object.entries(INTENT_CASES).flatMap(([id, rows]) => rows.map(([text, expect]) => ({ caseId: id.split('#')[0], set: id.includes('#heldout') ? 'heldout' : 'tuned', text, expect })));
-const expectedId = (e) => (e.startsWith('meta:') || e.startsWith('doc:') || e === 'unknown' ? null : e);
+const expectedId = (e) => (e.startsWith('meta:') || e.startsWith('doc:') || e.startsWith('multi:') || e === 'unknown' ? null : e);
+const caseOf = (id) => CASES.find((x) => x.id === id);
 
 function deterministic(row) {
-  const c = CASES.find((x) => x.id === row.caseId); const r = resolveUtterance(row.text, c);
+  const r = resolveUtterance(row.text, caseOf(row.caseId));
   return { kind: r.kind, id: r.kind === 'question' ? r.questionId : null, candidates: r.candidates || [] };
 }
 
-export async function runEval({ provider = false } = {}) {
-  const rows = flat(); const out = { deterministic: {}, model: null, hybrid: null, injection: null };
+// Single-line scoring that matches how the game treats each label (multi, meta, document, unknown).
+function scoreSingle(expect, r) {
+  if (expect.startsWith('multi:')) return ['multi', 'ambiguous'].includes(r.kind) && expect.slice(6).split('+').every((x) => (r.candidates || []).includes(x));
+  if (expect === 'unknown') return r.kind === 'unknown';
+  if (expect.startsWith('meta:')) return r.kind === 'meta' && r.intent === expect.slice(5);
+  if (expect.startsWith('doc:')) return r.kind === 'document' && r.key === expect.slice(4);
+  return (r.kind === 'question' && r.questionId === expect) || (r.candidates || []).includes(expect);
+}
+function singleSet(sets) {
+  const rows = Object.entries(sets).flatMap(([id, xs]) => xs.map(([text, expect]) => ({ caseId: id, text, expect })));
+  const res = rows.map((row) => { const r = resolveUtterance(row.text, caseOf(row.caseId)); const ok = scoreSingle(row.expect, r); return { ...row, ok, wrong: !ok && r.kind === 'question' && r.questionId !== expectedId(row.expect), got: r.kind === 'question' ? r.questionId : r.kind }; });
+  return { n: res.length, ok: res.filter((x) => x.ok).length, wrong: res.filter((x) => x.wrong).length, failures: res.filter((x) => !x.ok).map((x) => ({ caseId: x.caseId, text: x.text, expect: x.expect, got: x.got })) };
+}
+async function dialogueSet(dialogues, opts = {}) {
+  let n = 0, ok = 0, wrong = 0; const failures = [];
+  for (const d of dialogues) { openCase(d.caseId); for (const [text, expect] of d.turns) { const o = await playTurn(text, opts); n++; if (routeMatches(expect, o)) ok++; else { failures.push({ note: d.note, text, expect, got: o.routed || o.result.kind }); if (wrongRoute(expect, o)) wrong++; } } }
+  return { n, ok, wrong, failures };
+}
+
+// Every persona: a full interview in catalogue order plus off-topic / multi / thanks. Counts passenger lines that
+// carry a token absent from the public record (hidden-fact leakage) and canonical answers that were altered.
+const BEHAVIOR_PREFIX = ['', '앞서 말씀드린 내용과 같습니다. ', '네, 다시 말씀드리면 ', '조금 긴장되지만 사실대로 말씀드리겠습니다. ', '…네. ', '네. ', '네, 알겠습니다. '];
+function integritySweep() {
+  let lines = 0, leaks = 0, altered = 0;
+  for (const id of Object.keys(PERSONAS)) {
+    const c = openCase(id);
+    const steps = ['오늘 날씨 좋네요', '목적이랑 돈 얼마 있어요?', ...c.questions.map((q) => q.id), '감사합니다', ...c.questions.slice(0, 2).map((q) => q.id)];
+    for (const step of steps) {
+      const from = state.logs.length; const isQ = c.questions.some((q) => q.id === step);
+      submitUtterance(isQ ? { questionId: step, source: 'list' } : { text: step, source: 'text' });
+      for (const line of state.logs.slice(from).filter((x) => x.type === 'alien')) {
+        lines++;
+        const canon = c.questions.find((q) => state.asked.has(q.id) && line.text.endsWith(q.a));
+        if (canon) { if (!BEHAVIOR_PREFIX.includes(line.text.slice(0, -canon.a.length))) altered++; }
+        else if (!checkLine(line.text, c, [...state.asked]).ok) leaks++;
+      }
+    }
+  }
+  return { lines, hiddenFactLeaks: leaks, alteredCanonical: altered };
+}
+
+let activeCase = null; // case the harness is currently playing (the classifier request names it)
+// Classifier that goes through the real /api/npc handler (server context building, audit, provider, validation).
+function serverClassifier(env, lat, errs) {
+  return async (menu, text) => {
+    const res = { statusCode: 0, body: '', setHeader() {}, end(b) { this.body = b || ''; } };
+    const started = Date.now();
+    await handler({ method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://eval.local', host: 'eval.local', 'x-real-ip': '127.0.0.1' }, body: JSON.stringify({ task: 'classify', caseId: activeCase, utterance: text, allowed: menu.map((q) => q.id) }) }, res, { env });
+    lat.push(Date.now() - started);
+    const j = JSON.parse(res.body || '{}');
+    if (!j.ok) { errs[j.reason || 'unknown'] = (errs[j.reason || 'unknown'] || 0) + 1; return undefined; }
+    return JSON.stringify({ questionId: j.questionId });
+  };
+}
+
+async function hybridOverCorpus(classifierFor) {
+  // single lines (each in a fresh case) + dialogues; returns accuracy and the evidence snapshots for invariance
+  const rows = Object.entries(NPC_HELDOUT_SINGLE).flatMap(([id, xs]) => xs.map(([text, expect]) => ({ caseId: id, text, expect })));
+  let ok = 0, wrong = 0; const snaps = [];
+  for (const row of rows) { activeCase = row.caseId; openCase(row.caseId); const o = await playTurn(row.text, { classifier: classifierFor() }); if (routeMatches(row.expect, o)) ok++; else if (wrongRoute(row.expect, o)) wrong++; snaps.push(evidenceSnapshot()); }
+  return { n: rows.length, ok, wrong, snaps };
+}
+
+export async function runEval({ provider = false, mock = false } = {}) {
+  const rows = flat(); const out = { deterministic: {}, npc: {}, mock: null, model: null, hybrid: null, injection: null };
   const det = rows.map((row) => ({ row, d: deterministic(row) }));
   for (const set of ['tuned', 'heldout']) {
     const xs = det.filter((x) => x.row.set === set && expectedId(x.row.expect) !== null || (x.row.set === set && x.row.expect === 'unknown'));
@@ -42,32 +119,63 @@ export async function runEval({ provider = false } = {}) {
     const wrong = xs.filter(({ row, d }) => d.id && d.id !== expectedId(row.expect)).length;
     out.deterministic[set] = { n: xs.length, ok, wrong };
   }
-  const cfg = provider ? providerConfig() : null;
-  if (provider && !cfg) throw new Error('--provider needs INAD_LLM_BASE_URL and INAD_LLM_MODEL');
-  if (cfg) {
-    const model = []; const lat = [];
-    for (const row of rows) { if (row.expect.startsWith('meta:') || row.expect.startsWith('doc:')) continue; const r = await classifyWithProvider(cfg, questionMenu(row.caseId), cleanUtterance(row.text), { timeoutMs: 8000 }); lat.push(r.ms); model.push({ row, r }); }
-    const score = (list) => ({ n: list.length, ok: list.filter(({ row, r }) => r.questionId === expectedId(row.expect)).length, wrong: list.filter(({ row, r }) => r.questionId && r.questionId !== expectedId(row.expect)).length, invalid: list.filter(({ r }) => /malformed|non-json|invalid-id/.test(r.reason)).length, errors: list.filter(({ r }) => /upstream/.test(r.reason)).length });
-    out.model = { tuned: score(model.filter((x) => x.row.set === 'tuned')), heldout: score(model.filter((x) => x.row.set === 'heldout')), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: cfg.model };
-    // shipped behaviour: deterministic first; the model only where it could not place the utterance
-    const hybrid = model.map(({ row, r }) => { const d = deterministic(row); const id = d.kind === 'question' ? d.id : r.questionId; return { row, id }; });
-    out.hybrid = ['tuned', 'heldout'].reduce((a, set) => { const xs = hybrid.filter((x) => x.row.set === set); a[set] = { n: xs.length, ok: xs.filter((x) => x.id === expectedId(x.row.expect)).length, wrong: xs.filter((x) => x.id && x.id !== expectedId(x.row.expect)).length }; return a; }, {});
-    const inj = []; for (const [caseId, text, expect] of INJECTION) { const r = await classifyWithProvider(cfg, questionMenu(caseId), cleanUtterance(text), { timeoutMs: 8000 }); inj.push({ text, expect, got: r.questionId, ok: r.questionId === expect }); }
+  out.npc.heldoutSingle = singleSet(NPC_HELDOUT_SINGLE);
+  out.npc.heldoutDialogues = await dialogueSet(NPC_HELDOUT_DIALOGUES);
+  out.npc.devSingle = singleSet(NPC_DEV_SINGLE);
+  out.npc.devDialogues = await dialogueSet(NPC_DEV_DIALOGUES);
+  out.npc.integrity = integritySweep();
+
+  if (mock) {
+    const m = createMockLlm({ table: {}, delayMs: 200 }); const base = await m.listen(0);
+    const env = { INAD_LLM_BASE_URL: base, INAD_LLM_MODEL: 'mock-not-a-model', INAD_LLM_TIMEOUT_MS: '600' };
+    const reference = await hybridOverCorpus(() => null);
+    out.mock = { note: 'MOCK provider — transport and fallback only, not a model measurement', modes: {} };
+    for (const mode of ['null', 'garbage', 'extra', 'gated', 'http500', 'http429', 'schema400', 'slow']) {
+      resetNpcState(); m.state.mode = mode; m.state.schemaRejected = false; m.state.delayMs = mode === 'slow' ? 900 : 200;
+      const lat = []; const errs = {};
+      const r = await hybridOverCorpus(() => serverClassifier(env, lat, errs));
+      const calls = lat.length; const errors = Object.values(errs).reduce((a, b) => a + b, 0);
+      out.mock.modes[mode] = { calls, providerErrorRate: calls ? errors / calls : 0, errors: errs, fallbackIdentical: r.snaps.every((s, i) => s === reference.snaps[i]), accuracy: r.ok / r.n, wrong: r.wrong, latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95) } };
+    }
+    await m.close(); resetNpcState();
+  }
+
+  const env = process.env;
+  if (provider && !(env.INAD_LLM_BASE_URL && env.INAD_LLM_MODEL)) throw new Error('--provider needs INAD_LLM_BASE_URL and INAD_LLM_MODEL');
+  if (provider) {
+    resetNpcState(); const lat = []; const errs = {};
+    const model = [];
+    for (const row of rows) {
+      if (row.expect.startsWith('meta:') || row.expect.startsWith('doc:')) continue;
+      activeCase = row.caseId; openCase(row.caseId);
+      const content = await serverClassifier({ ...env, INAD_LLM_TIMEOUT_MS: env.INAD_LLM_TIMEOUT_MS || '8000' }, lat, errs)(caseOf(row.caseId).questions.map((q) => ({ id: q.id })), row.text);
+      let id = null, invalid = false; try { id = content ? JSON.parse(content).questionId : null; } catch (e) { invalid = true; }
+      model.push({ row, id, invalid });
+    }
+    const score = (list) => ({ n: list.length, ok: list.filter(({ row, id }) => id === expectedId(row.expect)).length, wrong: list.filter(({ row, id }) => id && id !== expectedId(row.expect)).length });
+    out.model = { tuned: score(model.filter((x) => x.row.set === 'tuned')), heldout: score(model.filter((x) => x.row.set === 'heldout')), errors: errs, invalidOrError: Object.values(errs).reduce((a, b) => a + b, 0), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: env.INAD_LLM_MODEL };
+    const hyb = await hybridOverCorpus(() => serverClassifier(env, [], {}));
+    out.hybrid = { heldout2026: { n: hyb.n, ok: hyb.ok, wrong: hyb.wrong } };
+    const inj = []; for (const [caseId, text, expect] of INJECTION) { activeCase = caseId; openCase(caseId); const content = await serverClassifier(env, [], {})(caseOf(caseId).questions.filter((q) => !(q.requires || []).length), text); const got = content ? JSON.parse(content).questionId : null; inj.push({ text, expect, got, ok: got === expect || got === null }); }
     out.injection = { n: inj.length, ok: inj.filter((x) => x.ok).length, rows: inj };
   }
   return out;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const res = await runEval({ provider: process.argv.includes('--provider') });
+  const res = await runEval({ provider: process.argv.includes('--provider'), mock: process.argv.includes('--mock') });
   if (process.argv.includes('--json')) { console.log(JSON.stringify(res, null, 2)); process.exit(0); }
-  const line = (name, s) => `| ${name} | ${s.n} | ${pct(s.ok, s.n)} | ${s.wrong}${s.invalid !== undefined ? ` | ${s.invalid} | ${s.errors}` : ' | - | -'} |`;
-  console.log('| route | n | accuracy | wrong-question | invalid output | provider errors |\n|---|---|---|---|---|---|');
-  console.log(line('deterministic · tuned', res.deterministic.tuned)); console.log(line('deterministic · held-out', res.deterministic.heldout));
+  const line = (name, s) => `| ${name} | ${s.n} | ${pct(s.ok, s.n)} | ${s.wrong} |`;
+  console.log('| route | n | accuracy | wrong-question |\n|---|---|---|---|');
+  console.log(line('deterministic · v10 tuned', res.deterministic.tuned)); console.log(line('deterministic · v10 held-out (used for tuning since; not independent)', res.deterministic.heldout));
+  console.log(line('deterministic · NPC held-out 2026-11 single', res.npc.heldoutSingle)); console.log(line('deterministic · NPC held-out 2026-11 dialogues', res.npc.heldoutDialogues));
+  console.log(line('deterministic · NPC dev single', res.npc.devSingle)); console.log(line('deterministic · NPC dev dialogues', res.npc.devDialogues));
+  const g = res.npc.integrity; console.log(`\nintegrity sweep: ${g.lines} passenger lines · hidden-fact leaks ${g.hiddenFactLeaks} · altered canonical answers ${g.alteredCanonical}`);
+  if (res.mock) { console.log(`\n${res.mock.note}\n| mode | calls | provider error rate | fallback evidence identical | accuracy | wrong | p50 ms | p95 ms |\n|---|---|---|---|---|---|---|---|`); for (const [k, v] of Object.entries(res.mock.modes)) console.log(`| ${k} | ${v.calls} | ${pct(v.providerErrorRate * v.calls, v.calls)} | ${v.fallbackIdentical ? 'yes' : 'NO'} | ${pct(v.accuracy * 1000, 1000)} | ${v.wrong} | ${v.latencyMs.p50 ?? '-'} | ${v.latencyMs.p95 ?? '-'} |`); }
   if (res.model) {
-    console.log(line(`model · tuned (${res.model.model})`, res.model.tuned)); console.log(line('model · held-out', res.model.heldout));
-    console.log(line('hybrid · tuned', res.hybrid.tuned)); console.log(line('hybrid · held-out', res.hybrid.heldout));
-    console.log(`\nlatency ms p50 ${res.model.latencyMs.p50} · p95 ${res.model.latencyMs.p95} · max ${res.model.latencyMs.max}`);
+    console.log(`\nLIVE model ${res.model.model}`); console.log(line('model alone · v10 tuned', res.model.tuned)); console.log(line('model alone · v10 held-out', res.model.heldout));
+    console.log(line('hybrid · NPC held-out 2026-11', res.hybrid.heldout2026));
+    console.log(`errors/invalid ${res.model.invalidOrError} ${JSON.stringify(res.model.errors)} · latency ms p50 ${res.model.latencyMs.p50} · p95 ${res.model.latencyMs.p95} · max ${res.model.latencyMs.max}`);
     console.log(`injection resistance ${res.injection.ok}/${res.injection.n}`);
-  } else console.log('\n(no provider run: set INAD_LLM_BASE_URL / INAD_LLM_MODEL and pass --provider)');
+  } else console.log('\n(no live provider run: set INAD_LLM_BASE_URL / INAD_LLM_MODEL and pass --provider — live model evaluation PENDING)');
 }

@@ -4,9 +4,11 @@
 import { $, byId, esc } from './dom.js';
 import { state, preferences, assistLevel } from '../state.js';
 import { current } from '../engines/queue-engine.js';
-import { submitUtterance } from '../engines/interview-engine.js';
+import { submitUtterance, interviewMemory, refineTurnActing, turnActing } from '../engines/interview-engine.js';
 import { resolveUtterance } from '../engines/intent-engine.js';
-import { checkModel, modelReady, classifyRemote } from '../services/npc-client.js';
+import { checkModel, modelReady, classifyRemote, npcRequest } from '../services/npc-client.js';
+import { actingKind, actingTiming } from '../engines/npc-acting.js';
+import { memoryView } from '../engines/npc-context.js';
 import { questionUnlocked } from '../engines/clue-engine.js';
 import { saveInterviewPreferences } from '../engines/save-engine.js';
 import { holdReplies, releaseReplies } from './interview-panel.js';
@@ -16,6 +18,12 @@ import { toast } from './toast.js';
 import { sttSupport, createRecognizer, onDeviceStatus, installOnDevice, speakLine, stopSpeaking, ttsSupport } from '../services/speech.js';
 
 let pendingTimer = 0, recognizer = null, onRender = () => {}, turnGen = 0, starting = false, micGen = 0;
+// In-flight model requests of the current turn; aborted by a newer turn, a new case, a retry or a reset.
+let inflight = null;
+function cancelInflight() { if (inflight) { inflight.abort(); inflight = null; } }
+const GESTURE_STATE = { 'glance-down': 'thinking', 'glance-aside': 'hesitant', 'head-tilt': 'confused', 'check-document': 'document', nod: 'listening' };
+const openIds = (c) => c.questions.filter((q) => questionUnlocked(q)).map((q) => q.id);
+const DEGRADED_NOTE = '자동 해석을 지금 사용할 수 없어 기본 해석으로 진행했습니다.';
 const reduced = () => document.body.classList.contains('pref-reduce-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ASSIST_TEXT = { guided: '안내', standard: '표준', professional: '전문', immersive: '몰입' };
 
@@ -28,21 +36,26 @@ export function submitTurn(opts = {}) {
   const { text = '', questionId = null, source = 'text' } = opts;
   const c = current(); if (!c || state.ended) return null;
   const gen = ++turnGen; // a newer turn, a new case or a retry makes any pending classification stale
-  if (!questionId && (source === 'text' || source === 'voice') && modelReady()) {
-    const local = resolveUtterance(text, c);
+  cancelInflight();
+  if (!questionId && (source === 'text' || source === 'voice') && modelReady('classify')) {
+    const mem = interviewMemory();
+    const local = resolveUtterance(text, c, { lastTopic: mem?.lastTopic || null });
     if (local.kind === 'unknown' || local.kind === 'ambiguous') {
-      flush(); setStageState('thinking'); setStatus('질문을 해석하고 있습니다…');
-      classifyRemote(c.id, text).then((m) => {
-        if (gen !== turnGen) return;
+      const ctrl = new AbortController(); inflight = ctrl;
+      flush(); setStageState('thinking'); setStatus('질문을 확인하는 중…');
+      const allowed = openIds(c);
+      classifyRemote(c.id, text, { allowed, signal: ctrl.signal }).then((m) => {
+        if (gen !== turnGen || ctrl.signal.aborted) return;
+        if (inflight === ctrl) inflight = null;
         setStatus(''); if (current() !== c || state.ended) { setStageState('idle'); return; }
-        // Remote classification can only suggest a canonical question. Never submit a guessed ID
+        // Remote classification can only suggest an open canonical question. Never submit a guessed ID
         // silently: it could put a question the officer did not ask into the official record.
-        if (m.questionId && c.questions.some((q) => q.id === m.questionId && questionUnlocked(q))) {
+        if (m.questionId && allowed.includes(m.questionId) && c.questions.some((q) => q.id === m.questionId && questionUnlocked(q))) {
           setStageState('listening');
           offerConfirm(m.questionId, text, source);
-        } else runTurn({ text, source });
+        } else runTurn({ text, source, degraded: !!m.reason && !['model-null', 'cancelled'].includes(m.reason) });
       }).catch(() => {
-        if (gen === turnGen && current() === c && !state.ended) runTurn({ text, source });
+        if (gen === turnGen && current() === c && !state.ended) runTurn({ text, source, degraded: true });
       });
       return { kind: 'pending' };
     }
@@ -50,9 +63,23 @@ export function submitTurn(opts = {}) {
   return runTurn(opts);
 }
 
+// Optional model acting for the turn just recorded: requested in parallel with the passenger's reaction delay and
+// applied only if it arrives in time and still belongs to this turn (engine re-validates). Never delays the line.
+function requestActing(c, r, gen) {
+  const kind = actingKind(r); if (!kind || !r.seq || !modelReady('act') || reduced()) return;
+  const ctrl = new AbortController(); inflight = ctrl;
+  const mem = interviewMemory();
+  const body = { task: 'act', caseId: c.id, allowed: openIds(c), turn: { kind, questionId: r.questionId || null, repeatCount: r.repeat ? 1 : 0 }, memory: memoryView(mem) };
+  npcRequest(body, { signal: ctrl.signal, timeoutMs: Math.max(350, reactionDelay(r.mood || 'plain') - 40) }).then((res) => {
+    if (gen !== turnGen || ctrl.signal.aborted || !res.ok || !res.data?.acting) return;
+    if (current() === c) refineTurnActing(r.seq, res.data.acting);
+  }).finally(() => { if (inflight === ctrl) inflight = null; });
+}
+
 // Engine first (state is final at once), then the passenger thinks, answers and is captioned.
-function runTurn({ text = '', questionId = null, source = 'text', via = null } = {}) {
+function runTurn({ text = '', questionId = null, source = 'text', via = null, degraded = false } = {}) {
   const c = current(); if (!c || state.ended) return null;
+  const gen = turnGen;
   flush(); stopSpeaking(); stopActing(); setStatus('');
   const from = state.logs.length;
   holdReplies(from, reduced() ? 0 : 1500);
@@ -68,27 +95,36 @@ function runTurn({ text = '', questionId = null, source = 'text', via = null } =
   if (r.kind === 'confirm') { releaseReplies(); setStageState('listening'); offerConfirm(r.candidates[0], r.text, source); return r; }
   const delay = reduced() ? 0 : reactionDelay(r.mood || 'plain');
   holdReplies(from, delay); // the engine's own 'changed' already rendered the record with the reply held
+  requestActing(c, r, gen);
   const finish = () => {
-    pendingTimer = 0; releaseReplies();
+    pendingTimer = 0; cancelInflight(); releaseReplies();
     const line = state.logs.slice(from).filter((x) => x.type === 'alien').pop();
-    if (line) {
+    // delivery: the turn's acting (authored rules, or a validated model choice that arrived in time)
+    const acting = turnActing(r.seq) || r.acting || null; const { pauseMs, rate } = actingTiming(acting, { reducedMotion: reduced() });
+    const speak = () => {
+      pendingTimer = 0;
       actLine(line.text, { mood: line.mood || r.mood, lead: line.lead || '' });
-      if (preferences.tts && ttsSupport()) speakLine(`${line.lead ? line.lead + ' ' : ''}${line.text}`, { lang: 'ko-KR', rate: 0.98 });
-    } else setStageState('idle');
+      if (preferences.tts && ttsSupport()) speakLine(`${line.lead ? line.lead + ' ' : ''}${line.text}`, { lang: 'ko-KR', rate });
+    };
+    if (line && pauseMs) { setStageState(GESTURE_STATE[acting.gesture] || 'thinking'); pendingTimer = setTimeout(speak, pauseMs); }
+    else if (line) speak();
+    else setStageState('idle');
     if (r.kind === 'ambiguous' || r.kind === 'unknown') offerCandidates(r.candidates || []);
+    if (r.kind === 'multi') offerCandidates(r.candidates || [], '두 가지를 한 번에 물으셨습니다. 하나씩 고르십시오.');
     if (r.kind === 'repeatCheck') offerRepeat(r.candidates[0]);
     if (r.kind === 'language') setStatus('질문이 충분히 전달되지 않았습니다. 질문 언어를 바꾸거나 통역을 연결하십시오.');
+    if (degraded) { const el = byId('askStatus'); if (el) el.insertAdjacentHTML('afterbegin', `<span class="ask-note">${esc(DEGRADED_NOTE)}</span>`); }
   };
   if (delay) pendingTimer = setTimeout(finish, delay); else finish();
   return r;
 }
 
 // "혹시 이 질문입니까?" — only questions that are already open are offered (a locked question's text stays hidden).
-function offerCandidates(ids) {
+function offerCandidates(ids, intro = '혹시 이 질문입니까?') {
   const c = current(); if (!c || assistLevel() === 'immersive') return;
   const qs = ids.map((id) => c.questions.find((q) => q.id === id)).filter((q) => q && questionUnlocked(q) && !state.asked.has(q.id)).slice(0, 2);
   if (!qs.length) { setStatus('다른 말로 다시 질문하거나 아래 질문 목록을 사용하십시오.'); return; }
-  setStatus(`<span>혹시 이 질문입니까?</span>${qs.map((q) => `<button type="button" data-cand="${esc(q.id)}">${esc(q.q)}</button>`).join('')}`);
+  setStatus(`<span>${esc(intro)}</span>${qs.map((q) => `<button type="button" data-cand="${esc(q.id)}">${esc(q.q)}</button>`).join('')}`);
   byId('askStatus').querySelectorAll('[data-cand]').forEach((b) => { b.onclick = () => { submitTurn({ questionId: b.dataset.cand, source: 'clarify' }); byId('askInput')?.focus(); }; });
 }
 
@@ -207,4 +243,4 @@ export function stopLiveListening() {
   const old = recognizer; recognizer = null;
   old?.abort(); setMic(false);
 }
-export function resetLiveInterview() { turnGen++; flush(); resetStage(); stopSpeaking(); stopLiveListening(); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }
+export function resetLiveInterview() { turnGen++; cancelInflight(); flush(); resetStage(); stopSpeaking(); stopLiveListening(); setStatus(''); const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } }

@@ -3,7 +3,7 @@
 // (data/dialogue-lexicon.js, applied to the question text itself) plus Korean character-bigram and English
 // token overlap. The result is one of: a question id, an ambiguity between two questions, a meta intent
 // (greeting, interpreter, language, repeat, document hand-over) or "unknown". It never decides what is true.
-import { CONCEPTS, META_INTENTS, DOC_REQUESTS, DOC_REQUEST_VERBS, STOPWORDS_KO, STOPWORDS_EN } from '../../data/dialogue-lexicon.js';
+import { CONCEPTS, META_INTENTS, DOC_REQUESTS, DOC_REQUEST_VERBS, STOPWORDS_KO, STOPWORDS_EN, FOLLOWUP_MARKERS, QUESTION_JOINERS } from '../../data/dialogue-lexicon.js';
 import { PERSONAS } from '../../data/personas.js';
 
 export const MATCH_THRESHOLD = 0.34;   // below: not understood
@@ -81,8 +81,41 @@ function docRequest(t, c) {
   return null;
 }
 
-// Resolve an utterance against the current case. `c` is a case object (questions, docs).
-export function resolveUtterance(text, c) {
+// NPC Intelligence Layer: a follow-up ("그 사람은 어떻게 알아요?") is read against the topic just discussed. Related
+// questions (same public category, or a question whose disclosure follows from that one) get a bounded boost; the
+// result is always below the confirmation bar, so the examiner confirms before anything is recorded.
+export const FOLLOWUP_BOOST = 0.14;
+export const FOLLOWUP_SCORE_CAP = 0.6;
+export function hasFollowupMarker(text) { return stemsHit(normalizeUtterance(text), FOLLOWUP_MARKERS); }
+
+// Two questions joined in one utterance: each part must match a different question on its own.
+function multiQuestion(t, c) {
+  const parts = t.split(QUESTION_JOINERS).map((x) => x.trim()).filter((x) => x.length >= 2);
+  if (parts.length < 2) return null;
+  const ids = [];
+  for (const part of parts) {
+    const sc = (c.questions || []).map((q) => ({ q, score: scoreQuestion(part, q, c.id, c) })).sort((a, b) => b.score - a.score);
+    const [b1, b2] = sc; if (!b1 || b1.score < MATCH_THRESHOLD || (b2 && b1.score - b2.score < AMBIGUITY_MARGIN / 2)) continue;
+    if (!ids.includes(b1.q.id)) ids.push(b1.q.id);
+  }
+  return ids.length >= 2 ? ids.slice(0, 2) : null;
+}
+
+function followUp(route, t, c, ctx, scored) {
+  const last = ctx?.lastTopic && (c.questions || []).find((q) => q.id === ctx.lastTopic);
+  if (!last || !hasFollowupMarker(t)) return route;
+  if (route.kind === 'question' && (route.score ?? 1) >= FOLLOWUP_SCORE_CAP) return route;
+  if (!['question', 'ambiguous', 'unknown'].includes(route.kind)) return route;
+  const related = (q) => q.id !== last.id && (q.cat === last.cat || (q.requires || []).includes(`QUESTION_${last.id}`));
+  const boosted = scored.map((x) => ({ q: x.q, s: x.score + (related(x.q) ? FOLLOWUP_BOOST : 0) })).sort((a, b) => b.s - a.s);
+  const [b1, b2] = boosted;
+  if (!b1 || b1.s < MATCH_THRESHOLD || !related(b1.q) || (b2 && b1.s - b2.s < AMBIGUITY_MARGIN / 2)) return route;
+  return { kind: 'question', questionId: b1.q.id, score: Math.min(Math.round(b1.s * 1000) / 1000, FOLLOWUP_SCORE_CAP), context: true };
+}
+
+// Resolve an utterance against the current case. `c` is a case object (questions, docs). `ctx` (optional) is the
+// interview's id-only memory view: { lastTopic } — without it the result is exactly the context-free one.
+export function resolveUtterance(text, c, ctx = null) {
   const t = normalizeUtterance(text);
   if (!t) return { kind: 'empty' };
   const scored = (c.questions || []).map((q) => ({ q, score: scoreQuestion(t, q, c.id, c) })).sort((a, b) => b.score - a.score);
@@ -90,11 +123,15 @@ export function resolveUtterance(text, c) {
   // A short meta utterance ("통역 불러 주세요", "hello") wins unless a question clearly matched as well.
   const meta = metaIntent(t);
   if (meta && (!best || best.score < MATCH_THRESHOLD + 0.1 || ['INTERPRETER', 'LANG_KO', 'LANG_EN'].includes(meta))) return { kind: 'meta', intent: meta };
+  const multi = multiQuestion(t, c);
+  if (multi) return { kind: 'multi', candidates: multi };
   const doc = docRequest(t, c);
   if (doc && (!best || best.score < MATCH_THRESHOLD + 0.15)) return { kind: 'document', ...doc };
-  if (!best || best.score < MATCH_THRESHOLD) return { kind: 'unknown', candidates: scored.slice(0, 2).filter((x) => x.score > 0.15).map((x) => x.q.id) };
-  if (second && best.score - second.score < AMBIGUITY_MARGIN && second.score >= MATCH_THRESHOLD) return { kind: 'ambiguous', candidates: [best.q.id, second.q.id], score: best.score };
-  return { kind: 'question', questionId: best.q.id, score: Math.round(best.score * 1000) / 1000 };
+  let route;
+  if (!best || best.score < MATCH_THRESHOLD) route = { kind: 'unknown', candidates: scored.slice(0, 2).filter((x) => x.score > 0.15).map((x) => x.q.id), offTopic: !best || best.score < 0.08 };
+  else if (second && best.score - second.score < AMBIGUITY_MARGIN && second.score >= MATCH_THRESHOLD) route = { kind: 'ambiguous', candidates: [best.q.id, second.q.id], score: best.score };
+  else route = { kind: 'question', questionId: best.q.id, score: Math.round(best.score * 1000) / 1000 };
+  return ctx ? followUp(route, t, c, ctx, scored) : route;
 }
 
 // Common questions the case catalogue does not ask but the submitted documents already answer. The passenger

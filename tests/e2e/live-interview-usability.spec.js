@@ -58,8 +58,8 @@ test('optional model only proposes a question; examiner must explicitly confirm'
   await page.route('**/api/npc', (route) => route.fulfill({
     status: 200, contentType: 'application/json',
     body: route.request().method() === 'GET'
-      ? JSON.stringify({ available: true })
-      : JSON.stringify({ questionId: 'purpose', reason: 'test-only' })
+      ? JSON.stringify({ available: true, tasks: ['classify'] })
+      : JSON.stringify({ ok: true, questionId: 'purpose', reason: 'model' }) // /api/npc contract (docs/npc-intelligence)
   }));
   await start(page);
   await page.locator('#langInterp').click();

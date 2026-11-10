@@ -71,6 +71,17 @@ export const META_INTENTS = {
   WAIT: { ko: ['잠시만', '잠깐만', '기다려', '확인하겠습', '확인해 보겠'], en: ['one moment', 'wait', 'hold on', 'let me check'] }
 };
 
+// NPC Intelligence Layer (2026-11): words that point back at what was just discussed ("그 사람", "that person").
+// Used only together with the interview's id-only memory (engines/intent-engine.js resolveUtterance ctx): a
+// follow-up is never recorded without the examiner confirming the question it was read as.
+export const FOLLOWUP_MARKERS = {
+  ko: ['그 사람', '그사람', '그분', '그 분', '그 친구', '그 집', '그집', '거기', '그곳', '그건', '그거', '그럼', '그러면', '그 돈', '그 번호', '그 일', '그 얘기', '방금', '아까'],
+  en: ['that person', 'him', 'her', 'them', 'they', 'that', 'there', 'then', 'what about', 'and what', 'earlier', 'you said']
+};
+// Joins two questions in one utterance ("목적이랑 돈은?", "why …, and how much …"). Split points only: two parts must
+// each match a different question on their own before the engine treats the utterance as two questions.
+export const QUESTION_JOINERS = /\s*,?\s*(?:그리고|그리고 또|또한|및|and also|and|also|plus)\s+|(?<=[가-힣])(?:이랑|랑|하고)\s+|\s*,\s+/i;
+
 // Asking the passenger to hand over a document. Opens that document in the workbench; no evidence is created
 // (the documents were submitted at the counter and are already on file).
 export const DOC_REQUESTS = {

@@ -16,10 +16,13 @@ import { requestInterpreter, setInterviewLanguage, communicationReady } from './
 import { resolveUtterance, normalizeUtterance, publicTopic, MAX_UTTERANCE } from './intent-engine.js';
 import { checkLine } from './dialogue-guard.js';
 import { personaFor } from '../../data/personas.js';
+import { createMemory, noteTurn, repeatCount, withheldCount } from './npc-memory.js';
+import { deterministicActing, acceptActing, actingKind, leadText, STAGE_MOOD } from './npc-acting.js';
 import { addLog } from './log.js';
 import { bus } from '../services/bus.js';
 
 export const SOURCES = ['suggestion', 'list', 'text', 'voice', 'clarify'];
+const lastAlienIndex = () => { for (let i = state.logs.length - 1; i >= 0; i--) if (state.logs[i].type === 'alien') return i; return -1; };
 // Below this confidence a typed/spoken match to an already-answered question is confirmed first (a re-ask costs
 // efficiency under the v9 rule, and the examiner may have meant something else).
 export const REPEAT_CONFIRM_BELOW = 0.62;
@@ -47,7 +50,7 @@ export function liveRecord() { return state.interview && state.interview.logs ==
 export function interviewRecord() {
   const c = current();
   if (!state.interview || state.interview.logs !== state.logs) {
-    state.interview = { logs: state.logs, caseId: c?.id || null, turns: [], counts: { suggestion: 0, list: 0, text: 0, voice: 0, clarify: 0 }, unmatched: 0, withheld: 0, lastAnswer: null, pending: null, lastKind: null, languageMiss: 0 };
+    state.interview = { logs: state.logs, caseId: c?.id || null, turns: [], counts: { suggestion: 0, list: 0, text: 0, voice: 0, clarify: 0 }, unmatched: 0, withheld: 0, lastAnswer: null, pending: null, lastKind: null, languageMiss: 0, memory: createMemory() };
   }
   return state.interview;
 }
@@ -72,7 +75,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   const persona = personaFor(c.id);
   let route;
   if (questionId) route = (c.questions || []).some((q) => q.id === questionId) ? { kind: 'question', questionId } : { kind: 'unknown', candidates: [] };
-  else route = resolveUtterance(raw, c);
+  else route = resolveUtterance(raw, c, { lastTopic: rec.memory.lastTopic });
   if (route.kind === 'empty') return { kind: 'empty' };
   // A loose typed/spoken match to an open, not-yet-asked question is confirmed before anything is recorded:
   // a wrong route would put a question the examiner did not ask into the official record. Nothing happens yet —
@@ -84,7 +87,8 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   rec.counts[src]++;
   const turn = { at: state.caseWorkSeconds, source: src, kind: route.kind, questionId: route.questionId || null, via: via === 'model' ? 'model' : questionId ? 'button' : 'lexicon' };
   rec.turns.push(turn);
-  const n = rec.turns.length;
+  const n = rec.turns.length; turn.seq = n;
+  const logStart = state.logs.length;
   let result;
 
   if (route.kind === 'question') {
@@ -129,6 +133,11 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
     sayOffRecord(pick(persona.handover, n), 'document', c, rec);
     selectDocument(route.index);
     result = { kind: 'document', index: route.index, mood: 'document' };
+  } else if (route.kind === 'multi') {
+    // Two questions in one breath: the passenger asks to take them one at a time; nothing is recorded or costed.
+    rec.unmatched++; heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
+    sayOffRecord(pick(persona.multi, n), 'considered', c, rec); bus.emit('changed');
+    result = { kind: 'multi', candidates: route.candidates.slice(0, 2), mood: 'considered' };
   } else if (route.kind === 'unknown' && publicAnswer(c, publicTopic(raw))) {
     // Not a question of this case, but the submitted documents answer it: say what is already on record.
     heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
@@ -137,18 +146,58 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   } else {
     // Not understood, or two questions fit equally: no fact is produced; the examiner rephrases or picks.
     rec.unmatched++; heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
-    sayOffRecord(pick(persona.clarify, n), 'confused', c, rec);
+    sayOffRecord(pick(route.kind === 'unknown' && route.offTopic && persona.offTopic ? persona.offTopic : persona.clarify, n), 'confused', c, rec);
     bus.emit('changed');
     result = { kind: route.kind, candidates: route.candidates || [], mood: 'confused' };
   }
   turn.kind = result.kind;
   rec.lastKind = result.kind;
+  // NPC Intelligence Layer: deterministic acting from the authored profile, then the id-only memory update.
+  // Presentation only — nothing below changes the record's text, evidence, score or work time.
+  const qid = result.questionId || null; const mem = rec.memory;
+  const acting = deterministicActing(c.id, result, { repeats: qid ? repeatCount(mem, qid) : 0, withheldBefore: qid ? withheldCount(mem, qid) : 0 });
+  const ai = lastAlienIndex(); turn.alienIndex = ai >= logStart ? ai : null;
+  turn.result = { kind: result.kind, repeat: !!result.repeat, questionId: qid };
+  if (acting) {
+    turn.acting = { ...acting, source: 'rules' }; result.acting = turn.acting;
+    const entry = turn.alienIndex != null ? state.logs[turn.alienIndex] : null;
+    if (entry && actingKind(result) === 'withheld' && acting.leadId && !entry.text.includes('말씀드린')) entry.lead = leadText(acting.leadId);
+  }
+  if (result.kind === 'document') result.key = route.key || null;
+  noteTurn(mem, result);
+  result.seq = turn.seq;
   // suggestions read lastKind (interpreter after a misunderstanding): refresh once it is known
   if (result.kind === 'language') bus.emit('changed');
   bus.emit('interview', { ...result, source: src });
   bus.emit('analytics', { name: 'interview_turn', source: src, kind: result.kind, mode: turn.via });
   return result;
 }
+
+// A provider's acting proposal for the latest turn (validated against the closed enums and this persona's leads).
+// Applies only to the turn it was requested for; a stale proposal (newer turn, new case, ended case) is ignored.
+// It may change the passenger line's delivery (mood, approved lead-in) — never its words, the evidence or the cost.
+export function refineTurnActing(seq, proposal) {
+  const rec = liveRecord(); const c = current();
+  if (!rec || !c || state.ended || rec.caseId !== c.id) return { ok: false, error: 'stale' };
+  const turn = rec.turns[rec.turns.length - 1];
+  if (!turn || turn.seq !== seq || !turn.result) return { ok: false, error: 'stale' };
+  const v = acceptActing(c.id, turn.result, proposal); if (!v.ok) return v;
+  turn.acting = { ...v.acting, source: 'model' };
+  const entry = turn.alienIndex != null ? state.logs[turn.alienIndex] : null;
+  if (entry && entry.type === 'alien') {
+    entry.mood = STAGE_MOOD[v.acting.reaction] || entry.mood;
+    const kind = actingKind(turn.result); const q = c.questions.find((x) => x.id === turn.result.questionId);
+    // the lead is shown only before the exact canonical answer (the same rule log.js applies to authored leads)
+    if (kind === 'answer') entry.lead = q && entry.text === q.a ? leadText(v.acting.leadId) : '';
+    else if (kind === 'withheld') entry.lead = entry.text.includes('말씀드린') ? '' : leadText(v.acting.leadId);
+  }
+  bus.emit('changed');
+  return { ok: true, acting: turn.acting };
+}
+// The delivery chosen for a turn (null when that turn is no longer the latest of the live record).
+export function turnActing(seq) { const rec = liveRecord(); const t = rec?.turns?.[rec.turns.length - 1]; return t && t.seq === seq ? t.acting || null : null; }
+// Id-only memory view for the NPC layer (what was discussed; never raw text or unrevealed answers).
+export function interviewMemory(rec = liveRecord()) { return rec?.memory || null; }
 
 export function interviewSummary(rec = liveRecord()) {
   if (!rec) return { turns: 0, counts: { suggestion: 0, list: 0, text: 0, voice: 0, clarify: 0 }, unmatched: 0, withheld: 0 };

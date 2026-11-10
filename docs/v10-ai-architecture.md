@@ -1,5 +1,9 @@
 # INAD v10 — AI architecture
 
+> 2026-11: extended by the model-agnostic NPC Intelligence Layer — provider registry, `act` task, disclosure-aware
+> context, memory and acting. See `docs/npc-intelligence/ADR-004.md`. ADR-002's "all question texts" menu is
+> superseded: menus now hold disclosure-ready questions only.
+
 ## 1. Boundaries
 ```
 src/data/          dialogue-lexicon.js (concepts, meta intents, document requests) · personas.js (delivery, withheld,

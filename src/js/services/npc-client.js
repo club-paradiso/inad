@@ -1,28 +1,62 @@
-// Client for the optional same-origin inference boundary (api/npc.js). Used only when the deterministic intent
-// engine could not place an utterance; the answer is a question id that the dispatcher then handles exactly like
-// a click on that question. Availability is checked once in the background; until it is known to be available
-// the game never waits for it. Any failure (file://, 404, timeout, offline) simply means "not available".
-let state = 'unknown'; // 'unknown' | 'checking' | 'yes' | 'no'
+// Browser transport of the NPC Intelligence Layer: the only code that talks to the same-origin /api/npc function.
+// Availability is checked once in the background; until it is known to be available the game never waits for it.
+// Every call has its own deadline and can be cancelled by the caller (a newer turn, a new case, a retry). Any
+// failure — file://, 404, timeout, offline, 429, malformed reply — comes back as a structured "not available"
+// result, and the caller keeps its deterministic answer. Nothing here reveals provider names or errors to players.
+import { NPC_ERRORS, LIMITS } from '../engines/npc-contract.js';
 
-function withTimeout(ms) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return { signal: c.signal, done: () => clearTimeout(t) }; }
+let status = 'unknown'; // 'unknown' | 'checking' | 'yes' | 'no'
+let tasks = [];
+// Random per page load; lets the server rate-limit one browser session. Not stored, not linked to a person.
+const sessionId = (() => { try { const a = new Uint8Array(12); crypto.getRandomValues(a); return [...a].map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 24); } catch (e) { return ''; } })();
+const stats = { calls: 0, ok: 0, errors: {}, latency: [] };
 
+function deadline(ms, outer) {
+  const c = new AbortController(); const t = setTimeout(() => c.abort('timeout'), ms);
+  const onOuter = () => c.abort('cancelled'); outer?.addEventListener?.('abort', onOuter, { once: true });
+  if (outer?.aborted) c.abort('cancelled');
+  return { signal: c.signal, done: () => { clearTimeout(t); outer?.removeEventListener?.('abort', onOuter); } };
+}
+
+// A server that does not list tasks (pre-2026-11 contract) is treated as classify-only.
 export function checkModel() {
-  if (state !== 'unknown') return; state = 'checking';
-  if (typeof location !== 'undefined' && location.protocol === 'file:') { state = 'no'; return; }
-  const t = withTimeout(2500);
-  fetch('/api/npc', { method: 'GET', cache: 'no-store', signal: t.signal })
-    .then((r) => (r.ok ? r.json() : null)).then((j) => { state = j && j.available === true ? 'yes' : 'no'; })
-    .catch(() => { state = 'no'; }).finally(t.done);
+  if (status !== 'unknown') return; status = 'checking';
+  if (typeof location !== 'undefined' && location.protocol === 'file:') { status = 'no'; return; }
+  const d = deadline(2500);
+  fetch('/api/npc', { method: 'GET', cache: 'no-store', signal: d.signal })
+    .then((r) => (r.ok ? r.json() : null)).then((j) => { status = j && j.available === true ? 'yes' : 'no'; tasks = Array.isArray(j?.tasks) ? j.tasks.filter((x) => typeof x === 'string') : ['classify']; })
+    .catch(() => { status = 'no'; }).finally(d.done);
 }
-export function modelReady() { return state === 'yes'; }
+export function modelReady(task = 'classify') { return status === 'yes' && tasks.includes(task); }
+// After repeated failures the client stops asking for the rest of the page session (server circuit also opens).
+let consecutiveFailures = 0;
+function note(ok, error, ms) {
+  stats.calls++; if (ok) { stats.ok++; consecutiveFailures = 0; } else { stats.errors[error] = (stats.errors[error] || 0) + 1; if (error !== NPC_ERRORS.CANCELLED && ++consecutiveFailures >= 4) status = 'no'; }
+  if (Number.isFinite(ms)) { stats.latency.push(ms); if (stats.latency.length > 50) stats.latency.shift(); }
+}
+export function npcStats() { return { status, tasks: [...tasks], calls: stats.calls, ok: stats.ok, errors: { ...stats.errors }, latency: [...stats.latency] }; }
 
-export async function classifyRemote(caseId, utterance) {
-  if (state !== 'yes') return { questionId: null, reason: 'unavailable' };
-  const t = withTimeout(3200);
+// POST one task. Returns { ok, data, error }. `signal` cancels a stale turn.
+export async function npcRequest(body, { signal, timeoutMs = 3200 } = {}) {
+  if (!modelReady(body?.task)) return { ok: false, data: null, error: NPC_ERRORS.UNAVAILABLE };
+  const payload = JSON.stringify(body); if (payload.length > LIMITS.body) return { ok: false, data: null, error: NPC_ERRORS.BAD_REQUEST };
+  const d = deadline(timeoutMs, signal); const started = Date.now();
   try {
-    const r = await fetch('/api/npc', { method: 'POST', cache: 'no-store', signal: t.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: 'classify', caseId, utterance: String(utterance).slice(0, 240) }) });
-    if (!r.ok) return { questionId: null, reason: `http-${r.status}` };
+    const r = await fetch('/api/npc', { method: 'POST', cache: 'no-store', signal: d.signal, headers: { 'Content-Type': 'application/json', ...(sessionId ? { 'X-INAD-Session': sessionId } : {}) }, body: payload });
+    if (!r.ok) { const e = r.status === 429 ? NPC_ERRORS.RATE_LIMITED : NPC_ERRORS.HTTP; note(false, e, Date.now() - started); return { ok: false, data: null, error: e }; }
     const j = await r.json();
-    return { questionId: typeof j?.questionId === 'string' ? j.questionId : null, reason: String(j?.reason || '') };
-  } catch (e) { return { questionId: null, reason: 'network' }; } finally { t.done(); }
+    const ok = j && j.ok === true; note(ok, ok ? null : String(j?.reason || NPC_ERRORS.MALFORMED), Date.now() - started);
+    return { ok, data: j, error: ok ? null : String(j?.reason || NPC_ERRORS.MALFORMED) };
+  } catch (e) {
+    const err = d.signal.reason === 'cancelled' ? NPC_ERRORS.CANCELLED : d.signal.reason === 'timeout' ? NPC_ERRORS.TIMEOUT : NPC_ERRORS.UNREACHABLE;
+    note(false, err, Date.now() - started); return { ok: false, data: null, error: err };
+  } finally { d.done(); }
 }
+
+// Backwards-compatible helper: classification only.
+export async function classifyRemote(caseId, utterance, { allowed, signal } = {}) {
+  const r = await npcRequest({ task: 'classify', caseId, utterance: String(utterance).slice(0, LIMITS.utterance), ...(allowed ? { allowed } : {}) }, { signal });
+  return { questionId: r.ok && typeof r.data?.questionId === 'string' ? r.data.questionId : null, reason: r.error || String(r.data?.reason || '') };
+}
+// Test hook: reset availability (E2E stubs /api/npc per test).
+export function resetNpcClient() { status = 'unknown'; tasks = []; consecutiveFailures = 0; stats.calls = 0; stats.ok = 0; stats.errors = {}; stats.latency = []; }

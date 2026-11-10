@@ -17,7 +17,9 @@ export const GENERIC_PERSONA = {
   withheldDefault: '아까 말씀드린 대로입니다. {initial}',
   offTopic: ['그건 이번 입국과 관련된 질문인가요? 다시 말씀해 주시겠어요?'],
   // free text that most likely repeats a question already answered: confirm before the (v9-costed) re-ask
-  repeatCheck: ['앞서 말씀드린 것과 같은 질문이신가요?']
+  repeatCheck: ['앞서 말씀드린 것과 같은 질문이신가요?'],
+  // two questions in one utterance (NPC Intelligence Layer): take them one at a time; no fact, no cost
+  multi: ['죄송합니다. 하나씩 여쭤봐 주시겠어요?']
 };
 
 export const PERSONAS = {
