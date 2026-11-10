@@ -41,7 +41,7 @@ test('document review is recorded automatically; the follow-up flag is the only 
   const opened = await H.getState(page);
   expect(opened.performed).toContain('DOC_READ_1');
   await expect(page.locator('#doclist .docitem').nth(1)).toContainText('열람됨');
-  // Enlarging the document (the deliberate cross-check view) records the cross-check by itself.
+  // Enlarging a document records an enlarged review, not evidentiary corroboration.
   await page.locator('#docZoom').click();
   await expect(page.locator('#modalTitle')).toContainText('문서 확대');
   await page.locator('#modalClose').click();
@@ -49,7 +49,7 @@ test('document review is recorded automatically; the follow-up flag is the only 
   expect(zoomed.documentReviews['1']).toBe('reviewed');
   expect(zoomed.performed).toEqual(opened.performed);
   expect(zoomed.score).toBe(opened.score);
-  await expect(page.locator('#doclist .docitem').nth(1)).toContainText('대조 기록');
+  await expect(page.locator('#doclist .docitem').nth(1)).toContainText('확대 검토');
   await expect(page.locator('#docReviewDone')).toHaveCount(0);
   await expect(page.locator('#docReviewClear')).toHaveCount(0);
   await expect(page.locator('#docview .doc-review-checks li')).toHaveCount(3);
