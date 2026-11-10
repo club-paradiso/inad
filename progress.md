@@ -1,5 +1,10 @@
 # progress.md — INAD
 
+## 현재 상태 (2026-11-10 · NPC Intelligence Layer, 브랜치 `claude/inad-npc-intelligence-snlip1`)
+- 범위: 모델 비종속 NPC 지능 계층(분류·연기 두 작업, 닫힌 출력), 공개조건 인식 컨텍스트·전송 전 감사, 사건별 ID 메모리, 후속질문·다중질문, 연기 엔진, provider 레지스트리(openai-compatible·vLLM·llama.cpp·Ollama, 서버 환경변수만), ICN-S2-005 수직 슬라이스 + 12개 페르소나 프로필. 판정 로직·사건 데이터·저장 스키마 무변경.
+- 실측: NPC held-out 2026-11 단일 92.0%→94.0%(오연결 2→1), 대화 83.3%, 누출 0, 정답 변형 0. 실제 모델 평가는 엔드포인트·자격증명 부재로 **대기**(`docs/npc-intelligence/MODEL_EVALUATION.md`).
+- 다음: 승인된 추론 엔드포인트에서 `node scripts/eval-dialogue.js --provider` 후보별 실행 → 모델 선정 → 사람 플레이테스트.
+
 ## 현재 상태 (2026-10-02 · v10 Live Interview 수직 슬라이스, 브랜치 `claude/relaxed-edison-iux1mv`)
 - 범위: 사건 1건(ICN-S2-005) 라이브 인터뷰 — 부스 초상(살아 있는 초상), 자유 입력·푸시투토크·제안 질문, 결정적 공개(선행조건 전 회피 답변), 디브리핑, 단일 사건 모드. 판정 로직·사건 데이터·저장 스키마 무변경(새 선호 키 3개만 번들에 추가).
 - QA: lint 80 · unit 125/125 · integration 10/10 · E2E 92/92 · 의도 평가 tuned 100% / held-out 76.5% · 성능 `docs/v10-qa.md` §5.

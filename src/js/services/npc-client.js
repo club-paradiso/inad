@@ -18,12 +18,13 @@ function deadline(ms, outer) {
   return { signal: c.signal, done: () => { clearTimeout(t); outer?.removeEventListener?.('abort', onOuter); } };
 }
 
+// A server that does not list tasks (pre-2026-11 contract) is treated as classify-only.
 export function checkModel() {
   if (status !== 'unknown') return; status = 'checking';
   if (typeof location !== 'undefined' && location.protocol === 'file:') { status = 'no'; return; }
   const d = deadline(2500);
   fetch('/api/npc', { method: 'GET', cache: 'no-store', signal: d.signal })
-    .then((r) => (r.ok ? r.json() : null)).then((j) => { status = j && j.available === true ? 'yes' : 'no'; tasks = Array.isArray(j?.tasks) ? j.tasks.filter((x) => typeof x === 'string') : []; })
+    .then((r) => (r.ok ? r.json() : null)).then((j) => { status = j && j.available === true ? 'yes' : 'no'; tasks = Array.isArray(j?.tasks) ? j.tasks.filter((x) => typeof x === 'string') : ['classify']; })
     .catch(() => { status = 'no'; }).finally(d.done);
 }
 export function modelReady(task = 'classify') { return status === 'yes' && tasks.includes(task); }

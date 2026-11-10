@@ -193,3 +193,17 @@ test('prompt-injection and verdict-forcing utterances change nothing', async () 
   assert.equal(evidenceSnapshot(), before); assert.equal(state.stage, 'PRIMARY'); assert.equal(state.ended, false);
   assert.equal(validateClassification('{"questionId":"jobOffer"}', questionMenu(current()).map((q) => q.id)).ok, false);
 });
+
+test('Stage 3 research gate: meaning changes that a token-overlap guard misses are rejected', async () => {
+  const { realizationCheck } = await import('../../src/js/engines/npc-equivalence.js');
+  const c = CASES.find((x) => x.id === 'ICN-S2-005'); const funds = answerOf(c, 'funds'); const host = answerOf(c, 'host');
+  // the token guard passes these (all words are on record once the answers are known) — the meaning changed anyway
+  const revealed = c.questions.map((q) => q.id);
+  for (const [cand, reason] of [['현금 15만원 정도 있습니다. 카드 잔액도 압니다.', 'negation'], ['현금 25만원 정도 있습니다. 카드 잔액은 잘 모르겠습니다.', 'quantity'], ['현금 15만원 있습니다. 카드 잔액은 잘 모르겠습니다.', 'qualifier'], ['현금 15만원 정도 있습니다.', 'omitted-content']]) {
+    const r = realizationCheck(funds, cand); assert.equal(r.ok, false, cand); assert.ok(r.reasons.includes(reason), `${cand}: ${r.reasons}`);
+  }
+  const flip = 'SNS 단체방에서 소개받았습니다. 직접 만난 적은 있습니다.';
+  assert.equal(checkLine(flip, c, revealed).ok, true, 'the token guard alone accepts a negation flip');
+  assert.equal(realizationCheck(host, flip).ok, false, 'the Stage 3 gate rejects it');
+  assert.equal(realizationCheck(funds, funds).ok, true, 'the canonical text itself passes');
+});

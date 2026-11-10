@@ -6,7 +6,7 @@
 대한민국 인천공항 제2여객터미널을 모티브로 한 **가상** 입국심사관 시뮬레이션. 실제 법무부 내부 시스템·비공개 심사기준·규제코드를 재현하지 않습니다.
 - 런타임: HTML + CSS + Vanilla JS. 프로덕션 빌드는 단일 HTML 파일 제약을 영구 퇴역시키고, 경량 HTML 진입점(`dist/index.html`), 콘텐츠 해시 기반의 독립 CSS 및 ESM 자바스크립트 번들(`dist/assets/`), 그리고 독립 정적 WebP 초상화 파일들(`dist/assets/portraits/*.webp`)로 구성되는 모듈러 정적 웹 애플리케이션으로 배포됩니다.
 - 단일 파일 HTML 배포 제약은 초기 프로토타입 단계의 임시 제약이었으며, 프로덕션 웹 아키텍처 현대화(PR #26)를 통해 공식 퇴역했습니다. 향후 오프라인 지원이 필요한 경우 구식 모놀리식 단일 파일로 회귀하지 않고 PWA / Service Worker 아키텍처를 별도의 제품 의사결정으로 검토·도입합니다(사전 테스트 및 승인 없는 임의 도입 금지).
-- 프레임워크·jQuery·Tailwind·외부 CDN·외부 폰트·외부 이미지·외부 오디오 금지. 브라우저의 외부-origin 네트워크 요청 금지. 예외는 둘뿐입니다: `src/js/services/airport-live.js`가 same-origin `/api/airport-load`를 호출하여 공식 공개 운항정보의 요약값을 받는 흐름, 그리고 (v10) `src/js/services/npc-client.js`가 same-origin `/api/npc`에 자유 질문의 분류(질문 ID 하나 또는 null)를 요청하는 선택형 흐름. 공공데이터 인증키·추론 서버 설정과 외부 API 호출은 Vercel 서버 함수(`api/airport-load.js`, `api/npc.js`) 안에서만 처리합니다.
+- 프레임워크·jQuery·Tailwind·외부 CDN·외부 폰트·외부 이미지·외부 오디오 금지. 브라우저의 외부-origin 네트워크 요청 금지. 예외는 둘뿐입니다: `src/js/services/airport-live.js`가 same-origin `/api/airport-load`를 호출하여 공식 공개 운항정보의 요약값을 받는 흐름, 그리고 (v10, 2026-11 NPC Intelligence Layer) `src/js/services/npc-client.js`가 same-origin `/api/npc`에 자유 질문의 분류(열린 질문 ID 하나 또는 null)와 연기 선택(닫힌 열거값)을 요청하는 선택형 흐름. 공공데이터 인증키·추론 서버 설정과 외부 API 호출은 Vercel 서버 함수(`api/airport-load.js`, `api/npc.js`) 안에서만 처리합니다.
 - 기본 UI 언어는 한국어이며 사용자가 선택할 수 있는 영어 UI 모드를 제공합니다. UI 로컬라이제이션은 `src/js/services/i18n.js`에서 관리하고 선택 언어는 `inad-locale`에 저장합니다. 인터뷰 언어 선택과 UI 언어 선택은 별개입니다.
 - 소스 오브 트루스는 `src/`. `dist/` 및 루트 `index.html`은 **생성 파일**이며 직접 편집 금지 (`npm run build`).
 - v6.1 원본(프로덕션에서 복구)은 `legacy/v6.1/`에 동결. 참조용이며 수정 금지.
@@ -30,6 +30,7 @@
 - 제안 질문은 화면에 보이는 정보만 사용(`required`·`resolution`·단서 키·`contradiction` 금지).
 - 마이크·TTS 기본 꺼짐, 음성 인식은 기기 내 처리 우선·동의 후 사용, 음성·영상 저장/전송 금지. 카메라는 미구현(원칙: `docs/v10-privacy.md`).
 - 아바타 동작·자막·말투는 표현일 뿐 판정 근거가 아니다.
+- NPC Intelligence Layer(`docs/npc-intelligence/ADR-004.md`): provider는 서버 환경변수로만 선택(`api/_npc/config.js`), 브라우저가 URL·모델을 보낼 수 없다. 모델 컨텍스트는 `engines/npc-context.js`만 만들고(공개조건 충족 질문만, 답·단서·조회·결론 금지, 전송 전 감사), 출력은 `engines/npc-contract.js` 닫힌 스키마로 재검증한다. 모델 분류·후속질문 해석은 확인 후에만 기록된다. 연기(`npc-acting.js`)·프로필(`src/data/npc-profiles.js`)·메모리(`npc-memory.js`, 질문 ID만, 사건별 휘발)는 판정·점수 엔진이 읽지 않는다. lead-in은 `src/data/npc-leads.js` 승인 목록뿐. 모델 문장 생성·재표현은 금지(Stage 3 `npc-equivalence.js`는 연구용, 미연결). `tests/dialogue/npc-heldout-2026-11.fixture.js`는 보류 세트이므로 튜닝 금지.
 
 ## 법률 로직 동결 원칙
 - 판정 로직(`legal-engine.js`, `case-engine.js`, `src/data/cases.js`)은 v6.1 동작에 고정. 공개 법령·정부기관 공개자료로 확인되지 않은 변경 금지. 의문점은 `docs/legal-review.md`에 기록.
