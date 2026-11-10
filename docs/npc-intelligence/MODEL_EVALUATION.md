@@ -52,8 +52,8 @@ Latencies are loopback mock numbers and say nothing about a real model.
 ## 2. Candidate facts (verification status as of 2026-11-10)
 | Candidate | Identifier | Licence | Status | Notes |
 |---|---|---|---|---|
-| Qwen3.5-9B | `Qwen/Qwen3.5-9B` (HF id from search; release note "2026-03-02: Qwen3.5-9B … available on Hugging Face Hub" read in `QwenLM/Qwen3.5` README) | Apache-2.0 (GitHub repo LICENSE read; HF weights licence page not reachable) | existence VERIFIED · HF id/licence of weights UNVERIFIED | thinking on by default; disable via `chat_template_kwargs.enable_thinking=false` (reported mixed reliability) |
-| Gemma 4 E4B | `google/gemma-4-E4B-it` (search; capitalisation varies) | reported Apache-2.0 (not the old Gemma Terms) | UNVERIFIED (HF and ai.google.dev unreachable) | check LICENSE on HF before use |
+| Qwen3.5-9B | `Qwen/Qwen3.5-9B` (HF API, lastModified 2026-03-02; pipeline `image-text-to-text`, not gated) | Apache-2.0 (HF `cardData.license`, and the repo's LICENSE file opens "Apache License Version 2.0") | **VERIFIED 2026-11-10** on huggingface.co | thinking on by default; disable via `chat_template_kwargs.enable_thinking=false`. GGUF used for CPU runs: `unsloth/Qwen3.5-9B-GGUF` Q4_K_M (community quantisation, not by Qwen) |
+| Gemma 4 E4B | `google/gemma-4-E4B-it` (HF API, lastModified 2026-11-03; pipeline `any-to-any`, not gated) | Apache-2.0 (HF `cardData.license`; model card links ai.google.dev/gemma/docs/gemma_4_license labelled "Apache 2.0"; no LICENSE file in the repo) | **VERIFIED 2026-11-10** on huggingface.co | official quantised GGUF: `google/gemma-4-E4B-it-qat-q4_0-gguf` (`gemma-4-E4B_q4_0-it.gguf`, 5.15 GB) |
 | EXAONE 4.5 / 4.0 | `LGAI-EXAONE/EXAONE-4.5-33B` | EXAONE AI Model License 1.2-NC: research/education only; commercial use prohibited | VERIFIED (LICENSE read on GitHub) | refused in production by `api/_npc/config.js`; FriendliAI hosted API is a paid third party (pricing unverified) |
 | K-EXAONE 2.0 | — | Apache-2.0 | VERIFIED | 750B-A37B MoE; impractical here |
 

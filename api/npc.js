@@ -25,6 +25,8 @@ const buckets = new Map(); // key → timestamps (per instance; best effort on s
 const MAX_TRACKED = 5000;
 
 export function resetNpcState() { buckets.clear(); resetProviders(); }
+// Clears only the per-client/session/instance request buckets (the evaluation harness is not a rate-limited client).
+export function resetRateLimits() { buckets.clear(); }
 export const cleanUtterance = clean;
 const caseById = (id) => CASES.find((x) => x.id === id) || null;
 // Menu for a case: open (no disclosure condition) questions, narrowed by the caller's `allowed` ids.
@@ -104,7 +106,8 @@ function safeModelMemory(raw, openIds) {
   return {
     asked: Array.isArray(raw.asked) ? [...new Set(raw.asked.map(safeId).filter(Boolean))].slice(-LIMITS.ids) : [],
     lastTopic: safeId(raw.lastTopic),
-    turns: Array.isArray(raw.turns) ? raw.turns.slice(-LIMITS.memoryTurns).map((t) => ({
+    // the browser sends engines/npc-context memoryView() output, whose history field is `recent`; accept `turns` too
+    turns: Array.isArray(raw.recent ?? raw.turns) ? (raw.recent ?? raw.turns).slice(-LIMITS.memoryTurns).map((t) => ({
       kind: MEMORY_KINDS.has(t?.kind) ? t.kind : 'unknown',
       questionId: safeId(t?.questionId)
     })) : []

@@ -7,8 +7,8 @@
 //   harness and as the reference behaviour. The browser runs the same rules locally, so GET /api/npc reports a
 //   deterministic server as "not available" and the client never waits for it.
 // · openai-compatible — any /chat/completions endpoint (vLLM, llama.cpp server, Ollama, hosted providers). Output
-//   is constrained by json_schema when the server supports it and always re-validated locally. A 400 that rejects
-//   `response_format` downgrades this instance to json_object (still validated). Three consecutive failures open a
+//   is constrained by json_schema when the server supports it and always re-validated locally. A 400/422/500 that
+//   rejects `response_format` downgrades this instance to json_object (still validated). Three consecutive failures open a
 //   circuit for 30 s, during which calls fail fast and availability reads false.
 import { NPC_ERRORS, validateClassification, validateActing, classificationSchema, actingSchema } from '../../src/js/engines/npc-contract.js';
 import { resolveUtterance } from '../../src/js/engines/intent-engine.js';
@@ -53,9 +53,11 @@ export function createOpenAICompatibleProvider(cfg, { fetchImpl = fetch, now = (
       const r = await fetchImpl(`${cfg.base}/chat/completions`, { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json', ...(cfg.key ? { Authorization: `Bearer ${cfg.key}` } : {}) }, body: JSON.stringify(body) });
       if (!r.ok) {
         if (r.status === 429) { record(false); return { ok: false, error: NPC_ERRORS.RATE_LIMITED, status: 429, ms: now() - started }; }
-        if (r.status === 400 && structured === 'json_schema') {
+        // Servers reject an unsupported response_format differently: OpenAI-style 400, FastAPI 422, and
+        // llama-cpp-python's server 500 ("Input should be 'text' or 'json_object'", measured 2026-11-10).
+        if ([400, 422, 500].includes(r.status) && structured === 'json_schema') {
           let text = ''; try { text = await r.text(); } catch (e) { /* ignore */ }
-          if (/response_format|json_schema|schema|grammar/i.test(text)) { structured = 'json_object'; return { ok: false, error: NPC_ERRORS.SCHEMA_UNSUPPORTED, status: 400, ms: now() - started }; }
+          if (/response_format|json_schema|json_object|schema|grammar/i.test(text)) { structured = 'json_object'; return { ok: false, error: NPC_ERRORS.SCHEMA_UNSUPPORTED, status: r.status, ms: now() - started }; }
         }
         record(false); return { ok: false, error: NPC_ERRORS.HTTP, status: r.status, ms: now() - started };
       }

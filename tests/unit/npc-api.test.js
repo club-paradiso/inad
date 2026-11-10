@@ -217,3 +217,12 @@ test('rate limited per client and per browser session', async () => {
   for (let i = 0; i < RATE.perSession; i++) await call(req('POST', body, sess, `3.3.3.${i % 200}`), { env: ENV, fetchImpl });
   assert.equal((await call(req('POST', body, sess, '4.4.4.4'), { env: ENV, fetchImpl })).status, 429, 'one browser session across addresses');
 });
+
+test('act: the browser memory format (memoryView → `recent`) reaches the model, filtered to open ids', async () => {
+  const { memoryView } = await import('../../src/js/engines/npc-context.js');
+  const fetchImpl = providerAnswer('{"reaction":"plain","leadId":null,"gesture":"none","pause":"none"}');
+  const memory = memoryView({ asked: ['purpose'], lastTopic: 'purpose', turns: [{ kind: 'answer', questionId: 'purpose' }, { kind: 'withheld', questionId: 'jobOffer' }, { kind: 'repeat', questionId: 'purpose' }] });
+  await call(req('POST', { task: 'act', caseId: 'ICN-S2-005', allowed: OPEN, turn: { kind: 'answer', questionId: 'funds' }, memory }), { env: ENV, fetchImpl });
+  const user = JSON.parse(JSON.parse(fetchImpl.calls[0].init.body).messages[1].content);
+  assert.deepEqual(user.memory.recent, [{ kind: 'answer', questionId: 'purpose' }, { kind: 'withheld', questionId: null }, { kind: 'repeat', questionId: 'purpose' }], 'history kept; a closed id is blanked');
+});
