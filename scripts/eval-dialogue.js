@@ -118,7 +118,7 @@ async function hybridOverCorpus(classifierFor) {
 }
 
 export async function runEval({ provider = false, mock = false } = {}) {
-  const rows = flat(); const out = { deterministic: {}, npc: {}, mock: null, model: null, hybrid: null, injection: null };
+  const rows = flat(); const out = { deterministic: {}, npc: {}, mock: null, model: null, hybrid: null, injection: null, acting: null };
   const det = rows.map((row) => ({ row, d: deterministic(row) }));
   for (const set of ['tuned', 'heldout']) {
     const xs = det.filter((x) => x.row.set === set && expectedId(x.row.expect) !== null || (x.row.set === set && x.row.expect === 'unknown'));
@@ -172,6 +172,21 @@ export async function runEval({ provider = false, mock = false } = {}) {
       inj.push({ text, expect, got: r.questionId, error: r.error, ok: !r.error && (r.questionId === expect || r.questionId === null) });
     }
     out.injection = { n: inj.length, ok: inj.filter((x) => x.ok).length, rows: inj };
+    // acting validity: every v10 persona, an `answer` turn for each open question and a `withheld` turn for each
+    // gated one, through the real /api/npc act path (closed enums, persona-scoped lead ids, local re-validation)
+    const actLat = []; const actErr = {}; let actN = 0, actOk = 0;
+    for (const id of Object.keys(PERSONAS)) {
+      const c = caseOf(id); const open = c.questions.filter((q) => !(q.requires || []).length).map((q) => q.id);
+      for (const q of c.questions) {
+        const kind = open.includes(q.id) ? 'answer' : 'withheld';
+        resetRateLimits();
+        const res = { statusCode: 0, body: '', setHeader() {}, end(b) { this.body = b || ''; } }; const t0 = Date.now();
+        await handler({ method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://eval.local', host: 'eval.local', 'x-real-ip': '127.0.0.1' }, body: JSON.stringify({ task: 'act', caseId: id, allowed: open, turn: { kind, questionId: q.id } }) }, res, { env });
+        actLat.push(Date.now() - t0); actN++;
+        const j = JSON.parse(res.body || '{}'); if (j.ok) actOk++; else actErr[j.reason || 'unknown'] = (actErr[j.reason || 'unknown'] || 0) + 1;
+      }
+    }
+    out.acting = { n: actN, valid: actOk, errors: actErr, latencyMs: { p50: quant(actLat, 0.5), p95: quant(actLat, 0.95) } };
   }
   return out;
 }
@@ -191,5 +206,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(line('hybrid · NPC held-out 2026-11', res.hybrid.heldout2026));
     console.log(`errors/invalid ${res.model.invalidOrError} ${JSON.stringify(res.model.errors)} · latency ms p50 ${res.model.latencyMs.p50} · p95 ${res.model.latencyMs.p95} · max ${res.model.latencyMs.max}`);
     console.log(`injection resistance ${res.injection.ok}/${res.injection.n} (rows with a provider error count as not resistant)`);
+    if (res.acting) console.log(`acting validity ${res.acting.valid}/${res.acting.n} ${JSON.stringify(res.acting.errors)} · latency ms p50 ${res.acting.latencyMs.p50} · p95 ${res.acting.latencyMs.p95}`);
   } else console.log('\n(no live provider run: set INAD_LLM_BASE_URL / INAD_LLM_MODEL and pass --provider — live model evaluation PENDING)');
 }
