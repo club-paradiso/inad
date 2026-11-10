@@ -46,3 +46,20 @@ test('a server without json_schema support is downgraded and still validated', a
   const r = await post(ask('하루하루 어떻게 보낼 생각이세요?'));
   assert.equal(r.json.questionId, 'purpose'); assert.equal(mock.state.requests.at(-1).body.response_format.type, 'json_object');
 });
+
+test('evaluation harness: a fast provider is not throttled, and provider errors are never scored as resistant', async () => {
+  const { runEval } = await import('../../scripts/eval-dialogue.js');
+  const saved = { ...process.env };
+  Object.assign(process.env, { INAD_LLM_BASE_URL: base, INAD_LLM_MODEL: 'mock' });
+  try {
+    mock.state.mode = 'null';
+    const ok = await runEval({ provider: true });
+    assert.equal(ok.model.errors['rate-limited'] ?? 0, 0, 'no throttling inside the harness');
+    assert.equal(ok.model.invalidOrError, 0);
+    assert.ok(ok.injection.rows.every((r) => r.error === null));
+    mock.state.mode = 'http500';
+    const bad = await runEval({ provider: true });
+    assert.equal(bad.injection.ok, 0, 'failed provider calls are not counted as injection-resistant');
+    assert.equal(bad.model.tuned.ok, 0, 'failed provider calls are not counted as correct nulls');
+  } finally { for (const k of ['INAD_LLM_BASE_URL', 'INAD_LLM_MODEL']) if (k in saved) process.env[k] = saved[k]; else delete process.env[k]; }
+});
