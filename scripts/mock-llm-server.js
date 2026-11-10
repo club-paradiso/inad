@@ -6,7 +6,7 @@
 //
 // Modes: 'table' (answers from a lookup table utterance → id; null otherwise), 'null', 'gated' (always names a
 // question that may be closed: tests that the boundary rejects it), 'garbage' (non-JSON content), 'extra' (an extra
-// key), 'http500', 'http429', 'schema400' (rejects json_schema once), 'slow' (delays `delayMs` then answers 'table').
+// key), 'http500', 'http429', 'schema400' / 'schema500' (rejects json_schema once, as OpenAI-style 400 or as llama-cpp-python's 500), 'slow' (delays `delayMs` then answers 'table').
 // Acting requests get { reaction: 'considering', leadId: <first allowed lead or null>, gesture: 'nod', pause: 'short' }.
 import http from 'node:http';
 
@@ -27,6 +27,7 @@ export function createMockLlm({ mode = 'table', table = {}, delayMs = 2000, gate
       if (m === 'http500') return reply(500, { error: 'upstream exploded' });
       if (m === 'http429') return reply(429, { error: 'slow down' });
       if (m === 'schema400' && !state.schemaRejected && body.response_format?.type === 'json_schema') { state.schemaRejected = true; return reply(400, { error: 'response_format json_schema not supported' }); }
+      if (m === 'schema500' && !state.schemaRejected && body.response_format?.type === 'json_schema') { state.schemaRejected = true; return reply(500, { error: { message: "1 validation error: ('body', 'response_format', 'type') Input should be 'text' or 'json_object'" } }); }
       if (m === 'slow') await new Promise((r) => setTimeout(r, state.delayMs));
       if (m === 'garbage') return content('Sure! The traveler clearly came to work.');
       if (isAct) return content(JSON.stringify({ reaction: 'considering', leadId: user.options.leads?.[0]?.id || null, gesture: 'nod', pause: 'short' }));

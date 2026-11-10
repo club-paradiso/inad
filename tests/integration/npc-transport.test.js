@@ -40,7 +40,11 @@ test('every failure mode is a category and never blocks', async () => {
   assert.equal(down.json.reason, 'unreachable');
 });
 
-test('a server without json_schema support is downgraded and still validated', async () => {
+test('a server without json_schema support is downgraded and still validated (400 and llama-cpp-python 500)', async () => {
+  mock.state.mode = 'schema500';
+  assert.equal((await post(ask('하루하루 어떻게 보낼 생각이세요?'))).json.reason, 'schema-unsupported');
+  assert.equal((await post(ask('하루하루 어떻게 보낼 생각이세요?'))).json.questionId, 'purpose');
+  resetNpcState(); mock.state.schemaRejected = false;
   mock.state.mode = 'schema400';
   assert.equal((await post(ask('하루하루 어떻게 보낼 생각이세요?'))).json.reason, 'schema-unsupported');
   const r = await post(ask('하루하루 어떻게 보낼 생각이세요?'));
