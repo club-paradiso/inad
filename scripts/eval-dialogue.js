@@ -11,6 +11,10 @@
 //   node scripts/eval-dialogue.js --provider      + a LIVE model: model-alone and hybrid accuracy, wrong-question
 //                                                 routes, invalid outputs, injection resistance, acting validity,
 //                                                 latency p50/p95
+//   --accuracy-timeout <ms>                       (with --provider) measure output quality on hardware too slow for
+//                                                 the production 8 s limit: same context build, audit and validation,
+//                                                 only the provider timeout differs; reported as accuracyTimeoutMs
+//   --model-sets tuned,heldout · --act-turns <n>  limit the model-alone sets / acting turns per persona (slow hosts)
 //   --json                                        machine-readable output
 //
 // Held-out sets are never used for tuning. Results go to docs/npc-intelligence/MODEL_EVALUATION.md.
@@ -24,7 +28,9 @@ import { openCase, playTurn, routeMatches, wrongRoute, evidenceSnapshot } from '
 import { state } from '../src/js/state.js';
 import { submitUtterance } from '../src/js/engines/interview-engine.js';
 import { PERSONAS } from '../src/data/personas.js';
-import handler, { resetNpcState, resetRateLimits } from '../api/npc.js';
+import handler, { resetNpcState, resetRateLimits, parseRequest, buildProviderCall } from '../api/npc.js';
+import { resolveNpcConfig } from '../api/_npc/config.js';
+import { createOpenAICompatibleProvider } from '../api/_npc/providers.js';
 import { createMockLlm } from './mock-llm-server.js';
 
 // Utterances that try to steer the classifier; the right answer is the question actually asked, or null.
@@ -92,7 +98,21 @@ function integritySweep() {
 // The harness is not a rate-limited client: buckets are cleared before each call so samples measure the provider,
 // not throttling. Any non-success is returned as an error and is never scored as a correct "null" answer.
 const OK_REASONS = ['model', 'model-null'];
+// --accuracy-timeout <ms>: measure output quality on hardware too slow for the production timeout (clamped to 8 s).
+// The request still goes through the same parseRequest → buildProviderCall (context + outbound audit) → provider →
+// local validation; only the provider's timeout differs. Results produced this way are labelled as such.
+let ACCURACY_TIMEOUT = null; let directProvider = null;
+async function callDirect(env, body) {
+  const started = Date.now();
+  const parsed = parseRequest(body); if (parsed.error) return { value: null, error: parsed.error, ms: 0 };
+  const call = buildProviderCall(parsed); if (!call.audit.ok) return { value: null, error: 'leak-blocked', ms: 0 };
+  if (!directProvider) directProvider = createOpenAICompatibleProvider({ ...resolveNpcConfig(env), timeoutMs: ACCURACY_TIMEOUT });
+  if (body.task === 'classify' && !call.menuIds.length) return { value: null, error: null, ms: 0 };
+  const r = body.task === 'classify' ? await directProvider.classify(call.ctx) : await directProvider.act(call.ctx);
+  return { value: r.ok ? r.value : null, error: r.ok ? null : r.error, ms: Date.now() - started };
+}
 async function callServer(env, caseId, allowed, text) {
+  if (ACCURACY_TIMEOUT) { const r = await callDirect(env, { task: 'classify', caseId, utterance: text, ...(allowed ? { allowed } : {}) }); return { questionId: r.value ?? null, error: r.error, ms: r.ms }; }
   resetRateLimits();
   const res = { statusCode: 0, body: '', setHeader() {}, end(b) { this.body = b || ''; } };
   const started = Date.now();
@@ -117,7 +137,8 @@ async function hybridOverCorpus(classifierFor) {
   return { n: rows.length, ok, wrong, snaps };
 }
 
-export async function runEval({ provider = false, mock = false } = {}) {
+export async function runEval({ provider = false, mock = false, accuracyTimeoutMs = null, modelSets = ['tuned', 'heldout'], actTurnsPerPersona = Infinity } = {}) {
+  ACCURACY_TIMEOUT = accuracyTimeoutMs; directProvider = null;
   const rows = flat(); const out = { deterministic: {}, npc: {}, mock: null, model: null, hybrid: null, injection: null, acting: null };
   const det = rows.map((row) => ({ row, d: deterministic(row) }));
   for (const set of ['tuned', 'heldout']) {
@@ -153,7 +174,7 @@ export async function runEval({ provider = false, mock = false } = {}) {
     resetNpcState(); const lat = []; const errs = {};
     const model = [];
     for (const row of rows) {
-      if (row.expect.startsWith('meta:') || row.expect.startsWith('doc:')) continue;
+      if (row.expect.startsWith('meta:') || row.expect.startsWith('doc:') || !modelSets.includes(row.set)) continue;
       activeCase = row.caseId;
       // model alone: the full catalogue of the case is offered (server still narrows to open questions)
       const r = await callServer({ ...env, INAD_LLM_TIMEOUT_MS: env.INAD_LLM_TIMEOUT_MS || '8000' }, row.caseId, null, row.text);
@@ -162,7 +183,11 @@ export async function runEval({ provider = false, mock = false } = {}) {
     }
     // errors count against accuracy and are reported separately; they are never a correct "null"
     const score = (list) => ({ n: list.length, ok: list.filter(({ row, id, error }) => !error && id === expectedId(row.expect)).length, wrong: list.filter(({ row, id }) => id && id !== expectedId(row.expect)).length, errors: list.filter((x) => x.error).length });
-    out.model = { tuned: score(model.filter((x) => x.row.set === 'tuned')), heldout: score(model.filter((x) => x.row.set === 'heldout')), errors: errs, invalidOrError: Object.values(errs).reduce((a, b) => a + b, 0), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: env.INAD_LLM_MODEL };
+    // A gated question is never in the model's menu (by design), so rows expecting one cannot be answered by the
+    // model alone; `reachable` scores only rows whose expected answer is an open question or null.
+    const reachable = (x) => { const e = expectedId(x.row.expect); if (e === null) return true; const q = caseOf(x.row.caseId).questions.find((qq) => qq.id === e); return !!q && !(q.requires || []).length; };
+    out.model = { tuned: score(model.filter((x) => x.row.set === 'tuned')), heldout: score(model.filter((x) => x.row.set === 'heldout')),
+      reachable: { tuned: score(model.filter((x) => x.row.set === 'tuned' && reachable(x))), heldout: score(model.filter((x) => x.row.set === 'heldout' && reachable(x))) }, errors: errs, invalidOrError: Object.values(errs).reduce((a, b) => a + b, 0), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: env.INAD_LLM_MODEL };
     const hyb = await hybridOverCorpus(() => serverClassifier(env, [], {}));
     out.hybrid = { heldout2026: { n: hyb.n, ok: hyb.ok, wrong: hyb.wrong } };
     const inj = [];
@@ -177,22 +202,29 @@ export async function runEval({ provider = false, mock = false } = {}) {
     const actLat = []; const actErr = {}; let actN = 0, actOk = 0;
     for (const id of Object.keys(PERSONAS)) {
       const c = caseOf(id); const open = c.questions.filter((q) => !(q.requires || []).length).map((q) => q.id);
-      for (const q of c.questions) {
+      for (const q of c.questions.slice(0, actTurnsPerPersona)) {
         const kind = open.includes(q.id) ? 'answer' : 'withheld';
         resetRateLimits();
         const res = { statusCode: 0, body: '', setHeader() {}, end(b) { this.body = b || ''; } }; const t0 = Date.now();
-        await handler({ method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://eval.local', host: 'eval.local', 'x-real-ip': '127.0.0.1' }, body: JSON.stringify({ task: 'act', caseId: id, allowed: open, turn: { kind, questionId: q.id } }) }, res, { env });
+        let ok, reason;
+        if (ACCURACY_TIMEOUT) { const r = await callDirect(env, { task: 'act', caseId: id, allowed: open, turn: { kind, questionId: q.id } }); ok = !r.error; reason = r.error; }
+        else { await handler({ method: 'POST', headers: { 'content-type': 'application/json', origin: 'http://eval.local', host: 'eval.local', 'x-real-ip': '127.0.0.1' }, body: JSON.stringify({ task: 'act', caseId: id, allowed: open, turn: { kind, questionId: q.id } }) }, res, { env }); const j = JSON.parse(res.body || '{}'); ok = !!j.ok; reason = j.reason; }
         actLat.push(Date.now() - t0); actN++;
-        const j = JSON.parse(res.body || '{}'); if (j.ok) actOk++; else actErr[j.reason || 'unknown'] = (actErr[j.reason || 'unknown'] || 0) + 1;
+        if (ok) actOk++; else actErr[reason || 'unknown'] = (actErr[reason || 'unknown'] || 0) + 1;
       }
     }
+    out.accuracyTimeoutMs = ACCURACY_TIMEOUT; // null = production path and limits
     out.acting = { n: actN, valid: actOk, errors: actErr, latencyMs: { p50: quant(actLat, 0.5), p95: quant(actLat, 0.95) } };
   }
   return out;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const res = await runEval({ provider: process.argv.includes('--provider'), mock: process.argv.includes('--mock') });
+  const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
+  const res = await runEval({ provider: process.argv.includes('--provider'), mock: process.argv.includes('--mock'),
+    accuracyTimeoutMs: arg('--accuracy-timeout') ? Number(arg('--accuracy-timeout')) : null,
+    modelSets: arg('--model-sets') ? arg('--model-sets').split(',') : ['tuned', 'heldout'],
+    actTurnsPerPersona: arg('--act-turns') ? Number(arg('--act-turns')) : Infinity });
   if (process.argv.includes('--json')) { console.log(JSON.stringify(res, null, 2)); process.exit(0); }
   const line = (name, s) => `| ${name} | ${s.n} | ${pct(s.ok, s.n)} | ${s.wrong} |`;
   console.log('| route | n | accuracy | wrong-question |\n|---|---|---|---|');
@@ -203,6 +235,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (res.mock) { console.log(`\n${res.mock.note}\n| mode | calls | provider error rate | fallback evidence identical | accuracy | wrong | p50 ms | p95 ms |\n|---|---|---|---|---|---|---|---|`); for (const [k, v] of Object.entries(res.mock.modes)) console.log(`| ${k} | ${v.calls} | ${pct(v.providerErrorRate * v.calls, v.calls)} | ${v.fallbackIdentical ? 'yes' : 'NO'} | ${pct(v.accuracy * 1000, 1000)} | ${v.wrong} | ${v.latencyMs.p50 ?? '-'} | ${v.latencyMs.p95 ?? '-'} |`); }
   if (res.model) {
     console.log(`\nLIVE model ${res.model.model}`); console.log(line('model alone · v10 tuned', res.model.tuned)); console.log(line('model alone · v10 held-out', res.model.heldout));
+    console.log(line('model alone · v10 tuned, reachable rows only', res.model.reachable.tuned)); console.log(line('model alone · v10 held-out, reachable rows only', res.model.reachable.heldout));
     console.log(line('hybrid · NPC held-out 2026-11', res.hybrid.heldout2026));
     console.log(`errors/invalid ${res.model.invalidOrError} ${JSON.stringify(res.model.errors)} · latency ms p50 ${res.model.latencyMs.p50} · p95 ${res.model.latencyMs.p95} · max ${res.model.latencyMs.max}`);
     console.log(`injection resistance ${res.injection.ok}/${res.injection.n} (rows with a provider error count as not resistant)`);
