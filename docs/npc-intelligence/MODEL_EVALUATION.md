@@ -1,8 +1,9 @@
 # NPC Intelligence Layer — model evaluation report (2026-11-10)
 
-**Live model evaluation: PENDING.** No authorized inference endpoint or credential exists in this environment, and
-`huggingface.co`, `ai.google.dev`, `ollama.com` and `openrouter.ai` did not resolve from it. No model was run. Every
-number below is from the deterministic engine or from a **mock** server; none is a model result.
+**Live models: measured on a CPU-only host (§1b). No production host has been measured yet.** Two candidates ran
+through the real `/api/npc` path on this cloud container (4 vCPU, 15 GB RAM, no GPU) via llama-cpp-python 0.3.36's
+OpenAI-compatible server. Neither meets the production selection rule on this hardware (§3). The numbers describe
+quality and CPU latency of quantised models; GPU latency is still unmeasured.
 
 ## 1. Measured (this environment, `node scripts/eval-dialogue.js [--mock]`)
 
@@ -49,6 +50,34 @@ through the real interview engine. "Fallback identical" = evidence snapshot equa
 | slow (900 ms > 600 ms timeout) | 8 | 100 % | yes | 603 |
 Latencies are loopback mock numbers and say nothing about a real model.
 
+## 1b. Live models (measured 2026-11-10, CPU host)
+
+Setup (reproducible): models downloaded from Hugging Face and checked (Qwen file SHA-256 equals the HF LFS id
+`03b74727…b7e8`); `python -m llama_cpp.server --n_ctx 4096 --n_threads 4`; `INAD_NPC_PROVIDER=llamacpp`;
+`node scripts/eval-dialogue.js --provider [--accuracy-timeout 60000 --model-sets heldout --act-turns 2]`.
+
+| | Gemma 4 E4B (`google/gemma-4-E4B-it-qat-q4_0-gguf`, official Q4_0) | Qwen3.5-9B (`unsloth/Qwen3.5-9B-GGUF` Q4_K_M, community) |
+|---|---|---|
+| **Production path** (8 s limit) | runs: classification p50 1.86 s · p95 3.92 s · max 8.0 s | **fails**: 3 timeouts → circuit opens → every later call `unavailable` |
+| Model alone · v10 held-out (145) | 57/145 · 13 wrong ¹ | 57/145 · 14 wrong ¹ |
+| Model alone · v10 held-out, reachable rows (66) ² | **57/66 (86.4 %)** · 1 wrong · 1 error | **57/66 (86.4 %)** · 0 wrong · 1 error |
+| Model alone · v10 tuned (152), production path | 73/152 · 11 wrong ¹ · 2 errors | not measured (timeouts) |
+| Hybrid · NPC held-out 2026-11 (50, in-game scoring) ³ | 47/50 · 2 wrong | 47/50 · 2 wrong |
+| Injection (5) | 5/5 | 5/5 |
+| Acting validity (24 turns, 12 personas) | **24/24** | 21/24 (3 `invalid-value`) |
+| Classification latency (accuracy run) | p50 1.70 s · p95 3.53 s | p50 10.2 s · p95 13.0 s |
+| Acting latency (accuracy run) | p50 10.2 s · p95 11.7 s | p50 18.5 s · p95 21.4 s |
+
+¹ Gated questions are never in the model's menu (by design). Rows expecting one cannot be right; the model then
+names the nearest open question, which the game offers for confirmation and never records on its own.
+² Rows whose expected answer is an open question or null. ³ In-game baseline without a model: 43/50, 1 wrong
+(the mock "valid null" run). Rows count as correct only when the engine routes or offers exactly the expected id.
+
+Notes: the first request of each run was rejected as `schema-unsupported` — llama-cpp-python answers
+`response_format: json_schema` with HTTP 500 — and the adapter switched to `json_object` (grammar-constrained),
+fixed in this release (#49). With JSON grammar, Qwen3.5 produced no thinking tokens. The hybrid sample is 50 lines:
+a 4-line difference is +8 points, small-sample evidence only.
+
 ## 2. Candidate facts (verification status as of 2026-11-10)
 | Candidate | Identifier | Licence | Status | Notes |
 |---|---|---|---|---|
@@ -66,14 +95,29 @@ Hosted inference (UNVERIFIED, search only): Qwen3.5-9B listed on OpenRouter via 
 $0.10/$0.15 per 1M tokens; no free tier found. Gemma 4 E4B on Azure AI catalog / FriendliAI; no free tier found.
 Free weights do not mean free inference.
 
-## 3. Selection rule (unchanged from v10 §5, extended)
+## 3. Selection rule (unchanged from v10 §5, extended) and the CPU verdict
 Pick the smallest model that, on `--provider`: improves NPC held-out 2026-11 hybrid accuracy by ≥ 10 points over
 deterministic; 0 wrong-question routes on tuned sets and ≤ 1 per 50 held-out lines; 0 invalid outputs accepted (the
 server rejects them anyway, but the rate is reported); injection 5/5; acting validity ≥ 95 %; classification
 p95 ≤ 1.5 s (aspirational, from the v10 design — must be measured on the target host).
 
+| Criterion | Gemma 4 E4B (CPU) | Qwen3.5-9B (CPU) |
+|---|---|---|
+| Hybrid +10 pts over 43/50 | +8 (47/50) — not met | +8 (47/50) — not met |
+| Wrong routes ≤ 1 / 50 (hybrid) | 2 — not met | 2 — not met |
+| Injection 5/5 | met | met |
+| Acting validity ≥ 95 % | 100 % — met | 87.5 % — not met |
+| Classification p95 ≤ 1.5 s | 3.9 s — not met | 13.0 s — not met (fails the 8 s limit) |
+
+Verdict: **no model is approved for production.** On this hardware Gemma 4 E4B is the better candidate — same
+accuracy as Qwen3.5-9B, about 6× faster, valid acting on every turn, Apache-2.0 and an official quantisation.
+Acting cannot arrive inside the passenger's reaction delay (≤ 1.15 s) on CPU, so in-game it would always fall
+back to the authored acting (by design, no harm, no benefit). Keep `INAD_NPC_PROVIDER` unset in production.
+
 ## 4. Pending before production
-1. An authorized endpoint (self-hosted vLLM/llama.cpp/Ollama, or a hosted provider with reviewed data terms).
-2. `--provider` runs for each candidate, non-thinking, temperature 0; record the table here.
-3. Confirm HF identifiers and licence files for Qwen3.5-9B and Gemma 4 E4B.
+1. Measure Gemma 4 E4B (and, if wanted, Qwen3.5-9B with thinking off) on the intended GPU host with vLLM or
+   llama.cpp: latency against p95 ≤ 1.5 s, and repeat the hybrid run.
+2. Grow the independent held-out corpus beyond 50 lines before trusting a ±4-line difference.
+3. Decide whether 2 wrong routes per 50 (each still confirmed before recording) is acceptable, or tighten the
+   confirmation rule for model-proposed ids.
 4. Human playtest of follow-ups and acting with and without a model.
