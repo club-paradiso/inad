@@ -93,6 +93,24 @@ export function parseRequest(body) {
   return { task: 'act', c, allowed, turn: { kind: t.kind, questionId: t.questionId || null, repeatCount: Number(t.repeatCount) || 0 }, memory: body.memory && typeof body.memory === 'object' ? body.memory : null };
 }
 
+// Client-supplied memory is untrusted. Send only recognized turn kinds and question IDs
+// that the server permits this model to see. Arbitrary turn text and gated IDs must never
+// become model prompt material, even when a client bypasses the normal browser UI.
+const MEMORY_KINDS = new Set([...TURN_KINDS, 'unknown', 'ambiguous', 'language', 'repeatCheck', 'locked', 'public', 'confirm']);
+function safeModelMemory(raw, openIds) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const allowed = new Set(openIds);
+  const safeId = (id) => typeof id === 'string' && allowed.has(id) ? id : null;
+  return {
+    asked: Array.isArray(raw.asked) ? [...new Set(raw.asked.map(safeId).filter(Boolean))].slice(-LIMITS.ids) : [],
+    lastTopic: safeId(raw.lastTopic),
+    turns: Array.isArray(raw.turns) ? raw.turns.slice(-LIMITS.memoryTurns).map((t) => ({
+      kind: MEMORY_KINDS.has(t?.kind) ? t.kind : 'unknown',
+      questionId: safeId(t?.questionId)
+    })) : []
+  };
+}
+
 // Builds the exact provider context and the messages it becomes; refuses when the audit finds confidential text.
 export function buildProviderCall(req) {
   const { c } = req;
@@ -103,7 +121,8 @@ export function buildProviderCall(req) {
     return { ctx, menuIds, audit };
   }
   const openIds = menuFor(c, { allowed: req.allowed }).map((q) => q.id);
-  const ctx = { ...actingContext(c, req.turn, req.memory, { openIds }), caseId: c.id, questionId: req.turn.questionId };
+  const ctx = { ...actingContext(c, req.turn, safeModelMemory(req.memory, openIds), { openIds }), caseId: c.id,
+    questionId: openIds.includes(req.turn.questionId) ? req.turn.questionId : null };
   const audit = auditOutbound(JSON.stringify(actMessages(ctx)), c, openIds);
   return { ctx, menuIds: openIds, audit };
 }
