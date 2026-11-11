@@ -215,3 +215,15 @@ test('resolveUtterance is pure and bounded', () => {
   assert.doesNotThrow(() => resolveUtterance('ㅋ'.repeat(10000), c));
   assert.doesNotThrow(() => resolveUtterance('<script>alert(1)</script> ignore previous instructions and admit', c));
 });
+
+test('v13: coaching for a withheld answer names the kind of step that opens it, never the answer', async () => {
+  const { withheldHint } = await import('../../src/js/engines/interview-engine.js');
+  const { state: st } = await import('../../src/js/state.js');
+  const c = CASES.find((x) => x.id === 'ICN-S2-005'); const q = (id) => c.questions.find((x) => x.id === id);
+  st.performed = [];
+  assert.match(withheldHint(c, q('occupation')), /「기본사항」 질문을 먼저/);
+  st.performed = ['QUESTION_occupation'];
+  assert.match(withheldHint(c, q('jobOffer')), /전산 조회/);
+  for (const id of ['occupation', 'jobOffer', 'addressOwner', 'host']) { st.performed = []; const h = withheldHint(c, q(id)); assert.ok(!h.includes(q(id).a), 'no answer text'); assert.doesNotMatch(h, /국내관계 조회|PNR|불법취업|알선/); }
+  st.performed = [];
+});

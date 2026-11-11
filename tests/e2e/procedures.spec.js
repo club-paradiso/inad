@@ -114,7 +114,7 @@ test.describe('절차 화면', () => {
     for (const q of queue) { await H.jumpTo(page, q.index); const c = await H.currentCase(page); if (c?.resolution?.type === 'REFUSE') { found = true; break; } }
     expect(found).toBe(true);
     for (let i = 0; i < 3; i++) { if (await page.locator('#modal').evaluate((m) => m.classList.contains('on'))) break; await page.locator('#clearBtn').click(); }
-    await expect(page.locator('#modalTitle')).toHaveText('감찰 누적 3회 · 근무 종료');
+    await expect(page.locator('#modalTitle')).toHaveText('지적 누적 3회 · 근무 종료');
     await H.expectNoErrors(errors);
   });
 });

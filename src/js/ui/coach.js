@@ -41,7 +41,14 @@ export function currentCoachStep(c = current()) {
     };
   }
 
-  // Step 2: Passenger answered, but no clues discovered yet
+  // Asked, but nothing is on record yet (not understood, or the passenger gave no specific answer): the next
+  // useful step is still a first recorded answer, not statement comparison.
+  const recorded = state.asked instanceof Set ? state.asked.size : 0;
+  if (recorded === 0 && state.discoveredClues.size === 0) {
+    return { step: 1, target: 'first_question', text: '아직 기록된 답이 없습니다. 질문이 통하지 않으면 통역을 연결하고, 제안 질문을 눌러 방문 목적부터 확인하십시오.' };
+  }
+
+  // Step 2: an answer is on record, but no clues discovered yet
   if (state.discoveredClues.size === 0) {
     const hasAlienReply = (state.logs || []).some((l) => l.type === 'alien' && l.text);
     if (hasAlienReply) {

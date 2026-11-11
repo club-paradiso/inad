@@ -52,6 +52,9 @@ export function specialAction(c, st = state) {
 export function renderActions({ onRefugee, onSjp, onReopen }) {
   const c = current();
   byId('clearBtn').disabled = state.ended; byId('refuseBtn').disabled = state.ended || state.stage === 'REFUGEE'; byId('secondaryBtn').disabled = state.ended || state.stage !== 'PRIMARY'; byId('sjpBtn').disabled = state.ended;
+  // The criminal-procedure entry belongs to what follows a secondary referral. At the primary desk the choices are
+  // admit, refer or refuse; the engine's own precondition (legal-engine validateSjpEntry) is unchanged.
+  byId('sjpBtn').hidden = state.stage === 'PRIMARY';
   const sp = byId('specialBtn'), a = specialAction(c);
   const run = !a ? null : a.kind === 'refugee' ? onRefugee : a.kind === 'sjp' ? onSjp : () => onReopen && onReopen(a.kind);
   if (a) { byId('specialTitle').textContent = a.title; byId('specialSub').textContent = a.sub; }

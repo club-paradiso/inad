@@ -55,4 +55,42 @@ test.describe('짧은 근무', () => {
     expect((await H.getState(page)).stats.processed).toBe(0);
     await H.expectNoErrors(errors);
   });
+
+  test('after one short duty is finished, the next one draws a different roster under standard rules', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await expect(page.locator('#quickRungNote')).toContainText('통상 입국과 확인이 필요한 입국');
+    await page.locator('#quickStartBtn').click();
+    await H.jumpTo(page, 5);
+    await H.ensureCommunication(page);
+    for (const q of ['bio', 'exempt', 'age', 'official', 'explain']) await H.ask(page, q);
+    await page.locator('#refuseBtn').click();
+    await page.locator('.reason[data-code="SIM-BIO-REF"]').click();
+    await H.continueDoc(page);
+    await H.procAct(page, 'repat-order');
+    await H.continueDoc(page);
+    await H.procAct(page, 'waiting-room');
+    await H.procAct(page, 'finish-refusal');
+    await page.locator('#quickSummary').click();
+    await expect(page.locator('#modalTitle')).toHaveText('짧은 근무 요약');
+    await page.locator('#quickFresh').click();
+    await expect(page.locator('#caseId')).toContainText('A001');
+    const queue = await H.getQueue(page);
+    expect(queue).toHaveLength(6);
+    expect(queue.filter((q) => q.caseId)).toHaveLength(3);
+    expect(queue.map((q) => q.caseId || q.sessionVariant)).not.toEqual(['ICN-S1-001', 'routine-clear', 'ICN-S1-002', 'ICN-S2-006', 'ICN-S2-005', 'ICN-S3-011']);
+    expect(queue[2].sessionVariant).toBe('secondary-clear');
+    const plan = await H.hook(page, (T) => T.quickPlan());
+    expect(plan.rotating).toBe(true);
+    const st = await H.getState(page);
+    expect(st.stats.processed).toBe(0); expect(st.strikes).toBe(0);
+    // The first passenger of a rotating roster is an ordinary generated arrival with a story of their own.
+    await expect(page.locator('#log .msg.alien').first()).not.toContainText('목적으로 입국합니다');
+    await H.solveClearDebrief(page);
+    await page.locator('#quickNext').click();
+    await expect(page.locator('#caseId')).toContainText('A002');
+    // A returning player is told on the start screen that the short duty is no longer the fixed introduction.
+    await page.reload();
+    await expect(page.locator('#quickRungNote')).toContainText('할 때마다 다른 승객 구성');
+    await H.expectNoErrors(errors);
+  });
 });

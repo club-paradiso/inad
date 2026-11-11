@@ -10,7 +10,7 @@ import { installErrorCollectors, runDiagnostics, diagnosticText } from './servic
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
 import { newSessionSeed, displayDateKo } from './engines/rng.js';
-import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession, rosterSession } from './engines/queue-engine.js';
+import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession, rosterSession, quickRosterFor } from './engines/queue-engine.js';
 import { getTraveler } from './engines/traveler-engine.js';
 import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
@@ -148,7 +148,7 @@ function finishFlow(label) {
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNote(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') {
-    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() });
+    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onContinue: () => quickShiftFlow(true, false, true), onExit: () => location.reload() });
     return;
   }
   if (state.sessionMode === 'daily') {
@@ -168,6 +168,7 @@ function finishFlow(label) {
         showQuickSummary(state.reports, {
           sessionResult,
           onRetry: () => quickShiftFlow(true),
+          onFresh: () => quickShiftFlow(true, true),
           onExit: () => location.reload()
         });
       }
@@ -199,15 +200,26 @@ function liveInterviewFlow(retry = false) {
   // The passenger's opening statement is already in the transcript and stage.
   beginCase(true);
 }
-// Quick Shift: six passengers, 안내 coaching throughout (all within the first six), nothing saved.
-function quickShiftFlow(retry = false) {
+// Quick Shift: six passengers, nothing written to the shift checkpoint.
+// First time: the fixed introductory roster with 안내 coaching. After one has been finished (v13): a roster drawn
+// from a fresh seed — three generated passengers around three authored cases — under standard rules, so the
+// fifteen-minute mode is worth playing again. `again` replays the roster just played; `fresh` draws a new one.
+let quickPlan = null;
+function quickShiftCompletedBefore() { try { const m = loadMeta(); return (m.sessions || []).some((x) => x.mode === 'quick'); } catch (e) { return false; } }
+function quickShiftFlow(retry = false, fresh = false, afterLive = false) {
   if (state.started && !retry) return;
-  Object.assign(state, { sessionMode: 'quick', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: 'guided' });
-  regenerate(LIVE_CASE.seed); state.eventSchedule = [];
-  if (!rosterSession(QUICK_ROSTER)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  if (afterLive) quickPlan = null;
+  const rotating = fresh || (retry && quickPlan ? !!quickPlan.rotating : quickShiftCompletedBefore());
+  const seed = retry && !fresh && quickPlan ? quickPlan.seed : rotating ? newSessionSeed() : LIVE_CASE.seed;
+  Object.assign(state, { sessionMode: 'quick', difficulty: rotating ? 'standard' : 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: rotating ? 'expert' : 'guided' });
+  regenerate(seed); state.eventSchedule = [];
+  // Coming straight from the first interview, the introductory roster does not bring the same passenger back.
+  const intro = afterLive || quickPlan?.afterLive ? QUICK_ROSTER.map((e) => (e === LIVE_CASE.caseId ? 'ICN-S2-007' : e)) : QUICK_ROSTER;
+  if (!rosterSession(rotating ? quickRosterFor(seed) : intro)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  quickPlan = { seed, rotating, afterLive: afterLive || (!!quickPlan?.afterLive && retry && !fresh) };
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'quick_retry' : 'quick_start' });
-  showAnnouncement('짧은 근무', `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
+  showAnnouncement('짧은 근무', rotating ? `새로 배치된 승객 ${session.queue.length}명을 심사합니다. 안내 없이 진행합니다.` : `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
 }
 // Case of the Day: the same case and seed for everyone on a Korean calendar day; standard rules, no coaching.
 function dailyFlow() {
@@ -277,7 +289,7 @@ function bindKeyboard() {
     if (!byId('startOverlay').classList.contains('hide') || !current()) return;
     // Workspace shortcuts would act on controls hidden behind the procedure screen.
     if (isProcedureOpen()) return;
-    if (e.altKey && !e.ctrlKey && !e.metaKey) { const map = { a: '#clearBtn', r: '#secondaryBtn', x: '#refuseBtn', j: '#sjpBtn' }; if (map[k]) { e.preventDefault(); const b = $(map[k]); if (b && !b.disabled) { b.focus(); b.click(); } return; } }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) { const map = { a: '#clearBtn', r: '#secondaryBtn', x: '#refuseBtn', j: '#sjpBtn' }; if (map[k]) { e.preventDefault(); const b = $(map[k]); if (b && !b.disabled && !b.hidden) { b.focus(); b.click(); } return; } }
     if (!plain) return;
     if (/^Digit[1-6]$/.test(e.code)) { e.preventDefault(); showTask('interview'); chooseQuestionCategory(Number(e.code.slice(-1)) - 1, announceA11y); return; }
     const direct = { k: '#langKo', e: '#langEn', i: '#langInterp', h: '[data-lu="history"]', v: '[data-lu="visa"]', p: '[data-lu="pnr"]', c: '[data-lu="contact"]', g: '[data-lu="party"]', o: '[data-lu="public"]' };
@@ -322,7 +334,7 @@ function installHooks() {
     say: (text, source = 'text') => submitTurn({ text, source }),
     interview: () => ({ ...interviewSummary(), lastKind: state.interview?.lastKind || null, mode: state.sessionMode }),
     live: () => liveInterviewFlow(),
-    quick: () => quickShiftFlow(),
+    quick: () => quickShiftFlow(), quickPlan: () => (quickPlan ? { ...quickPlan } : null),
     daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
     startDaily: () => dailyFlow(),
     // v11 Statement Lock test hooks
@@ -340,6 +352,7 @@ function boot() {
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
   bindStatementLockListeners();
   byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();
+  if (quickShiftCompletedBefore()) byId('quickRungNote').textContent = '승객 6명 · 약 15분 · 할 때마다 다른 승객 구성 · 안내 없이 진행합니다';
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);

@@ -265,3 +265,6 @@ body.has-procedure .pa-banner { top: auto; bottom: calc(var(--h-statusbar) + 8px
 }
 
 @media (max-width: 359px) { .brand h1 small { display: none; } }
+
+/* single passenger · short duty · case of the day: there is no shift rotation to label */
+body.mode-case .shift-meta { display: none; }

@@ -5,11 +5,13 @@ import { AIRPORT_BY_CODE, FICTIONAL_CARRIERS, FICTIONAL_HOTELS, PARTY_TYPES, VIS
 import { hashSeed, makeRng, pick, shuffled } from './rng.js';
 import { getTraveler, travelerMap } from './traveler-engine.js';
 import { session, state } from '../state.js';
+import { applyPassengerStory, applyReviewAnomaly, resolveAnomaly, storyKind } from './passenger-story.js';
 
 export const coreCaseMap = new Map(CASES.map((c) => [c.id, c]));
 export const CORE_TRAVELER_IDS = new Set(CASES.map((c) => c.travelerId));
 
-const CLEAR_REVIEW_ANOMALIES = ['companionHotel', 'pnrAgency', 'friendContact'];
+// Order matters: the roster stream indexes into this list. New anomalies are appended.
+const CLEAR_REVIEW_ANOMALIES = ['companionHotel', 'pnrAgency', 'friendContact', 'ticketName', 'staySpan'];
 const REFUSAL_VARIANTS = ['purposeMismatch', 'entryBan', 'documentInvalid', 'bioRefusal'];
 
 export function originAirport(code) { return AIRPORT_BY_CODE[code] || 'HUB'; }
@@ -43,27 +45,6 @@ function setDocField(doc, key, value) {
   else (doc.fields ||= []).push([key, value]);
 }
 
-function applySecondaryClear({ anomaly, questions, lookups, clues }) {
-  let required = [];
-  if (anomaly === 'companionHotel') {
-    questions.push({ id: 'detail', cat: '추가소명', q: '숙박예약 명의가 본인이 아닌 이유를 설명해 주십시오.', a: '동행인이 두 사람 객실을 함께 예약했습니다. 제 이름도 투숙객 명단에 등록되어 있습니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
-    lookups.contact = ['주의', '예약 대표명의는 동행인이지만 투숙객 명단에서 피심사인 성명과 동일 숙박기간이 확인됩니다.'];
-    clues.push({ id: 'n1', trigger: 'INIT', title: '숙박 명의', text: '숙박예약 대표명의가 피심사인과 다름.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '동행예약 투숙객 명단에서 피심사인 성명이 확인됨.', kind: 'confirm', key: true });
-    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
-  } else if (anomaly === 'pnrAgency') {
-    questions.push({ id: 'detail', cat: '추가소명', q: '귀국편 예약내역을 본인 휴대전화에서 바로 제시하지 못하는 이유가 있습니까?', a: '여행사가 단체 예약으로 발권해 제 앱에는 안 보이지만 예약번호와 전자티켓이 있습니다.', reveal: 'depth', requires: ['QUESTION_return'] });
-    lookups.pnr = ['주의', '여행사 단체예약 PNR에서 피심사인의 귀국편 전자티켓과 좌석상태가 확인됩니다.'];
-    clues.push({ id: 'n1', trigger: 'INIT', title: '귀국편 표시', text: '개인 앱에서 귀국편이 즉시 조회되지 않음.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_pnr', title: '의심 해소', text: '단체 PNR에서 유효 전자티켓과 귀국편이 확인됨.', kind: 'confirm', key: true });
-    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_pnr'];
-  } else {
-    questions.push({ id: 'detail', cat: '국내관계', q: '전자입국신고의 국내 연락처와 어떤 관계입니까?', a: '예전에 알게 된 지인입니다. 숙박이나 취업을 제공받는 관계는 아니고 하루 만날 예정입니다.', reveal: 'depth', requires: ['QUESTION_purpose'] });
-    lookups.contact = ['주의', '국내 연락처는 개인 지인이나 숙박·고용주·초청자로 등록된 이력은 확인되지 않습니다.'];
-    clues.push({ id: 'n1', trigger: 'INIT', title: '국내 지인', text: '관광객이 개인 국내 연락처를 신고함.', kind: 'unresolved', key: true }, { id: 'n2', trigger: 'LOOKUP_contact', title: '의심 해소', text: '고용·숙박 제공 등 목적불일치를 뒷받침할 관계는 확인되지 않음.', kind: 'confirm', key: true });
-    required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
-  }
-  return required;
-}
-
 function applyGeneratedRefusal(c, variant) {
   c.risk = 'HIGH';
   c.difficulty = '일반 · 불허판단';
@@ -75,9 +56,8 @@ function applyGeneratedRefusal(c, variant) {
     c.evidence['입국목적'] = ['bad', '불일치', '신고한 단기방문 목적과 국내 유상활동 계획이 양립하지 않음'];
     c.required = ['SECONDARY', 'QUESTION_detail', 'LOOKUP_contact'];
     c.resolution = { type: 'REFUSE', reason: 'SIM-A12-PUR' };
-    c.initial = '관광 목적으로 왔다고 진술하지만 국내 지인과의 구체적인 활동 계획은 추가 확인이 필요합니다.';
     c.note = '입국재심에서 실제 활동 계획을 확인하면 신고 목적과 체류자격의 불일치가 드러나는 사건.';
-    c.clues.push({ id: 'r1', trigger: 'INIT', title: '목적 확인 필요', text: '관광 진술은 있으나 국내 지인과의 활동 내용이 구체적이지 않음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'QUESTION_detail', title: '유상활동 진술', text: '국내 영업장에서 일을 돕고 사례비를 받을 계획을 진술함.', kind: 'risk', key: true }, { id: 'r3', trigger: 'LOOKUP_contact', title: '국내관계 확인', text: '연락처가 해당 영업장 운영자와 일치함.', kind: 'confirm', key: true });
+    c.clues.push({ id: 'r1', trigger: 'DOC_ENTRY BASIS', title: '국내 연락처', text: '숙박업소나 초청기관이 아닌 개인 연락처를 신고함.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'QUESTION_detail', title: '유상활동 진술', text: '국내 사업장에서 일하고 대가를 받을 계획을 진술함.', kind: 'risk', key: true }, { id: 'r3', trigger: 'LOOKUP_contact', title: '국내관계 확인', text: '연락처가 진술한 사업장의 운영자와 일치함.', kind: 'confirm', key: true });
     return;
   }
 
@@ -86,7 +66,6 @@ function applyGeneratedRefusal(c, variant) {
     c.lookups.history = ['규제', '과거 강제퇴거 기록이 있으며 강제퇴거 후 5년이 지나지 않은 것으로 확인됩니다.'];
     c.required = ['SECONDARY', 'LOOKUP_history'];
     c.resolution = { type: 'REFUSE', reason: 'SIM-A11-DEPORT' };
-    c.initial = '제출서류 자체에는 큰 이상이 없지만 출입국 규제정보 조회가 필요합니다.';
     c.note = '일반적인 입국요건과 별개로 개인별 입국금지 사유를 확인해야 하는 사건.';
     c.clues.push({ id: 'r1', trigger: 'INIT', title: '규제정보', text: '신원 조회 화면에 규제정보 확인 필요 표시가 있음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'LOOKUP_history', title: '입국금지 사유', text: '강제퇴거 후 5년 미경과 사실이 확인됨.', kind: 'risk', key: true });
     return;
@@ -101,7 +80,6 @@ function applyGeneratedRefusal(c, variant) {
     c.evidence['신원'] = ['bad', '미충족', '여권 유효기간 경과 및 전자칩 검증 오류'];
     c.required = ['SECONDARY', 'LOOKUP_visa'];
     c.resolution = { type: 'REFUSE', reason: 'SIM-A12-DOC' };
-    c.initial = '여권 정보가 자동 판독되었지만 문서 유효성에 이상 표시가 있습니다.';
     c.note = '여권 유효성 자체가 충족되지 않아 입국허가할 수 없는 사건.';
     c.clues.push({ id: 'r1', trigger: 'INIT', title: '문서 이상', text: '여권 만료일과 전자칩 검증 상태를 직접 확인해야 함.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'LOOKUP_visa', title: '유효성 미충족', text: '입국자격 조회와 별개로 여권 유효성 요건 미충족 확인.', kind: 'risk', key: true });
     return;
@@ -112,7 +90,6 @@ function applyGeneratedRefusal(c, variant) {
   c.evidence['신원'] = ['warn', '본인확인 미완료', '생체정보 제공 거부로 본인확인 절차가 완료되지 않음'];
   c.required = ['SECONDARY', 'QUESTION_detail'];
   c.resolution = { type: 'REFUSE', reason: 'SIM-BIO-REF' };
-  c.initial = '여권은 제시했지만 생체정보 제공 절차에는 협조하지 않고 있습니다.';
   c.note = '생체정보 제공·본인확인 절차 불응을 별도로 판단해야 하는 사건.';
   c.clues.push({ id: 'r1', trigger: 'INIT', title: '본인확인 미완료', text: '생체정보 제공 단계가 완료되지 않음.', kind: 'unresolved', key: true }, { id: 'r2', trigger: 'QUESTION_detail', title: '제공 거부 확인', text: '생체정보 제공을 명시적으로 거부함.', kind: 'risk', key: true });
 }
@@ -130,7 +107,9 @@ export function makeNormalCase(t, index, shift, rng, seed) {
   const lookups = { history: ['정상', '과거 출입국 기록상 현재 심사에 영향을 줄 특이사항 없음.'], visa: ['정상', p.basis + ' 요건과 제출자료가 일치합니다.'], pnr: ['정상', '예약자료와 진술한 일정이 일치합니다.'], contact: ['정상', '국내 체류지 또는 연락처 자료가 확인됩니다.'], public: ['정상', '제출자료와 공개 확인정보 사이 특이한 모순이 없습니다.'] };
   const clues = [];
   let required = ['QUESTION_purpose'];
-  if (review) required = applySecondaryClear({ anomaly: outcome.anomaly, questions, lookups, clues });
+  // Placeholder keeps the question shuffle (and so the roster stream) exactly as long as it always was;
+  // applyReviewAnomaly fills it in once the documents exist.
+  if (review) questions.push({ id: 'detail', cat: '추가소명', q: '', a: '', reveal: 'depth' });
   if (p.kind === 'resident') questions.push({ id: 'residence', cat: '추가소명', q: '체류카드와 국내 거소 정보를 확인하겠습니다.', a: '유효한 체류카드와 현재 거소 자료를 제시하겠습니다.', reveal: 'depth' });
   const doc2 = p.kind === 'resident' ? { t: '외국인등록증', k: 'RESIDENCE CARD', fields: [['성명', t.name.latin], ['체류자격', 'D-2'], ['상태', 'VALID'], ['재입국', '체류기간 내']] } : { t: '입국자격 자료', k: 'ENTRY BASIS', fields: [['입국기반', p.basis], ['사증', p.visa], ['K-ETA', p.eta], ['전자입국신고', p.arrivalCard]] };
   let docs = [{ t: '여권', k: 'PASSPORT', fields: [['성명', t.name.latin], ['국적', t.nationality.english || t.nationality.korean], ['여권번호', passNo], ['만료일', expiry], ['전자칩', 'VALID'], ['MRZ', 'VALID']] }, doc2, { t: '항공예약', k: 'PNR', fields: p.kind === 'resident'
@@ -138,10 +117,12 @@ export function makeNormalCase(t, index, shift, rng, seed) {
     : [['입국편', flight], ['여정', origin + ' → ICN'], ['귀국편', returnFlight], ['출국여정', 'ICN → ' + origin], ['예약상태', 'TICKETED'], ['예약번호', bookingRef], ['전자항공권번호', 'SIMT' + String(seed).replace(/[^0-9]/g, '').slice(-6) + String(index + 1).padStart(3, '0')]] }, { t: p.kind === 'resident' ? '국내 거소자료' : '숙박예약', k: p.kind === 'resident' ? 'STAY' : 'HOTEL', fields: p.kind === 'resident' ? [['체류목적', '국내 체류지로 복귀'], ['거소', '등록정보와 일치'], ['체류기간', '유효']] : [['숙박', hotel], ['투숙객', t.name.latin], ['상태', 'CONFIRMED']] }];
   docs = [docs[0], ...shuffled(docs.slice(1), rng)];
   const evidence = { '신원': ['ok', '확인', '여권·생체정보 일치'], '입국자격': ['ok', '충족', p.basis], '입국목적': [review ? 'warn' : 'ok', review ? '추가확인' : '일치', p.purpose], '여행계획': ['ok', '확정', '예약자료 확인'], '체재능력': ['ok', '충분', '통상적인 체류자료 확인'], '국내관계': [review ? 'warn' : 'ok', review ? '추가확인' : '확인', '신고·예약자료 검증 가능'] };
-  const c = { id: `NORMAL-${seed}-${String(index + 1).padStart(2, '0')}`, shift, travelerId: t.id, name: t.name.latin, nat: t.nationality.korean, code: t.nationality.code, sex, dob, passport: passNo, purpose: p.purpose, stay: p.stay, arrival: `${flight} · ${origin} → ICN`, return: returnRoute, returnDelivery: review && outcome.anomaly === 'pnrAgency' ? 'agency' : 'direct', carrier, basis: p.basis, basisDetail: p.basisDetail, eta: p.eta, arrivalCard: p.arrivalCard, visa: p.visa, watch: '이상 없음', bio: '일치 ' + (98.7 + rng() * 1.1).toFixed(1) + '%', chip: '정상', risk: review ? 'MEDIUM' : 'LOW', initial: review ? '제출자료 일부는 추가 확인이 필요하지만 방문 목적에 맞게 입국하려고 합니다.' : p.purpose + ' 목적으로 입국합니다. 필요한 예약과 증빙은 준비했습니다.', questions: [questions[0], ...shuffled(questions.slice(1), rng)], docs, lookups, evidence, required, resolution: { type: 'CLEAR', reason: null }, difficulty: review ? '일반 · 추가확인' : '일반', note: review ? '초기 의심사항이 재심의 추가 확인으로 해소되는 정상승객.' : '일반 정상승객. 필요한 최소 확인 후 신속하게 입국허가하는 것이 목표.', clues: clues.length ? clues : [], sessionVariant: review ? 'secondary-clear' : 'routine-clear' };
+  const c = { id: `NORMAL-${seed}-${String(index + 1).padStart(2, '0')}`, shift, travelerId: t.id, name: t.name.latin, nat: t.nationality.korean, code: t.nationality.code, sex, dob, passport: passNo, purpose: p.purpose, stay: p.stay, arrival: `${flight} · ${origin} → ICN`, return: returnRoute, returnDelivery: 'direct', carrier, basis: p.basis, basisDetail: p.basisDetail, eta: p.eta, arrivalCard: p.arrivalCard, visa: p.visa, watch: '이상 없음', bio: '일치 ' + (98.7 + rng() * 1.1).toFixed(1) + '%', chip: '정상', risk: review ? 'MEDIUM' : 'LOW', initial: '', questions: [questions[0], ...shuffled(questions.slice(1), rng)], docs, lookups, evidence, required, resolution: { type: 'CLEAR', reason: null }, difficulty: review ? '일반 · 추가확인' : '일반', note: review ? '초기 의심사항이 재심의 추가 확인으로 해소되는 정상승객.' : '일반 정상승객. 필요한 최소 확인 후 신속하게 입국허가하는 것이 목표.', clues: clues.length ? clues : [], sessionVariant: review ? 'secondary-clear' : 'routine-clear' };
+  if (review) c.required = applyReviewAnomaly(c, resolveAnomaly(outcome.anomaly, storyKind(c), c.id));
   if (outcome.kind === 'refuse') applyGeneratedRefusal(c, outcome.variant);
   if (!c.clues.length) delete c.clues;
-  return c;
+  // Trip story (own seeded stream): opening statement, plan, lodging, funds, occupation.
+  return applyPassengerStory(c, seed);
 }
 
 export function generateNormalCases(seed, pool = [...travelerMap.values()]) {
@@ -169,11 +150,29 @@ export function singleCaseSession(caseId) { return rosterSession([caseId]); }
 // (variant 'routine-clear'). One duty shift, no companions; every case keeps its own rules.
 export function rosterSession(entries) {
   const used = new Set(); const out = [];
+  // 'normal' · 'review' · 'refusal' name the kind of generated passenger wanted (v13 rotating short duty).
+  const wanted = { normal: (v) => v === 'routine-clear', review: (v) => v === 'secondary-clear', refusal: (v) => /^generated-refuse-/.test(v || '') };
   for (const e of entries) {
-    const item = e === 'normal' ? session.queue.find((q, i) => !q.caseId && !used.has(i) && session.normalCaseMap.get(q.normalId)?.sessionVariant === 'routine-clear') : session.queue.find((q) => q.caseId === e);
+    let item;
+    if (wanted[e]) {
+      const fits = session.queue.filter((q, i) => !q.caseId && !used.has(i) && wanted[e](session.normalCaseMap.get(q.normalId)?.sessionVariant));
+      // A short roster has no travel parties, so prefer a passenger whose record does not refer to one.
+      item = fits.find((q) => !session.partyByTraveler.has(q.travelerId)) || fits[0];
+    } else item = session.queue.find((q) => q.caseId === e);
     if (!item) return false; used.add(session.queue.indexOf(item)); out.push({ ...item, shift: 1 });
   }
   session.queue = out; session.parties = []; session.partyByTraveler = new Map(); return true;
+}
+// Rotating short duty (v13): three generated passengers around three authored cases, drawn from the seed.
+// Always one authored admission and one authored non-admission, so a roster is never six of the same call;
+// a special-procedure case (refugee claim, document forgery) appears in roughly one roster out of three.
+export function quickRosterFor(seed) {
+  const rng = makeRng(hashSeed(seed + '|QUICK'));
+  const clear = shuffled(CASES.filter((c) => c.resolution.type === 'CLEAR'), rng);
+  const other = shuffled(CASES.filter((c) => c.resolution.type !== 'CLEAR' && !c.special), rng);
+  const special = shuffled(CASES.filter((c) => c.special), rng);
+  const third = special.length && rng() < 0.35 ? special[0] : other[1];
+  return ['normal', clear[0].id, 'review', other[0].id, rng() < 0.5 ? 'refusal' : 'normal', third.id];
 }
 export function caseForQueueItem(q) { return q.caseId ? coreCaseMap.get(q.caseId) : session.normalCaseMap.get(q.normalId); }
 export function currentQueueItem() { return session.queue[state.caseIndex]; }
@@ -192,9 +191,13 @@ export function buildTravelParties(seed, queue) {
   const specs = [[1, PARTY_TYPES[0]], [1, PARTY_TYPES[1]], [2, PARTY_TYPES[2]], [2, PARTY_TYPES[3]], [3, PARTY_TYPES[4]]];
   let seq = 1;
   for (const [sh, tpl] of specs) {
-    const rawPool = byShift.get(sh).filter((x) => !partyByTraveler.has(x.q.travelerId)); const nonResident = rawPool.filter((x) => !/재입국/.test(x.c.basis || '')); const pool = shuffled(nonResident.length >= tpl.size ? nonResident : rawPool, rng);
-    if (pool.length < tpl.size) continue;
-    const chosen = pool.slice(0, tpl.size).sort((a, b) => a.idx - b.idx);
+    // People who travel together entered for the same kind of reason: a family trip is not made of one tourist
+    // and two people on business visas. A business team may be two people when the shift has no third.
+    const want = tpl.type === 'business' ? 'business' : 'tourist';
+    const pool = shuffled(byShift.get(sh).filter((x) => !partyByTraveler.has(x.q.travelerId) && storyKind(x.c) === want), rng);
+    const size = tpl.type === 'business' ? Math.min(tpl.size, pool.length) : tpl.size;
+    if (size < 2 || pool.length < size) continue;
+    const chosen = pool.slice(0, size).sort((a, b) => a.idx - b.idx);
     const lead = chosen[0].c, hotel = hotelFromCase(lead), stay = lead.stay;
     const allBusiness = chosen.every((x) => /업무|상용|회의|출장/.test((x.c.purpose || '') + ' ' + (x.c.basis || ''))); const allTourist = chosen.every((x) => /관광/.test(x.c.purpose || '')); const partyLabel = (tpl.type === 'business' && !allBusiness) || (tpl.type === 'tour' && !allTourist) ? '동행여행' : tpl.label; const partyPurpose = allBusiness ? '공동 출장 일정' : allTourist ? '공동 관광 일정' : '동행여행'; const party = { id: 'PTY-' + String(seq++).padStart(3, '0'), type: tpl.type, label: partyLabel, shift: sh, sharedPNR: 'G' + String(seed).slice(-3) + String(seq).padStart(2, '0'), hotel, stay, purpose: partyPurpose, mode: tpl.type === 'friends' ? 'minor-resolved' : tpl.type === 'business' && rng() < .65 ? 'minor-resolved' : 'consistent', members: [] };
     chosen.forEach((x, i) => {
@@ -207,7 +210,7 @@ export function buildTravelParties(seed, queue) {
       c.return = lead.return;
       const returnAnswer = c.questions.find((q) => q.id === 'return');
       if (returnAnswer && lead.return !== '—') returnAnswer.a = `공동 예약된 ${lead.return} 항공편으로 돌아갑니다.`;
-      for (const d of (c.docs || [])) { if (d.k === 'PNR') { const r = (d.fields || []).find((y) => y[0] === '입국편'); if (r) r[1] = lead.arrival.split(' · ')[0]; const back = (d.fields || []).find((y) => y[0] === '귀국편'); if (back && lead.return !== '—') back[1] = lead.return.split(' · ')[0]; const onward = (d.fields || []).find((y) => y[0] === '출국여정'); if (onward) onward[1] = lead.return.split(' · ')[1] || onward[1]; d.fields.push(['공동 PNR', party.sharedPNR]); } if (d.k === 'HOTEL' || d.k === 'STAY') { const r = (d.fields || []).find((y) => /숙박|숙소|체류지/.test(y[0])); if (r) r[1] = party.hotel; } }
+      for (const d of (c.docs || [])) { if (d.k === 'PNR') { const r = (d.fields || []).find((y) => y[0] === '입국편'); if (r) r[1] = lead.arrival.split(' · ')[0]; const route = (d.fields || []).find((y) => y[0] === '여정'); if (route) route[1] = lead.arrival.split(' · ')[1] || route[1]; const back = (d.fields || []).find((y) => y[0] === '귀국편'); if (back && lead.return !== '—') back[1] = lead.return.split(' · ')[0]; const onward = (d.fields || []).find((y) => y[0] === '출국여정'); if (onward) onward[1] = lead.return.split(' · ')[1] || onward[1]; d.fields.push(['공동 PNR', party.sharedPNR]); } if (d.k === 'HOTEL' || d.k === 'STAY') { const r = (d.fields || []).find((y) => /숙박|숙소|체류지/.test(y[0])); if (r) r[1] = party.hotel; } }
       if (!c.questions.some((q) => q.id === 'partyRelation')) c.questions.push({ id: 'partyRelation', cat: '국내관계', q: '함께 입국한 동행인이 있습니까? 관계를 설명해 주십시오.', a: `${party.label}으로 함께 왔습니다. 저는 ${rel} 관계입니다.`, reveal: 'party' });
       if (!c.questions.some((q) => q.id === 'partyPlan')) c.questions.push({ id: 'partyPlan', cat: '여행·체류', q: '동행인들과 체류 일정과 숙소가 모두 같습니까?', a: party.mode === 'minor-resolved' && i === chosen.length - 1 ? `기본 숙소와 귀국편은 같지만 하루는 개인 일정으로 따로 움직입니다.` : `네. 기본 숙소와 귀국 일정은 같습니다. 일부 자유시간만 다를 수 있습니다.`, reveal: 'party', requires: ['QUESTION_partyRelation'] });
       if (!c.questions.some((q) => q.id === 'partyBooking')) c.questions.push({ id: 'partyBooking', cat: '추가소명', q: '공동 예약의 대표자와 예약번호를 확인할 수 있습니까?', a: `대표 예약자는 ${getTraveler(chosen[0].q.travelerId).name.korean}이고 공동 예약번호는 ${party.sharedPNR}입니다.`, reveal: 'party', requires: ['QUESTION_partyRelation'] });
@@ -233,5 +236,7 @@ export function buildSession(seed) {
   session.queue = buildSessionQueue(seed, session.normalCases);
   const { parties, partyByTraveler } = buildTravelParties(seed, session.queue);
   session.parties = parties; session.partyByTraveler = partyByTraveler; session.partyArchive = new Map();
+  // A travel party shares the lead's stay and hotel; re-apply the stories so statements follow the final record.
+  for (const c of session.normalCases) { const party = partyByTraveler.get(c.travelerId); applyPassengerStory(c, seed, party ? party.id : null); }
   return session;
 }

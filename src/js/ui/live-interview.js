@@ -132,7 +132,7 @@ function offerCandidates(ids, intro = '혹시 이 질문입니까?') {
 function offerConfirm(id, text, source) {
   const q = current()?.questions.find((x) => x.id === id); if (!q) return;
   const input = byId('askInput'); if (input && !input.value) { input.value = text; if (source === 'voice') input.dataset.source = 'voice'; }
-  setStatus(`<span>이렇게 기록할까요?</span><button type="button" data-confirm="${esc(q.id)}">${esc(q.q)}</button><span>아니면 질문을 고쳐 다시 보내십시오.</span>`);
+  setStatus(`<span>이렇게 기록할까요?</span><button type="button" data-confirm="${esc(q.id)}" data-for="${esc(String(text || '').trim())}">${esc(q.q)}</button><span>맞으면 Enter 또는 위 질문을 누르고, 아니면 질문을 고쳐 다시 보내십시오.</span>`);
   byId('askStatus').querySelector('[data-confirm]').onclick = () => { const i = byId('askInput'); if (i) { i.value = ''; delete i.dataset.source; } submitTurn({ questionId: q.id, text, source }); i?.focus(); };
 }
 
@@ -221,6 +221,9 @@ export function bindLiveInterview({ render } = {}) {
   form.addEventListener('submit', (e) => {
     e.preventDefault(); const text = input.value.trim(); if (!text) { input.focus(); return; }
     const source = input.dataset.source === 'voice' ? 'voice' : 'text';
+    // Enter on an unchanged question accepts the interpretation on offer (editing the text withdraws the offer).
+    const pending = byId('askStatus')?.querySelector('[data-confirm]');
+    if (pending && pending.dataset.for === text) { pending.click(); return; }
     submitTurn({ text, source }); input.focus();
   });
   // a corrected transcript is still a spoken question; clearing the box ends that
