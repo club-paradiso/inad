@@ -55,7 +55,8 @@ export function rateLimited(ip, now = Date.now(), sessionId = null) {
 }
 function clientIp(req) {
   const h = req.headers || {};
-  return String(h['x-vercel-forwarded-for'] || h['x-real-ip'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  // cf-connecting-ip is set by Cloudflare and checked first so a client-sent x-vercel-* header cannot pick its own bucket.
+  return String(h['cf-connecting-ip'] || h['x-vercel-forwarded-for'] || h['x-real-ip'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
 }
 export function sameOrigin(req) {
   const origin = String(req.headers?.origin || ''); const host = String(req.headers?.['x-forwarded-host'] || req.headers?.host || '');
