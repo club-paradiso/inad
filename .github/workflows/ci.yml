@@ -35,8 +35,18 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Browsers and their system libraries come preinstalled in the Playwright image, so no step depends on
+    # the runner's apt mirror (2026-11-11: "Temporary failure resolving 'azure.archive.ubuntu.com'" killed every
+    # `playwright install --with-deps`). Keep the tag equal to @playwright/test in package-lock.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v4
+      # The workspace is owned by the runner user, not the container's root: let git treat it as a repository.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
@@ -48,7 +58,6 @@ jobs:
       - name: Root index.html must equal the fresh build (no stale mirror)
         run: git diff --exit-code -- index.html
       - run: npm run test:integrity
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Legacy baseline parity (v6.1 behaviour)
         run: INAD_TARGET=legacy npm run test:e2e
@@ -65,22 +74,27 @@ jobs:
     # Runs the complete overseas case flow, persistence, country switching and mobile layout,
     # and (v11) plays every authored CA/GB/NZ case through the UI.
     runs-on: ubuntu-latest
-    # Playwright --with-deps can spend >19 minutes installing Firefox system packages
-    # on a cold GitHub runner; keep enough time for the actual browser tests.
+    # Runs in the Playwright image (see verify); no browser or system-package install step.
     timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      HOME: /root
     strategy:
       fail-fast: false
       matrix:
         browser: [firefox, webkit]
     steps:
       - uses: actions/checkout@v4
+      # The workspace is owned by the runner user, not the container's root: let git treat it as a repository.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run build
       - name: Verify generated release mirror
         run: git diff --exit-code -- index.html
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Cross-browser ATLAS critical journeys
         env:
           INAD_BROWSER: ${{ matrix.browser }}

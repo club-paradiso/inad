@@ -1,5 +1,6 @@
 // LEFT column · the person: portrait, identity, entry basis, stage, interaction state, language, party.
 import { $, $$, byId, esc } from './dom.js';
+import { declaredPurpose } from '../engines/disclosure.js';
 import { state } from '../state.js';
 import { current, screeningNo } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
@@ -14,7 +15,7 @@ import { getLocale } from '../services/i18n.js';
 export function renderPassenger() {
   const c = current(), t = getTraveler(c.travelerId);
   byId('caseId').innerHTML = `심사번호 <span class="mono">${esc(screeningNo())}</span>`; byId('pName').textContent = t.name.korean; byId('pRoman').textContent = t.name.latin; byId('pNat').textContent = `${t.nationality.korean} · ${t.nationality.code}`;
-  byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = c.purpose; byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
+  byId('pPass').textContent = t.passport.number; byId('pStay').textContent = c.stay; byId('pPurpose').textContent = declaredPurpose(c, state); byId('pFlight').textContent = c.arrival.split(' · ')[0]; byId('pBasis').textContent = c.basis;
   syncStage(t);
   const entry = byId('boothInterviewCta');
   if (entry) {
@@ -46,7 +47,7 @@ export function renderCaseBar(c, t) {
   const stageEl = byId('stageLabel'); if (stageEl) stageEl.textContent = stageText(state.stage);
   const box = byId('stageBox'); if (box) box.className = ('stage ' + (/SECONDARY|REFUGEE/.test(state.stage) ? 'secondary' : /INVESTIGATION|ARREST|ENTRY_REFUSED/.test(state.stage) ? 'critical' : state.stage === 'ADMITTED' ? 'admitted' : '')).trim();
   const name = byId('caseName'); if (name) name.textContent = `${t.name.korean} · ${t.name.latin}`;
-  const sum = byId('caseSummary'); if (sum) sum.textContent = `${t.nationality.korean} · ${t.nationality.code} · ${c.basis} · ${c.purpose} · ${c.stay}`;
+  const sum = byId('caseSummary'); if (sum) sum.textContent = `${t.nationality.korean} · ${t.nationality.code} · ${c.basis} · ${declaredPurpose(c, state)} · ${c.stay}`;
   const mini = byId('caseMiniPortrait'); if (mini && mini.getAttribute('src') !== t.portrait) mini.src = t.portrait;
   const st = stepperState(state.stage, state.ended);
   // State in text as well as colour: aria-current on the active step, a hidden '완료' on finished ones.

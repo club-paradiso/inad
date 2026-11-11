@@ -3,7 +3,8 @@ import { $, byId, esc, fmtClock } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
-import { evidenceNow, ACTION_NAMES } from '../engines/legal-engine.js';
+import { ACTION_NAMES } from '../engines/legal-engine.js';
+import { disclosedEvidence, disclosureProgress, declaredPurpose, knownReturn } from '../engines/disclosure.js';
 import { clueStats } from '../engines/clue-engine.js';
 import { lookupName } from '../engines/case-engine.js';
 import { classifyEntryBasis, ketaStatus, arrivalDeclarationStatus } from '../engines/decision-model.js';
@@ -21,7 +22,7 @@ export function renderEntry() {
   byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<br>${b.label}</div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
 <div class="entry-section"><h3>신원 · 여권</h3><div class="entry-grid">${row('성명(로마자)', t.name.latin)}${row('국적', `${t.nationality.korean} · ${t.nationality.code}`)}${row('생년월일', t.passport.birthDate || c.dob || '—')}${row('여권번호', t.passport.number || c.passport)}${row('여권 만료', t.passport.expiry || '—')}${row('전자여권 칩', c.chip)}</div></div>
 <div class="entry-section"><h3>입국 근거 · 사전여행허가</h3><div class="entry-grid">${row('입국 근거 구분', `${basis.label} · ${basis.basis}`, 'wide')}${row('적용 내용', c.basisDetail, 'wide')}${row('사증', c.visa)}${row('K-ETA(사전여행허가)', keta.text, keta.status === 'PASS' ? '' : 'attention')}${row('전자입국신고', decl.text, 'wide')}</div></div>
-<div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', c.return)}${row('신고 입국목적', c.purpose)}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
+<div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', knownReturn(c, state) || '미확인 · 항공 PNR·예약자료 확인 전')}${row('신고 입국목적', declaredPurpose(c, state))}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
 <div class="lawline">국적은 사증면제협정·무사증 입국허가·K-ETA 등 <b>입국 근거 산정</b>에만 사용합니다(제7조). 위험도·범죄 가능성은 국적으로 산정하지 않습니다. K-ETA는 사증이 아니며 사전여행허가서입니다(제7조의3).</div>`;
   renderDocStatus(c, b, keta, decl);
 }
@@ -53,18 +54,21 @@ export function clueCardsHTML(st, emptyText) {
   return cards || `<div class="clueempty">${esc(emptyText)}</div>`;
 }
 export function renderClueBoard() {
-  const el = byId('clueBoard'); if (!el) return; const c = current(); if (!c.clues) { el.innerHTML = ''; return; } const st = clueStats(c);
-  el.innerHTML = `<div class="cluehead"><span>단서</span><b>핵심 ${st.keyGot.length}/${st.keys.length} · 전체 ${st.got.length}/${st.all.length}</b></div><div class="cluecards">${clueCardsHTML(st, '질문·전산조회·서류 확인으로 단서가 이어집니다.')}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
+  const el = byId('clueBoard'); if (!el) return; const c = current();
+  // Every case gets the same board and the head counts only what was found: a board that appears for some
+  // cases only, or a "0/6" total, tells the examiner in advance which arrivals hide something and how much.
+  const st = c.clues ? clueStats(c) : { got: [], keyGot: [] };
+  el.innerHTML = `<div class="cluehead"><span>단서</span><b>확보 ${st.got.length}건</b></div><div class="cluecards">${clueCardsHTML(st, '질문·전산조회·서류 확인으로 단서가 이어집니다.')}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
 }
 export function renderMatrix() {
-  const c = current(); const e = evidenceNow(c, state);
+  const c = current(); const e = disclosedEvidence(c, state); const known = disclosureProgress(c, state);
   byId('matrix').innerHTML = Object.entries(e).map(([k, v]) => `<div class="ev ${v[0]}"><label>${esc(k)}</label><b>${esc(v[1])}</b><p title="${esc(v[2])}">${esc(v[2])}</p></div>`).join('');
   // Status, not a gate (P0-3): what has actually been checked so far, in plain counts. There is no
   // readiness percentage and nothing here enables or disables the decision buttons — a decision
   // can be made at any point, and whatever was left unchecked shows up in the case feedback.
   // Counts here are work counts only (questions · lookups). Clue counts live in the clue board's
   // head directly below — repeating them in this line made the same number appear twice per panel.
-  let hint = `질문 ${state.asked.size}개 · 조회 ${state.looked.size}개 · 판단은 언제든 내릴 수 있고, 부족한 확인은 결과 피드백에 반영됩니다.`;
+  let hint = `확인 ${known.known}/${known.total} · 질문 ${state.asked.size}개 · 조회 ${state.looked.size}개 · 판단은 언제든 내릴 수 있고, 부족한 확인은 결과 피드백에 반영됩니다.`;
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
@@ -75,7 +79,7 @@ export function renderMatrix() {
   if (note) {
     const comparison = comparisonSummary(state);
     note.innerHTML = '단서의 존재만으로 불허·체포를 결정하지 마십시오. 서로 독립된 진술·서류·전산정보를 교차검증해야 합니다.' +
-      (c.clues ? '<span class="case-depth-note"> 사건 심화 모드 · 핵심 단서와 주변 정보가 섞여 있습니다.</span>' : '') +
+      
       (comparison.followup ? '<span class="case-depth-note"> 수동 대조 메모: 미확인 사항 ' + comparison.followup + '건 (판단 준비도·법적 판단과 별개).</span>' : '');
   }
   renderBasisPanel(); renderClueBoard();

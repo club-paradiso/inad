@@ -41,8 +41,12 @@ export function arrivalDeclarationStatus(c) {
 }
 
 // Build the decision basis for the current case/state. `st` needs { asked, looked, performed, stage, forensic, investigation, refugeeStep }.
-export function decisionBasis(c, st) {
-  const e = evidenceNow(c, { looked: st.looked || new Set(), asked: st.asked || new Set() });
+// `opts.evidence` lets the live desk pass only the rows the examiner has established (engines/disclosure.js);
+// `opts.live` keeps procedure nodes (난민·사범조사·송환) off the desk until that procedure has actually begun,
+// so the list of nodes cannot tell the examiner how the case ends. The debrief calls this without options.
+export function decisionBasis(c, st, opts = {}) {
+  const e = opts.evidence || evidenceNow(c, { looked: st.looked || new Set(), asked: st.asked || new Set() });
+  const live = !!opts.live;
   const bio = bioParse(c.bio);
   const basisCls = classifyEntryBasis(c);
   const keta = ketaStatus(c), decl = arrivalDeclarationStatus(c);
@@ -60,11 +64,11 @@ export function decisionBasis(c, st) {
   // 4 biometrics
   push('BIOMETRICS', bio.refused ? 'FAIL' : bio.bad ? 'FAIL' : 'PASS', bio.refused ? '생체정보 제공 거부 · 제12조의2제2항 불허가 사유 검토 대상' : `${c.bio}${bio.bad ? ' · 여권 명의와 중대한 불일치' : ''}`, ['R-12-2-BIO']);
   // 5 purpose
-  push('PURPOSE_COMPATIBILITY', e['입국목적'] ? toneOf(e['입국목적'][0]) : 'PENDING', e['입국목적'] ? `${e['입국목적'][1]} · ${e['입국목적'][2]} · 신고 목적 "${c.purpose}"` : '목적 확인 필요', ['R-12-3-2-PURPOSE']);
+  push('PURPOSE_COMPATIBILITY', e['입국목적'] ? toneOf(e['입국목적'][0]) : 'PENDING', e['입국목적'] ? `${e['입국목적'][1]} · ${e['입국목적'][2]} · 신고 목적 "${live && !(st.refugeeStep > 0) ? String(c.purpose || '').split('→')[0].trim() : c.purpose}"` : '목적 확인 필요', ['R-12-3-2-PURPOSE']);
   // 6 period of stay / plan
   const plan = e['여행계획'] ? toneOf(e['여행계획'][0]) : 'PENDING'; const funds = e['체재능력'] ? toneOf(e['체재능력'][0]) : 'PENDING';
   const periodStatus = plan === 'FAIL' || funds === 'FAIL' ? 'FAIL' : plan === 'REVIEW' || funds === 'REVIEW' ? 'REVIEW' : plan === 'PENDING' ? 'PENDING' : 'PASS';
-  push('PERIOD_OF_STAY', periodStatus, `신청 체류 ${c.stay} · 귀국 ${c.return}${e['여행계획'] ? ` · 계획 ${e['여행계획'][1]}` : ''}${e['체재능력'] ? ` · 체재능력 ${e['체재능력'][1]}` : ''}`, ['R-12-3-3-PERIOD']);
+  push('PERIOD_OF_STAY', periodStatus, `신청 체류 ${c.stay}${live && !e['여행계획'] ? '' : ` · 귀국 ${c.return}`}${e['여행계획'] ? ` · 계획 ${e['여행계획'][1]}` : ''}${e['체재능력'] ? ` · 체재능력 ${e['체재능력'][1]}` : ''}`, ['R-12-3-3-PERIOD']);
   // 7 restrictions
   const watch = /확인 필요|규제|주의/.test(c.watch || '') ? 'REVIEW' : /없음/.test(c.watch || '') ? (looked('history') ? 'PASS' : 'PENDING') : 'PENDING';
   const restriction = c.resolution?.reason?.startsWith('SIM-A11') && looked('history') ? 'FAIL' : watch;
@@ -74,9 +78,9 @@ export function decisionBasis(c, st) {
   const contact = e['국내관계'] ? toneOf(e['국내관계'][0]) : 'PENDING'; const party = e['동행일정'] ? toneOf(e['동행일정'][0]) : null;
   push('ADDITIONAL_VERIFICATION', party === 'REVIEW' || contact === 'REVIEW' ? 'REVIEW' : contact === 'PENDING' ? 'PENDING' : 'PASS', `${secondary ? '입국재심 진행' : '일반심사'}${e['국내관계'] ? ` · 국내관계 ${e['국내관계'][1]}` : ''}${party ? ' · 동행인 진술 교차확인' : ''}`, ['R-SECONDARY', 'R-13-COND', ...(party ? ['R-PARTY'] : []), 'R-BEHAVIOR']);
   // 9-11 only when relevant
-  if (c.special === 'refugee') push('REFUGEE', (st.refugeeStep || 0) >= 4 ? 'PASS' : (st.refugeeStep || 0) > 0 ? 'REVIEW' : 'PENDING', (st.refugeeStep || 0) >= 4 ? '불회부 결정 · 출입국관리법상 입국심사로 복귀' : (st.refugeeStep || 0) > 0 ? '회부심사 진행 중' : '난민신청 의사 확인 시 난민법 제6조 절차 우선', ['R-REF-6', 'R-REF-NONREF']);
-  if (c.special === 'forgery') push('INVESTIGATION', st.investigation ? 'REVIEW' : st.forensic ? 'REVIEW' : 'PENDING', st.investigation ? '출입국사범 조사 전환 · 통역 확보 · 긴급체포 요건은 개별 확인' : st.forensic ? '감식 결과 확보 · 조사 전환 검토' : '문서 감식 전 단계', ['R-SJP-47', 'R-CPA-200-3']);
-  if (st.stage === 'ENTRY_REFUSED' || c.resolution?.type === 'REFUSE') push('REPATRIATION', st.stage === 'ENTRY_REFUSED' ? 'REVIEW' : 'PENDING', st.stage === 'ENTRY_REFUSED' ? '입국 불허가 → 송환지시 → 출국대기실' : '불허가 결정 시 제76조 송환 절차로 연결', ['R-76-REPAT', 'R-REPORT-MOJ', 'R-INAD-TERM']);
+  if (c.special === 'refugee' && (!live || (st.refugeeStep || 0) > 0)) push('REFUGEE', (st.refugeeStep || 0) >= 4 ? 'PASS' : (st.refugeeStep || 0) > 0 ? 'REVIEW' : 'PENDING', (st.refugeeStep || 0) >= 4 ? '불회부 결정 · 출입국관리법상 입국심사로 복귀' : (st.refugeeStep || 0) > 0 ? '회부심사 진행 중' : '난민신청 의사 확인 시 난민법 제6조 절차 우선', ['R-REF-6', 'R-REF-NONREF']);
+  if (c.special === 'forgery' && (!live || st.forensic || st.investigation)) push('INVESTIGATION', st.investigation ? 'REVIEW' : st.forensic ? 'REVIEW' : 'PENDING', st.investigation ? '출입국사범 조사 전환 · 통역 확보 · 긴급체포 요건은 개별 확인' : st.forensic ? '감식 결과 확보 · 조사 전환 검토' : '문서 감식 전 단계', ['R-SJP-47', 'R-CPA-200-3']);
+  if (st.stage === 'ENTRY_REFUSED' || (!live && c.resolution?.type === 'REFUSE')) push('REPATRIATION', st.stage === 'ENTRY_REFUSED' ? 'REVIEW' : 'PENDING', st.stage === 'ENTRY_REFUSED' ? '입국 불허가 → 송환지시 → 출국대기실' : '불허가 결정 시 제76조 송환 절차로 연결', ['R-76-REPAT', 'R-REPORT-MOJ', 'R-INAD-TERM']);
   return nodes;
 }
 

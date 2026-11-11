@@ -169,6 +169,11 @@ body.mode-case :is(.opsbar, .workload, .ops-toggle, #dailyBtn) { display: none; 
 .debrief li small { display: block; color: var(--text-3); font-size: var(--fs-meta); }
 .debrief .missed li b { color: var(--text); }
 .debrief-lesson { font-size: var(--fs-compact); color: var(--text-2); margin: 0; }
+/* v12 field note: what the case turns on and the misjudgement it tempts. Neutral surface — explanation, not a status. */
+.debrief-field { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent); background: var(--surface); }
+.debrief-field h3 { font-size: var(--fs-label); font-weight: 700; color: var(--text-2); }
+.debrief-field p { margin: 0; font-size: var(--fs-compact); line-height: var(--lh-body); }
+.debrief-field p b { display: block; font-size: var(--fs-meta); font-weight: 700; color: var(--accent-text); }
 .debrief-meta { font-size: var(--fs-label); color: var(--text-3); margin: 0; }
 .daily-result { display: grid; gap: 6px; width: 100%; }
 .daily-result b { font-size: var(--fs-compact); }

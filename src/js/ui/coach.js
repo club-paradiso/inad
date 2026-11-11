@@ -58,7 +58,7 @@ export function currentCoachStep(c = current()) {
     return {
       step: 3,
       target: 'decision',
-      text: '단서 확보: 불일치 또는 결격 사유가 확인되었습니다. 심사대 우측 하단 결정 패널에서 적법한 처분을 검토하십시오.'
+      text: '단서 확보: 확인한 사실이 판단 패널에 기록되었습니다. 미확인 항목을 더 확인할지, 지금 결정할지는 심사관이 정합니다.'
     };
   }
 
