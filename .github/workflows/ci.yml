@@ -35,6 +35,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Browsers and their system libraries come preinstalled in the Playwright image, so no step depends on
+    # the runner's apt mirror (2026-11-11: "Temporary failure resolving 'azure.archive.ubuntu.com'" killed every
+    # `playwright install --with-deps`). Keep the tag equal to @playwright/test in package-lock.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,12 +56,6 @@ jobs:
       - name: Root index.html must equal the fresh build (no stale mirror)
         run: git diff --exit-code -- index.html
       - run: npm run test:integrity
-      # --with-deps installs system packages through apt. When the runner's Ubuntu mirror is unreachable
-      # (seen 2026-11-11: "Temporary failure resolving 'azure.archive.ubuntu.com'"), fall back to the browser
-      # alone: ubuntu-latest already carries Chromium's runtime libraries; only optional font packages are lost.
-      # The tests below still have to pass, so this cannot turn a real failure green.
-      - name: Install Chromium (system packages when apt is reachable)
-        run: timeout 10m npx playwright install --with-deps chromium || { echo "::warning::apt unavailable; installing Chromium without system packages"; npx playwright install chromium; }
       - run: npm run test:e2e
       - name: Legacy baseline parity (v6.1 behaviour)
         run: INAD_TARGET=legacy npm run test:e2e
@@ -70,9 +72,13 @@ jobs:
     # Runs the complete overseas case flow, persistence, country switching and mobile layout,
     # and (v11) plays every authored CA/GB/NZ case through the UI.
     runs-on: ubuntu-latest
-    # Playwright --with-deps can spend >19 minutes installing Firefox system packages
-    # on a cold GitHub runner; keep enough time for the actual browser tests.
+    # Runs in the Playwright image (see verify); no browser or system-package install step.
     timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      HOME: /root
     strategy:
       fail-fast: false
       matrix:
@@ -85,8 +91,6 @@ jobs:
       - run: npm run build
       - name: Verify generated release mirror
         run: git diff --exit-code -- index.html
-      - name: Install browser (system packages when apt is reachable)
-        run: timeout 15m npx playwright install --with-deps ${{ matrix.browser }} || { echo "::warning::apt unavailable; installing ${{ matrix.browser }} without system packages"; npx playwright install ${{ matrix.browser }}; }
       - name: Cross-browser ATLAS critical journeys
         env:
           INAD_BROWSER: ${{ matrix.browser }}
