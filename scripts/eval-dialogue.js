@@ -7,7 +7,7 @@
 //                                                 each failure mode: provider error rate, deterministic-fallback
 //                                                 success (evidence identical to the no-model run), pipeline latency.
 //                                                 The mock is not a model; its numbers are never model results.
-//   INAD_LLM_BASE_URL=… INAD_LLM_MODEL=… [INAD_LLM_API_KEY=… INAD_NPC_PROVIDER=… INAD_LLM_DISABLE_THINKING=1]
+//   INAD_LLM_BASE_URL=… [INAD_LLM_MODEL=… (default: api/_npc/config.js DEFAULT_MODEL) INAD_LLM_API_KEY=… INAD_NPC_PROVIDER=… INAD_LLM_DISABLE_THINKING=1]
 //   node scripts/eval-dialogue.js --provider      + a LIVE model: model-alone and hybrid accuracy, wrong-question
 //                                                 routes, invalid outputs, injection resistance, acting validity,
 //                                                 latency p50/p95
@@ -169,7 +169,7 @@ export async function runEval({ provider = false, mock = false, accuracyTimeoutM
   }
 
   const env = process.env;
-  if (provider && !(env.INAD_LLM_BASE_URL && env.INAD_LLM_MODEL)) throw new Error('--provider needs INAD_LLM_BASE_URL and INAD_LLM_MODEL');
+  if (provider && !env.INAD_LLM_BASE_URL) throw new Error('--provider needs INAD_LLM_BASE_URL (INAD_LLM_MODEL defaults to the configured default model)');
   if (provider) {
     resetNpcState(); const lat = []; const errs = {};
     const model = [];
@@ -187,7 +187,7 @@ export async function runEval({ provider = false, mock = false, accuracyTimeoutM
     // model alone; `reachable` scores only rows whose expected answer is an open question or null.
     const reachable = (x) => { const e = expectedId(x.row.expect); if (e === null) return true; const q = caseOf(x.row.caseId).questions.find((qq) => qq.id === e); return !!q && !(q.requires || []).length; };
     out.model = { tuned: score(model.filter((x) => x.row.set === 'tuned')), heldout: score(model.filter((x) => x.row.set === 'heldout')),
-      reachable: { tuned: score(model.filter((x) => x.row.set === 'tuned' && reachable(x))), heldout: score(model.filter((x) => x.row.set === 'heldout' && reachable(x))) }, errors: errs, invalidOrError: Object.values(errs).reduce((a, b) => a + b, 0), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: env.INAD_LLM_MODEL };
+      reachable: { tuned: score(model.filter((x) => x.row.set === 'tuned' && reachable(x))), heldout: score(model.filter((x) => x.row.set === 'heldout' && reachable(x))) }, errors: errs, invalidOrError: Object.values(errs).reduce((a, b) => a + b, 0), latencyMs: { p50: quant(lat, 0.5), p95: quant(lat, 0.95), max: Math.max(...lat) }, model: resolveNpcConfig(env).model };
     const hyb = await hybridOverCorpus(() => serverClassifier(env, [], {}));
     out.hybrid = { heldout2026: { n: hyb.n, ok: hyb.ok, wrong: hyb.wrong } };
     const inj = [];
@@ -240,5 +240,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(`errors/invalid ${res.model.invalidOrError} ${JSON.stringify(res.model.errors)} · latency ms p50 ${res.model.latencyMs.p50} · p95 ${res.model.latencyMs.p95} · max ${res.model.latencyMs.max}`);
     console.log(`injection resistance ${res.injection.ok}/${res.injection.n} (rows with a provider error count as not resistant)`);
     if (res.acting) console.log(`acting validity ${res.acting.valid}/${res.acting.n} ${JSON.stringify(res.acting.errors)} · latency ms p50 ${res.acting.latencyMs.p50} · p95 ${res.acting.latencyMs.p95}`);
-  } else console.log('\n(no live provider run: set INAD_LLM_BASE_URL / INAD_LLM_MODEL and pass --provider — live model evaluation PENDING)');
+  } else console.log('\n(no live provider run: set INAD_LLM_BASE_URL (and optionally INAD_LLM_MODEL) and pass --provider — live model evaluation PENDING)');
 }

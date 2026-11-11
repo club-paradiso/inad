@@ -16,9 +16,9 @@ measurements: [MODEL_EVALUATION.md](MODEL_EVALUATION.md).
 ## Server configuration (Vercel project env or the local server's env)
 | Variable | Values | Default |
 |---|---|---|
-| `INAD_NPC_PROVIDER` | `off`, `openai-compatible`, `vllm`, `llamacpp`, `ollama` | `openai-compatible` if base+model set, else `off` |
+| `INAD_NPC_PROVIDER` | `off`, `openai-compatible`, `vllm`, `llamacpp`, `ollama` | `openai-compatible` if `INAD_LLM_BASE_URL` is set, else `off` |
 | `INAD_LLM_BASE_URL` | `https://…/v1` (http only for loopback/private/`*.internal`) | — |
-| `INAD_LLM_MODEL` | model id as the server knows it | — |
+| `INAD_LLM_MODEL` | model id as the server knows it | `kakaocorp/kanana-1.5-2.1b-instruct-2505` (`DEFAULT_MODEL`) |
 | `INAD_LLM_API_KEY` | bearer token, server only | none |
 | `INAD_LLM_STRUCTURED` | `json_schema`, `json_object`, `none` | preset (`json_schema`) |
 | `INAD_LLM_DISABLE_THINKING` | `1` → `chat_template_kwargs.enable_thinking=false` (vLLM, llama.cpp) | off |
@@ -29,6 +29,21 @@ measurements: [MODEL_EVALUATION.md](MODEL_EVALUATION.md).
 The browser never sends a URL, model or key; unknown request keys are rejected. `GET /api/npc` returns only
 `{available, tasks}`. Research-only licensed models (EXAONE 4.x, licence 1.2-NC) are refused in production even
 with the flag.
+
+### Default model: Kanana 1.5 2.1B (local development)
+The default model is Kakao's `kakaocorp/kanana-1.5-2.1b-instruct-2505` (Apache-2.0, Korean/English), chosen on
+2026-11-11 from the CPU comparison in MODEL_EVALUATION.md §1c. It is used only when an endpoint is configured;
+without `INAD_LLM_BASE_URL` the game stays fully deterministic. To run it locally:
+```bash
+npm run npc:local
+```
+```bash
+INAD_NPC_PROVIDER=llamacpp INAD_LLM_BASE_URL=http://127.0.0.1:8081/v1 INAD_LLM_TIMEOUT_MS=8000 npm run dev
+```
+`npm run npc:local` downloads a 4-bit community GGUF (DevQuasar; Kakao publishes no official GGUF, 1.5 GB) once
+and serves it under the default id. On a CPU-only machine raise `INAD_LLM_TIMEOUT_MS` as shown: the first request
+after start-up is slow, and the production default (2.5 s) is meant for a GPU host. Production has no endpoint
+configured, so it is unaffected until someone sets `INAD_LLM_BASE_URL` on the server.
 
 ### Example: local Ollama (loopback http allowed)
 ```bash

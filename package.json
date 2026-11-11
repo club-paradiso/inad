@@ -15,8 +15,7 @@
     "lint": "node scripts/lint.js",
     "qa": "npm run lint && npm test",
     "eval:dialogue": "node scripts/eval-dialogue.js",
-    "dev:cf": "npm run build && wrangler dev",
-    "deploy:cf": "npm run build && wrangler deploy"
+    "npc:local": "bash scripts/npc-local-kanana.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

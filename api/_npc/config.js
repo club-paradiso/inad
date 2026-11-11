@@ -1,9 +1,9 @@
 // NPC Intelligence Layer — trusted server configuration (environment only; never from the browser).
 //
 //   INAD_NPC_PROVIDER        off | openai-compatible | vllm | llamacpp | ollama
-//                            (default: openai-compatible when INAD_LLM_BASE_URL and INAD_LLM_MODEL are set, else off)
+//                            (default: openai-compatible when INAD_LLM_BASE_URL is set, else off — no endpoint, no model)
 //   INAD_LLM_BASE_URL        e.g. https://gpu.example.internal/v1   (http only for loopback/private hosts)
-//   INAD_LLM_MODEL           e.g. Qwen/Qwen3.5-9B
+//   INAD_LLM_MODEL           default kakaocorp/kanana-1.5-2.1b-instruct-2505 (DEFAULT_MODEL); the id the server serves
 //   INAD_LLM_API_KEY         optional bearer token (server-side only)
 //   INAD_LLM_STRUCTURED      json_schema (default) | json_object | none   — how strictly the server constrains output;
 //                            every mode is re-validated locally (engines/npc-contract.js)
@@ -14,6 +14,12 @@
 //
 // Folder name starts with "_" so Vercel does not deploy it as its own function.
 import { NPC_TASKS } from '../../src/js/engines/npc-contract.js';
+
+// Default model (product decision 2026-11-11): Kakao Kanana 1.5 2.1B Instruct, Apache-2.0, Korean/English.
+// Chosen from the CPU comparison in docs/npc-intelligence/MODEL_EVALUATION.md §1c (fastest valid candidate, 5/5
+// injection, 24/24 acting). Used only when an endpoint is configured; a server must serve it under this id
+// (vLLM does by default; llama.cpp via --model_alias; see scripts/npc-local-kanana.sh).
+export const DEFAULT_MODEL = 'kakaocorp/kanana-1.5-2.1b-instruct-2505';
 
 export const PRESETS = {
   'openai-compatible': { structured: 'json_schema', thinkingKwargs: true },
@@ -29,7 +35,7 @@ const LOOPBACK = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|10\.\d+\.\d+\.\d+|192\.
 
 export function resolveNpcConfig(env = process.env) {
   const base = String(env.INAD_LLM_BASE_URL || '').trim().replace(/\/+$/, '');
-  const model = String(env.INAD_LLM_MODEL || '').trim();
+  const model = String(env.INAD_LLM_MODEL || '').trim() || (base ? DEFAULT_MODEL : '');
   const requested = String(env.INAD_NPC_PROVIDER || '').trim().toLowerCase();
   const provider = requested || (base && model ? 'openai-compatible' : 'off');
   if (provider === 'off' || provider === 'deterministic') return { provider: 'off', refused: null };
