@@ -45,6 +45,8 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v4
+      # The workspace is owned by the runner user, not the container's root: let git treat it as a repository.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
@@ -85,6 +87,8 @@ jobs:
         browser: [firefox, webkit]
     steps:
       - uses: actions/checkout@v4
+      # The workspace is owned by the runner user, not the container's root: let git treat it as a repository.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
