@@ -108,6 +108,7 @@ export async function buildModularApp({ minify = true } = {}) {
   cleanHtml = cleanHtml.replace(/<!doctype html>\s*/i, () => '<!doctype html>\n' + banner);
 
   fs.writeFileSync(path.join(dist, 'index.html'), cleanHtml);
+  fs.copyFileSync(path.join(root, 'deploy/cloudflare/_headers'), path.join(dist, '_headers')); // Cloudflare static-asset headers
   fs.writeFileSync(path.join(root, 'index.html'), cleanHtml); // repository root mirror
 
   // 6. Calculate sizes and metrics
