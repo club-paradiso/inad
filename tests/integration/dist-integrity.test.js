@@ -155,6 +155,54 @@ test('vercel.json specifies valid static deployment configuration and caching co
   assert.ok(portraitCache.value.includes('stale-while-revalidate'), 'portraits support stale-while-revalidate');
 });
 
+// Cloudflare: dist/_headers (copied from deploy/cloudflare/_headers) must carry the same security and caching contract
+// as vercel.json, and must not let two matching rules stack Cache-Control (Cloudflare concatenates duplicate headers).
+function parseHeadersFile(text) {
+  const rules = []; let cur = null;
+  for (const line of text.split('\n')) {
+    if (!line.trim() || line.trim().startsWith('#')) continue;
+    if (!/^\s/.test(line)) { cur = { path: line.trim(), headers: {} }; rules.push(cur); continue; }
+    const i = line.indexOf(':'); cur.headers[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim();
+  }
+  return rules;
+}
+const globToRegExp = (g) => new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+
+test('cloudflare dist/_headers mirrors the vercel.json security and caching contract', () => {
+  const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+  const text = fs.readFileSync(path.join(distDir, '_headers'), 'utf8');
+  assert.equal(text, fs.readFileSync(path.join(root, 'deploy/cloudflare/_headers'), 'utf8'), 'build copies the source _headers verbatim');
+  const rules = parseHeadersFile(text);
+  const all = rules.find((r) => r.path === '/*');
+  assert.ok(all, 'wildcard rule exists');
+  const vAll = vercel.headers.find((h) => h.source === '/(.*)').headers;
+  for (const key of ['Content-Security-Policy', 'X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy']) {
+    assert.equal(all.headers[key.toLowerCase()], vAll.find((kv) => kv.key === key).value, `${key} identical to vercel.json`);
+  }
+  assert.ok(!('cache-control' in all.headers), 'wildcard rule must not set Cache-Control (it would stack with specific rules)');
+
+  // Concrete files from the build, each matched by the rules, must resolve to exactly one Cache-Control rule.
+  const assets = fs.readdirSync(path.join(distDir, 'assets')).filter((f) => f !== 'portraits').map((f) => `/assets/${f}`);
+  const portrait = `/assets/portraits/${fs.readdirSync(path.join(distDir, 'assets/portraits'))[0]}`;
+  for (const url of [...assets, portrait, '/', '/index.html']) {
+    const matching = rules.filter((r) => r.path !== '/*' && 'cache-control' in r.headers && globToRegExp(r.path).test(url));
+    assert.ok(matching.length <= 1, `${url}: at most one Cache-Control rule matches (got ${matching.map((m) => m.path)})`);
+    const cc = matching[0]?.headers['cache-control'] || 'public, max-age=0, must-revalidate'; // platform default for unlisted paths
+    if (/\/assets\/(app|style|atlas-[a-z]+)\.[a-f0-9]+\.(js|css)$/.test(url)) assert.match(cc, /max-age=31536000, immutable/, `${url} hashed bundle is immutable`);
+    else if (url.startsWith('/assets/portraits/')) { assert.match(cc, /stale-while-revalidate/); assert.ok(!cc.includes('immutable'), 'unhashed portraits are not immutable'); }
+    else assert.match(cc, /must-revalidate/, `${url} revalidates`);
+  }
+});
+
+test('wrangler.jsonc: assets from dist, only /api/* runs the Worker, Node compat enabled for the shared handlers', () => {
+  const cfg = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, ''));
+  assert.equal(cfg.assets.directory, './dist');
+  assert.deepEqual(cfg.assets.run_worker_first, ['/api/*']);
+  assert.ok(cfg.compatibility_flags.includes('nodejs_compat'));
+  assert.equal(cfg.main, 'worker/index.js');
+  assert.ok(fs.existsSync(path.join(root, cfg.main)));
+});
+
 test('save bundle schema contract: INAD_SAVE_BUNDLE schema is strictly schema 1', () => {
   const legalSrc = fs.readFileSync(path.join(root, 'src/data/legal-baseline.js'), 'utf8');
   assert.match(legalSrc, /saveSchema:\s*1\b/, 'legal baseline pins saveSchema to 1');

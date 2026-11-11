@@ -14,12 +14,15 @@
     "test:e2e:legacy": "INAD_TARGET=legacy playwright test",
     "lint": "node scripts/lint.js",
     "qa": "npm run lint && npm test",
-    "eval:dialogue": "node scripts/eval-dialogue.js"
+    "eval:dialogue": "node scripts/eval-dialogue.js",
+    "dev:cf": "npm run build && wrangler dev",
+    "deploy:cf": "npm run build && wrangler deploy"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "acorn": "^8.19.0",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "wrangler": "^4.160.0"
   },
   "engines": {
     "node": ">=20"

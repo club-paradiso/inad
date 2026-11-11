@@ -6,7 +6,7 @@
 대한민국 인천공항 제2여객터미널을 모티브로 한 **가상** 입국심사관 시뮬레이션. 실제 법무부 내부 시스템·비공개 심사기준·규제코드를 재현하지 않습니다.
 - 런타임: HTML + CSS + Vanilla JS. 프로덕션 빌드는 단일 HTML 파일 제약을 영구 퇴역시키고, 경량 HTML 진입점(`dist/index.html`), 콘텐츠 해시 기반의 독립 CSS 및 ESM 자바스크립트 번들(`dist/assets/`), 그리고 독립 정적 WebP 초상화 파일들(`dist/assets/portraits/*.webp`)로 구성되는 모듈러 정적 웹 애플리케이션으로 배포됩니다.
 - 단일 파일 HTML 배포 제약은 초기 프로토타입 단계의 임시 제약이었으며, 프로덕션 웹 아키텍처 현대화(PR #26)를 통해 공식 퇴역했습니다. 향후 오프라인 지원이 필요한 경우 구식 모놀리식 단일 파일로 회귀하지 않고 PWA / Service Worker 아키텍처를 별도의 제품 의사결정으로 검토·도입합니다(사전 테스트 및 승인 없는 임의 도입 금지).
-- 프레임워크·jQuery·Tailwind·외부 CDN·외부 폰트·외부 이미지·외부 오디오 금지. 브라우저의 외부-origin 네트워크 요청 금지. 예외는 둘뿐입니다: `src/js/services/airport-live.js`가 same-origin `/api/airport-load`를 호출하여 공식 공개 운항정보의 요약값을 받는 흐름, 그리고 (v10, 2026-11 NPC Intelligence Layer) `src/js/services/npc-client.js`가 same-origin `/api/npc`에 자유 질문의 분류(열린 질문 ID 하나 또는 null)와 연기 선택(닫힌 열거값)을 요청하는 선택형 흐름. 공공데이터 인증키·추론 서버 설정과 외부 API 호출은 Vercel 서버 함수(`api/airport-load.js`, `api/npc.js`) 안에서만 처리합니다.
+- 프레임워크·jQuery·Tailwind·외부 CDN·외부 폰트·외부 이미지·외부 오디오 금지. 브라우저의 외부-origin 네트워크 요청 금지. 예외는 둘뿐입니다: `src/js/services/airport-live.js`가 same-origin `/api/airport-load`를 호출하여 공식 공개 운항정보의 요약값을 받는 흐름, 그리고 (v10, 2026-11 NPC Intelligence Layer) `src/js/services/npc-client.js`가 same-origin `/api/npc`에 자유 질문의 분류(열린 질문 ID 하나 또는 null)와 연기 선택(닫힌 열거값)을 요청하는 선택형 흐름. 공공데이터 인증키·추론 서버 설정과 외부 API 호출은 서버 함수(`api/airport-load.js`, `api/npc.js`) 안에서만 처리합니다. 배포 대상은 Cloudflare Workers이며 `worker/index.js`가 두 함수를 어댑터(`worker/node-compat.js`)로 호출합니다(Vercel 배포는 컷오버 후 롤백용, 절차는 `docs/cloudflare-migration.md`).
 - 기본 UI 언어는 한국어이며 사용자가 선택할 수 있는 영어 UI 모드를 제공합니다. UI 로컬라이제이션은 `src/js/services/i18n.js`에서 관리하고 선택 언어는 `inad-locale`에 저장합니다. 인터뷰 언어 선택과 UI 언어 선택은 별개입니다.
 - 소스 오브 트루스는 `src/`. `dist/` 및 루트 `index.html`은 **생성 파일**이며 직접 편집 금지 (`npm run build`).
 - v6.1 원본(프로덕션에서 복구)은 `legacy/v6.1/`에 동결. 참조용이며 수정 금지.
@@ -60,6 +60,7 @@
 ## 명령
 - `npm run dev` — `src/`를 http://127.0.0.1:4175 로 서빙(네이티브 ESM).
 - `npm run build` — `dist/` 모듈러 정적 웹 앱 및 루트 `index.html` 미러 생성.
+- `npm run dev:cf` / `npm run deploy:cf` — 빌드 후 Cloudflare Workers 로컬 실행(workerd) / 배포(`wrangler.jsonc`, 헤더는 `deploy/cloudflare/_headers` → `dist/_headers`).
 - `npm run lint` — 문법·엔진 DOM 접근·외부 URL·승인되지 않은 네트워크 호출·console.log 검사.
 - `npm run test:unit` — 엔진 단위·불변식 테스트(node:test).
 - `npm run test:integrity` — 모듈러 빌드 산출물(해시 에셋, 105개 독립 초상화, 성능 예산, 보안 경계) 정적 검사.
