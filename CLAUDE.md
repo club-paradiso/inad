@@ -66,6 +66,7 @@
 - `npm run test:e2e` — Playwright(dist 기준). `INAD_TARGET=legacy|src`로 대상 전환. `tests/e2e/adaptive.spec.js`는 320·390·430·844×390·768·1024·1366·1440 뷰포트 전체 흐름·가로 오버플로·터치 크기(가로·세로 44px)를 검사(legacy에서는 자동 생략). `INAD_CHROMIUM_PATH`(설치된 Chromium), `INAD_PORT`(포트) 지원.
 - `npm run eval:dialogue` — 의도 해석 평가(결정적; `--provider`와 `INAD_LLM_*` 환경변수로 모델·하이브리드·주입 내성·지연 측정).
 - `node scripts/measure-performance.js`, `node scripts/playtest-personas.js` — v10 성능 측정·페르소나 플레이테스트(빌드 후).
+- `npm run npc:local` — 기본 NPC 모델(Kanana 1.5 2.1B, `api/_npc/config.js DEFAULT_MODEL`)을 로컬 OpenAI 호환 서버로 실행(개발용, llama-cpp-python 필요). 운영은 `INAD_LLM_BASE_URL`이 없으면 결정적 경로만 쓴다.
 - `npm test` / `npm run qa` — 전체.
 
 ## 금지사항

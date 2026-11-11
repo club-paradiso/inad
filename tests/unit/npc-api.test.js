@@ -190,6 +190,11 @@ test('every case: the outbound audit passes for real menus and blocks confidenti
 
 test('provider selection comes from server configuration only, with licence and transport guards', () => {
   assert.equal(resolveNpcConfig({}).provider, 'off');
+  // default model: Kanana 1.5 2.1B, used only once an endpoint is configured (no endpoint → still off)
+  assert.equal(resolveNpcConfig({ INAD_LLM_MODEL: '' }).provider, 'off');
+  const dflt = resolveNpcConfig({ INAD_LLM_BASE_URL: 'https://llm.test/v1' });
+  assert.equal(dflt.provider, 'openai-compatible'); assert.equal(dflt.model, 'kakaocorp/kanana-1.5-2.1b-instruct-2505');
+  assert.equal(resolveNpcConfig({ INAD_LLM_BASE_URL: 'https://llm.test/v1', INAD_LLM_MODEL: 'other/model' }).model, 'other/model', 'an explicit model still wins');
   assert.equal(resolveNpcConfig(ENV).provider, 'openai-compatible');
   assert.equal(resolveNpcConfig({ ...ENV, INAD_NPC_PROVIDER: 'vllm' }).provider, 'vllm');
   assert.equal(resolveNpcConfig({ ...ENV, INAD_NPC_PROVIDER: 'nope' }).refused, 'unknown-provider');
