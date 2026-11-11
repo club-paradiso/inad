@@ -164,8 +164,6 @@ const EXACT = new Map([
   ['금일 입국심사 브리핑', "Today's immigration briefing"],
   ['현재 대기', 'Currently waiting'],
   ['예정 현장 이벤트', 'Scheduled field events'],
-  ['평가 방식', 'Scoring'],
-  ['정확성 + 절차 + 효율 + 비례성', 'Accuracy + procedure + efficiency + proportionality'],
   ['제1근무조 시작', 'Start Shift 1'],
   ['접근성·조작 설정', 'Accessibility & controls'],
   ['화면 표시', 'Display'],

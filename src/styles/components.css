@@ -238,6 +238,8 @@
 .act.clear { --tone: var(--success); --tone-soft: var(--success-soft); --tone-text: var(--success-text); }
 .act.secondary { --tone: var(--warning); --tone-soft: var(--warning-soft); --tone-text: var(--warning-text); }
 .act.refuse { --tone: var(--danger); --tone-soft: var(--danger-soft); --tone-text: var(--danger-text); }
+/* three decisions at the primary desk: the refusal takes the row the hidden criminal-procedure entry left */
+.actions:has(#sjpBtn[hidden]) #refuseBtn { grid-column: 1 / -1; }
 .act.sjp { --tone: var(--sjp); --tone-soft: var(--sjp-soft); --tone-text: var(--sjp); }
 /* Outside the decision desk: a continuation is the one accent primary, a destructive confirmation is danger.
    The verdict tones (clear / secondary / refuse / sjp) stay reserved for legal decisions. */
@@ -348,6 +350,7 @@
 /* ---- short landscape phones: the decision desk takes one row so the assessment keeps room ---- */
 @media (max-height: 500px) and (max-width: 1023px) {
   .actions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px 12px calc(6px + var(--safe-bottom)); }
+  .actions:has(#sjpBtn[hidden]) #refuseBtn { grid-column: span 2; }
   .act { min-height: 48px; padding: 4px 8px 4px 8px; }
   .act small { display: none; }
   .act.armed > .arm-hint { font-size: var(--fs-meta); }

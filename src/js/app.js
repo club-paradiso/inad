@@ -286,7 +286,7 @@ function bindKeyboard() {
     if (!byId('startOverlay').classList.contains('hide') || !current()) return;
     // Workspace shortcuts would act on controls hidden behind the procedure screen.
     if (isProcedureOpen()) return;
-    if (e.altKey && !e.ctrlKey && !e.metaKey) { const map = { a: '#clearBtn', r: '#secondaryBtn', x: '#refuseBtn', j: '#sjpBtn' }; if (map[k]) { e.preventDefault(); const b = $(map[k]); if (b && !b.disabled) { b.focus(); b.click(); } return; } }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) { const map = { a: '#clearBtn', r: '#secondaryBtn', x: '#refuseBtn', j: '#sjpBtn' }; if (map[k]) { e.preventDefault(); const b = $(map[k]); if (b && !b.disabled && !b.hidden) { b.focus(); b.click(); } return; } }
     if (!plain) return;
     if (/^Digit[1-6]$/.test(e.code)) { e.preventDefault(); showTask('interview'); chooseQuestionCategory(Number(e.code.slice(-1)) - 1, announceA11y); return; }
     const direct = { k: '#langKo', e: '#langEn', i: '#langInterp', h: '[data-lu="history"]', v: '[data-lu="visa"]', p: '[data-lu="pnr"]', c: '[data-lu="contact"]', g: '[data-lu="party"]', o: '[data-lu="public"]' };

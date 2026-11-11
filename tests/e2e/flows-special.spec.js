@@ -73,11 +73,14 @@ test.describe('특수절차', () => {
     await H.startShift(page);
     await H.jumpTo(page, idx);
     await expect(page.locator('#entry .bio-score')).toContainText('불일치');
-    // SJP before secondary is a procedural error
-    await page.locator('#sjpBtn').click();
+    // v13: the criminal-procedure entry is not offered at the primary desk (the engine rule that it needs a
+    // secondary referral is covered by tests/unit/legal-engine.test.js); it appears once the case is referred.
+    await expect(page.locator('#sjpBtn')).toBeHidden();
+    await page.keyboard.press('Alt+j');
     let st = await H.getState(page);
-    expect(st.strikes).toBe(1);
+    expect(st.strikes).toBe(0); expect(st.stage).toBe('PRIMARY');
     await page.locator('#secondaryBtn').click();
+    await expect(page.locator('#sjpBtn')).not.toHaveAttribute('hidden', /.*/);
     await H.procAct(page, 'sjp');
     await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'sjp');
     await H.procAct(page, 'forensic');

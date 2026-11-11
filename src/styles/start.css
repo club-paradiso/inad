@@ -131,3 +131,10 @@
 }
 
 .save-status.warn { color: var(--warning-text); font-weight: 600; }
+
+/* ---- 정규 근무 배치 (v13): one choice instead of five option grids ---- */
+.posting-box { display: grid; gap: 6px; }
+.posting-box .option-note { margin: 0; font-size: var(--fs-meta); color: var(--text-2); }
+.posting-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.brief-detail { margin: 8px 0 12px; }
+.brief-detail > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: var(--fs-label); color: var(--text-2); }
