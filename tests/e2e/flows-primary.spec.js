@@ -43,7 +43,7 @@ test.describe('일반 입국심사 흐름', () => {
     await page.locator('#clearBtn').click();
     if (process.env.INAD_TARGET === 'legacy') {
       // Frozen v6.1 parity: the old guard still blocks the decision and records a supervision strike.
-      await expect(page.locator('#toast')).toContainText('감찰 경고');
+      await expect(page.locator('#toast')).toContainText('업무 지적');
       const st = await H.getState(page);
       expect(st.strikes).toBe(1);
       expect(st.ended).toBe(false);

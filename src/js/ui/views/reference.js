@@ -40,7 +40,7 @@ export function showHelp({ onTutorial, onRecords, onProfile, onChallenge }) {
   byId('helpRules').onclick = openReference; byId('helpRecords').onclick = onRecords; byId('helpProfile').onclick = onProfile; byId('helpChallenge').onclick = onChallenge;
   byId('helpGuidance').onclick = () => toast('안내 모드는 새 근무 시작화면에서 변경할 수 있습니다.');
 }
-export function showGuidedGuard(message) { showModal('초보 심사관 보호 힌트', `<div class="guided-guard"><b>아직 결론을 내리기 이릅니다.</b><span>${esc(message)}</span></div><p class="modal-note">첫 승객에서 한 번만 제공되는 실수 방지 안내입니다. 점수·감찰에는 반영되지 않았습니다. 사건기록과 입국요건 검토판을 다시 확인하십시오.</p>`); }
+export function showGuidedGuard(message) { showModal('초보 심사관 보호 힌트', `<div class="guided-guard"><b>아직 결론을 내리기 이릅니다.</b><span>${esc(message)}</span></div><p class="modal-note">첫 승객에서 한 번만 제공되는 실수 방지 안내입니다. 점수·지적에는 반영되지 않았습니다. 사건기록과 입국요건 검토판을 다시 확인하십시오.</p>`); }
 
 // ---- Tutorial (guided mode spotlight) ---------------------------------------------------------
 export const tutorial = {

@@ -4,7 +4,7 @@ export const ACHIEVEMENTS = [
 {id:'first_shift',icon:'▣',name:'첫 근무 완료',desc:'근무 1회를 끝까지 완료',test:c=>c.completedShifts>=1},
 {id:'first_s',icon:'S',name:'최우수 평정',desc:'S등급을 처음 획득',test:c=>c.sGrades>=1},
 {id:'realistic_s',icon:'▲',name:'실전의 정석',desc:'실전 난이도에서 S등급 획득',test:c=>c.realisticS>=1},
-{id:'clean_shift',icon:'✓',name:'무감찰 근무',desc:'감찰성 오류 없이 한 근무 완료',test:c=>c.cleanShifts>=1},
+{id:'clean_shift',icon:'✓',name:'지적 없는 근무',desc:'지적 사항 없이 한 근무 완료',test:c=>c.cleanShifts>=1},
 {id:'clean_100',icon:'100',name:'무오판 100명',desc:'오류 없이 처리한 승객 누적 100명',test:c=>c.cleanPassengers>=100},
 {id:'secondary_10',icon:'↺',name:'재심은 결론이 아니다',desc:'재심 후 정상 입국허가 10건',test:c=>c.secondaryClears>=10},
 {id:'proportion_3',icon:'≋',name:'비례성 유지',desc:'과잉재심 0회 근무를 3회 완료',test:c=>c.zeroOverSecondaryShifts>=3},

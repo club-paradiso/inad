@@ -148,7 +148,7 @@ function finishFlow(label) {
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNote(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') {
-    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() });
+    showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onContinue: () => quickShiftFlow(true, false, true), onExit: () => location.reload() });
     return;
   }
   if (state.sessionMode === 'daily') {
@@ -206,14 +206,17 @@ function liveInterviewFlow(retry = false) {
 // fifteen-minute mode is worth playing again. `again` replays the roster just played; `fresh` draws a new one.
 let quickPlan = null;
 function quickShiftCompletedBefore() { try { const m = loadMeta(); return (m.sessions || []).some((x) => x.mode === 'quick'); } catch (e) { return false; } }
-function quickShiftFlow(retry = false, fresh = false) {
+function quickShiftFlow(retry = false, fresh = false, afterLive = false) {
   if (state.started && !retry) return;
-  const rotating = fresh || (retry ? !!quickPlan?.rotating : quickShiftCompletedBefore());
+  if (afterLive) quickPlan = null;
+  const rotating = fresh || (retry && quickPlan ? !!quickPlan.rotating : quickShiftCompletedBefore());
   const seed = retry && !fresh && quickPlan ? quickPlan.seed : rotating ? newSessionSeed() : LIVE_CASE.seed;
   Object.assign(state, { sessionMode: 'quick', difficulty: rotating ? 'standard' : 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: rotating ? 'expert' : 'guided' });
   regenerate(seed); state.eventSchedule = [];
-  if (!rosterSession(rotating ? quickRosterFor(seed) : QUICK_ROSTER)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
-  quickPlan = { seed, rotating };
+  // Coming straight from the first interview, the introductory roster does not bring the same passenger back.
+  const intro = afterLive || quickPlan?.afterLive ? QUICK_ROSTER.map((e) => (e === LIVE_CASE.caseId ? 'ICN-S2-007' : e)) : QUICK_ROSTER;
+  if (!rosterSession(rotating ? quickRosterFor(seed) : intro)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  quickPlan = { seed, rotating, afterLive: afterLive || (!!quickPlan?.afterLive && retry && !fresh) };
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'quick_retry' : 'quick_start' });
   showAnnouncement('짧은 근무', rotating ? `새로 배치된 승객 ${session.queue.length}명을 심사합니다. 안내 없이 진행합니다.` : `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();

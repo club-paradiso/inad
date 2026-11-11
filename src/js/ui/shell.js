@@ -41,7 +41,7 @@ export function renderChallengeHud() { const el = byId('challengeHud'), tx = byI
 export function renderCampaignHud() { const hud = byId('campaignHud'), txt = byId('campaignHudText'); if (!hud) return; const id = state.campaignId || 'none'; if (id === 'none') { hud.hidden = true; return; } hud.hidden = false; const c = currentCampaignSave(), day = c?.day ?? state.campaignDay ?? 0; txt.textContent = `${campaignCfg(id).name} · DAY ${day + 1}/3`; }
 export function renderStoryStrip() { const el = byId('storyCaseStrip'); if (!el) return; const c = current(); if (state.campaignId === 'none' || !storyIsAnchor(c)) { el.classList.remove('on'); el.hidden = true; return; } const arc = campaignArc(), d = storyChapterDef(), st = storyStatusInfo(); el.hidden = false; el.classList.add('on'); byId('storyCaseTitle').textContent = `연계사건 · ${d.title}`; byId('storyCaseText').textContent = `${arc.title} · ${storyPrevContext()}`; byId('storyCaseStatus').textContent = st[1]; }
 
-// Strike count as text (감찰 n/limit) plus one dot per allowed strike of the active difficulty (6 · 4 · 3).
+// Strike count as text (지적 n/limit) plus one dot per allowed strike of the active difficulty (6 · 4 · 3).
 export function renderStrikes() {
   const limit = penaltyPolicy().strikeLimit, n = Math.min(state.strikes, limit);
   $$('.strike-count').forEach((e) => { e.textContent = `${n}/${limit}`; }); $$('.strikes').forEach((e) => e.classList.toggle('warn', n > 0));

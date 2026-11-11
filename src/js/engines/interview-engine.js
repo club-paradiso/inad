@@ -66,6 +66,15 @@ function heard(raw, source, rec, extra = {}) {
 
 // The single dispatcher. `questionId` is given by buttons; `text` by typing or speech. Returns a plain result the
 // UI turns into avatar acting and focus; every visible line is already in state.logs.
+// 안내 모드 coaching for an answer that is not disclosable yet: name the kind of step that opens it (an earlier
+// question or a record lookup), never the answer. Without coaching the passenger's evasive line stands alone.
+export function withheldHint(c, q) {
+  const missing = (q.requires || []).filter((r) => !state.performed.includes(r));
+  const first = missing.find((r) => r.startsWith('QUESTION_')) || missing[0] || '';
+  if (first.startsWith('QUESTION_')) { const pre = (c.questions || []).find((x) => x.id === first.slice(9)); if (pre) return `아직 구체적인 답을 듣지 못했습니다. 「${pre.cat}」 질문을 먼저 하면 이 질문의 답을 들을 수 있습니다.`; }
+  if (first.startsWith('LOOKUP_')) return '아직 구체적인 답을 듣지 못했습니다. 전산 조회로 확인한 내용이 있어야 이 질문의 답을 들을 수 있습니다.';
+  return '아직 구체적인 답을 듣지 못했습니다. 다른 확인을 먼저 한 뒤 같은 내용을 다시 물어볼 수 있습니다.';
+}
 export function submitUtterance({ text = '', questionId = null, source = 'text', via = null } = {}) {
   const c = current(); if (!c) return { kind: 'none' };
   const rec = interviewRecord();
@@ -104,7 +113,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
       // Disclosure condition not met: the passenger stays with what is on record. Nothing is marked asked.
       rec.withheld++; heard(raw || q.q, src, rec, { matched: q.id, offRecord: true }); addLog('officer', raw || q.q); rec.pending = null;
       sayOffRecord(persona.withheld?.[q.id] || persona.withheldDefault, 'withheld', c, rec);
-      if (state.guidance === 'guided') addLog('system', '구체적인 답을 듣지 못했습니다. 관련 자료를 더 확인한 뒤 같은 내용을 다시 물어볼 수 있습니다.');
+      if (state.guidance === 'guided') addLog('system', withheldHint(c, q));
       bus.emit('changed');
       result = { kind: 'withheld', questionId: q.id, mood: 'withheld' };
     } else {

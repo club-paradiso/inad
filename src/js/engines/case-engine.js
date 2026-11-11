@@ -173,9 +173,9 @@ export function penalty(msg, pts) {
   recordMistake(msg, applied);
   if (!policy.coached) state.strikes++;
   state.score = clampScore(state.score - applied); state.proportionality = clampScore(state.proportionality - Math.ceil(applied / 4));
-  const prefix = policy.coached ? '코칭 경고' : '감찰 경고'; addLog('alert', `${prefix}: ${msg}`);
+  const prefix = policy.coached ? '코칭 경고' : '업무 지적'; addLog('alert', `${prefix}: ${msg}`);
   notify.sound(policy.coached ? 'beep' : 'buzzer'); bus.emit('changed');
-  notify.toast(policy.coached ? `코칭 경고 -${applied}점 · 스트라이크 없음` : `감찰 경고 -${applied}점 · ${state.strikes}/${policy.strikeLimit}`);
+  notify.toast(policy.coached ? `코칭 경고 -${applied}점 · 스트라이크 없음` : `업무 지적 -${applied}점 · ${state.strikes}/${policy.strikeLimit}`);
   return !policy.coached && state.strikes >= policy.strikeLimit;
 }
 // Guided mode gives one procedural guard per case during the opening cases.

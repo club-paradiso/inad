@@ -38,6 +38,11 @@ test('coach: returns step 2 when alien has answered but no clues discovered', ()
     { type: 'alien', text: '친구를 만나러 왔습니다.' }
   ];
   state.discoveredClues = new Set();
+  // v13: nothing recorded yet (not understood / no specific answer) keeps the coach on a first recorded answer
+  state.asked = new Set();
+  assert.equal(currentCoachStep().step, 1);
+  assert.match(currentCoachStep().text, /통역/);
+  state.asked = new Set(['purpose']);
 
   const hint = currentCoachStep();
   assert.ok(hint);
