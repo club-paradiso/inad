@@ -1,5 +1,10 @@
 # progress.md — INAD
 
+## 현재 상태 (2026-11-11 · v13 생성 승객·짧은 근무, 브랜치 `claude/inad-immigration-game-overhaul-pxtx0k`)
+- 범위: 생성 승객 24명에게 사연(주제·말투·직업·경비)과 선택 질문 4개, 이상 유형 6종을 서류 필드로 이전(단서는 서류 열람으로 획득), 동행 그룹 구성·여정 모순 수정, 짧은 근무 순환 명단. 판정 로직·사건 데이터·저장 스키마·채점 무변경. 로스터 지문은 `main`과 동일.
+- 기록: `docs/v13/OVERHAUL_AUDIT.md`(진단 P0–P2, 설계, 검증, 다음 단계).
+- 다음: 추가소명 질문의 노출 시점 결정 → 1차 창구/재심실 분리 → 무사증 대상국 출처 대조(`docs/legal-review.md` 7번) → 사람 플레이테스트.
+
 ## 현재 상태 (2026-11-10 · NPC Intelligence Layer, 브랜치 `claude/inad-npc-intelligence-snlip1`)
 - 범위: 모델 비종속 NPC 지능 계층(분류·연기 두 작업, 닫힌 출력), 공개조건 인식 컨텍스트·전송 전 감사, 사건별 ID 메모리, 후속질문·다중질문, 연기 엔진, provider 레지스트리(openai-compatible·vLLM·llama.cpp·Ollama, 서버 환경변수만), ICN-S2-005 수직 슬라이스 + 12개 페르소나 프로필. 판정 로직·사건 데이터·저장 스키마 무변경.
 - 실측: NPC held-out 2026-11 단일 92.0%→94.0%(오연결 2→1), 대화 83.3%, 누출 0, 정답 변형 0. 실제 모델 평가는 엔드포인트·자격증명 부재로 **대기**(`docs/npc-intelligence/MODEL_EVALUATION.md`).

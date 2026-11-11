@@ -10,7 +10,7 @@ import { installErrorCollectors, runDiagnostics, diagnosticText } from './servic
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
 import { newSessionSeed, displayDateKo } from './engines/rng.js';
-import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession, rosterSession } from './engines/queue-engine.js';
+import { buildSession, current, caseForQueueItem, screeningNo, singleCaseSession, rosterSession, quickRosterFor } from './engines/queue-engine.js';
 import { getTraveler } from './engines/traveler-engine.js';
 import * as caseEngine from './engines/case-engine.js';
 import * as legal from './engines/legal-engine.js';
@@ -168,6 +168,7 @@ function finishFlow(label) {
         showQuickSummary(state.reports, {
           sessionResult,
           onRetry: () => quickShiftFlow(true),
+          onFresh: () => quickShiftFlow(true, true),
           onExit: () => location.reload()
         });
       }
@@ -199,15 +200,23 @@ function liveInterviewFlow(retry = false) {
   // The passenger's opening statement is already in the transcript and stage.
   beginCase(true);
 }
-// Quick Shift: six passengers, 안내 coaching throughout (all within the first six), nothing saved.
-function quickShiftFlow(retry = false) {
+// Quick Shift: six passengers, nothing written to the shift checkpoint.
+// First time: the fixed introductory roster with 안내 coaching. After one has been finished (v13): a roster drawn
+// from a fresh seed — three generated passengers around three authored cases — under standard rules, so the
+// fifteen-minute mode is worth playing again. `again` replays the roster just played; `fresh` draws a new one.
+let quickPlan = null;
+function quickShiftCompletedBefore() { try { const m = loadMeta(); return (m.sessions || []).some((x) => x.mode === 'quick'); } catch (e) { return false; } }
+function quickShiftFlow(retry = false, fresh = false) {
   if (state.started && !retry) return;
-  Object.assign(state, { sessionMode: 'quick', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: 'guided' });
-  regenerate(LIVE_CASE.seed); state.eventSchedule = [];
-  if (!rosterSession(QUICK_ROSTER)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  const rotating = fresh || (retry ? !!quickPlan?.rotating : quickShiftCompletedBefore());
+  const seed = retry && !fresh && quickPlan ? quickPlan.seed : rotating ? newSessionSeed() : LIVE_CASE.seed;
+  Object.assign(state, { sessionMode: 'quick', difficulty: rotating ? 'standard' : 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: rotating ? 'expert' : 'guided' });
+  regenerate(seed); state.eventSchedule = [];
+  if (!rosterSession(rotating ? quickRosterFor(seed) : QUICK_ROSTER)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
+  quickPlan = { seed, rotating };
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'quick_retry' : 'quick_start' });
-  showAnnouncement('짧은 근무', `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
+  showAnnouncement('짧은 근무', rotating ? `새로 배치된 승객 ${session.queue.length}명을 심사합니다. 안내 없이 진행합니다.` : `승객 ${session.queue.length}명을 심사합니다.`, 'SHIFT', 2000); beginCase();
 }
 // Case of the Day: the same case and seed for everyone on a Korean calendar day; standard rules, no coaching.
 function dailyFlow() {
@@ -322,7 +331,7 @@ function installHooks() {
     say: (text, source = 'text') => submitTurn({ text, source }),
     interview: () => ({ ...interviewSummary(), lastKind: state.interview?.lastKind || null, mode: state.sessionMode }),
     live: () => liveInterviewFlow(),
-    quick: () => quickShiftFlow(),
+    quick: () => quickShiftFlow(), quickPlan: () => (quickPlan ? { ...quickPlan } : null),
     daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
     startDaily: () => dailyFlow(),
     // v11 Statement Lock test hooks
@@ -340,6 +349,7 @@ function boot() {
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
   bindStatementLockListeners();
   byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();
+  if (quickShiftCompletedBefore()) byId('quickRungNote').textContent = '승객 6명 · 약 15분 · 할 때마다 다른 승객 구성 · 안내 없이 진행합니다';
   const daySeed = syncCampaignState();
   bindStartScreen({ onStart: startShiftFlow, onResume: resumeFlow, onRecords: recordsFlow, onProfile: showPlayerProfile, onSettings: showSettings, onSystem: showSystemCenter, onReroll: () => { regenerate(); toast('새 근무 배치를 생성했습니다.'); }, onCampaignArchive: showCampaignArchive, onCampaignAbandon: () => requestAbandonCampaign(syncOptionButtons) });
   if (daySeed && session.seed !== daySeed) regenerate(daySeed);

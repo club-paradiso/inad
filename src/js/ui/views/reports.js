@@ -61,7 +61,7 @@ export function showCaseResult(r, onNext, { mode = 'shift', onRetry = null, onEx
 }
 
 // Quick Shift summary: each passenger's outcome, procedure compliance and corrected attempts.
-export function showQuickSummary(reports, { onRetry, onExit, sessionResult = null } = {}) {
+export function showQuickSummary(reports, { onRetry, onFresh, onExit, sessionResult = null } = {}) {
   const rows = reports.map((r, i) => `<tr><td class="mono">${i + 1}</td><th scope="row">${esc(r.name)}<small>${esc(r.nat)} · ${esc(r.purpose)}</small></th><td>${esc(r.label)}</td><td class="mono">${r.procedure}%</td><td class="mono">${(r.mistakes || []).length}</td></tr>`).join('');
   const avg = reports.length ? Math.round(reports.reduce((a, r) => a + r.procedure, 0) / reports.length) : 0;
   let rewardHTML = '';
@@ -74,8 +74,8 @@ export function showQuickSummary(reports, { onRetry, onExit, sessionResult = nul
   } else {
     rewardHTML = `<p class="modal-note">승객 ${reports.length}명 · 평균 절차 준수 ${avg}% · 정식 근무 준비를 위한 사전 점검입니다.</p>`;
   }
-  showModal('짧은 근무 요약', `${rewardHTML}<table class="quick-summary"><thead><tr><th scope="col">#</th><th scope="col">승객</th><th scope="col">결정</th><th scope="col">절차 준수</th><th scope="col">바로잡힌 시도</th></tr></thead><tbody>${rows}</tbody></table><p class="modal-note">정식 근무는 승객 36명, 운영 압박·현장 이벤트·상세 근무기록이 함께 진행됩니다.</p><div class="voice-actions debrief-actions"><button type="button" class="act primary" id="quickExit" data-autofocus><strong>정식 근무 준비</strong></button><button type="button" class="act" id="quickRetry"><strong>짧은 근무 다시</strong></button></div>`, { dismissible: false });
-  byId('quickExit').onclick = () => { closeModal(); onExit?.(); }; byId('quickRetry').onclick = () => { closeModal(); onRetry?.(); };
+  showModal('짧은 근무 요약', `${rewardHTML}<table class="quick-summary"><thead><tr><th scope="col">#</th><th scope="col">승객</th><th scope="col">결정</th><th scope="col">절차 준수</th><th scope="col">바로잡힌 시도</th></tr></thead><tbody>${rows}</tbody></table><p class="modal-note">정식 근무는 승객 36명, 운영 압박·현장 이벤트·상세 근무기록이 함께 진행됩니다.</p><div class="voice-actions debrief-actions"><button type="button" class="act primary" id="quickExit" data-autofocus><strong>정식 근무 준비</strong></button><button type="button" class="act" id="quickFresh"><strong>다른 승객으로 한 번 더</strong></button><button type="button" class="act" id="quickRetry"><strong>같은 승객 다시</strong></button></div>`, { dismissible: false });
+  byId('quickExit').onclick = () => { closeModal(); onExit?.(); }; byId('quickRetry').onclick = () => { closeModal(); onRetry?.(); }; byId('quickFresh').onclick = () => { closeModal(); (onFresh || onRetry)?.(); };
 }
 
 export function showShiftTransition(sh, { onBegin, onBreak }) {

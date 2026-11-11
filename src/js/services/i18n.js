@@ -480,7 +480,9 @@ const EXACT = new Map([
   ['근무 요약 보기', 'View shift summary'],
   ['짧은 근무 요약', 'Short shift summary'],
   ['정식 근무 준비', 'Prepare full duty'],
-  ['짧은 근무 다시', 'Short shift again'],
+  ['같은 승객 다시', 'Same passengers again'],
+  ['다른 승객으로 한 번 더', 'Again with new passengers'],
+  ['승객 6명 · 약 15분 · 할 때마다 다른 승객 구성 · 안내 없이 진행합니다', '6 travelers · about 15 min · a different roster every time · no coaching'],
   ['바로잡힌 시도', 'Corrected attempts'],
   ['라이브 인터뷰 사건을 찾지 못했습니다.', 'The live interview case could not be found.'],
   // v11 start screen tiers
@@ -627,6 +629,7 @@ const PATTERNS = [
   [/^오늘의 미션 · (\d{4}\.\d{2}\.\d{2})$/, 'Daily missions · $1'],
   [/^(\d+)\/(\d+) 완료 · 전부 완료 보너스 \+(\d+) XP$/, '$1/$2 done · all-done bonus +$3 XP'],
   [/^승객 (\d+)명을 심사합니다\.$/, 'Inspecting $1 travelers.'],
+  [/^새로 배치된 승객 (\d+)명을 심사합니다\. 안내 없이 진행합니다\.$/, 'Inspecting $1 newly assigned travelers. No coaching.'],
   [/^심사번호 ([A-Z]?\d+), 12번 심사대로 오십시오\.$/, 'Inspection no. $1, please proceed to booth 12.'],
   [/^(.+) 통역 지원이 연결되었습니다\.$/, (m, x) => `${label(x)} interpretation connected.`],
   [/^화면 설정 적용: 글자 (크게|기본), (고대비|기본 대비), (동작 감소|기본 동작)$/, (m, f, c, r) => `Display settings applied: ${f === '크게' ? 'large' : 'default'} text, ${c === '고대비' ? 'high' : 'default'} contrast, ${r === '동작 감소' ? 'reduced' : 'default'} motion`],
