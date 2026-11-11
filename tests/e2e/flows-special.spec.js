@@ -75,12 +75,21 @@ test.describe('특수절차', () => {
     await expect(page.locator('#entry .bio-score')).toContainText('불일치');
     // v13: the criminal-procedure entry is not offered at the primary desk (the engine rule that it needs a
     // secondary referral is covered by tests/unit/legal-engine.test.js); it appears once the case is referred.
-    await expect(page.locator('#sjpBtn')).toBeHidden();
-    await page.keyboard.press('Alt+j');
-    let st = await H.getState(page);
-    expect(st.strikes).toBe(0); expect(st.stage).toBe('PRIMARY');
-    await page.locator('#secondaryBtn').click();
-    await expect(page.locator('#sjpBtn')).not.toHaveAttribute('hidden', /.*/);
+    let st;
+    if (process.env.INAD_TARGET === 'legacy') {
+      // Frozen v6.1 parity: the button is always on the desk and using it before secondary is a procedural error.
+      await page.locator('#sjpBtn').click();
+      st = await H.getState(page);
+      expect(st.strikes).toBe(1);
+      await page.locator('#secondaryBtn').click();
+    } else {
+      await expect(page.locator('#sjpBtn')).toBeHidden();
+      await page.keyboard.press('Alt+j');
+      st = await H.getState(page);
+      expect(st.strikes).toBe(0); expect(st.stage).toBe('PRIMARY');
+      await page.locator('#secondaryBtn').click();
+      await expect(page.locator('#sjpBtn')).not.toHaveAttribute('hidden', /.*/);
+    }
     await H.procAct(page, 'sjp');
     await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'sjp');
     await H.procAct(page, 'forensic');
