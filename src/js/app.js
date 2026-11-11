@@ -42,6 +42,7 @@ import { showDoc, showCaseResult, showShiftTransition, showShiftComplete, showGa
 import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } from './ui/live-interview.js';
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
+import { fieldNote } from '../data/field-notes.js';
 import { interviewSummary } from './engines/interview-engine.js';
 import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
@@ -144,7 +145,7 @@ function runProcedureAction(a, ctx = {}) {
 function finishFlow(label) {
   closeProcedureScreen();
   const record = { performed: state.performed.slice(), discoveredClues: [...state.discoveredClues], asked: [...state.asked], mistakes: state.mistakes.filter((m) => m.caseIndex === state.caseIndex), label, interview: interviewSummary() };
-  const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record);
+  const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNote(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') {
     showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onExit: () => location.reload() });

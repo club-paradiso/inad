@@ -148,7 +148,10 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
   if (!cats.includes(state.qcat)) state.qcat = cats[0];
   const level = assistLevel(); const sugg = currentSuggestions();
   renderNextStep(sugg, onSuggest);
-  const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const list = c.questions.filter((q) => q.cat === x), done = list.filter((q) => state.asked.has(q.id)).length, open = list.filter((q) => !state.asked.has(q.id)).length; return { key: x, label: x, extra: `${done}/${list.length}${open ? ' · ' + open + ' 남음' : ''}` }; })];
+  const tabs = [{ key: SUGGEST, label: '제안', extra: level === 'immersive' ? '꺼짐' : String(sugg.filter((x) => x.q).length) }, ...cats.map((x) => { const done = c.questions.filter((q) => q.cat === x && state.asked.has(q.id)).length;
+    // Asked count only. A "0/3 · 3 남음" total counted follow-ups that are still gated, so the tab told the
+    // examiner how many hidden questions a category holds and when there was nothing left to find.
+    return { key: x, label: x, extra: done ? `${done}건` : '' }; })];
   // APG tabs: one Tab stop (the selected tab), arrows/Home/End move and select, #questions is the tab panel.
   byId('qtabs').innerHTML = tabs.map((x, i) => { const on = x.key === SUGGEST ? view === SUGGEST : view !== SUGGEST && x.key === state.qcat; const ci = i - 1; return `<button type="button" class="qtab ${x.key === SUGGEST ? 'qtab-suggest ' : ''}${on ? 'on' : ''}" role="tab" id="qtab-${i}" aria-controls="questions" aria-selected="${on}" tabindex="${on ? 0 : -1}" data-cat="${esc(x.key)}"${x.key === SUGGEST ? '' : ` data-hotkey="${Math.min(6, ci + 1)}"`}>${esc(x.label)} <span class="qtab-count">${esc(x.extra)}</span></button>`; }).join('');
   $$('#qtabs .qtab').forEach((b) => { b.onclick = () => { if (b.dataset.cat === SUGGEST) view = SUGGEST; else { view = 'cat'; state.qcat = b.dataset.cat; } withFocus(() => renderQuestions(onAsk, { onSuggest, onAction })); }; });

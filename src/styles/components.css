@@ -172,6 +172,10 @@
 .ev.ok b { color: var(--success-text); }
 .ev.warn b { color: var(--warning-text); }
 .ev.bad b { color: var(--danger-text); }
+/* v12 disclosure: a row the examiner has not established yet — neutral, never a status colour */
+.ev.unknown { border-left-style: dashed; }
+.ev.unknown b { color: var(--text-3); font-weight: 500; }
+.ev.unknown p { color: var(--text-3); }
 .basisboard { display: grid; }
 .basis-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 0 12px 6px; font-size: var(--fs-meta); color: var(--text-3); }
 .basis-registry-btn { margin-left: auto; height: 22px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text); }

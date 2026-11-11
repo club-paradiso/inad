@@ -2154,8 +2154,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0088",
   "name": {
-   "latin": "RAMESH RAI",
-   "korean": "라메시 라이"
+   "latin": "SITA RAI",
+   "korean": "시타 라이"
   },
   "nationality": {
    "code": "NPL",
@@ -2168,7 +2168,7 @@ export const TRAVELER_POOL = [
    "number": "SIM0000088",
    "nationalityCode": "NPL",
    "birthDate": "1995-11-28",
-   "sex": "M",
+   "sex": "F",
    "expiry": "2031-10-10"
   },
   "tags": [
@@ -2229,8 +2229,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0091",
   "name": {
-   "latin": "IMRAN HOSSAIN",
-   "korean": "임란 호사인"
+   "latin": "FARZANA HOSSAIN",
+   "korean": "파르자나 호사인"
   },
   "nationality": {
    "code": "BGD",
@@ -2243,7 +2243,7 @@ export const TRAVELER_POOL = [
    "number": "SIM0000091",
    "nationalityCode": "BGD",
    "birthDate": "1956-01-09",
-   "sex": "M",
+   "sex": "F",
    "expiry": "2033-08-08"
   },
   "tags": [
@@ -2379,8 +2379,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0097",
   "name": {
-   "latin": "BRIAN KIPTOO",
-   "korean": "브라이언 킵투"
+   "latin": "FAITH KIPTOO",
+   "korean": "페이스 킵투"
   },
   "nationality": {
    "code": "KEN",
@@ -2393,7 +2393,7 @@ export const TRAVELER_POOL = [
    "number": "SIM0000097",
    "nationalityCode": "KEN",
    "birthDate": "2003-12-16",
-   "sex": "M",
+   "sex": "F",
    "expiry": "2034-10-27"
   },
   "tags": [

@@ -35,6 +35,7 @@ export function debriefHTML(d, { full = true, lesson = full } = {}) {
   ${full ? `<div class="debrief-cols"><div><h3>판단에 쓰인 질문</h3>${li(d.questions.meaningful, (x) => `<li>${esc(x)}</li>`)}</div><div class="missed"><h3>하지 않은 질문·절차</h3>${li(missedSteps, (x) => `<li>${esc(x.t)}${x.s ? `<small>${esc(x.s)}</small>` : ''}</li>`)}</div></div>` : ''}
   ${d.offTrack.length ? `<div><h3>바로잡힌 판단 시도</h3>${li(d.offTrack, (x) => `<li>${esc(x)}</li>`)}</div>` : ''}
   ${lesson && d.lesson ? `<p class="debrief-lesson"><b>사건 해설</b> · ${esc(d.lesson)}</p>` : ''}
+  ${d.fieldNote ? `<div class="debrief-field"><h3>현장 노트</h3><p><b>이 사건의 축</b>${esc(d.fieldNote.lead)}</p><p><b>흔한 오판</b>${esc(d.fieldNote.trap)}</p></div>` : ''}
   ${src ? `<p class="debrief-meta">${esc(src)} — 입력 방식은 점수와 판정에 반영되지 않습니다.</p>` : ''}</section>`;
 }
 

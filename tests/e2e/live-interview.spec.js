@@ -104,8 +104,16 @@ test.describe('라이브 인터뷰', () => {
   test('the slice plays to the end: secondary → refusal → repatriation → debrief; retry restarts the same passenger', async ({ page }) => {
     const errors = await H.openGame(page);
     await startLive(page);
+    // v12 disclosure: before any work the desk shows no assessment, no clue total and no procedure node
+    const matrix = page.locator('#matrix');
+    await expect(matrix.locator('.ev.unknown')).toHaveCount(5);
+    await expect(matrix).not.toContainText('귀국편 없음'); await expect(matrix).not.toContainText('체재비 부족');
+    await expect(page.locator('#clueBoard .cluehead b')).toHaveText('확보 0건');
+    await expect(page.locator('#basisBoard')).not.toContainText('송환');
+    await expect(page.locator('#qtabs')).not.toContainText('남음');
     await page.locator('#langInterp').click();
     for (const t of ['한국에서 30일 동안 뭐 할 거예요?', '귀국 항공권은 왜 없어요?', '돈은 얼마나 가지고 왔어요?', '국내 연락처는 누구입니까', '베트남에서 무슨 일 하세요?', '구로구 그 집에는 누가 살아요?']) await say(page, t);
+    await expect(matrix).toContainText('귀국편 없음'); await expect(matrix).toContainText('체재비 부족'); // asked → disclosed
     await H.lookup(page, 'contact'); await H.lookup(page, 'pnr');
     await say(page, '한국에서 일자리 알아본 적 있어요?');
     await page.locator('#secondaryBtn').click();
@@ -120,6 +128,7 @@ test.describe('라이브 인터뷰', () => {
     await expect(page.locator('#modalTitle')).toHaveText('심사 처리 결과 · 디브리핑');
     const body = page.locator('#modalBody');
     await expect(body).toContainText('결정 근거');
+    await expect(body.locator('.debrief-field')).toContainText('현장 노트'); await expect(body.locator('.debrief-field')).toContainText('제12조제4항');
     await expect(body).toContainText('제12조제3항제2호');
     await expect(body).toContainText('취업 관련 정보');
     await expect(body).toContainText('직접 입력 7');
