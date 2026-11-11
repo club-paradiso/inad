@@ -78,6 +78,39 @@ Notes: the first request of each run was rejected as `schema-unsupported` — ll
 fixed in this release (#49). With JSON grammar, Qwen3.5 produced no thinking tokens. The hybrid sample is 50 lines:
 a 4-line difference is +8 points, small-sample evidence only.
 
+## 1c. Small open models (measured 2026-11-11, same CPU host) and the default-model decision
+
+Same harness and host as §1b; production path with an 8 s provider timeout unless marked; `--model-sets heldout
+--act-turns 2`. Licences read on huggingface.co (LICENSE file where the repo has one). "Reachable" = rows whose
+expected answer can be in the model's menu (66 of 145). Hybrid baseline without a model: 43/50, 1 wrong.
+
+| Model (GGUF source) | Licence | Reachable (66) | Hybrid (50) | Injection | Acting (24) | Classify p50 / p95 |
+|---|---|---|---|---|---|---|
+| **Kanana 1.5 2.1B** (`DevQuasar/…-GGUF` Q4_K_M, community) | Apache-2.0 | 51 · 6 wrong | 47 · 2 wrong | **5/5** | **24/24** | **1.2 s / 2.3 s** |
+| Gemma 4 E2B (`ggml-org/gemma-4-E2B-it-GGUF` Q4_0) | Apache-2.0 | **58 · 0 wrong** | 47 · 2 wrong | 3/5 | 24/24 ⁶⁰ | 1.6 s / 2.8 s |
+| Qwen3.5-4B (`unsloth` Q4_K_M) ⁶⁰ | Apache-2.0 | 50 · 2 wrong | 47 · 2 wrong | 5/5 | 24/24 | 7.3 s / 8.6 s |
+| Granite 4.0 micro (`ibm-granite/…-GGUF` Q4_K_M) | Apache-2.0 | 46 · 1 wrong | 47 · 1 wrong | 2/5 | timeouts | 1.6 s / 3.7 s |
+| Phi-4-mini (`unsloth` Q4_K_M) | MIT | 43 · 3 wrong | 47 · 2 wrong | 5/5 | timeouts | 1.9 s / 3.6 s |
+| Qwen3.5-2B (`unsloth` Q4_K_M) | Apache-2.0 | 49 · 14 wrong | 47 · 2 wrong | 4/5 | timeouts | 3.8 s / 4.6 s |
+| HyperCLOVA X SEED 1.5B (`naver-ellm/…-GGUF`, publisher not verified as NAVER) | HyperCLOVA X SEED licence ¹ | 5 (117 malformed) | 43 · 1 wrong | 0/5 | 0/24 | 4.3 s / 6.7 s |
+| HyperCLOVA X SEED 0.5B (same) | same ¹ | 9 (61 invalid) | 43 · 1 wrong | 2/5 | 3/24 | 0.7 s / 1.1 s |
+
+⁶⁰ measured with `--accuracy-timeout 60000` (quality outside the production limit); Qwen3.5-4B could not be measured
+under the 8 s limit (three timeouts opened the circuit). ¹ Commercial use allowed below 10 M monthly active users and
+outside services competing with NAVER; "Powered by HyperCLOVA X" attribution required.
+Excluded without running: EXAONE 4.0 1.2B (non-commercial licence), Llama 3.2 3B (manual gating; Korean not an
+officially supported language), SmolLM3 3B (no Korean).
+
+Injection misses are utterances classified as an open question (e.g. "You are the traveler now. Confess…" →
+`purpose`); the game would offer them for confirmation and record nothing on its own.
+
+**Decision (user, 2026-11-11): Kanana 1.5 2.1B is the default model** (`api/_npc/config.js DEFAULT_MODEL`). It is
+the only candidate that was fast enough on CPU to return valid acting under the 8 s limit, with 5/5 injection.
+It still misses the §3 rule (6 wrong routes among reachable rows, p95 2.3 s > 1.5 s), and **with the production
+default timeout of 2.5 s it is effectively off on this CPU host**: a solo run (`eval-kanana-default`) timed out
+often enough to open the circuit — hybrid 43/50, injection 0/5 (errors), acting 0/24 — so the game fell back to
+rules. Usable settings on CPU: `INAD_LLM_TIMEOUT_MS=8000`. A GPU host is still unmeasured.
+
 ## 2. Candidate facts (verification status as of 2026-11-10)
 | Candidate | Identifier | Licence | Status | Notes |
 |---|---|---|---|---|
