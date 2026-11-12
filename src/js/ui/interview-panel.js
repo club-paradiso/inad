@@ -13,6 +13,7 @@ import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
 import { inspectionStep } from '../engines/inspection-workflow.js';
 import { getLocale } from '../services/i18n.js';
+import { currentCoachStep } from './coach.js';
 
 const SUGGEST = '__suggest';
 const WHO = { officer: '심사관', alien: '피심사인', interpreter: '통역 지원', alert: '경고', system: '시스템' };
@@ -66,6 +67,9 @@ function renderNextStep(suggestions, onSuggest) {
   if (!el) return;
   const guided = state.started && !state.ended && state.guidance === 'guided' && assistLevel() !== 'immersive';
   el.hidden = !guided;
+  // One voice of guidance at a time. While the guided step is on screen it already says that other phrasings work,
+  // so the scope note stays available to screen readers (it describes #askInput) without taking a visible row.
+  if (scope) scope.classList.toggle('sr-only', guided);
   if (!guided) { el.replaceChildren(); return; }
 
   const t = (ko, en) => getLocale() === 'en' ? en : ko;
@@ -106,7 +110,10 @@ function renderNextStep(suggestions, onSuggest) {
     action = () => showTask('assessment', { focus: true });
   }
 
-  el.innerHTML = `<div class="live-next-copy"><small>${esc(t('쉬운 진행', 'Guided steps'))}</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
+  // The first-duty coach banner already explains this step in a sentence; repeating it here pushed the questions
+  // below the fold on compact screens. Keep the step name and the action, drop the duplicate paragraph.
+  const coachSays = !!currentCoachStep();
+  el.innerHTML = `<div class="live-next-copy"><small>${esc(t('쉬운 진행', 'Guided steps'))}</small><strong>${esc(step)}</strong>${coachSays ? '' : `<p>${esc(detail)}</p>`}</div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;
   byId('liveNextButton').onclick = action;
 }
 

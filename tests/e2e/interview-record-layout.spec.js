@@ -45,3 +45,48 @@ for (const vp of VIEWPORTS) {
     });
   });
 }
+
+test.describe('one primary action, one voice of guidance', () => {
+  test('the first-interview action comes before the country choice on the start screen', async ({ page }) => {
+    const errors = await H.openGame(page);
+    const order = await page.evaluate(() => {
+      const hero = document.querySelector('#liveStartBtn'), country = document.querySelector('#atlasStartCountry');
+      return !!(hero.compareDocumentPosition(country) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(order, '#atlasStartCountry follows #liveStartBtn').toBe(true);
+    await H.expectNoErrors(errors);
+  });
+
+  test('while the coach banner speaks, the guided step does not repeat it and the scope note leaves the screen', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await page.locator('#liveStartBtn').click();
+    await expect(page.locator('#coachBanner')).toBeVisible();
+    await expect(page.locator('#liveNextStep')).toBeVisible();
+    await expect(page.locator('#liveNextStep p')).toHaveCount(0);
+    await expect(page.locator('#liveNextButton')).toBeVisible();
+    // still describes the question box for assistive technology
+    await expect(page.locator('#liveInputScope')).toHaveClass(/sr-only/);
+    await expect(page.locator('#askInput')).toHaveAttribute('aria-describedby', /liveInputScope/);
+    await page.locator('#coachDismissBtn').click();
+    await page.locator('#langInterp').click(); // any re-render
+    await expect(page.locator('#liveNextStep p')).toHaveCount(1);
+    await H.expectNoErrors(errors);
+  });
+
+  test('390px: the interview button sits below the face, and the subtitle stays above the button', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const errors = await H.openGame(page);
+    await page.locator('#liveStartBtn').click();
+    const cta = page.locator('#boothInterviewCta');
+    await expect(cta).toBeVisible();
+    const m = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      const stage = r('#passengerStage'), cta = r('#boothInterviewCta'), cap = document.querySelector('#stageCaption');
+      const pad = parseFloat(getComputedStyle(cap).paddingBottom);
+      return { ctaTop: (cta.top - stage.top) / stage.height, capPad: pad, ctaFromBottom: stage.bottom - cta.top };
+    });
+    expect(m.ctaTop, 'button starts in the lower fifth of the portrait').toBeGreaterThan(0.75);
+    expect(m.capPad, 'subtitle clears the button').toBeGreaterThanOrEqual(m.ctaFromBottom);
+    await H.expectNoErrors(errors);
+  });
+});

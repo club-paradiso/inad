@@ -328,13 +328,15 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 .booth-interview-cta[hidden] { display: none !important; }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .booth-interview-cta:not([hidden]) {
-    display: block; position: absolute; z-index: 3; top: 12px; right: 12px;
-    max-width: calc(100% - 24px); min-height: 44px; padding: 9px 13px;
+    display: block; position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; /* below the face, never over it */
+    max-width: none; min-height: 44px; padding: 9px 13px;
     color: #fff; background: #215778; border: 1px solid rgba(255,255,255,.75);
     border-radius: var(--r-2); box-shadow: 0 3px 12px rgba(0,0,0,.35);
     font: inherit; font-size: var(--fs-compact); font-weight: 700;
   }
   .booth-interview-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  /* the subtitle sits above the button instead of under it */
+  .booth-stage:has(.booth-interview-cta:not([hidden])) .stage-caption { padding-bottom: 76px; }
 }
 
 /* Five explicit grid tracks are required: the guidance card and scope explanation precede
