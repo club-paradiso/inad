@@ -126,7 +126,7 @@ function resumeFlow() {
 // ---- decisions -----------------------------------------------------------------------------
 function handleVerdict(r) { if (r.guard) { showGuidedGuard(r.guard); return false; } if (r.gameOver) { gameOverFlow(); return false; } return r.ok; }
 function decideClearFlow() { closeProcedureScreen(); const r = caseEngine.decideClear(); if (!handleVerdict(r)) return; showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => finishFlow(r.finish)); }
-function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code) => { closeModal(); const r = caseEngine.decideRefusal(code); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }); }); }
+function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code) => { closeModal(); const r = caseEngine.decideRefusal(code); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }, { continueLabel: '송환 절차 · 다음 심사로 계속' }); }); }
 function sjpFlow() { const r = caseEngine.sjpMenu(); if (!handleVerdict(r)) return; openProc('sjp'); }
 function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open) openProc(r.open); }
 function runProcedureAction(a, ctx = {}) {
