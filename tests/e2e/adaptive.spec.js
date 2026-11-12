@@ -67,6 +67,10 @@ async function reachableLawBasis(page) {
   await heading.scrollIntoViewIfNeeded();
   await expect(heading).toBeInViewport();
   await expect(panel.locator('.basis-node').first()).toBeVisible();
+  // Restore the judgment scroller before the next workflow assertion.
+  const readiness = page.locator('#readyHint');
+  await readiness.scrollIntoViewIfNeeded();
+  await expect(readiness).toBeInViewport();
 }
 // CLAUDE.md: touch targets are at least 44px. Every visible match is measured, not just the first.
 async function touchTargets(page, selectors, min = 44) {
