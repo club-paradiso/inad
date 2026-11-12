@@ -57,6 +57,17 @@ async function startShift(page) {
   await expect(page.locator('#log .msg').first()).toBeAttached();
 }
 async function inViewport(page, selectors) { for (const s of selectors) await expect(page.locator(s), s).toBeInViewport(); }
+// The law-basis panel follows a longer matrix of actionable pending facts. It is intentionally
+// inside the judgment scroller; assert that a player can reach its heading, not that every
+// section of the scroller fits in the initial viewport.
+async function reachableLawBasis(page) {
+  const panel = page.locator('#basisBoard');
+  const heading = panel.locator('.basis-head');
+  await expect(panel).toBeVisible();
+  await heading.scrollIntoViewIfNeeded();
+  await expect(heading).toBeInViewport();
+  await expect(panel.locator('.basis-node').first()).toBeVisible();
+}
 // CLAUDE.md: touch targets are at least 44px. Every visible match is measured, not just the first.
 async function touchTargets(page, selectors, min = 44) {
   for (const s of selectors) {
@@ -90,12 +101,13 @@ for (const vp of VIEWPORTS) {
     } else if (vp.kind === 'tablet') {
       await expect(page.locator('#taskNav')).toBeVisible();
       await expect(page.locator('#taskNav button[data-task="passenger"]')).toBeHidden();
-      await inViewport(page, ['#pPortrait', '#log', '#clearBtn', '#basisBoard']);
+      await inViewport(page, ['#pPortrait', '#log', '#clearBtn']);
     } else {
       await expect(page.locator('#taskNav')).toBeHidden();
-      await inViewport(page, ['#pPortrait', '#log', '#questions', '#docview', '#terminal', '#basisBoard', '#clearBtn', '#refuseBtn', '#stepper']);
+      await inViewport(page, ['#pPortrait', '#log', '#questions', '#docview', '#terminal', '#clearBtn', '#refuseBtn', '#stepper']);
     }
     await noOverflow(page, 'primary'); await shot(page, `${vp.name}-primary`);
+    if (vp.kind !== 'phone') await reachableLawBasis(page);
     // interview
     await task(page, 'interview');
     await inViewport(page, ['#log', '#questions', '#langInterp']);
@@ -124,6 +136,7 @@ for (const vp of VIEWPORTS) {
     await expect(page.locator('#sjpBtn')).toBeHidden();
     if (vp.kind === 'phone') await touchTargets(page, ['#clearBtn', '#refuseBtn'], 44);
     await noOverflow(page, 'assessment'); await shot(page, `${vp.name}-assessment`);
+    if (vp.kind === 'phone') await reachableLawBasis(page);
     // secondary procedure (continuation of inspection)
     const sIdx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S2-006');
     await H.jumpTo(page, sIdx);
