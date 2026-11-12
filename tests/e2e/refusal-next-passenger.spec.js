@@ -46,8 +46,9 @@ test('quick shift: refusal handoff resumes the remaining roster', async ({ page 
   // ICN-S2-005 is the fifth passenger in the introductory short duty.
   await page.locator('#refuseBtn').click();
   await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
-  // Guided mode can warn once on a thin review; acknowledge and select again.
-  if (await page.locator('#modalTitle').count() && await page.locator('#modalTitle').textContent() !== '입국 불허가 통지서') {
+  // Guided mode warns once on a thin review, without committing the verdict.
+  if (await page.locator('#modalTitle').textContent() === '초보 심사관 보호 힌트') {
+    await page.locator('#modalClose').click();
     await page.locator('#refuseBtn').click();
     await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
   }
