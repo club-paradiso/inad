@@ -116,6 +116,11 @@ test.describe('일반 입국심사 흐름', () => {
     expect(st.strikes).toBe(0);
     expect(st.stats.refused).toBe(1);
     expect(st.performed).toEqual(expect.arrayContaining(['SECONDARY', 'ENTRY_REFUSED', 'REPATRIATION_ORDER', 'DEPARTURE_WAITING_AREA']));
+    await H.nextCase(page);
+    await H.afterNext(page);
+    const next = await H.getState(page);
+    expect(next.caseIndex).toBe(idx + 1);
+    expect(next.ended).toBe(false);
     await H.expectNoErrors(errors);
   });
 
