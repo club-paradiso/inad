@@ -21,6 +21,8 @@ test('coach: returns step 1 when no questions asked', () => {
   state.ended = false;
   state.logs = [];
   state.discoveredClues = new Set();
+  state.looked = new Set();
+  state.stage = 'PRIMARY';
 
   const hint = currentCoachStep();
   assert.ok(hint);
@@ -38,6 +40,8 @@ test('coach: returns step 2 when alien has answered but no clues discovered', ()
     { type: 'alien', text: '친구를 만나러 왔습니다.' }
   ];
   state.discoveredClues = new Set();
+  state.looked = new Set();
+  state.stage = 'PRIMARY';
   // v13: nothing recorded yet (not understood / no specific answer) keeps the coach on a first recorded answer
   state.asked = new Set();
   assert.equal(currentCoachStep().step, 1);
@@ -48,9 +52,11 @@ test('coach: returns step 2 when alien has answered but no clues discovered', ()
   assert.ok(hint);
   assert.equal(hint.step, 2);
   assert.equal(hint.target, 'statement_lock');
+  assert.match(hint.text, /일치하는 내용도/);
+  assert.doesNotMatch(hint.text, /밝혀내/);
 });
 
-test('coach: returns step 3 when clue is discovered', () => {
+test('coach: offers assessment after a record check without requiring a clue', () => {
   localStorage.clear();
   state.guidance = 'guided';
   state.caseIndex = 0;
@@ -59,7 +65,10 @@ test('coach: returns step 3 when clue is discovered', () => {
     { type: 'officer', text: '방문 목적이 무엇입니까?' },
     { type: 'alien', text: '친구를 만나러 왔습니다.' }
   ];
-  state.discoveredClues = new Set(['tm4']);
+  state.discoveredClues = new Set();
+  state.looked = new Set(['visa']);
+  state.asked = new Set(['purpose']);
+  state.stage = 'PRIMARY';
 
   const hint = currentCoachStep();
   assert.ok(hint);

@@ -14,7 +14,7 @@
   .zone-evidence .casework { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .zone-evidence .doclist { grid-auto-flow: column; grid-auto-columns: minmax(96px, max-content); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border-subtle); scrollbar-width: none; }
   .zone-evidence .doclist::-webkit-scrollbar { display: none; }
-  .zone-evidence .lookup-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .zone-evidence .lookup-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ---- booth ---- */
@@ -251,8 +251,8 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
   animation: coachFadeIn .3s ease-out;
 }
 .coach-banner.coach-step-1 { border-left: 3px solid var(--accent); }
-.coach-banner.coach-step-2 { border-left: 3px solid var(--warning); background: var(--warning-soft); }
-.coach-banner.coach-step-3 { border-left: 3px solid var(--success); background: var(--accent-soft); }
+.coach-banner.coach-step-2 { border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.coach-banner.coach-step-3 { border-left: 3px solid var(--accent); background: var(--accent-soft); }
 
 .coach-icon { font-size: 14px; flex-shrink: 0; }
 .coach-text { flex: 1; font-weight: 500; }

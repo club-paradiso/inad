@@ -43,7 +43,7 @@ function liveStatusText() {
     const pressure = LIVE_PRESSURE[classifyLiveLoad(live.appliedFactor)] || LIVE_PRESSURE.normal;
     return `${t('실시간', 'Live')} ${pressure[isEn() ? 1 : 0]} · ${live.arrivals}${t('편/2시간', ' arrivals/2h')} · ${live.appliedFactor.toFixed(2)}x${snapshotTime(live.checkedAt)}`;
   }
-  if (live.reason === 'api-key-not-configured') return t('실시간 API 미설정 · 기본 프리셋 적용', 'Live API not configured · baseline preset');
+  if (live.reason === 'api-key-not-configured') return t('기본 공항 상황으로 진행', 'Using baseline airport conditions');
   if (live.status === 'fallback') return t('실시간 조회 불가 · 기본 프리셋 적용', 'Live data unavailable · baseline preset');
   return t('실시간 운항 스냅샷 준비', 'Live flight snapshot ready to check');
 }
