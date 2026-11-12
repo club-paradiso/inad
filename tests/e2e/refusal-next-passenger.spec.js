@@ -7,13 +7,13 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'modern refusal continuation onl
 
 test('shift: after refusal, next passenger is callable without falsely completing repatriation', async ({ page }) => {
   const errors = await H.openGame(page);
-  const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S3-011');
+  // Use a shift-two case: it always has a following passenger, regardless of random roster order.
+  const idx = await H.findQueueIndex(page, (q) => q.caseId === 'ICN-S2-005');
   await H.startShift(page);
   await H.jumpTo(page, idx);
-  await H.ensureCommunication(page);
-  for (const q of ['bio', 'exempt', 'age', 'official', 'explain']) await H.ask(page, q);
+  // Expert mode permits a thin decision and records its shortcomings without blocking the queue.
   await page.locator('#refuseBtn').click();
-  await page.locator('.reason[data-code="SIM-BIO-REF"]').click();
+  await page.locator('.reason[data-code="SIM-A12-PUR"]').click();
   await expect(page.locator('#modalTitle')).toHaveText('입국 불허가 통지서');
   await expect(page.locator('#docContinue')).toContainText('다음 심사로 계속');
   await H.continueDoc(page);
