@@ -28,7 +28,7 @@ import { renderTop, renderQueue, renderWorkloadOnly, renderEventBar, renderChall
 import { renderPassenger, renderBehavior, renderParty } from './ui/passenger-panel.js';
 import { renderLog, renderQuestions, chooseQuestionCategory, tabKey } from './ui/interview-panel.js';
 import { renderDocs, focusSelectedDoc } from './ui/document-workbench.js';
-import { renderEntry, renderTerminal, renderMatrix } from './ui/system-panel.js';
+import { renderEntry, renderTerminal, renderMatrix, openLookup } from './ui/system-panel.js';
 import { renderActions, guardDecision, disarm } from './ui/decision-desk.js';
 import { bindTaskNav, showTask, revealZone } from './ui/task-nav.js';
 import { openProcedureScreen, closeProcedureScreen, renderProcedureScreen, isProcedureOpen } from './ui/procedure-screen.js';
@@ -190,7 +190,7 @@ function gameOverFlow() { if (state.sessionMode === 'shift') caseEngine.gameOver
 // Single-case live interview: reaches a real passenger in one click (first-run path) and never touches saves.
 function liveInterviewFlow(retry = false) {
   if (state.started && !retry) return;
-  Object.assign(state, { sessionMode: 'case', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0 });
+  Object.assign(state, { sessionMode: 'case', guidance: 'guided', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0 });
   regenerate(LIVE_CASE.seed); state.eventSchedule = [];
   if (!singleCaseSession(LIVE_CASE.caseId)) { toast('라이브 인터뷰 사건을 찾지 못했습니다.'); return; }
   // First passenger of the session: 안내 모드 coaching applies (no strikes, one guard), the v9 screen tour does not.
@@ -244,7 +244,7 @@ function bindChrome() {
   // Touch devices arm a decision on the first tap and execute on the second (decision-desk.js); pointer/keyboard flows are direct.
   byId('clearBtn').onclick = guardDecision(decideClearFlow); byId('secondaryBtn').onclick = guardDecision(() => { const r = caseEngine.secondary(); if (r.ok) openProc('secondary'); }); byId('refuseBtn').onclick = guardDecision(openRefusalFlow); byId('sjpBtn').onclick = guardDecision(sjpFlow);
   byId('langKo').onclick = () => setInterviewLanguage('ko'); byId('langEn').onclick = () => setInterviewLanguage('en'); byId('langInterp').onclick = () => { if (requestInterpreter() && isProcedureOpen()) renderProcedureScreen(procHandlers); };
-  $$('.lookup-tabs button').forEach((b) => { b.onclick = () => { caseEngine.lookup(b.dataset.lu); revealZone(byId('terminal')); }; });
+  $$('.lookup-tabs button').forEach((b) => { b.onclick = () => { openLookup(b.dataset.lu); }; });
   byId('challengeHud').onclick = showChallengeDetail; byId('campaignHud').onclick = showCampaignDetail; byId('eventDetailsBtn').onclick = showOperationsLog; byId('storyDossierBtn').onclick = storyDossierFlow;
   renderParty.onOpen = showPartyDossier;
   // more menu
@@ -323,7 +323,7 @@ function installHooks() {
     seed: () => session.seed,
     regenerate: (s) => regenerate(s),
     queue: () => session.queue.map((q, i) => { const c = caseForQueueItem(q); return { index: i, shift: q.shift, travelerId: q.travelerId, caseId: q.caseId, normalId: q.normalId, id: c.id, special: c.special || null, resolution: c.resolution, required: c.required || [], sessionVariant: c.sessionVariant || null, basis: c.basis }; }),
-    state: () => ({ countryId: state.countryId, atlas: JSON.parse(JSON.stringify(state.atlas)), caseIndex: state.caseIndex, stage: state.stage, strikes: state.strikes, score: state.score, started: state.started, ended: state.ended, stats: { ...state.stats }, performed: state.performed.slice(), asked: [...state.asked], looked: [...state.looked], documentReviews: { ...state.documentReviews }, comparisonNotes: { ...state.comparisonNotes }, refugeeStep: state.refugeeStep, repatriationStep: state.repatriationStep, forensic: state.forensic, investigation: state.investigation, arrestReview: state.arrestReview, reports: state.reports.map((r) => ({ label: r.label, caseId: r.caseId, procedure: r.procedure, interpreter: r.interpreter, actions: r.actions })), mistakes: state.mistakes.map((m) => m.msg), language: state.language ? { mode: state.language.mode, korean: state.language.korean, english: state.language.english, interpreterActive: state.language.interpreterActive, interpreterUsed: state.language.interpreterUsed } : null, behavior: state.behavior ? { stress: state.behavior.stress, rapport: state.behavior.rapport } : null, campaignId: state.campaignId, campaignDay: state.campaignDay, difficulty: state.difficulty, scenarioId: state.scenarioId }),
+    state: () => ({ caseWorkSeconds: state.caseWorkSeconds, repeatedLookups: state.repeatedLookups, countryId: state.countryId, atlas: JSON.parse(JSON.stringify(state.atlas)), caseIndex: state.caseIndex, stage: state.stage, strikes: state.strikes, score: state.score, started: state.started, ended: state.ended, stats: { ...state.stats }, performed: state.performed.slice(), asked: [...state.asked], looked: [...state.looked], documentReviews: { ...state.documentReviews }, comparisonNotes: { ...state.comparisonNotes }, refugeeStep: state.refugeeStep, repatriationStep: state.repatriationStep, forensic: state.forensic, investigation: state.investigation, arrestReview: state.arrestReview, reports: state.reports.map((r) => ({ label: r.label, caseId: r.caseId, procedure: r.procedure, interpreter: r.interpreter, actions: r.actions })), mistakes: state.mistakes.map((m) => m.msg), language: state.language ? { mode: state.language.mode, korean: state.language.korean, english: state.language.english, interpreterActive: state.language.interpreterActive, interpreterUsed: state.language.interpreterUsed } : null, behavior: state.behavior ? { stress: state.behavior.stress, rapport: state.behavior.rapport } : null, campaignId: state.campaignId, campaignDay: state.campaignDay, difficulty: state.difficulty, scenarioId: state.scenarioId }),
     current: () => { const c = current(); return { id: c.id, travelerId: c.travelerId, special: c.special || null, required: c.required || [], resolution: c.resolution, questions: c.questions.map((q) => ({ id: q.id, cat: q.cat, q: q.q, requires: q.requires || [] })), docs: c.docs.map((d) => d.t) }; },
     jump: (i) => { state.caseIndex = i; beginCase(true); },
     languageFor: (i) => { const l = languageProfileFor(caseForQueueItem(session.queue[i])); return { mode: l.mode, korean: l.korean, english: l.english }; },

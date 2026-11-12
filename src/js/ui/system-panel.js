@@ -6,7 +6,11 @@ import { getTraveler } from '../engines/traveler-engine.js';
 import { ACTION_NAMES } from '../engines/legal-engine.js';
 import { disclosedEvidence, disclosureProgress, declaredPurpose, knownReturn } from '../engines/disclosure.js';
 import { clueStats } from '../engines/clue-engine.js';
-import { lookupName } from '../engines/case-engine.js';
+import { lookupName, lookup } from '../engines/case-engine.js';
+import { LOOKUP_TOOLS, lookupPresentation, inspectionDestination } from '../engines/inspection-workflow.js';
+import { revealZone, showTask } from './task-nav.js';
+import { getLocale } from '../services/i18n.js';
+import { notify } from '../services/bus.js';
 import { classifyEntryBasis, ketaStatus, arrivalDeclarationStatus } from '../engines/decision-model.js';
 import { renderBasisPanel } from './decision-basis.js';
 import { comparisonSummary } from '../engines/comparison-ledger.js';
@@ -19,7 +23,7 @@ export function renderEntry() {
   const earr = (c.docs || []).find((d) => d.k === 'E-ARRIVAL'); const fm = {}; (earr?.fields || []).forEach((r) => { fm[r[0]] = r[1]; });
   const stayPlace = fm['체류지'] || fm['체류예정지'] || fm['숙소'] || null, contact = fm['국내연락처'] || fm['연락처'] || null;
   const row = (k, v, cls = '') => `<div class="ec ${cls}"><label>${esc(k)}</label><b>${esc(v)}</b></div>`;
-  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<br>${b.label}</div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
+  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<small>게임상 대조 결과</small></div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
 <div class="entry-section"><h3>신원 · 여권</h3><div class="entry-grid">${row('성명(로마자)', t.name.latin)}${row('국적', `${t.nationality.korean} · ${t.nationality.code}`)}${row('생년월일', t.passport.birthDate || c.dob || '—')}${row('여권번호', t.passport.number || c.passport)}${row('여권 만료', t.passport.expiry || '—')}${row('전자여권 칩', c.chip)}</div></div>
 <div class="entry-section"><h3>입국 근거 · 사전여행허가</h3><div class="entry-grid">${row('입국 근거 구분', `${basis.label} · ${basis.basis}`, 'wide')}${row('적용 내용', c.basisDetail, 'wide')}${row('사증', c.visa)}${row('K-ETA(사전여행허가)', keta.text, keta.status === 'PASS' ? '' : 'attention')}${row('전자입국신고', decl.text, 'wide')}</div></div>
 <div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', knownReturn(c, state) || '미확인 · 항공 PNR·예약자료 확인 전')}${row('신고 입국목적', declaredPurpose(c, state))}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
@@ -30,22 +34,50 @@ export function renderEntry() {
 export function renderDocStatus(c) {
   const dc = byId('docCount'); if (dc) dc.textContent = String((c.docs || []).length);
 }
+export function openLookup(kind) {
+  if (!LOOKUP_TOOLS.some((tool) => tool.id === kind)) return;
+  const terminal = byId('terminal');
+  const existing = state.queries.find((q) => q.kind === kind);
+  if (!existing && !state.ended) lookup(kind);
+  revealZone(terminal);
+  const result = terminal?.querySelector(`[data-lookup-kind="${kind}"]`);
+  if (result) {
+    terminal.querySelectorAll('.lookup-selected').forEach((row) => row.classList.remove('lookup-selected'));
+    result.classList.add('lookup-selected');
+    result.focus({ preventScroll: true });
+    result.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (existing) notify.a11y(getLocale() === 'en' ? 'Saved result opened. No additional work time.' : '기존 조회 결과를 열었습니다. 처리시간은 늘지 않습니다.');
+  }
+}
+
 export function tone(t) { return t === '정상' ? '정상' : t === '주의' ? '주의' : t === '경고' ? '경고' : '치명'; }
 const shownQueries = { list: null, n: 0 };
 export function renderTerminal() {
-  const c = current(); const el = byId('terminal'); if (!el) return;
-  const worst = {}; state.queries.forEach((q) => { if (!worst[q.kind] || rank(q.t) > rank(worst[q.kind])) worst[q.kind] = q.t; });
-  document.querySelectorAll('.lookup-tabs button[data-lu]').forEach((b) => { const k = b.dataset.lu, t = worst[k]; b.classList.toggle('done', !!t && rank(t) < 2); b.classList.toggle('alert', !!t && rank(t) >= 2); b.setAttribute('aria-pressed', String(!!t)); });
-  const cnt = byId('lookupCount'); if (cnt) cnt.textContent = state.queries.length ? `${state.queries.length}건 · ${state.looked.size}종` : '';
-  const list = state.queries, line = (q) => `<div class="line" data-lookup-kind="${esc(q.kind)}"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(q.t)}</b>${esc(q.text)}</span></div>`;
-  if (!list.length) { el.innerHTML = `<div class="line empty">사건 조회 준비 완료 · 필요한 항목만 조회하십시오. 내부 규제코드·비공개 위험선별 알고리즘은 재현하지 않습니다.${c.special === 'forgery' ? ' 위변조 의심 시 출입국사범 절차에서 문서감식을 요청할 수 있습니다.' : ''}</div>`; shownQueries.list = null; return; }
+  const el = byId('terminal'); if (!el) return;
+  const en = getLocale() === 'en';
+  document.querySelectorAll('.lookup-tabs button[data-lu]').forEach((b) => {
+    const tool = LOOKUP_TOOLS.find((x) => x.id === b.dataset.lu); if (!tool) return;
+    const result = state.queries.find((q) => q.kind === tool.id);
+    const label = en ? tool.en : tool.ko;
+    const status = result ? (en ? 'Open result' : '결과 보기') : (en ? 'Look up' : '조회');
+    const content = `<b>${esc(label)}</b><span>${esc(status)}</span>`;
+    if (b.innerHTML !== content) b.innerHTML = content;
+    b.classList.toggle('done', !!result); b.classList.remove('alert');
+    b.setAttribute('aria-pressed', String(!!result));
+    b.title = en ? tool.helpEn : tool.help;
+    b.setAttribute('aria-label', `${label} · ${status} · ${b.title}`);
+    b.disabled = state.ended && !result;
+  });
+  const cnt = byId('lookupCount'); if (cnt) cnt.textContent = en ? `${state.looked.size} checked` : `${state.looked.size}종 확인`;
+  const list = state.queries, line = (q) => `<div class="line" data-lookup-kind="${esc(q.kind)}" tabindex="-1"><span>${esc(lookupName(q.kind))}</span><span><b class="tone ${tone(q.t)}">${esc(lookupPresentation(q.t, en))}</b>${esc(q.text)}</span></div>`;
+  if (!list.length) { el.innerHTML = `<div class="line empty"><b>${en ? 'What do you need to check?' : '무엇을 확인할까요?'}</b><p>${en ? 'Travel history, entry status or a booking: choose a record relevant to the interview. Not every lookup is needed.' : '방문 이력, 입국 자격, 항공 예약 중 진술과 대조할 자료를 고르세요. 모든 항목을 조회할 필요는 없습니다.'}</p><small>${en ? 'Open a checked item again to read its saved result without spending more time.' : '확인한 항목은 다시 눌러도 시간 소모 없이 결과를 읽을 수 있어요.'}</small></div>`; shownQueries.list = null; return; }
+
   // #terminal is a live region: insert only new results so each lookup is announced once. The engine puts the
   // newest result first (queries.unshift), so new lines go to the top, in the same order a full render gives.
   if (shownQueries.list === list && shownQueries.n <= list.length && el.childElementCount === shownQueries.n) { if (list.length > shownQueries.n) el.insertAdjacentHTML('afterbegin', list.slice(0, list.length - shownQueries.n).map(line).join('')); }
   else el.innerHTML = list.map(line).join('');
   shownQueries.list = list; shownQueries.n = list.length;
 }
-const rank = (t) => t === '정상' ? 0 : t === '주의' ? 1 : t === '경고' ? 2 : 3;
 // One clue-card renderer for both clue surfaces (the judgment-panel board and the procedure
 // screen's panel): same cards, same limit of four, so a clue looks identical wherever it appears.
 // The two surfaces keep their own heads — counts live in the board head, not repeated elsewhere.
@@ -62,7 +94,21 @@ export function renderClueBoard() {
 }
 export function renderMatrix() {
   const c = current(); const e = disclosedEvidence(c, state); const known = disclosureProgress(c, state);
-  byId('matrix').innerHTML = Object.entries(e).map(([k, v]) => `<div class="ev ${v[0]}"><label>${esc(k)}</label><b>${esc(v[1])}</b><p title="${esc(v[2])}">${esc(v[2])}</p></div>`).join('');
+  const en = getLocale() === 'en';
+  byId('matrix').innerHTML = Object.entries(e).map(([k, v]) => {
+    const dest = v[0] === 'unknown' ? inspectionDestination(k) : null;
+    return `<div class="ev ${esc(v[0])}"><label>${esc(k)}</label><b>${esc(v[1])}</b><p title="${esc(v[2])}">${esc(v[2])}</p>${dest ? `<button type="button" class="fact-navigation" data-fact="${esc(k)}">${esc(en ? dest.en : dest.ko)}</button>` : ''}</div>`;
+  }).join('');
+  byId('matrix').querySelectorAll('[data-fact]').forEach((button) => {
+    button.onclick = () => {
+      const dest = inspectionDestination(button.dataset.fact); if (!dest) return;
+      showTask(dest.task);
+      const target = dest.lookup ? document.querySelector(`.lookup-tabs [data-lu="${dest.lookup}"]`) : byId(dest.control);
+      // Navigation alone never records a lookup, question or document review.
+      if (dest.control === 'wbTabEntry') target?.click();
+      target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+  });
   // Status, not a gate (P0-3): what has actually been checked so far, in plain counts. There is no
   // readiness percentage and nothing here enables or disables the decision buttons — a decision
   // can be made at any point, and whatever was left unchecked shows up in the case feedback.

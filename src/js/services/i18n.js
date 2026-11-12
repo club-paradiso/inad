@@ -12,6 +12,12 @@ let observer = null;
 let initialized = false;
 
 const EXACT = new Map([
+  ['정규 근무 배치 바꾸기', 'Change regular-duty posting'],
+  ['듣고, 확인하고, 결정하기 · 약 5분 · 시간에 쫓기지 않고 화면 익히기', 'Listen, check and decide · about 5 minutes · learn at your own pace'],
+  ['하루 한 건 · 모두 같은 사건 · 익숙해진 뒤 도전', 'One shared case each day · try it when you know the desk'],
+  ['재심 이후 필요한 별도 절차', 'Separate procedure after secondary review'],
+  ['추가 대조', 'Cross-check needed'],
+  ['게임상 대조 결과', 'Simulated comparison'],
   ['질문은 이 사건에 준비된 대화 범위에서 이해합니다. 잘 안 통하면 제안 질문을 선택하세요.', 'This interview recognises questions within the current scenario. If your wording is not understood, choose a suggested question.'],
   ['예: 방문 목적이 무엇입니까?', 'e.g. What is the purpose of your visit?'],
   ['다음 할 일', 'Next action'],
@@ -44,8 +50,6 @@ const EXACT = new Map([
   ['제12조 입국심사', 'Art. 12 inspection'],
   ['추가 소명·사실확인', 'Further clarification / fact-finding'],
   ['제12조제4항 · 사유 선택', 'Art. 12(4) · select reason'],
-  ['감식 · 조사 · 체포요건', 'Forensics · investigation · arrest review'],
-  ['사건 조회 준비 완료 · 필요한 항목만 조회하십시오. 내부 규제코드·비공개 위험선별 알고리즘은 재현하지 않습니다.', 'Case lookup ready · query only what you need. Internal regulatory codes and non-public screening algorithms are not reproduced.'],
   ['다시 눌러 확정', 'Tap again to confirm'],
   ['현재 사건 요약 및 심사 단계', 'Current case summary and inspection stage'],
   ['판단 및 결정', 'Assessment and decision'],
@@ -447,9 +451,7 @@ const EXACT = new Map([
   ['라이브 인터뷰', 'Live interview'],
   // v12 start ladder, disclosure and field notes
   ['첫 심사 · 승객 1명', 'First inspection · one traveler'],
-  ['진술의 빈 곳을 묻고, 확인한 사실로 결정합니다 · 약 5분 · 설정 없이 바로 시작', 'Ask about the gaps in the account and decide on what you established · about 5 minutes · no setup'],
   ['근무 선택', 'Choose a duty'],
-  ['하루 한 건 · 모두 같은 사건 · 안내 없음', 'One case a day · the same case for everyone · no coaching'],
   ['승객 6명 · 약 15분 · 통상 입국과 확인이 필요한 입국이 섞여 있습니다', 'Six travelers · about 15 minutes · routine arrivals mixed with ones that need checking'],
   ['정규 근무', 'Full duty'],
   ['승객 36명 · 근무조 3개 · 대기열 압박 · 자동저장', '36 travelers · three shifts · queue pressure · autosave'],
@@ -465,7 +467,6 @@ const EXACT = new Map([
   ['동행인 진술 교차확인', 'Cross-check with the companion account'],
   ['진술·서류·조회로 확인', 'Establish by statement, document or lookup'],
   ['현장 노트', 'Field note'],
-  ['단서 확보: 확인한 사실이 판단 패널에 기록되었습니다. 미확인 항목을 더 확인할지, 지금 결정할지는 심사관이 정합니다.', 'Clue recorded: what you established is now on the assessment panel. Whether to check the remaining items or decide now is your call.'],
   ['미확인 · 항공 PNR·예약자료 확인 전', 'Not established · check the flight PNR or booking record'],
   ['이 사건의 축', 'What this case turns on'],
   ['흔한 오판', 'Common misjudgement'],

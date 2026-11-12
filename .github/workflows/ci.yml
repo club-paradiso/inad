@@ -10,6 +10,29 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  inspection-workbench:
+    # Independent, quick visual evidence while the complete regression suites run.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - name: Inspect responsive workbench and record reuse
+        run: npx playwright test tests/e2e/inspection-workbench.spec.js tests/e2e/postings.spec.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inspection-workbench-evidence
+          path: test-results/dist/
+          if-no-files-found: warn
   source-integrity:
     # Guards the canonical v6.1 artifact (byte-exact) and the generated release entry point.
     runs-on: ubuntu-latest

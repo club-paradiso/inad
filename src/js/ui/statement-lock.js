@@ -66,11 +66,12 @@ export function compareWithTarget(target) {
     if (corroborated) {
       if (cues.lockConsistent) cues.lockConsistent();
       else cues.toggle(true);
-      setStageState('relieved', 2200);
+      // A comparison in the officer's UI does not establish the passenger's feelings.
+      setStageState('idle');
     } else {
       if (cues.lockConflict) cues.lockConflict();
       else cues.alert();
-      setStageState('hesitant', 2800);
+      setStageState('idle');
     }
     // Brief pulse on the affected message
     const msgEl = $(`#log .msg[data-i="${activeLock.logIndex}"]`);

@@ -138,3 +138,7 @@
 .posting-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .brief-detail { margin: 8px 0 12px; }
 .brief-detail > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: var(--fs-label); color: var(--text-2); }
+
+/* Regular duty stays available in one click; six presets do not precede the first interview. */
+.posting-box > summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--text); font-size: var(--fs-body); font-weight: 600; }
+.posting-box[open] > summary { border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px; }

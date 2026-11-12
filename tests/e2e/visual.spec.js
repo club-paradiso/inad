@@ -34,7 +34,14 @@ for (const vp of [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }]) 
     // case header: stage stepper + lookup terminal stay visible alongside the decision desk (the v6.1 baseline has none)
     const modern = target !== 'legacy';
     if (modern) {
-      for (const sel of ['#stepper', '#terminal', '#basisBoard']) await expect(page.locator(sel)).toBeInViewport();
+      for (const sel of ['#stepper', '#terminal']) await expect(page.locator(sel)).toBeInViewport();
+      // Pending-fact links extend the matrix. Verify that its legal-basis section is
+      // reachable in the judgment scroller instead of requiring it above the fold.
+      const basisHeading = page.locator('#basisBoard .basis-head');
+      await expect(basisHeading).toBeVisible();
+      await basisHeading.scrollIntoViewIfNeeded();
+      await expect(basisHeading).toBeInViewport();
+      await expect(page.locator('#basisBoard .basis-node').first()).toBeVisible();
       await expect(page.locator('#stepper li.on')).toHaveText('일반심사');
       await expect(page.locator('#caseId')).toContainText('심사번호');
       await page.locator('#wbTabEntry').click();

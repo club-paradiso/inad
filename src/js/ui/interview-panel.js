@@ -11,6 +11,7 @@ import { communicationReady } from '../engines/language-engine.js';
 import { liveRecord } from '../engines/interview-engine.js';
 import { currentLockedStatement } from './statement-lock.js';
 import { showTask } from './task-nav.js';
+import { inspectionStep } from '../engines/inspection-workflow.js';
 import { getLocale } from '../services/i18n.js';
 
 const SUGGEST = '__suggest';
@@ -72,11 +73,17 @@ function renderNextStep(suggestions, onSuggest) {
   const communicableNext = suggestions.find((s) => s.q && communicationReady(s.q).ok)?.q;
   const next = communicableNext || suggestions.find((s) => s.q)?.q;
   let step, detail, label, action;
+  const phase = inspectionStep(state);
   const hasQuestion = state.asked.size > 0;
   // An unanswered question caused by a language barrier must not be proposed over
   // and over. The existing suggestion engine already exposes the safe next action.
   const needsInterpreter = suggestions.some((entry) => entry.action === 'interpreter');
-  if (needsInterpreter) {
+  if (phase === 'procedure') {
+    step = t('진행 중인 절차', 'Current procedure');
+    detail = t('인계한 절차에서 추가 확인을 이어가세요.', 'Continue the procedure you opened.');
+    label = t('판단 화면으로', 'Open assessment');
+    action = () => showTask('assessment', { focus: true });
+  } else if (needsInterpreter) {
     step = t('2 · 통역 연결', '2 · Connect interpreter');
     detail = t('질문이 전달되지 않았습니다. 먼저 통역을 연결하고 다시 질문하세요.', 'The traveler did not understand. Connect an interpreter before asking again.');
     label = t('통역 연결', 'Call interpreter');
@@ -92,21 +99,11 @@ function renderNextStep(suggestions, onSuggest) {
     step = t('2 · 자료 확인', '2 · Review evidence'); detail = t('승객의 답변과 제출서류를 함께 확인하세요. 전산 조회도 자료 화면에서 할 수 있어요.', 'Compare the reply with documents; records are available in Evidence.');
     label = t('자료 화면으로', 'Open evidence');
     action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
-  } else if (next && !state.discoveredClues.size) {
-    step = t('3 · 추가 질문', '3 · Follow up'); detail = t('확인한 자료와 진술을 비교하고, 필요한 질문을 이어가세요.', 'Compare the documents and statements, then continue with a relevant question.');
-    label = t('다음 질문 · ', 'Next question · ') + next.q;
-    action = () => {
-      if (!communicationReady(next).ok && state.language && !state.language.interpreterActive) byId('langInterp')?.click();
-      onSuggest(next, false);
-    };
-  } else if (state.discoveredClues.size) {
-    step = t('4 · 판단 검토', '4 · Review assessment'); detail = t('확인한 자료와 근거를 검토하세요. 처분 선택은 직접 해야 합니다.', 'Review the evidence and basis. You must make any decision yourself.');
+  } else {
+    step = t('3 · 판단 검토', '3 · Review assessment');
+    detail = t('확인한 사실과 미확인 내용을 살펴보세요. 질문·서류 확인은 더 할 수 있고, 결정은 직접 내립니다.', 'Review established and unconfirmed facts. You can ask more or check documents before deciding.');
     label = t('판단 화면으로', 'Open assessment');
     action = () => showTask('assessment', { focus: true });
-  } else {
-    step = t('3 · 자료 대조', '3 · Cross-check evidence'); detail = t('서류와 진술을 비교하고, 미확인 내용이 있는지 살펴보세요.', 'Compare documents and statements; check for unresolved facts.');
-    label = t('자료 화면으로', 'Open evidence');
-    action = () => { showTask('evidence', { focus: true }); document.querySelector('#wbTabDocs')?.focus(); };
   }
 
   el.innerHTML = `<div class="live-next-copy"><small>${esc(t('쉬운 진행', 'Guided steps'))}</small><strong>${esc(step)}</strong><p>${esc(detail)}</p></div><button class="live-next-button" type="button" id="liveNextButton">${esc(label)}</button>`;

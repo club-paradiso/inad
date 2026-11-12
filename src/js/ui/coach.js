@@ -6,6 +6,8 @@
 import { byId, esc } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
+import { inspectionStep } from '../engines/inspection-workflow.js';
+import { getLocale } from '../services/i18n.js';
 import { storeGet, storeSet } from '../services/storage.js';
 
 const COACH_KEY = 'inad-coach-v10-done';
@@ -31,43 +33,20 @@ export function currentCoachStep(c = current()) {
     return null;
   }
 
-  // Step 1: No questions asked yet
-  const officerAsked = (state.logs || []).filter((l) => l.type === 'officer').length;
-  if (officerAsked === 0) {
-    return {
-      step: 1,
-      target: 'first_question',
-      text: '기본 질문: 제안 질문이나 질문란을 통해 입국 목적과 체류 일정을 먼저 확인하십시오.'
-    };
+  const en = getLocale() === 'en';
+  const step = inspectionStep(state);
+  if (step === 'question') {
+    const attempted = (state.logs || []).some((l) => l.type === 'officer');
+    return { step: 1, target: 'first_question', text: attempted
+      ? (en ? 'No answer is on record yet. Connect an interpreter if needed, then ask a suggested question.' : '아직 기록된 답이 없습니다. 질문이 통하지 않으면 통역을 연결하고, 제안 질문으로 방문 목적부터 확인하세요.')
+      : (en ? 'Start by asking about the visit. Reading and thinking do not advance the work clock.' : '방문 목적부터 물어보세요. 글을 읽거나 생각하는 동안에는 처리시간이 늘지 않아요.') };
   }
-
-  // Asked, but nothing is on record yet (not understood, or the passenger gave no specific answer): the next
-  // useful step is still a first recorded answer, not statement comparison.
-  const recorded = state.asked instanceof Set ? state.asked.size : 0;
-  if (recorded === 0 && state.discoveredClues.size === 0) {
-    return { step: 1, target: 'first_question', text: '아직 기록된 답이 없습니다. 질문이 통하지 않으면 통역을 연결하고, 제안 질문을 눌러 방문 목적부터 확인하십시오.' };
-  }
-
-  // Step 2: an answer is on record, but no clues discovered yet
-  if (state.discoveredClues.size === 0) {
-    const hasAlienReply = (state.logs || []).some((l) => l.type === 'alien' && l.text);
-    if (hasAlienReply) {
-      return {
-        step: 2,
-        target: 'statement_lock',
-        text: '진술 대조: 피심사인 답변 옆 [대조] 버튼을 누른 뒤, 전산망 조회나 서류를 선택해 모순을 밝혀내십시오.'
-      };
-    }
-  }
-
-  // Step 3: Clue discovered, guide to verdict / decision
-  if (state.discoveredClues.size > 0 && !state.ended) {
-    return {
-      step: 3,
-      target: 'decision',
-      text: '단서 확보: 확인한 사실이 판단 패널에 기록되었습니다. 미확인 항목을 더 확인할지, 지금 결정할지는 심사관이 정합니다.'
-    };
-  }
+  if (step === 'evidence') return { step: 2, target: 'statement_lock', text: en
+    ? 'Compare the answer with a document or relevant record. Agreement is useful too; a contradiction is not a goal.'
+    : '답변을 서류나 관련 전산자료와 대조하세요. 일치하는 내용도 확인 결과예요. 반드시 모순을 찾을 필요는 없어요.' };
+  if (step === 'assessment') return { step: 3, target: 'decision', text: en
+    ? 'Review the facts you have checked. Ask more if needed, or make your own decision. This guidance does not certify readiness.'
+    : '확인한 사실을 판단 화면에서 검토하세요. 필요한 질문을 더 하거나 직접 결정할 수 있어요. 안내 단계는 정답·심사 완료를 뜻하지 않아요.' };
 
   return null;
 }

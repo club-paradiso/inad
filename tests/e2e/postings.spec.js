@@ -8,6 +8,8 @@ test.skip(target === 'legacy', 'v13 only');
 test.describe('정규 근무 배치', () => {
   test('a posting sets difficulty, scenario and guidance together; the option grids show the same state', async ({ page }) => {
     const errors = await H.openGame(page);
+    await expect(page.locator('#postingDetails')).not.toHaveAttribute('open', /.*/);
+    await page.locator('#postingDetails > summary').click();
     const postings = page.locator('#postingGrid .posting-btn');
     await expect(postings).toHaveCount(6);
     await expect(page.locator('.posting-btn[data-posting="trainee"]')).toHaveAttribute('aria-pressed', 'true');
@@ -32,6 +34,8 @@ test.describe('정규 근무 배치', () => {
 
   test('the briefing leads with the duty at hand and does not count the passengers that hide a problem', async ({ page }) => {
     const errors = await H.openGame(page);
+    await expect(page.locator('#postingDetails')).not.toHaveAttribute('open', /.*/);
+    await page.locator('#postingDetails > summary').click();
     await page.locator('.posting-btn[data-posting="day"]').click();
     await page.locator('#startBtn').click();
     await expect(page.locator('#briefStart')).toBeVisible();
@@ -54,6 +58,7 @@ test.describe('정규 근무 배치', () => {
   test('390px: postings fit without horizontal scroll and are 44px touch targets', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await H.openGame(page);
+    await page.locator('#postingDetails > summary').click();
     const sizes = await page.locator('#postingGrid .posting-btn').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
     expect(Math.min(...sizes)).toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
