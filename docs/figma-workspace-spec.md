@@ -500,3 +500,11 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   POST가 200과 imageHash를 반환했지만 파일 안에서 그 해시로 이미지를 조회할 수 없어(`getImageByHash` null)
   채움이 닿지 않았다 — §10과 같은 방식으로 남긴다. 원본: `docs/audit/status-consolidation-2026-11/*.png`
   (로컬 dist 빌드 캡처 12장: KR 인터뷰·판단 · Atlas CA 데스크 × 4뷰포트).
+
+## 13. Demo readiness · 인터뷰 기록 우선 — 코드 → Figma 동기화 (2026-11-12)
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] Demo readiness · 인터뷰 기록 우선 · 2026-11-12` (`283:2247`,
+  [링크](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=283-2247)). 자동화가 만든 노드만 들어 있다.
+- 이전(main `9b4d97b`)·이후 캡처 4쌍: 첫 심사 작업대 1024×768, 시작 화면 1440×900, 승객 390×844, 인터뷰 390×844.
+  프레임은 실제 크기, 이미지 채우기(로컬 dist 빌드 · Playwright Chromium).
+- 변수·텍스트 스타일·컴포넌트 변경 없음. 결정 근거: `docs/demo-readiness-2026-11-12.md`.

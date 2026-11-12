@@ -67,7 +67,16 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
 .ph-tools { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .assist-btn { height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-label); font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .assist-btn:hover { border-color: var(--accent); color: var(--accent-text); }
-.panel-interview { grid-template-rows: auto minmax(96px, 1fr) auto minmax(auto, 1.1fr); }
+/* Rows are named by placement, not by source order: the coach banner and the Statement Lock dock are optional
+   rows (auto, 0 when hidden). Left to auto-placement they took the transcript's 1fr track and pushed the record,
+   the question box and the list one track down — at 1024×768 the passenger's statement was 29px tall. */
+.panel-interview { grid-template-rows: auto auto auto minmax(96px, 1fr) auto minmax(auto, 1.1fr); }
+.panel-interview > .ph { grid-row: 1; }
+.panel-interview > .coach-banner { grid-row: 2; }
+.panel-interview > .statement-lock-dock { grid-row: 3; }
+.panel-interview > .log { grid-row: 4; }
+.panel-interview > .ask-bar { grid-row: 5; }
+.panel-interview > .composer { grid-row: 6; }
 /* official interview record: speaker column + statement, the passenger's words set larger than the examiner's */
 .log .msg.alien .msgtext { font-size: 14px; color: var(--text); }
 .log .msg.officer .msgtext { color: var(--text-2); }
@@ -130,11 +139,11 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
   .booth .subject { grid-column: 2; grid-row: 2; }
   .booth .subject-aux { grid-column: 2; grid-row: 3; }
   /* conversation | questions side by side: the short viewport cannot stack record, question box and list */
-  .panel-interview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
-  .panel-interview > .ph { grid-column: 1 / -1; }
-  .panel-interview > .log { grid-column: 1; grid-row: 2; }
-  .panel-interview > .ask-bar { grid-column: 1; grid-row: 3; }
-  .panel-interview > .composer { grid-column: 2; grid-row: 2 / 4; max-height: none; border-top: 0; border-left: 1px solid var(--border); }
+  .panel-interview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
+  .panel-interview > :is(.ph, .coach-banner, .statement-lock-dock) { grid-column: 1 / -1; }
+  .panel-interview > .log { grid-column: 1; grid-row: 4; }
+  .panel-interview > .ask-bar { grid-column: 1; grid-row: 5; }
+  .panel-interview > .composer { grid-column: 2; grid-row: 4 / 6; max-height: none; border-top: 0; border-left: 1px solid var(--border); }
 }
 /* compact desktops (1024–1279, short screens): the conversation needs the height more than the side notes */
 @media (min-width: 1024px) and (max-width: 1279px) and (max-height: 820px) {
@@ -142,7 +151,7 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
   .language-toolbar .language-status { display: none; }
   .ask-bar { padding: 6px 10px; }
   .ask-bar input, .mic-btn, .ask-send { height: 32px; }
-  .panel-interview { grid-template-rows: auto minmax(72px, 1fr) auto minmax(210px, 2fr); }
+  .panel-interview { grid-template-rows: auto auto auto minmax(72px, 1fr) auto minmax(210px, 2fr); }
 }
 @media (prefers-reduced-motion: reduce) { .stage-caption { transition: none; } }
 body.pref-reduce-motion .stage-caption { transition: none; }
@@ -319,13 +328,15 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 .booth-interview-cta[hidden] { display: none !important; }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .booth-interview-cta:not([hidden]) {
-    display: block; position: absolute; z-index: 3; top: 12px; right: 12px;
-    max-width: calc(100% - 24px); min-height: 44px; padding: 9px 13px;
+    display: block; position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; /* below the face, never over it */
+    max-width: none; min-height: 44px; padding: 9px 13px;
     color: #fff; background: #215778; border: 1px solid rgba(255,255,255,.75);
     border-radius: var(--r-2); box-shadow: 0 3px 12px rgba(0,0,0,.35);
     font: inherit; font-size: var(--fs-compact); font-weight: 700;
   }
   .booth-interview-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  /* the subtitle sits above the button instead of under it */
+  .booth-stage:has(.booth-interview-cta:not([hidden])) .stage-caption { padding-bottom: 76px; }
 }
 
 /* Five explicit grid tracks are required: the guidance card and scope explanation precede

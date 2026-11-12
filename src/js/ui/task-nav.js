@@ -21,8 +21,12 @@ function syncNav() {
 }
 export function showTask(name, { focus = false } = {}) {
   if (!TASKS.includes(name)) return;
+  const arriving = currentTask() !== name;
   document.body.dataset.task = name;
   syncNav();
+  // The record is rendered while its zone is hidden on phones, where setting scrollTop does nothing: arriving at the
+  // interview then showed the system notices instead of what the passenger last said. Pin to the newest line.
+  if (name === 'interview' && arriving && isStacked()) { const log = byId('log'); if (log) log.scrollTop = log.scrollHeight; }
   const zone = document.querySelector(`.zone[data-zone="${name}"]`);
   if (zone && isStacked()) { zone.scrollTop = 0; if (focus) zone.querySelector('button:not([disabled]), [tabindex]')?.focus?.(); }
 }
