@@ -7,7 +7,8 @@ import { setAirport, airportCfg, setDifficulty, setScenario, difficultyCfg, scen
 import { classifyLiveLoad } from '../engines/airport-load-balance.js';
 import { setChallenge, challengeCfg } from '../engines/achievement-engine.js';
 import { setCampaign } from '../engines/campaign-engine.js';
-import { loadProgressSave, saveGuidance, loadMeta } from '../engines/save-engine.js';
+import { loadProgressSave, saveGuidance, loadMeta, firstCaseDone } from '../engines/save-engine.js';
+import { startFlow } from '../engines/start-flow.js';
 import { POSTINGS, postingFor, suggestedPosting } from '../../data/postings.js';
 import { renderCampaignStart } from './views/campaign.js';
 import { bus } from '../services/bus.js';
@@ -96,6 +97,25 @@ export function renderPersistenceStatus() {
   st.classList.toggle('warn', !writable);
   st.textContent = !writable ? '저장소 사용 불가 · 이 브라우저에서는 진행이 저장되지 않습니다' : p ? `자동저장 있음 · SESSION ${p.seed} · ${Math.min(p.nextIndex, 36)}/36 처리` : '자동저장 · 승객 처리 완료 시 체크포인트 생성';
 }
+// Start path: one step is next (the only dominant button), the rest are done or later. Reads saved progress only.
+export function renderStartFlow() {
+  const card = document.querySelector('.startcard'); if (!card) return;
+  let meta = {}; try { meta = loadMeta() || {}; } catch (e) { meta = {}; }
+  const flow = startFlow({ firstCaseDone: firstCaseDone(), sessions: meta.sessions, completedShifts: meta.career?.completedShifts || 0, hasCheckpoint: !!loadProgressSave() });
+  card.dataset.newcomer = String(flow.newcomer); card.dataset.next = flow.next;
+  for (const st of flow.steps) {
+    const li = card.querySelector(`.start-step[data-step="${st.id}"]`); if (!li) continue;
+    li.dataset.state = st.state; li.dataset.resume = String(st.id === 'shift' && flow.resume);
+    if (st.state === 'next') li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    const label = li.querySelector('[data-step-state]');
+    if (label) label.textContent = st.state === 'done' ? t('완료 · 다시 할 수 있습니다', 'Done · can be replayed') : st.state === 'next' ? (li.dataset.resume === 'true' ? t('이어할 근무가 있습니다', 'A duty is waiting for you') : t('다음 순서', 'Next step')) : '';
+  }
+}
+function bindStartMore() {
+  const more = byId('startMore'), card = document.querySelector('.startcard'); if (!more || !card) return;
+  const sync = () => { card.dataset.more = more.open ? 'open' : 'closed'; };
+  more.addEventListener('toggle', sync); sync();
+}
 export function renderSetupSummary() { const ap = airportCfg(); const parts = [`${ap.code} ${isEn() ? ap.nameEn : ap.nameKo}`, txt('.diff-btn.on b', t('훈련', 'Training')), txt('.scenario-btn.on b', t('기본 근무', 'Normal duty')), txt('.campaign-btn.on b', t('캠페인 없음', 'No campaign')), txt('.guide-btn.on b', t('처음 근무', 'Guided')), txt('.challenge-btn.on b', t('일반 근무', 'No challenge'))]; const el = byId('setupSummary'); if (el) el.textContent = parts.join(' · '); }
 export function setAdvanced(on) { const adv = byId('setupAdvancedPanel'), el = byId('setupAdvancedToggle'); if (!adv) return; adv.hidden = !on; if (el) { el.setAttribute('aria-expanded', String(on)); el.textContent = on ? t('세부 설정 접기', 'Hide advanced settings') : t('세부 설정', 'Advanced settings'); } }
 export function syncOptionButtons() {
@@ -105,7 +125,7 @@ export function syncOptionButtons() {
   $$('.scenario-btn').forEach((b) => { const on = b.dataset.scenario === state.scenarioId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   $$('.challenge-btn').forEach((b) => { const on = b.dataset.challenge === state.challengeId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
   $$('.guide-btn').forEach((b) => { const on = b.dataset.guidance === state.guidance; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-  renderAirportChrome(); renderCampaignStart(); renderSetupSummary(); renderPostings();
+  renderAirportChrome(); renderCampaignStart(); renderSetupSummary(); renderPostings(); renderStartFlow();
 }
 // 정규 근무 배치: one choice sets difficulty, scenario and guidance. The option grids under 세부 설정 show the same state.
 function renderPostings() {
@@ -141,11 +161,12 @@ export function bindStartScreen({ onStart, onResume, onRecords, onProfile, onSet
   };
   byId('resumeBtn').onclick = onResume; byId('recordsStartBtn').onclick = onRecords; byId('profileStartBtn').onclick = onProfile; byId('startSettingsBtn').onclick = onSettings; byId('startSystemBtn').onclick = onSystem; byId('rerollBtn').onclick = onReroll;
   byId('campaignArchiveBtn').onclick = onCampaignArchive; byId('campaignAbandonBtn').onclick = onCampaignAbandon;
-  bus.on('persistence', renderPersistenceStatus); bus.on('campaign', syncOptionButtons); bus.on('airportLive', syncOptionButtons);
+  bindStartMore();
+  bus.on('persistence', renderPersistenceStatus); bus.on('persistence', renderStartFlow); bus.on('campaign', syncOptionButtons); bus.on('airportLive', syncOptionButtons);
   document.addEventListener('inad:localechange', syncOptionButtons);
   syncOptionButtons(); renderPersistenceStatus(); syncBackgroundInert();
   refreshAirportLiveLoad().then(syncOptionButtons).catch(() => {});
-  if (state.campaignId !== 'none') setAdvanced(true);
+  if (state.campaignId !== 'none') { byId('startMore').open = true; setAdvanced(true); }
 }
 // ●●●○○ is decoration; screen readers get the level as words.
 const ratingHTML = (n) => `<span aria-hidden="true">${'●'.repeat(n)}${'○'.repeat(5 - n)}</span><span class="sr-only">${t(`5단계 중 ${n}단계`, `level ${n} of 5`)}</span>`;

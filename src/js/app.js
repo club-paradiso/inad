@@ -18,7 +18,7 @@ import * as legal from './engines/legal-engine.js';
 import { generateEventSchedule, applyScenarioStart, takeScheduledBreak, difficultyCfg, eventEffectText, appliedLiveLoad } from './engines/operation-engine.js';
 import { setInterviewLanguage, requestInterpreter, languageProfileFor } from './engines/language-engine.js';
 import { applyChallengeStart } from './engines/achievement-engine.js';
-import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, saveBestGrade, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
+import { loadProgressSave, applyProgressToState, clearProgressSave, loadMeta, saveBestGrade, markFirstCaseDone, makeBundle, validateBundle, applyBundle, saveAudioPreference } from './engines/save-engine.js';
 import { loadCampaign } from './engines/campaign-engine.js';
 import { syncCampaignState, prepareCampaignForStart, applyCampaignDayCarry, currentCampaignSave, clearCampaign } from './engines/campaign-engine.js';
 import { travelPartyFor } from './engines/companion-engine.js';
@@ -43,7 +43,7 @@ import { showDoc, showCaseResult, showShiftTransition, showShiftComplete, showGa
 import { bindLiveInterview, submitTurn, resetLiveInterview, syncAssistButton } from './ui/live-interview.js';
 import { installAnalytics, analyticsSnapshot } from './services/analytics.js';
 import { buildDebrief } from './engines/debrief-engine.js';
-import { fieldNote } from '../data/field-notes.js';
+import { preloadFieldNotes, fieldNoteNow } from './services/field-notes-loader.js';
 import { interviewSummary } from './engines/interview-engine.js';
 import { bindStatementLockListeners, renderStatementLockDock, selectStatementForLock, compareWithTarget, currentLockedStatement } from './ui/statement-lock.js';
 import { dailyCase, dailyResult, saveDailyResult, loadDailyResults, shareText } from './engines/daily-engine.js';
@@ -96,6 +96,7 @@ function regenerate(seed = newSessionSeed()) {
   byId('sessionSeed').textContent = String(seed); renderEventBar(); renderChallengeHud(); renderCampaignHud(); renderDailyStart(showDailyMissions); syncOptionButtons(); renderQueue(); renderTop();
 }
 function beginCase(skipCall = false) {
+  preloadFieldNotes();
   resetLiveInterview(); const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages(); setDutyActive(true);
   // Every case starts after a dialog (briefing, case result, shift change): put focus on the new passenger, not on
   // <body> and never back on a decision button that would act on a traveler the examiner has not seen yet.
@@ -148,10 +149,10 @@ function runProcedureAction(a, ctx = {}) {
 function finishFlow(label) {
   closeProcedureScreen();
   const record = { performed: state.performed.slice(), discoveredClues: [...state.discoveredClues], asked: [...state.asked], mistakes: state.mistakes.filter((m) => m.caseIndex === state.caseIndex), label, interview: interviewSummary() };
-  const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNote(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
+  const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNoteNow(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') {
-    setDutyActive(false);
+    setDutyActive(false); markFirstCaseDone();
     showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onContinue: () => quickShiftFlow(true, false, true), onExit: () => location.reload() });
     return;
   }
@@ -361,6 +362,7 @@ function boot() {
   installErrorCollectors(); installAnalytics(); initNotices(); initAudio(); bindModalChrome(); tutorial.bind(); ensureImportInput(); applyPreferences();
   byId('brandTag').textContent = `v${RELEASE.version}`; byId('startReleaseChip').textContent = `v${RELEASE.version} · ${RELEASE.label}`;
   buildSession(newSessionSeed()); state.eventSchedule = generateEventSchedule(session.seed, state.difficulty);
+  setTimeout(preloadFieldNotes, 0); // debrief commentary: off the entry bundle, fetched once the page is up
   subscribe(); bindChrome(); bindWorkbenchTabs(); bindTaskNav(); bindKeyboard(); installHooks(); bindLiveInterview({ render: renderAll });
   bindStatementLockListeners();
   byId('liveStartBtn').onclick = () => liveInterviewFlow(); byId('quickStartBtn').onclick = () => quickShiftFlow(); byId('dailyCaseBtn').onclick = () => dailyFlow(); renderDailyCaseButton();

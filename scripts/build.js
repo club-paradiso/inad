@@ -74,9 +74,21 @@ export async function buildModularApp({ minify = true } = {}) {
     libraryFiles[cc] = name;
     chunkFiles.push({ name, bytes: Buffer.byteLength(code), gzip: zlib.gzipSync(code).byteLength });
   }
+  // 4b. Debrief-only field notes: same treatment, one hashed file fetched after boot (services/field-notes-loader.js).
+  {
+    const out = await build({ entryPoints: [path.join(src, 'data/field-notes.js')], bundle: true, format: 'esm', platform: 'browser', target: ['es2020'], minify, legalComments: 'none', charset: 'utf8', write: false });
+    const code = out.outputFiles[0].text;
+    const name = `field-notes.${crypto.createHash('sha256').update(code).digest('hex').slice(0, 8)}.js`;
+    fs.writeFileSync(path.join(assetsDir, name), code);
+    libraryFiles.notes = name;
+    chunkFiles.push({ name, bytes: Buffer.byteLength(code), gzip: zlib.gzipSync(code).byteLength });
+  }
   const atlasLibraries = {
     name: 'atlas-libraries',
-    setup(b) { b.onResolve({ filter: /data\/atlas\/(ca|gb|nz)\.js$/ }, (args) => ({ path: `./${libraryFiles[args.path.match(/(ca|gb|nz)\.js$/)[1]]}`, external: true })); }
+    setup(b) {
+      b.onResolve({ filter: /data\/atlas\/(ca|gb|nz)\.js$/ }, (args) => ({ path: `./${libraryFiles[args.path.match(/(ca|gb|nz)\.js$/)[1]]}`, external: true }));
+      b.onResolve({ filter: /data\/field-notes\.js$/ }, () => ({ path: `./${libraryFiles.notes}`, external: true }));
+    }
   };
 
   // 5. Bundle and minify JS (ESM format)

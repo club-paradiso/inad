@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import fs from 'node:fs';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 await loadAtlasLibraries();
 
 test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to the current app.');
 async function openAtlas(page, country = 'CA') {
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await expect(page.locator('[name="atlas-country"]')).toHaveCount(4);
   await page.locator(`[name="atlas-country"][value="${country}"]`).check();
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', country);
@@ -124,7 +124,7 @@ test('overseas export/import round trip and failed-write recovery copy preserve 
 });
 
 test('country choice survives language change; review checks show what they still need', async ({ page }) => {
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click(); await page.locator('[name="atlas-country"][value="GB"]').check();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click(); await page.locator('[name="atlas-country"][value="GB"]').check();
   await page.locator('#atlasLocale').selectOption('en'); await expect(page.locator('[name="atlas-country"][value="GB"]')).toBeChecked();
   await page.locator('#atlasEnter').focus(); await page.keyboard.press('Enter'); await page.locator('#atlasSystem').click();
   await expect(page.locator('#task-status-identity')).toHaveText('Open the linked document'); await expect(page.locator('#task-identity')).toHaveCount(0);

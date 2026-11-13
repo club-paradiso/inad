@@ -67,28 +67,53 @@ body.pref-contrast .start-scene { display: none; }
 .start-actions-row:has(.resume-start[hidden]) { grid-template-columns: 1fr; }
 .startbtn { height: 48px; border-radius: var(--r-1); background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -.01em; transition: background var(--t-fast) var(--ease); }
 .startbtn:hover { background: var(--accent-hover); }
-/* v11: primary / secondary / tertiary start screen tiers */
-.start-primary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 20px; border-radius: var(--r-1); background: var(--booth); color: var(--booth-text); }
-.start-primary-copy { display: grid; gap: 2px; min-width: 0; }
-.start-primary-copy b { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--booth-text); }
-.start-primary-copy span { font-size: var(--fs-label); color: var(--booth-muted); }
-.start-hero-btn { min-height: 48px; padding: 0 24px; border: 0; border-radius: var(--r-1); background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; letter-spacing: -.02em; cursor: pointer; white-space: nowrap; transition: opacity var(--t-fast) var(--ease); }
-.start-hero-btn:hover { opacity: .9; }
-.start-hero-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* v12: one dominant action (the hero), then a ladder of longer duties. Each rung says what it is and how long it takes. */
-.start-ladder { display: grid; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
-.start-rung { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: center; gap: 12px; padding: 10px 14px; }
-.start-rung + .start-rung { border-top: 1px solid var(--border-subtle); }
+/* v14 start path: the three duties are one ordered path (첫 심사 → 짧은 근무 → 정규 근무). Exactly one step is
+   "next" and carries the only dominant button on the screen; finished and later steps stay startable but quiet.
+   State comes from engines/start-flow.js via [data-state]; everything else sits behind one disclosure. */
+.start-path { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.start-step { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+.start-step-copy { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; row-gap: 2px; align-items: start; min-width: 0; }
+.start-step-no { grid-row: 1 / span 3; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-strong); border-radius: 50%; font: 700 var(--fs-label)/1 var(--mono); color: var(--text-2); }
+.start-step-copy b { grid-column: 2; font-size: var(--fs-compact); font-weight: 700; }
+.start-step-note { grid-column: 2; font-size: var(--fs-label); color: var(--text-2); line-height: 1.45; }
+.start-step-state { grid-column: 2; font-style: normal; font-size: var(--fs-meta); font-weight: 600; letter-spacing: .02em; color: var(--text-3); }
+.start-step-state:empty { display: none; }
+.start-step-btn { min-height: 44px; height: auto; padding: 8px 12px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--r-1); background: var(--elevated); color: var(--text); font-size: var(--fs-compact); font-weight: 700; letter-spacing: 0; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease); }
+.start-step-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.start-step-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.start-step .start-actions-row { grid-template-columns: 1fr; gap: 6px; }
+.start-step .start-settings.resume-start { height: 44px; }
+.start-step[data-state="done"] .start-step-no { border-color: var(--border); color: var(--text-3); }
+/* the next step: the booth-dark block the old hero used, so "what do I press" has one answer */
+.start-step[data-state="next"] { padding: 16px 20px; border-color: var(--booth); background: var(--booth); color: var(--booth-text); }
+.start-step[data-state="next"] .start-step-no { border-color: var(--booth-muted); color: var(--booth-text); }
+.start-step[data-state="next"] .start-step-copy b { font-size: 16px; letter-spacing: -.01em; color: var(--booth-text); }
+.start-step[data-state="next"] :is(.start-step-note, .start-step-state) { color: var(--booth-muted); }
+.start-step[data-state="next"] .start-step-btn { min-height: 48px; border: 0; background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
+.start-step[data-state="next"] .start-step-btn:hover { opacity: .9; }
+/* a duty waiting at a checkpoint: resuming is the dominant action, a fresh duty the quiet one */
+.start-step[data-state="next"][data-resume="true"] .start-settings.resume-start { height: 48px; border: 0; background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; }
+.start-step[data-state="next"][data-resume="true"] .start-step-btn { min-height: 44px; border: 1px solid var(--booth-muted); background: transparent; color: var(--booth-text); font-size: var(--fs-compact); font-weight: 700; }
+/* everything that is not the path */
+.start-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--text-2); font-size: var(--fs-compact); font-weight: 600; }
+.start-more[open] > summary { border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px; color: var(--text); }
+.start-more-body { display: grid; gap: 12px; }
+.start-more-body .start-settings { width: 100%; }
+.start-rung { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
 .start-rung-copy { display: grid; gap: 2px; min-width: 0; }
 .start-rung-copy b { font-size: var(--fs-compact); font-weight: 700; }
 .start-rung-copy span { font-size: var(--fs-label); color: var(--text-2); line-height: 1.45; }
-.start-mode-btn, .start-rung .startbtn { min-height: 44px; height: auto; padding: 8px 12px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--r-1); background: var(--elevated); color: var(--text); font-size: var(--fs-compact); font-weight: 700; letter-spacing: 0; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
-.start-mode-btn:hover, .start-rung .startbtn:hover { border-color: var(--accent); background: var(--accent-soft); }
-.start-mode-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.start-rung .start-actions-row { grid-template-columns: 1fr; gap: 6px; }
-.start-rung .start-settings.resume-start { height: 44px; }
 .start-shift-setup { display: grid; gap: 10px; }
-@media (max-width: 1279px) { .start-primary { grid-template-columns: minmax(0, 1fr); text-align: center; } .start-hero-btn { width: 100%; } }
+/* a first-time player sees the path and nothing beside it until they ask for more */
+.startcard[data-newcomer="true"]:not([data-more="open"]) .start-side { display: none; }
+.startcard[data-newcomer="true"]:not([data-more="open"]) .start-body { grid-template-columns: minmax(0, 1fr); }
+.startcard[data-newcomer="true"]:not([data-more="open"]) { width: min(720px, 100%); }
+/* UI language sits on the hero: it must be reachable before anything is read */
+.start-lang { position: absolute; z-index: 2; top: var(--start-pt); right: var(--start-px); }
+.start-lang button { min-height: 44px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, .45); border-radius: var(--r-1); background: rgba(20, 35, 47, .6); color: #fff; font-size: var(--fs-compact); font-weight: 600; }
+/* keep the first hero line clear of the language button */
+.start-head .startmark { margin-right: 112px; }
+.start-lang button:hover { background: rgba(20, 35, 47, .85); }
 .start-settings { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-compact); font-weight: 600; color: var(--text-2); }
 .start-settings.resume-start { height: 48px; border-color: var(--success); color: var(--success-text); }
 .start-links { display: grid; gap: 6px; }
@@ -130,11 +155,10 @@ body.pref-contrast .start-scene { display: none; }
   .setup-actions button { min-height: 40px; }
   .option-grid { grid-template-columns: 1fr; }
   .option-grid button { min-height: 52px; }
-  .start-rung { grid-template-columns: 1fr; gap: 8px; }
+  .start-rung, .start-step { grid-template-columns: 1fr; gap: 8px; }
   .session-row b { font-size: 14px; }
-  .start-hero-btn { height: 56px; font-size: 17px; }
-  .start-mode-btn { min-height: 52px; }
-  .start-shift-toggle summary { min-height: 44px; display: flex; align-items: center; }
+  .start-step[data-state="next"] .start-step-btn { min-height: 56px; font-size: 17px; }
+  .start-step-btn { min-height: 52px; }
   .tutorial-card { left: 14px !important; right: 14px; width: auto; }
 }
 

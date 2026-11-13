@@ -13,6 +13,7 @@ let initialized = false;
 
 const EXACT = new Map([
   ['정규 근무 배치 바꾸기', 'Change regular-duty posting'],
+  ['다른 방식·설정 더 보기', 'More ways to play and settings'], ['진행 순서', 'Order of play'],
   ['듣고, 확인하고, 결정하기 · 약 5분 · 시간에 쫓기지 않고 화면 익히기', 'Listen, check and decide · about 5 minutes · learn at your own pace'],
   ['하루 한 건 · 모두 같은 사건 · 익숙해진 뒤 도전', 'One shared case each day · try it when you know the desk'],
   ['재심 이후 필요한 별도 절차', 'Separate procedure after secondary review'],
@@ -443,7 +444,7 @@ const EXACT = new Map([
   ['라이브 인터뷰', 'Live interview'],
   // v12 start ladder, disclosure and field notes
   ['첫 심사 · 승객 1명', 'First inspection · one traveler'],
-  ['근무 선택', 'Choose a duty'],
+  
   ['승객 6명 · 약 15분 · 통상 입국과 확인이 필요한 입국이 섞여 있습니다', 'Six travelers · about 15 minutes · routine arrivals mixed with ones that need checking'],
   ['정규 근무', 'Full duty'],
   ['승객 36명 · 근무조 3개 · 대기열 압박 · 자동저장', '36 travelers · three shifts · queue pressure · autosave'],
@@ -471,7 +472,7 @@ const EXACT = new Map([
   ['다음 승객 호출', 'Call next traveler'],
   ['근무 요약 보기', 'View shift summary'],
   ['짧은 근무 요약', 'Short shift summary'],
-  ['정식 근무 준비', 'Prepare full duty'],
+  ['시작 화면으로 · 다음은 정규 근무', 'Back to start · next: regular duty'],
   ['같은 승객 다시', 'Same passengers again'],
   ['다른 승객으로 한 번 더', 'Again with new passengers'],
   ['승객 6명 · 약 15분 · 할 때마다 다른 승객 구성 · 안내 없이 진행합니다', '6 travelers · about 15 min · a different roster every time · no coaching'],
@@ -750,7 +751,7 @@ function ensureControls() {
     const more = topActions.querySelector('.more-wrap');
     topActions.insertBefore(button, more || null);
   }
-  const startActions = document.querySelector('#setupBar .setup-actions');
+  const startActions = document.getElementById('startLangMount') || document.querySelector('#setupBar .setup-actions');
   if (startActions && !document.getElementById('startLanguageBtn')) {
     const button = languageButton('startLanguageBtn', '');
     startActions.insertBefore(button, startActions.firstChild);

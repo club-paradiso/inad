@@ -49,7 +49,7 @@
 .event-effect:empty { display: none; }
 /* Decorative English labels (procedure kicker, LIVE tag, document type codes) belong to the English UI only:
    in Korean they repeated the Korean title in a second language (CLAUDE.md: no hierarchy-blurring bilingual mix). */
-html[lang="ko"] :is(.proc-kicker, .portrait-tag, .doc-code) { display: none; }
+html[lang="ko"] :is(.proc-kicker, .doc-code) { display: none; }
 html[lang="ko"] .doctext small:not(:has(.doc-flag)) { display: none; }
 .meta-status { display: flex; align-items: center; gap: 12px; white-space: nowrap; min-width: 0; overflow: hidden; }
 .meta-status > * { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

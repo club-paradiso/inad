@@ -1,7 +1,7 @@
 // v11 reachability: every authored international case is played through the real UI
 // (call → interview → records → documents → comparisons → requests → outcome → debrief → next).
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 
 await loadAtlasLibraries();
@@ -9,7 +9,7 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to t
 test.describe.configure({ timeout: 300_000 });
 
 async function openCountry(page, country) {
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator(`[name="atlas-country"][value="${country}"]`).check();
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', country);
 }
@@ -110,6 +110,7 @@ test('review R2: entering a country at boot never overwrites saved progress of a
   // Slow the case libraries so the player can choose before the save has been read.
   await page.route(/atlas-(ca|gb|nz)\.[a-f0-9]+\.js$|data\/atlas\/(ca|gb|nz)\.js$/, async (route) => { await new Promise((r) => setTimeout(r, 800)); await route.continue(); });
   await page.reload();
+  await revealStartMore(page);
   await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="CA"]').check();
   await page.locator('#atlasEnter').click();

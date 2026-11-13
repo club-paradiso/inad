@@ -1,6 +1,6 @@
 // Overseas free-text questions through the real UI.
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 import { resolveAtlasUtterance } from '../../src/js/engines/atlas-intent.js';
 
@@ -9,7 +9,7 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to t
 const CA01 = atlasScenarios('CA').find((c) => c.id === 'SIM-CA-01');
 
 async function openCA01(page) {
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="CA"]').check();
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', 'CA');
   await task(page, 'passenger'); // on phones only one zone is shown

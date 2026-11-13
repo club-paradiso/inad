@@ -1,7 +1,7 @@
 // Overseas push-to-talk: consent first, transcript only fills the box, nothing is sent or stored, and an
 // ended session (case switch, replay, Ask, dialogs, country switch) can never write, announce or listen.
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 
 await loadAtlasLibraries();
@@ -38,7 +38,7 @@ function installFake() {
 }
 async function openCase(page, country, id, consent = null) {
   if (consent) await page.addInitScript((v) => localStorage.setItem('inad-voice', v), consent);
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator(`[name="atlas-country"][value="${country}"]`).check();
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', country);
   await page.locator(`[data-case="${id}"]`).click();
@@ -178,7 +178,7 @@ test('voice: without the speech API there is no Speak button and typing still wo
 test('voice at 320px: input, Ask and Speak fit without horizontal overflow and keep 44px targets', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.addInitScript(installFake(), { heard: 'x' });
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="GB"]').check(); await page.locator('#atlasEnter').click();
   await page.locator('#taskNav [data-task="passenger"]').click(); await page.locator('#atlasCallPassenger').click();
   await page.locator('#taskNav [data-task="interview"]').click();

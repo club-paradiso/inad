@@ -1,7 +1,7 @@
 // Overseas read-aloud: off by default, speaks only canonical answers and the opening statement in the
 // interview language, never while the microphone is open, and never after the player has moved on.
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 
 await loadAtlasLibraries();
@@ -37,7 +37,7 @@ async function openGB01(page, { on = false, mic = false, language = null } = {})
   await page.addInitScript(installSynth);
   if (mic) { await page.addInitScript(installMic); await page.addInitScript(() => localStorage.setItem('inad-voice', 'browser')); }
   if (on) await page.addInitScript(() => localStorage.setItem('inad-tts', '1'));
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="GB"]').check();
   if (language) await page.locator('#atlasInterviewLanguage').selectOption(language);
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', 'GB');
@@ -137,7 +137,7 @@ test('read-aloud: without speech synthesis the switch is disabled and nothing br
   await page.addInitScript(() => { Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: undefined }); window.SpeechSynthesisUtterance = undefined; });
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(() => localStorage.setItem('inad-tts', '1'));
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="GB"]').check(); await page.locator('#atlasEnter').click();
   await page.locator('#atlasCallPassenger').click(); await page.locator('#ask-source').click();
   await page.locator('#atlasSettings').click();
