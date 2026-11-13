@@ -508,3 +508,20 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
 - 이전(main `9b4d97b`)·이후 캡처 4쌍: 첫 심사 작업대 1024×768, 시작 화면 1440×900, 승객 390×844, 인터뷰 390×844.
   프레임은 실제 크기, 이미지 채우기(로컬 dist 빌드 · Playwright Chromium).
 - 변수·텍스트 스타일·컴포넌트 변경 없음. 결정 근거: `docs/demo-readiness-2026-11-12.md`.
+
+## 14. v13.0 현직 감사 후속 수정 — 코드 → Figma 동기화 (2026-11-13)
+
+코드가 먼저 바뀌었다(PR #57, main `c582c68`). 근거와 변경 목록은 `RELEASE_NOTES_v13.0.md`, `docs/legal-review.md` "2026-11-13".
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] v13.0 현직 감사 후속 수정 · 2026-11-13`
+  ([286:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=286-2247)). 자동화가 만든 노드만 들어 있다.
+  - 이전(main `f524c37`)·이후(main `c582c68`) 캡처, 실제 크기 프레임에 이미지 채우기 27장:
+    시작 화면 1440·1024·768·390 · 작업대 1440·1024 · 승객/자료 과업 768·390 (이전·이후 쌍),
+    이후 전용: 첫 심사(시티 라흐마) · 판단 패널 · 입국재심 정밀 면담 · 불허 사유 + 병기 사유 · 불허 통지서 · 송환지시 대상 선택 · 디브리핑(모두 1440).
+  - 편집 가능한 컴포넌트 2개(같은 섹션 하단, 변수·텍스트 스타일 바인딩):
+    `Procedure / Repatriation addressee (proc-choice)` ([288:2262](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2262)) ↔ `procedure-screen.js repatAddresseeChoices()` · `.proc-choice`,
+    `Modal / Additional ground (reason-extra)` ([288:2269](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2269)) ↔ `reports.js showRefusalReasons(extras)` · `.reason-extra`.
+    사용 변수: `color/bg/surface`, `color/border/default`, `color/border/strong`, `color/text/primary`, `color/text/muted`, `radius/small`, `radius/medium`, `space/3`. 텍스트 스타일: `type/section`, `type/meta`.
+- **변경 없음**: 변수 이름·값(`tokens.css`), 텍스트 스타일, 기존 프레임·컴포넌트·`[Approved]`/`[Implemented]` 섹션.
+- **아직 컴포넌트가 아닌 것**: 여권 인쇄 항목(생년월일·성별·만료일) 행, 단서 카드(중립 표시), 법적 근거 접기 요약, 서류 탭 띠. 코드가 소스 오브 트루스이고 위 캡처가 시각 기준이다.
+- 이미지 업로드는 작업 환경 네트워크 허용 목록에 `mcp.figma.com`을 추가한 뒤 됐다(§10·§12의 미완료 원인과 같은 호스트).
