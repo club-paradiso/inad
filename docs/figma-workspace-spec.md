@@ -510,7 +510,31 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   프레임은 실제 크기, 이미지 채우기(로컬 dist 빌드 · Playwright Chromium).
 - 변수·텍스트 스타일·컴포넌트 변경 없음. 결정 근거: `docs/demo-readiness-2026-11-12.md`.
 
-## 14. 현장감 레이어 — 코드 → Figma 동기화 (2026-11-13)
+## 14. v13.0 현직 감사 후속 수정 — 코드 → Figma 동기화 (2026-11-13)
+
+코드가 먼저 바뀌었다(PR #57, main `c582c68`). 근거와 변경 목록은 `RELEASE_NOTES_v13.0.md`, `docs/legal-review.md` "2026-11-13".
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] v13.0 현직 감사 후속 수정 · 2026-11-13`
+  ([286:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=286-2247)). 자동화가 만든 노드만 들어 있다.
+  - 이전(main `f524c37`)·이후(main `c582c68`) 캡처, 실제 크기 프레임에 이미지 채우기 27장:
+    시작 화면 1440·1024·768·390 · 작업대 1440·1024 · 승객/자료 과업 768·390 (이전·이후 쌍),
+    이후 전용: 첫 심사(시티 라흐마) · 판단 패널 · 입국재심 정밀 면담 · 불허 사유 + 병기 사유 · 불허 통지서 · 송환지시 대상 선택 · 디브리핑(모두 1440).
+  - 편집 가능한 컴포넌트 2개(같은 섹션 하단, 변수·텍스트 스타일 바인딩):
+    `Procedure / Repatriation addressee (proc-choice)` ([288:2262](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2262)) ↔ `procedure-screen.js repatAddresseeChoices()` · `.proc-choice`,
+    `Modal / Additional ground (reason-extra)` ([288:2269](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2269)) ↔ `reports.js showRefusalReasons(extras)` · `.reason-extra`.
+    사용 변수: `color/bg/surface`, `color/border/default`, `color/border/strong`, `color/text/primary`, `color/text/muted`, `radius/small`, `radius/medium`, `space/3`. 텍스트 스타일: `type/section`, `type/meta`.
+- **변경 없음**: 변수 이름·값(`tokens.css`), 텍스트 스타일, 기존 프레임·컴포넌트·`[Approved]`/`[Implemented]` 섹션.
+- **편집 가능한 v13 변형 4종**(같은 섹션 하단 `편집 가능 · v13 변형` 행, [291:2356](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2356)).
+  `04 — Components`의 기존 세트(Document/Field 17:68 · Document/Selector 17:61 · Assessment/Clue 18:179 · Assessment/Basis 18:160)는
+  자동화가 고칠 수 없는 노드라 그대로 두고, 바뀐 동작을 새 컴포넌트로 만들었다. 기존 세트에 합칠지는 사람이 결정한다.
+  - `Document/Passport (v13 · printed rows + MRZ)` [291:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2247) ↔ `documentHTML`(PASSPORT) · `passportPrintedRows()` · `engines/mrz.js`
+  - `Assessment/Clue · Neutral (v13)` [291:2309](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2309) ↔ `clueCardsHTML()` (진행 중 등급 색·핵심 배지 없음)
+  - `Assessment/Basis · Folded panel (v13)` (Open=false·true) [291:2331](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2331) ↔ `renderBasisPanel()` `details.basis-wrap`
+  - `Document/Strip item (v13)` (State=default·selected·alert) [291:2341](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2341) + 4장 예시 [291:2342](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2342) ↔ ≥1280 `.zone-evidence .doclist`
+  - 바인딩: Color·Space·Radius 변수, 텍스트 스타일 `type/label`·`type/meta`·`type/control`·`type/code`·`type/section`. 여권 종이 색(`#f6f3ea`·`#1d3752`·`#d5cfbf`)은 `documents.css`도 하드코딩이라 변수가 없다.
+- 이미지 업로드는 작업 환경 네트워크 허용 목록에 `mcp.figma.com`을 추가한 뒤 됐다(§10·§12의 미완료 원인과 같은 호스트).
+
+## 15. 현장감 레이어 — 코드 → Figma 동기화 (2026-11-13)
 
 코드가 먼저 바뀌었다(브랜치 `claude/inad-game-review-upgrade-vw9fjx`, PR #59). 표현 계층만 바뀌었고
 토큰 이름·값, 변수, 텍스트 스타일, 컴포넌트 세트는 그대로다.
@@ -547,4 +571,3 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
 - **코드와 다른 점(컴포넌트)**: CSS는 `3px double` 테두리(Figma는 1px 선 두 겹), 제목 굵기 800 · 자간 .12em,
   영문 줄 10.5px 굵기 700 · 자간 .1em(Figma는 스타일 값 그대로). -7° 회전과 등장 효과는 화면에서만 적용되며
   컴포넌트 설명에 적어 두었다. `코드 매핑` 표(`39:131`)는 기존 노드라 건드리지 않았다.
-
