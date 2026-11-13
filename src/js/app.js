@@ -5,7 +5,7 @@
 import './services/boot-watchdog.js';
 import { state, session, resetSessionState, preferences } from './state.js';
 import { bus, notify } from './services/bus.js';
-import { initAudio, ensureAudio, cues, syncAmbience, ambienceState } from './services/audio.js';
+import { initAudio, ensureAudio, cues, syncAmbience, setDutyActive, ambienceState } from './services/audio.js';
 import { stageArrive, endArrival } from './ui/passenger-stage.js';
 import { installErrorCollectors, runDiagnostics, diagnosticText } from './services/diagnostics.js';
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
@@ -96,7 +96,7 @@ function regenerate(seed = newSessionSeed()) {
   byId('sessionSeed').textContent = String(seed); renderEventBar(); renderChallengeHud(); renderCampaignHud(); renderDailyStart(showDailyMissions); syncOptionButtons(); renderQueue(); renderTop();
 }
 function beginCase(skipCall = false) {
-  resetLiveInterview(); const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages(); syncAmbience();
+  resetLiveInterview(); const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages(); setDutyActive(true);
   // Every case starts after a dialog (briefing, case result, shift change): put focus on the new passenger, not on
   // <body> and never back on a decision button that would act on a traveler the examiner has not seen yet.
   const head = byId('caseName'); if (!isModalOpen() && head?.getClientRects().length) head.focus({ preventScroll: true });
@@ -135,7 +135,7 @@ function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open)
 function runProcedureAction(a, ctx = {}) {
   const r = caseEngine.procedureAction(a, ctx);
   if (r.gameOver) { gameOverFlow(); return; }
-  if (r.fatal) { closeProcedureScreen(); if (state.sessionMode === 'shift') caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
+  if (r.fatal) { setDutyActive(false); closeProcedureScreen(); if (state.sessionMode === 'shift') caseEngine.gameOver(); showFatalAbuse(() => location.reload()); return; }
   if (r.close) closeProcedureScreen();
   if (r.decide === 'clear') { decideClearFlow(); return; }
   if (r.decide === 'refuse') { openRefusalFlow(); return; }
@@ -151,10 +151,12 @@ function finishFlow(label) {
   const r = caseEngine.finishCase(label); r.debrief = buildDebrief(r.c, record); r.debrief.fieldNote = fieldNote(r.c.id, document.documentElement.lang === 'en' ? 'en' : 'ko');
   bus.emit('analytics', { name: 'case_complete', mode: state.sessionMode, label });
   if (state.sessionMode === 'case') {
+    setDutyActive(false);
     showCaseResult(r, null, { mode: 'case', onRetry: () => liveInterviewFlow(true), onContinue: () => quickShiftFlow(true, false, true), onExit: () => location.reload() });
     return;
   }
   if (state.sessionMode === 'daily') {
+    setDutyActive(false);
     const d = dailyCase(); const result = dailyResult(d.dateKey, r.c, r.report, r.debrief, record.interview); const first = saveDailyResult(result);
     bus.emit('analytics', { name: 'daily_complete', label });
     showCaseResult(r, null, { mode: 'daily', daily: { result, first, share: shareText(result) }, onExit: () => location.reload() });
@@ -165,6 +167,7 @@ function finishFlow(label) {
       mode: 'quick',
       onNext: () => { caseEngine.advanceQueue(); beginCase(); },
       onSummary: () => {
+        setDutyActive(false);
         const grade = caseEngine.gradeFor();
         saveBestGrade(grade);
         const sessionResult = caseEngine.persistCompletedSession(grade, { mode: 'quick' });
@@ -186,10 +189,11 @@ function finishFlow(label) {
   });
 }
 function shiftCompleteFlow() {
+  setDutyActive(false);
   const r = caseEngine.shiftComplete();
   showShiftComplete(r, { onProfile: showPlayerProfile, onRecords: recordsFlow, onRestart: () => { const cr = r.campaignResult; if (cr && (cr.completed || cr.failed)) clearCampaign(); location.reload(); } });
 }
-function gameOverFlow() { if (state.sessionMode === 'shift') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
+function gameOverFlow() { setDutyActive(false); if (state.sessionMode === 'shift') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 // Single-case live interview: reaches a real passenger in one click (first-run path) and never touches saves.
 let liveCaseId = LIVE_CASE.caseId; // the single case on screen, so 다시 하기 restarts the same passenger
 function liveInterviewFlow(retry = false, caseId = retry ? liveCaseId : LIVE_CASE.caseId) {

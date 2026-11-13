@@ -62,6 +62,25 @@ test.describe('현장감 레이어', () => {
     await expect(stamp).toHaveAttribute('aria-hidden', 'true'); // the table row states the decision for assistive tech
     await expect(page.locator('.docmodal table')).toContainText('입국 허가');
     expect((await H.getState(page)).stage).toBe('ADMITTED');
+    // the duty ends on the result screen: the hall loop stops there even though the session object stays started
+    expect(await H.hook(page, (T) => T.ambience().wanted)).toBe(true);
+    await page.locator('#docContinue').click();
+    await expect(page.locator('.decision-stamp')).toHaveCount(0);
+    expect(await H.hook(page, (T) => T.ambience().wanted)).toBe(false);
+    await H.expectNoErrors(errors);
+  });
+
+  test('high contrast removes every scene image', async ({ page }) => {
+    const errors = await H.openGame(page);
+    await page.evaluate(() => document.body.classList.add('pref-contrast'));
+    await expect(page.locator('.start-scene')).toBeHidden();
+    await H.setSeed(page, 271828);
+    await H.startShift(page);
+    expect(await page.locator('#passengerStage').evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');
+    await page.locator('#skipCall').click();
+    await page.locator('#secondaryBtn').click();
+    await expect(page.locator('#procedureScreen')).toHaveClass(/on/);
+    expect(await page.locator('#procedureScreen .proc-head').evaluate((el) => getComputedStyle(el).backgroundImage)).toBe('none');
     await H.expectNoErrors(errors);
   });
 });

@@ -46,10 +46,12 @@ export const cues = {
 };
 
 // ---- hall ambience ---------------------------------------------------------------------------
-// Plays only while a duty is running, the tab is visible and 음향 is on. The file is a palindrome loop mastered
+// Plays only while a duty is running (a passenger is at the desk or the next one is due — not on the end-of-duty
+// screens; app.js marks this with setDutyActive), the tab is visible and 음향 is on. The file is a palindrome loop mastered
 // quiet (mean about -34 dB), so platforms that ignore element volume (iOS) still get a background level.
 const AMBIENCE_LEVEL = .55, FADE_MS = 900;
-let amb = null, ambFade = 0, ambRetry = false;
+let amb = null, ambFade = 0, ambRetry = false, dutyActive = false;
+export function setDutyActive(on) { dutyActive = !!on; syncAmbience(); }
 function ambienceEl() {
   if (amb || typeof Audio === 'undefined') return amb;
   const el = new Audio(); const ogg = el.canPlayType('audio/ogg; codecs="opus"');
@@ -64,7 +66,7 @@ function fadeAmbience(to, done) {
     if (k >= 1) { clearInterval(ambFade); done && done(); }
   }, 60);
 }
-export function ambienceWanted() { return !!(state.audio && state.started && typeof document !== 'undefined' && !document.hidden); }
+export function ambienceWanted() { return !!(state.audio && state.started && dutyActive && typeof document !== 'undefined' && !document.hidden); }
 export function syncAmbience() {
   if (typeof document === 'undefined') return;
   if (!ambienceWanted()) { if (amb && !amb.paused) fadeAmbience(0, () => { if (!ambienceWanted()) amb.pause(); }); return; }
