@@ -148,6 +148,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | Procedure/Action | Kind: primary · good · danger · neutral | `.proc-action` |
 | Feedback/Toast | Kind: toast · event | `src/js/ui/toast.js` |
 | Feedback/Inline | Tone: info · warn · danger · legal | `.inline-note`(대화상자) · `.proc-note`(절차 화면) |
+| Feedback/DecisionStamp | Kind: Admit · Refuse | `src/js/ui/views/reports.js showDoc({ stamp })` · `.decision-stamp` |
 | Overlay/Dialog | Size: default · wide / Breakpoint: desktop · mobile(sheet) | `src/js/ui/modals.js` |
 | Overlay/Callout | — | `src/js/ui/shell.js` `showCallout` |
 | Panel/Frame | Head: on·off | `.panel` `.ph` |
@@ -532,3 +533,41 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   - `Document/Strip item (v13)` (State=default·selected·alert) [291:2341](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2341) + 4장 예시 [291:2342](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2342) ↔ ≥1280 `.zone-evidence .doclist`
   - 바인딩: Color·Space·Radius 변수, 텍스트 스타일 `type/label`·`type/meta`·`type/control`·`type/code`·`type/section`. 여권 종이 색(`#f6f3ea`·`#1d3752`·`#d5cfbf`)은 `documents.css`도 하드코딩이라 변수가 없다.
 - 이미지 업로드는 작업 환경 네트워크 허용 목록에 `mcp.figma.com`을 추가한 뒤 됐다(§10·§12의 미완료 원인과 같은 호스트).
+
+## 15. 현장감 레이어 — 코드 → Figma 동기화 (2026-11-13)
+
+코드가 먼저 바뀌었다(브랜치 `claude/inad-game-review-upgrade-vw9fjx`, PR #59). 표현 계층만 바뀌었고
+토큰 이름·값, 변수, 텍스트 스타일, 컴포넌트 세트는 그대로다.
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] 현장감 레이어 · 장면·도착 연출·결정 도장 · 2026-11-13` (`290:2247`,
+  [링크](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=290-2247)). 자동화가 만든 노드만 들어 있고
+  기존 프레임·컴포넌트·변수는 수정하지 않았다.
+- 실제 크기 프레임 10개, 이미지 채우기(파일 안에서 해시 조회·크기 일치 확인). 원본: `docs/audit/atmosphere-2026-11/*.png`
+  (로컬 dist 빌드 · Playwright Chromium · 배치 번호 271828).
+
+| 프레임 | 노드 |
+|---|---|
+| 시작 화면 1440×900 · 1024×768 · 768×1024 · 390×844 | `290:2250` · `290:2252` · `290:2254` · `290:2256` |
+| 승객 호출 · 빈 대기선 1440×900 · 1024×768 · 768×1024 · 390×844 | `290:2258` · `290:2260` · `290:2262` · `290:2264` |
+| 결정 도장 · 입국 허가 1440×900 | `290:2266` |
+| 입국재심 머리 1440×900 | `290:2268` |
+
+- **코드 기준 값** (`src/styles/start.css` · `interview.css` · `modals.css` · `procedures.css`):
+
+| 요소 | 값 |
+|---|---|
+| 시작 머리 `.start-head` | 최소 높이 216px(뷰포트 높이 860px 이하 168px), 배경 `--chrome`, 장면 `object-position: 50% 58%` |
+| 시작 머리 스크림 | `rgba(20, 35, 47, .95)` 아래 → `.70` 위. 제목 `#fff`, 나머지 `#dfe7ec` |
+| 부스 배경 `.booth-stage` | `lane.webp`, `50% 30% / cover`. 초상 전환 `--t-slow`(220ms) |
+| 결정 도장 `.decision-stamp` | 3px 이중선, 회전 -7°, 불투명도 .9, 등장 `--t-base`(180ms) · 지연 140ms. 허가 `--success-text`, 불허 `--danger-text` |
+| 재심 머리(≥1024px · 높이 ≥700px) | 최소 높이 104px, `--chrome-2` 0–30% 불투명 → 62%에서 38% 혼합, 장면 `50% 66%` |
+
+- 고대비 설정(`body.pref-contrast`)은 시작 장면과 재심 머리 장면을 끈다. 동작 줄이기 설정은 초상 전환과 도장 등장을 없앤다.
+- **완료 · 컴포넌트(04 — Components)**: `Feedback/DecisionStamp` (`293:96`,
+  [링크](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=293-96)) — 변형 `Kind=Admit`(`293:88`) ·
+  `Kind=Refuse`(`293:92`). 코드에 있는 두 상태만 만들었다. 색은 `color/status/success-text` · `color/status/danger-text`,
+  반경은 `radius/small`, 글자는 `type/title` · `type/code`에 바인딩했다. 새 변수·스타일은 만들지 않았고 기존 세트는
+  수정하지 않았다. 렌더러: `src/js/ui/views/reports.js showDoc({ stamp })` · `src/styles/modals.css .decision-stamp`.
+- **코드와 다른 점(컴포넌트)**: CSS는 `3px double` 테두리(Figma는 1px 선 두 겹), 제목 굵기 800 · 자간 .12em,
+  영문 줄 10.5px 굵기 700 · 자간 .1em(Figma는 스타일 값 그대로). -7° 회전과 등장 효과는 화면에서만 적용되며
+  컴포넌트 설명에 적어 두었다. `코드 매핑` 표(`39:131`)는 기존 노드라 건드리지 않았다.

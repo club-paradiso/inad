@@ -10,6 +10,12 @@
 .proc-enter > * { animation: procIn var(--t-slow) var(--ease); }
 @keyframes procIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .proc-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px var(--s-4); background: var(--chrome-2); color: var(--chrome-text); border-bottom: 3px solid var(--proc); }
+/* 입국재심 happens in another room: the header carries that room (generated scene, src/assets/scenes) under a chrome scrim */
+@media (min-width: 1024px) and (min-height: 700px) {
+  .procedure-screen[data-mode="secondary"] .proc-head { min-height: 104px; align-items: end; padding-bottom: 12px; background-image: linear-gradient(to right, var(--chrome-2) 0 30%, color-mix(in srgb, var(--chrome-2) 38%, transparent) 62%), url(../assets/scenes/room.webp); background-size: auto, cover; background-position: 0 0, 50% 66%; }
+  .procedure-screen[data-mode="secondary"] .proc-close { background: var(--chrome); }
+}
+body.pref-contrast .procedure-screen[data-mode="secondary"] .proc-head { background-image: none; }
 .proc-kicker { font-size: var(--fs-meta); letter-spacing: .1em; color: var(--chrome-muted); }
 .proc-title h2 { font-size: var(--fs-title); font-weight: 700; margin: 1px 0; }
 .proc-title p { font-size: var(--fs-label); color: var(--chrome-muted); }

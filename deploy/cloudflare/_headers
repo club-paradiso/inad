@@ -25,3 +25,9 @@
 
 /assets/portraits/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/assets/scenes/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/assets/audio/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

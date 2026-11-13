@@ -563,7 +563,7 @@ const EXACT = new Map([
   ['정확한 심사 20건', '20 accurate inspections'], ['효율과 절차', 'Efficiency and procedure'], ['특수절차 완전처리', 'Special procedure, fully handled'],
   ['대화상자 닫기', 'Close dialog'], ['심사 단계', 'Inspection steps'], ['질문 카테고리', 'Question categories'], ['저장 데이터 파일 선택', 'Choose a save file'], ['기계판독영역', 'Machine-readable zone'],
   ['게임에 등장하는 모든 여행객의 얼굴·이름·여권번호·사건은 인공지능 및 시뮬레이션을 이용해 생성한 가상의 정보입니다. 실제 인물·사건과는 관련이 없습니다. 국적은 입국자격 산정에만 사용되며 위험도나 범죄 가능성을 뜻하지 않습니다. 가족·단체 동행 여부 역시 위험도와 연결되지 않습니다. 현장 이벤트·업무량·특별 근무 도전·시나리오 프리셋·3일 캠페인·일일 미션은 게임 밸런스와 메타 진행을 위한 가상 변수이며 입국요건이나 법률상 정답을 변경하지 않습니다.', 'Every traveler’s face, name, passport number and case in the game is fictional, generated with AI and simulation, and unrelated to real people or events. Nationality is used only to determine the basis of entry and never means risk or likelihood of crime. Travelling with family or a group is not linked to risk either. Field events, workload, special-duty challenges, scenario presets, the 3-day campaign and daily missions are fictional variables for game balance and meta progression; they never change entry requirements or the legally correct outcome.'],
-  ['Web Audio 효과음 및 안내방송 차임 사용 중', 'Web Audio sound effects and announcement chime on'], ['추가 목표 없이 기본 근무를 수행합니다.', 'Standard duty without extra objectives.']
+  ['효과음·안내방송 차임·입국심사장 현장음 사용 중', 'Sound effects, announcement chime and hall ambience on'], ['추가 목표 없이 기본 근무를 수행합니다.', 'Standard duty without extra objectives.']
 ]);
 
 // Language names and levels come from the language data (each entry already carries its English name).

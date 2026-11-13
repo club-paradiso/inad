@@ -58,7 +58,7 @@ export function renderTop() {
   setText('stAdmitted', state.stats.admitted); setText('stSecondary', state.stats.secondary); setText('stRefused', state.stats.refused);
   renderWorkloadOnly(); renderChallengeHud(); renderCampaignHud();
 }
-export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? 'Web Audio 효과음 및 안내방송 차임 사용 중' : '음향이 꺼져 있습니다'; }
+export function renderAudioButton() { const b = byId('audioBtn'); if (!b) return; b.innerHTML = `<span class="sound-led" aria-hidden="true"></span>${state.audio ? '음향 켬' : '음향 끔'}`; b.classList.toggle('sound-muted', !state.audio); b.setAttribute('aria-pressed', String(state.audio)); b.title = state.audio ? '효과음·안내방송 차임·입국심사장 현장음 사용 중' : '음향이 꺼져 있습니다'; }
 export function renderQueue() {
   const strip = byId('queueStrip'); if (!strip) return; const items = session.queue.slice(state.caseIndex, state.caseIndex + 10);
   strip.innerHTML = items.map((q, i) => { const t = getTraveler(q.travelerId); return `<div class="qperson ${i === 0 ? 'current' : ''}" title="${i === 0 ? '현재 호출 승객' : '대기 승객'}"><img src="${t.portrait}" alt="" loading="lazy" decoding="async"><small>${screeningNo(state.caseIndex + i)}</small></div>`; }).join('');
