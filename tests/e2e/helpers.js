@@ -128,7 +128,8 @@ export async function startLiveCase(page, caseId = 'ICN-S2-005') {
 
 export async function procAct(page, act) {
   // 제76조제1항: the repatriation order goes to the carrier the passenger arrived with.
-  if (act === 'repat-order') await page.locator('#procBody .proc-repat-to[value="carrier"]').check();
+  // (the frozen v6.1 baseline has no addressee choice, so the step applies only where it exists)
+  if (act === 'repat-order') { const to = page.locator('#procBody .proc-repat-to[value="carrier"]'); if (await to.count()) await to.check(); }
   const b = page.locator(`#procBody [data-proc-act="${act}"]`);
   await expect(b).toBeVisible();
   await b.click();
