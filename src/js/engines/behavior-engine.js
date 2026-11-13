@@ -33,7 +33,7 @@ export function behaviorOnQuestion(q, repeat = false) { const b = state.behavior
 export function behaviorResponse(q, repeat = false) {
   const b = state.behavior; if (!b) return q.a; if (repeat) { if (b.stress >= 72) return `앞서 말씀드린 내용과 같습니다. ${q.a}`; return `네, 다시 말씀드리면 ${q.a}`; }
   // v10: the nervous framing is said once per case; repeating it on every answer read as scripted.
-  if (b.stress >= 82) { if (!b.saidNervous) { b.saidNervous = true; return `조금 긴장되지만 사실대로 말씀드리겠습니다. ${q.a}`; } return b.turns % 2 ? `…네. ${q.a}` : q.a; }
+  if (b.stress >= 82) { if (!b.saidNervous) { b.saidNervous = true; return `…잠시만요. ${q.a}`; } return b.turns % 2 ? `…네. ${q.a}` : q.a; }
   if (b.stress >= 62) return `네. ${q.a}`;
   if (b.rapport <= 42) return `${q.a}`;
   if (b.profile.key === 'friendly' && b.turns <= 2) return `네, 알겠습니다. ${q.a}`;

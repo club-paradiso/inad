@@ -29,6 +29,7 @@ export const REPEAT_CONFIRM_BELOW = 0.62;
 // Same bar for first-time questions (measured trade-off in docs/v10-qa.md §3: catches 4 of 6 wrong routes in the
 // fixture, adds one confirmation to 26 of 120 correct ones).
 export const CONFIRM_BELOW = 0.62;
+export const REDIRECT_BELOW = 0.85;
 
 const docField = (c, keys, names) => { for (const d of c.docs || []) if (keys.includes(d.k)) for (const [k, v] of d.fields || []) if (names.includes(k)) return v; return null; };
 // A line answering a common question from the submitted documents only, or null when the case has nothing public.
@@ -75,6 +76,20 @@ export function withheldHint(c, q) {
   if (first.startsWith('LOOKUP_')) return '아직 구체적인 답을 듣지 못했습니다. 전산 조회로 확인한 내용이 있어야 이 질문의 답을 들을 수 있습니다.';
   return '아직 구체적인 답을 듣지 못했습니다. 다른 확인을 먼저 한 뒤 같은 내용을 다시 물어볼 수 있습니다.';
 }
+// Candidates offered back to the examiner are questions that can be answered now: a follow-up whose answer
+// is not disclosable yet is replaced by the open question that would establish it, so the offer never
+// shows the text of a locked follow-up.
+function openCandidates(c, ids) {
+  const out = [];
+  for (const id of ids) {
+    const q = (c.questions || []).find((x) => x.id === id); if (!q) continue;
+    let pick = q;
+    if (!questionUnlocked(q)) pick = (q.requires || []).filter((r) => r.startsWith('QUESTION_') && !state.performed.includes(r))
+      .map((r) => c.questions.find((x) => x.id === r.slice(9))).find((x) => x && questionUnlocked(x)) || null;
+    if (pick && !out.includes(pick.id)) out.push(pick.id);
+  }
+  return out;
+}
 export function submitUtterance({ text = '', questionId = null, source = 'text', via = null } = {}) {
   const c = current(); if (!c) return { kind: 'none' };
   const rec = interviewRecord();
@@ -92,6 +107,19 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
   if (route.kind === 'question' && !questionId && (route.score ?? 1) < CONFIRM_BELOW) {
     const q = c.questions.find((x) => x.id === route.questionId);
     if (q && questionUnlocked(q) && !state.asked.has(q.id)) { bus.emit('analytics', { name: 'interview_confirm', source: src }); return { kind: 'confirm', candidates: [q.id], text: raw }; }
+  }
+  // Typed or spoken words that land on a follow-up whose answer is not disclosable yet are offered as the
+  // open question that would establish it (e.g. "who lives at the address?" → the contact question). The
+  // examiner confirms before anything is recorded, and the existence of the locked follow-up is not named.
+  // A near-verbatim follow-up (score ≥ REDIRECT_BELOW) is the examiner asking that very question: it gets
+  // the passenger's withheld line as before.
+  if (route.kind === 'question' && !questionId && (route.score ?? 1) < REDIRECT_BELOW) {
+    const q = c.questions.find((x) => x.id === route.questionId);
+    if (q && !questionUnlocked(q)) {
+      const pre = (q.requires || []).filter((r) => r.startsWith('QUESTION_') && !state.performed.includes(r))
+        .map((r) => c.questions.find((x) => x.id === r.slice(9))).find((x) => x && questionUnlocked(x) && !state.asked.has(x.id));
+      if (pre) { bus.emit('analytics', { name: 'interview_confirm', source: src }); return { kind: 'confirm', candidates: [pre.id], text: raw }; }
+    }
   }
   rec.counts[src]++;
   const turn = { at: state.caseWorkSeconds, source: src, kind: route.kind, questionId: route.questionId || null, via: via === 'model' ? 'model' : questionId ? 'button' : 'lexicon' };
@@ -157,7 +185,7 @@ export function submitUtterance({ text = '', questionId = null, source = 'text',
     rec.unmatched++; heard(raw, src, rec, { offRecord: true }); addLog('officer', raw); rec.pending = null;
     sayOffRecord(pick(route.kind === 'unknown' && route.offTopic && persona.offTopic ? persona.offTopic : persona.clarify, n), 'confused', c, rec);
     bus.emit('changed');
-    result = { kind: route.kind, candidates: route.candidates || [], mood: 'confused' };
+    result = { kind: route.kind, candidates: openCandidates(c, route.candidates || []), mood: 'confused' };
   }
   turn.kind = result.kind;
   rec.lastKind = result.kind;

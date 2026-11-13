@@ -96,7 +96,7 @@ test('keyboard document cycling is recorded the same as clicking the next docume
 
 test('document comparison inside an enlarged modal displays its result inside that modal', async ({ page }) => {
   const errors = await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await page.locator('#langInterp').click();
   await H.ask(page, 'purpose');
   await H.ask(page, 'occupation');

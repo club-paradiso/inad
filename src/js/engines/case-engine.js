@@ -14,6 +14,7 @@ import { clueStats, discoverTriggeredClues, questionUnlocked } from './clue-engi
 import { personaFor } from '../../data/personas.js';
 import { travelPartyFor, archivePartyStatement, partyLookupResult } from './companion-engine.js';
 import { addLog } from './log.js';
+import { knownEvidence } from './disclosure.js';
 import { returnItineraryFor } from './return-itinerary-engine.js';
 import { documentRequestCopy } from './document-evidence-model.js';
 import { availableCompareSources, safeComparisonNote } from './comparison-ledger.js';
@@ -34,6 +35,7 @@ export function initCase(skipCall = false) {
   const c = current();
   Object.assign(state, { stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [], selectedDoc: 0, documentReviews: {}, comparisonNotes: {}, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 18, refugeeStep: 0, forensic: false, investigation: false, arrestReview: false, repatriationStep: 0, discoveredClues: new Set(), procedureMode: null });
   if (state.guidance === 'guided' && state.caseIndex < 6) state.guidedGuardUsed = false;
+  state.caseRejected = 0; state.boothDepthNoted = false;
   state.behavior = makeBehavior(c); state.language = languageProfileFor(c); state.party = travelPartyFor(c);
   bus.emit('procedure:close');
   discoverTriggeredClues('INIT');
@@ -64,13 +66,16 @@ export function ask(q, repeat = false) {
   const already = state.asked.has(q.id); repeat = repeat || already;
   if (!handleLanguageBarrier(q)) return { ok: false, language: true };
   if (state.language?.interpreterActive) state.language.assistedTurns++;
-  spendWork(repeat ? 10 : (q.requires?.length ? 16 : 12), repeat ? 'repeat-question' : 'question');
+  // Follow-up (depth) questioning at the primary booth holds the line behind the passenger; the same
+  // question in 입국재심 does not. The extra simulated time is the operational reason to refer.
+  const depthAtBooth = !repeat && q.requires?.length && state.stage === 'PRIMARY';
+  spendWork(repeat ? 10 : (q.requires?.length ? (depthAtBooth ? 26 : 16) : 12), repeat ? 'repeat-question' : 'question');
   behaviorOnQuestion(q, repeat);
   state.questionCounts.set(q.id, (state.questionCounts.get(q.id) || 0) + 1);
   if (!repeat) {
     state.asked.add(q.id); const trig = 'QUESTION_' + q.id; actionMark(trig);
     addLog('officer', q.q); addLog('alien', behaviorResponse(q, false)); discoverTriggeredClues(trig);
-    if (q.contradiction) addLog('alert', '진술 간 긴장 또는 모순 가능성이 포착되었습니다. 단일 진술만으로 결론 내리지 말고 다른 자료와 교차검증하십시오.');
+    if (depthAtBooth && !state.boothDepthNoted) { state.boothDepthNoted = true; addLog('system', '후속 질문을 1차 심사대에서 이어 가면 뒤 대기열이 그만큼 멈춥니다. 깊은 확인은 입국재심에서도 할 수 있습니다.'); }
     if (q.id === 'refugee') addLog('alert', '피심사인이 입국심사 중 난민인정 신청 의사를 명확히 표시했습니다. 난민법 제6조 절차가 우선됩니다.');
   } else { addLog('officer', `다시 확인하겠습니다. ${q.q}`); addLog('alien', behaviorResponse(q, true)); addLog('system', '동일 질문을 재질문했습니다. 새로운 증거는 생성되지 않으며 처리효율에만 영향을 줄 수 있습니다.'); }
   notify.sound('beep', { f: repeat ? 520 : 620, d: .045 }); bus.emit('changed');
@@ -161,7 +166,7 @@ export function cycleDocument(delta) {
   notify.a11y(`제출서류 ${state.selectedDoc + 1}번, ${c.docs[state.selectedDoc].t}`);
 }
 
-export function recordMistake(msg, pts) { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, at: Date.now() }); }
+export function recordMistake(msg, pts, kind = 'attempt') { let c = null, q = null; try { c = current(); q = currentQueueItem(); } catch (e) { /* no case */ } state.mistakes.push({ caseIndex: state.caseIndex, screening: screeningNo(), caseId: q?.caseId || q?.normalId || c?.id || '-', lawRef: legal.caseLawRef(c), msg: String(msg), pts: Number(pts) || 0, kind, at: Date.now() }); }
 export function penaltyPolicy() {
   if (state.difficulty === 'training') return { factor: .5, strikeLimit: 6, coached: state.guidance === 'guided' && state.caseIndex < 6 };
   if (state.difficulty === 'standard') return { factor: .75, strikeLimit: 4, coached: state.guidance === 'guided' && state.caseIndex < 3 };
@@ -169,7 +174,11 @@ export function penaltyPolicy() {
 }
 // Returns true when the active difficulty's strike limit was reached (game over).
 export function penalty(msg, pts) {
-  const policy = penaltyPolicy(); const applied = Math.max(1, Math.round(pts * policy.factor));
+  const base = penaltyPolicy(); const applied = Math.max(1, Math.round(pts * base.factor));
+  // Coaching forgives only the first rejected attempt in a case. A second rejected decision in the
+  // same case is a real strike, so cycling through refusal grounds is never free.
+  const policy = { ...base, coached: base.coached && !(state.caseRejected > 0) };
+  state.caseRejected = (state.caseRejected || 0) + 1;
   recordMistake(msg, applied);
   if (!policy.coached) state.strikes++;
   state.score = clampScore(state.score - applied); state.proportionality = clampScore(state.proportionality - Math.ceil(applied / 4));
@@ -210,7 +219,7 @@ function evaluateRushed(c) {
 function applyThinDecision(v) {
   if (!v.thin) return;
   const applied = Math.max(1, Math.round(v.advisory.pts * penaltyPolicy().factor));
-  recordMistake(v.advisory.msg, applied);
+  recordMistake(v.advisory.msg, applied, 'thin');
   state.score = clampScore(state.score - applied);
   addLog('alert', `확인 부족 결정: ${v.advisory.msg} 결정은 그대로 기록되며, 부족한 확인은 사건 평가와 피드백에 반영됩니다.`);
 }
@@ -227,7 +236,7 @@ export function decideClear() {
   return { ok: true, doc: { title: '입국심사 완료', rows: [['성명', c.name], ['국적', c.nat], ['결정', '입국 허가'], ['입국근거', c.basis], ['심사관', 'ICN-8841']], foot: '출입국관리법 제12조에 따른 입국심사를 완료했습니다.' }, finish: '입국 허가' };
 }
 
-export function decideRefusal(code) {
+export function decideRefusal(code, extraGrounds = []) {
   const c = current(); const v = legal.validateRefusal(c, code, state.performed);
   if (!v.ok) return { ok: false, gameOver: penalty(v.penalty.msg, v.penalty.pts) };
   if (v.thin && guidedGuardApplies()) return { ok: false, guard: v.advisory.msg };
@@ -235,7 +244,21 @@ export function decideRefusal(code) {
   spendWork(9, 'decision'); evaluateRushed(c); state.stage = 'ENTRY_REFUSED'; state.ended = true; actionMark('ENTRY_REFUSED');
   notify.sound('refuse'); notify.announce('심사결정', '입국 불허가 결정을 기록했습니다.', 'INAD', 2200); notify.pulse('#refuseBtn', 'action-hit', 300); bus.emit('changed');
   const rr = v.reason;
-  return { ok: true, reason: rr, doc: { title: '입국 불허가 통지서', rows: [['성명', c.name], ['국적', c.nat], ['여권번호', c.passport], ['입국편', c.arrival], ['입국 불허가 사유', rr[1]], ['법적 근거', rr[2]], ['담당 심사관', 'ICN-8841']], foot: '입국 불허가 통지서를 교부한 뒤 운수업자에 대한 송환지시 절차로 진행합니다.' }, then: 'repatriation' };
+  // Additional grounds (병기) are cited only on facts the examiner established; an unsupported one is
+  // recorded against the decision itself (no strike) and left off the notice.
+  const known = knownEvidence(c, state); const cited = [];
+  for (const g of [...new Set(extraGrounds || [])]) {
+    const a = legal.validateAdditionalGround(g, known);
+    if (a.ok) cited.push(a.ground);
+    else { const pts = Math.max(1, Math.round(4 * penaltyPolicy().factor)); recordMistake(a.msg, pts, 'thin'); state.score = clampScore(state.score - pts); addLog('alert', `근거 없는 병기 사유: ${a.msg}`); }
+  }
+  const t = getTraveler(c.travelerId); const lang = state.language;
+  const issued = new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const rows = [['성명', c.name], ['생년월일', c.dob || t?.passport?.birthDate || '-'], ['국적', c.nat], ['여권번호', c.passport], ['입국편', c.arrival], ['입국 불허가 사유', rr[1]], ['법적 근거', rr[2]]];
+  for (const g of cited) rows.push(['병기 사유', `${g[1]} · ${g[2]}`]);
+  if (lang?.interpreterUsed) rows.push(['고지 방법', `${lang.primary} 통역으로 결정 내용과 사유를 고지`]);
+  rows.push(['결정 일시', issued], ['담당 심사관', 'ICN-8841']);
+  return { ok: true, reason: rr, additional: cited.map((g) => g[0]), doc: { title: '입국 불허가 통지서', rows, foot: '입국 불허가 통지서를 교부한 뒤 운수업자에 대한 송환지시 절차로 진행합니다.' }, then: 'repatriation' };
 }
 export function beginRepatriation() { state.repatriationStep = 0; return { open: 'repatriation' }; }
 
@@ -271,7 +294,10 @@ export function procedureAction(a, ctx = {}) {
     case 'execute-arrest': { spendWork(18, 'investigation'); const v = legal.validateArrestExecution(ctx.checked || 0); if (!v.ok) { state.score -= 30; return { fatal: true }; }
       state.stage = 'ARRESTED'; state.ended = true; actionMark('ARREST'); notify.sound('alert'); bus.emit('changed');
       return { close: true, doc: { title: '출입국사범 사건 인계기록', rows: [['피의자', c.name], ['조치', '긴급체포'], ['근거', '형사소송법 제200조의3'], ['혐의', '위·변조 여권 및 출입국관리에 관한 범죄 혐의 · SIMULATION'], ['후속조치', '검사 승인 및 긴급체포서 작성 절차 / 관할 조사부서 인계']], foot: '게임상 사건 사실관계가 긴급체포 요건을 모두 충족하도록 구성된 케이스입니다.' }, finish: '특사경 긴급체포' }; }
-    case 'repat-order': spendWork(20, 'repatriation');
+    case 'repat-order':
+      if (!ctx.repatTo) { notify.toast('송환지시 대상을 먼저 선택하십시오.'); return { rerender: false }; }
+      if (ctx.repatTo !== 'carrier') return { gameOver: penalty('출입국관리법 제76조제1항: 송환지시는 송환대상외국인이 탔던 선박등의 장이나 운수업자에게 하며, 수송비용도 그 운수업자가 부담합니다.', 6), rerender: true };
+      spendWork(20, 'repatriation');
       return { doc: { title: '송환지시서', rows: [['운수업자', c.carrier], ['송환대상자', c.name], ['국적', c.nat], ['입국편', c.arrival], ['송환사유', '출입국관리법 제12조제4항 등에 따라 입국이 허가되지 아니한 사람'], ['근거', '출입국관리법 제76조'], ['송환기한', '운항계획에 따라 지정 · SIMULATION']], foot: '운수업자는 비용과 책임으로 송환대상외국인을 대한민국 밖으로 송환합니다.' }, after: 'repat-order-done' };
     case 'repat-order-done': state.repatriationStep = 1; actionMark('REPATRIATION_ORDER'); addLog('system', '송환지시서 발급 완료.'); bus.emit('changed'); return { open: 'repatriation' };
     case 'waiting-room': spendWork(16, 'repatriation'); state.repatriationStep = 2; actionMark('DEPARTURE_WAITING_AREA'); addLog('system', '출입국관리법 제76조의2에 따른 출국대기실로 인계했습니다.'); bus.emit('changed'); return { rerender: true };
@@ -294,7 +320,7 @@ export function finishCase(label) {
   state.stats.processed++; if (label === '입국 허가') state.stats.admitted++; if (label === '입국 불허') state.stats.refused++; if (state.performed.includes('REFUGEE_CLAIM')) state.stats.refugee++; if (state.performed.includes('INVESTIGATION')) state.stats.investigation++;
   const caseEff = seconds <= effEval.ideal * 1.25 ? 100 : seconds <= effEval.ideal * 1.55 ? 85 : Math.max(55, 100 - Math.round((seconds / effEval.ideal - 1) * 45));
   const qi = currentQueueItem(), caseMistakes = state.mistakes.filter((m) => m.caseIndex === state.caseIndex);
-  const report = { travelerId: t.id, caseId: qi.caseId || qi.normalId || c.id, name: t.name.korean, latin: t.name.latin, nat: t.nationality.korean, purpose: c.purpose, basis: c.basis, lawRef: legal.caseLawRef(c), label, procedure, screening: screeningNo(), seconds, caseEff, shift: c.shift, realSeconds: actualReal, interpreter: state.language?.interpreterUsed ? 1 : 0, interpreterLanguage: state.language?.interpreterUsed ? state.language.primary : null, event: state.activeEvent?.title || null, actions: state.performed.slice(), mistakes: caseMistakes.map((m) => ({ ...m })) };
+  const report = { travelerId: t.id, caseId: qi.caseId || qi.normalId || c.id, name: t.name.korean, latin: t.name.latin, nat: t.nationality.korean, purpose: c.purpose, basis: c.basis, lawRef: legal.caseLawRef(c), label, procedure, screening: screeningNo(), seconds, caseEff, shift: c.shift, realSeconds: actualReal, interpreter: state.language?.interpreterUsed ? 1 : 0, interpreterNeeded: !!(state.language && Math.max(state.language.korean, state.language.english) < 3), secondaryNeeded: (c.required || []).includes('SECONDARY'), interpreterLanguage: state.language?.interpreterUsed ? state.language.primary : null, event: state.activeEvent?.title || null, actions: state.performed.slice(), mistakes: caseMistakes.map((m) => ({ ...m })) };
   if (storyResult) report.campaignStory = { ...storyResult, day: state.campaignDay + 1, arc: campaignArc()?.title };
   state.reports.push(report);
   advanceFieldEventAfterCase();

@@ -162,6 +162,11 @@
 .hint { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.45; }
 .jsec h3, .basis-head, .cluehead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px 4px; font-size: var(--fs-label); font-weight: 700; color: var(--text-2); }
 .jsec h3 span, .basis-head b, .cluehead b { font-weight: 500; color: var(--text-3); font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
+summary.basis-head { cursor: pointer; flex-wrap: wrap; min-height: 44px; align-items: center; list-style: none; }
+summary.basis-head::-webkit-details-marker { display: none; }
+summary.basis-head::after { content: "▸"; margin-left: auto; font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text); }
+.basis-wrap[open] > summary.basis-head::after { content: "▾"; }
+summary.basis-head small { flex-basis: 100%; font-weight: 500; color: var(--text-3); font-size: var(--fs-meta); }
 .matrix { display: grid; }
 .ev { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; align-items: baseline; padding: 6px 12px 6px 9px; border-bottom: 1px solid var(--border-subtle); border-left: 3px solid var(--border-strong); min-width: 0; }
 .ev label { font-size: var(--fs-label); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

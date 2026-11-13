@@ -25,7 +25,14 @@ export function buildDebrief(c, record) {
   const missedQuestions = (c.questions || []).filter((q) => !asked.has(q.id) && (required.includes('QUESTION_' + q.id) || keyTriggers.has('QUESTION_' + q.id))).map((q) => ({ q: q.q, gated: (q.requires || []).filter((r) => !done.has(r)).map((r) => describeAction(r, c)) }));
   const steps = required.filter((x) => !x.startsWith('QUESTION_'));
   const procedure = { done: steps.filter((x) => done.has(x)).map((x) => describeAction(x, c)), missing: steps.filter((x) => !done.has(x)).map((x) => describeAction(x, c)) };
-  const offTrack = (record.mistakes || []).map((m) => m.msg || String(m));
+  const mistakes = record.mistakes || [];
+  const offTrack = mistakes.map((m) => m.msg || String(m));
+  // A case only ends on a decision the engine accepted, so earlier rejected attempts (a wrong refusal
+  // ground, a premature clearance) are history, not the verdict. Thin-review advisories describe the
+  // final decision itself. Older records carry no kind: classify them by their advisory wording.
+  const isThin = (m) => (m && m.kind === 'thin') || /^확인이 부족한 상태에서/.test(m?.msg || String(m));
+  const thinNotes = mistakes.filter(isThin).map((m) => m.msg || String(m));
+  const attempts = mistakes.filter((m) => !isThin(m)).map((m) => m.msg || String(m));
   const basis = decisiveBasis(c);
   const keyTotal = clues.filter((x) => x.key).length, keyFound = clues.filter((x) => x.key && found.has(x.id)).length;
   // Core summary (P2-2): the few lines a player reads first — the decision, its basis, the key
@@ -37,7 +44,9 @@ export function buildDebrief(c, record) {
     missedKey: evidenceMissed.slice(0, 2).map((x) => x.title),
     procedureMissing: procedure.missing.length,
     mistakes: offTrack.length,
-    headline: offTrack.length ? offTrack[0]
+    attempts: attempts.length,
+    headline: thinNotes.length ? thinNotes[0]
+      : attempts.length ? `최종 판단은 확인된 사실과 맞습니다. 다만 결정 전에 받아들여지지 않은 시도가 ${attempts.length}회 있었습니다: ${attempts[0]}`
       : evidenceMissed.length ? `핵심 단서 ${evidenceMissed.length}건을 확인하지 못했습니다: ${evidenceMissed[0].title}`
       : procedure.missing.length ? `판단은 근거와 맞지만 확인 절차 ${procedure.missing.length}건이 남았습니다.`
       : '확인된 사실과 법적 근거에 맞는 판단입니다.'
@@ -47,7 +56,7 @@ export function buildDebrief(c, record) {
     decision: record.label || '-', basis,
     evidence: { found: evidenceFound, missed: evidenceMissed },
     questions: { meaningful, missed: missedQuestions, total: asked.size },
-    procedure, offTrack,
+    procedure, offTrack, attempts,
     lesson: c.note || '',
     interview: record.interview || null
   };

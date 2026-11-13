@@ -5,7 +5,7 @@
 export const AIRPORTS = [
   {
     id: 'icn-t2', code: 'ICN', nameKo: '인천국제공항 T2', nameEn: 'Incheon International Airport T2',
-    locationKo: '제2여객터미널 · 입국심사장', locationEn: 'Terminal 2 · Immigration Hall',
+    locationKo: '입국심사장', locationEn: 'Immigration Hall',
     profileKo: '대형 허브형 · 가장 높은 기본 운영량과 복합적인 현장 변수', profileEn: 'Major hub · highest baseline flow and the broadest operational mix',
     rating: 5, arrivalFactor: 1.08, eventDelta: 1, eventImpact: 1.04, workFactor: 1.00, lookupFactor: 1.00, interpreterExtra: 0, fatigueFactor: 1.00,
     simBooths: 18, liveTargetArrivals: 24

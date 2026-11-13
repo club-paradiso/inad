@@ -156,3 +156,11 @@
   .arrest-check input { width: 20px; height: 20px; margin: 0; }
   .proc-action { min-height: 52px; }
 }
+
+/* 송환지시 대상 선택 (제76조제1항) */
+.proc-choice { display: grid; gap: 6px; margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); }
+.proc-choice legend { padding: 0 4px; font-size: var(--fs-label); font-weight: 700; }
+.proc-choice label { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+.proc-choice input { width: 20px; height: 20px; flex: none; }
+.proc-choice span { display: grid; gap: 2px; }
+.proc-choice small { color: var(--text-3); font-size: var(--fs-meta); }

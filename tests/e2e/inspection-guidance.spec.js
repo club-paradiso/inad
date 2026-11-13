@@ -5,7 +5,7 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'Inspection guidance belongs to 
 
 async function start(page) {
   await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('body')).toHaveClass(/mode-case/);
 }
 

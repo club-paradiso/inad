@@ -119,7 +119,16 @@ export async function nextCase(page) {
   await page.locator('#nextCase').click();
 }
 
+// Single-case interview on a named authored case. Feature tests written against one case use this; the
+// start-screen button opens the first-run case (ICN-S2-006), which first-run.spec.js covers.
+export async function startLiveCase(page, caseId = 'ICN-S2-005') {
+  await page.evaluate((id) => window.INADTest.liveCase(id), caseId);
+  await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
+}
+
 export async function procAct(page, act) {
+  // 제76조제1항: the repatriation order goes to the carrier the passenger arrived with.
+  if (act === 'repat-order') await page.locator('#procBody .proc-repat-to[value="carrier"]').check();
   const b = page.locator(`#procBody [data-proc-act="${act}"]`);
   await expect(b).toBeVisible();
   await b.click();

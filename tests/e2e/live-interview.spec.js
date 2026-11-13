@@ -8,7 +8,7 @@ const target = process.env.INAD_TARGET || 'dist';
 test.skip(target === 'legacy', 'v10 only');
 
 async function startLive(page) {
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
   await expect(page.locator('#caseName')).toContainText('쩐 반 민');
   await expect(page.locator('body')).toHaveClass(/mode-case/);

@@ -39,7 +39,7 @@ export function currentCoachStep(c = current()) {
     const attempted = (state.logs || []).some((l) => l.type === 'officer');
     return { step: 1, target: 'first_question', text: attempted
       ? (en ? 'No answer is on record yet. Connect an interpreter if needed, then ask a suggested question.' : '아직 기록된 답이 없습니다. 질문이 통하지 않으면 통역을 연결하고, 제안 질문으로 방문 목적부터 확인하세요.')
-      : (en ? 'Start by asking about the visit. Reading and thinking do not advance the work clock.' : '방문 목적부터 물어보세요. 글을 읽거나 생각하는 동안에는 처리시간이 늘지 않아요.') };
+      : (en ? 'Check what the passenger just told you, one point at a time. Only actions such as questions and lookups add to the work clock; reading does not.' : '첫 진술에서 들은 내용을 하나씩 구체적으로 확인해 보세요. 처리시간은 질문·조회 같은 작업에만 붙고, 화면을 읽는 시간은 세지 않아요.') };
   }
   if (step === 'evidence') return { step: 2, target: 'statement_lock', text: en
     ? 'Compare the answer with a document or relevant record. Agreement is useful too; a contradiction is not a goal.'

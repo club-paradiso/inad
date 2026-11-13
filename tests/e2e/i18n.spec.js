@@ -68,7 +68,7 @@ test.describe('English UI · v10 paths', () => {
   test('live interview chrome and the debrief are English; a question starting with 현재 is not mistranslated', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('inad-locale', 'en'));
     const errors = await H.openGame(page);
-    await page.locator('#liveStartBtn').click();
+    await H.startLiveCase(page); // ICN-S2-005 vertical slice
     await page.locator('#langInterp').click();
     for (const t of ['What will you do in Korea for a month?', "Why don't you have a return ticket?", 'How much money do you have?', 'Who is the contact number on your form?']) await say(page, t);
     const chrome = '#caseNote .case-depth-note, #koLevel, #enLevel, #primaryLang, #pAttitude, #qtabs, #readyHint, #clueBoard .cluehead b, #clueBoard .legend, #clueBoard .cluekey, #languageMode, #languageStatus, #askStatus, #basisBoard .basis-domain, #basisBoard .basis-conf, #paTitle, #langInterp';

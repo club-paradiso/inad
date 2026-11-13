@@ -9,6 +9,7 @@ import { availableCompareSources, comparisonSummary } from '../engines/compariso
 import { openWorkGuide } from '../services/work-manual.js';
 import { refreshStatementLockCandidates } from './statement-lock.js';
 import { returnItineraryFor } from '../engines/return-itinerary-engine.js';
+import { mrzCheckDigit, simMrz } from '../engines/mrz.js';
 import { documentFields, documentNameOnRecord, documentRecordKind, documentIsRequestable, documentDisplayStatus, biometricDisplay } from '../engines/document-evidence-model.js';
 
 export function docFieldMap(d) { const m = {}; (d.fields || []).forEach((r) => { m[r[0]] = r[1]; }); return m; }
@@ -19,7 +20,29 @@ export function docFieldRows(d, limit = Infinity) {
       <button type="button" class="doc-compare-btn" aria-label="${esc(r[0])} 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button>
     </div>`).join('');
 }
-export function simMrz(t, c, d = null) { const fields = documentFields(d); const code = (t.nationality.code || c.code || 'XXX').slice(0, 3).padEnd(3, 'X'); const nm = (documentNameOnRecord(d) || 'UNRECORDED').toUpperCase().replace(/[^A-Z ]/g, '').replace(/ +/g, '<').replace(' ', '<<'); const l1 = ('P<' + code + nm).padEnd(44, '<').slice(0, 44); const sex = (t.passport.sex || c.sex || 'X').slice(0, 1); const dob = (t.passport.birthDate || c.dob || '1990-01-01').replaceAll('-', '').slice(2); const exp = (fields['만료일'] || '0000-00-00').replaceAll('-', '').slice(2); const l2 = ((fields['여권번호'] || 'UNRECORDED').replace(/\s/g, '') + '<' + code + dob + sex + exp).padEnd(44, '<').slice(0, 44); return [l1, l2]; }
+// A visa record names its holder by the passport it was issued against. The holder rows mirror the
+// passport the passenger presented, so they never add a discrepancy the case did not author.
+export function visaHolderRows(d, c) {
+  const passport = (c?.docs || []).find((x) => x.k === 'PASSPORT'); const fm = docFieldMap(d); const pf = docFieldMap(passport || {});
+  const rows = d.fields || [];
+  const holder = [];
+  if (!fm['성명'] && pf['성명']) holder.push(['성명', pf['성명']]);
+  if (!fm['여권번호'] && pf['여권번호']) holder.push(['여권번호', pf['여권번호']]);
+  return [...holder, ...rows];
+}
+// Printed passport data that the authored document does not list separately (birth date, sex, expiry)
+// comes from the passport holder's own record. A field the document itself prints always wins.
+export function passportPrintedRows(d, pp) {
+  const fm = docFieldMap(d); const rows = [];
+  const c = current();
+  const dob = c?.dob || pp?.passport?.birthDate; const sex = c?.sex || pp?.passport?.sex;
+  if (!fm['생년월일'] && dob) rows.push(['생년월일', dob]);
+  const sexLabel = { M: 'M · 남', F: 'F · 여', X: 'X' }[sex] || '';
+  if (!fm['성별'] && sexLabel) rows.push(['성별', sexLabel]);
+  if (!fm['만료일'] && pp?.passport?.expiry) rows.push(['만료일', pp.passport.expiry]);
+  return rows;
+}
+export { mrzCheckDigit, simMrz };
 export function flightRoute(c, d) { const fm = docFieldMap(d); const raw = fm['입국편'] || fm['입국'] || fm['편명'] || c.arrival || ''; const source = (c.arrival || '').match(/([A-Z]{3})\s*→\s*([A-Z]{3})/); return { flight: (raw.match(/[A-Z]{1,3}\d{2,4}/) || [raw.split(' · ')[0] || 'FLIGHT'])[0], from: source ? source[1] : 'ORG', to: source ? source[2] : 'ICN' }; }
 
 function renderBookingDocument(d, c, t) {
@@ -73,7 +96,7 @@ function renderReturnEvidencePanel(c) {
 
 export function documentHTML(d, c, t, pp) {
   const k = d.k, fm = docFieldMap(d), cls = d.alert ? ' alert' : '';
-  if (k === 'PASSPORT') { const mrz = simMrz(pp, c, d); return `<div class="docsheet doc-passport${cls}"><div class="passport-head"><div><div class="micro">TRAVEL DOCUMENT · SIMULATION</div><div class="passport-country">${esc(fm['국적'] || '국적 미기재')}</div></div><div class="passport-kind"><b>PASSPORT</b><span class="micro">${esc(t.nationality.code)} · ${esc(t.passport.type || '일반여권')}</span></div></div><div class="passport-main"><div class="passport-photo-wrap"><img class="passport-photo" src="${pp.portrait}" alt="여권 사진"></div><div class="passport-fields"><div class="passport-name"><span class="field-label">Name / 서류상 성명</span><div class="field-value">${esc(documentNameOnRecord(d) || '성명 미기재')}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div><div class="mrz" aria-label="게임용 재구성 MRZ, 유효성 판정 불가">${esc(mrz[0])}<br>${esc(mrz[1])}</div><p class="doc-footnote">게임용 MRZ 재구성 · 원본 진위·체크디지트 검증과 무관</p></div>`; }
+  if (k === 'PASSPORT') { const mrz = simMrz(pp, c, d); return `<div class="docsheet doc-passport${cls}"><div class="passport-head"><div><div class="micro">TRAVEL DOCUMENT · SIMULATION</div><div class="passport-country">${esc(fm['국적'] || '국적 미기재')}</div></div><div class="passport-kind"><b>PASSPORT</b><span class="micro">${esc(t.nationality.code)} · ${esc(t.passport.type || '일반여권')}</span></div></div><div class="passport-main"><div class="passport-photo-wrap"><img class="passport-photo" src="${pp.portrait}" alt="여권 사진"></div><div class="passport-fields"><div class="passport-name doc-field" data-doc-key="${esc(d.k)}" data-field-name="성명" data-field-val="${esc(documentNameOnRecord(d))}"><span class="field-label">Name / 서류상 성명</span><div class="field-value">${esc(documentNameOnRecord(d) || '성명 미기재')}</div><button type="button" class="doc-compare-btn" aria-label="성명 항목을 진술과 대조" title="진술과 대조" ${state.ended ? 'disabled' : ''}>⇄</button></div><div class="doc-grid-fields">${docFieldRows({ ...d, fields: [...(d.fields || []).filter((r) => r[0] !== '성명'), ...passportPrintedRows(d, pp)] })}</div></div></div><div class="mrz" aria-label="게임용 MRZ, 체크디지트는 서류에 인쇄된 값으로 계산">${esc(mrz[0])}<br>${esc(mrz[1])}</div><p class="doc-footnote">게임용 MRZ · 체크디지트는 서류에 인쇄된 값으로 계산 · 진위 판정은 아님</p></div>`; }
   if (k === 'E-ARRIVAL') return `<div class="docsheet doc-earrival${cls}"><div class="ea-head"><div><b>전자입국신고</b><div class="ea-sub">e-Arrival Card · Republic of Korea</div></div><span>${screeningNo()}</span></div><div class="ea-body"><div><div class="ea-status">${esc(documentDisplayStatus(d))}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div><div><div class="fake-qr" aria-hidden="true"></div><div class="ea-ref">SIMULATION · ${screeningNo()}</div></div></div></div>`;
   if (k === 'PNR' || k === 'BOARDING') return renderBookingDocument(d, c, t);
   if (k === 'HOTEL' || k === 'STAY') {
@@ -82,7 +105,7 @@ export function documentHTML(d, c, t, pp) {
       (isStay ? '거소 주소 미기재' : '숙박시설 명칭 미기재');
     return `<div class="docsheet doc-hotel${cls}"><div class="hotel-visual"><b>${isStay ? '국내 거소자료' : '숙박 예약자료'}</b></div><div class="hotel-body"><span class="micro">${isStay ? 'RESIDENCE / STAY RECORD · SIMULATION' : 'ACCOMMODATION RECORD · SIMULATION'}</span><h3>${esc(place)}</h3><div class="hotel-status">${esc(documentDisplayStatus(d))}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
   }
-  if (k === 'VISA' || k === 'ENTRY BASIS') return `<div class="docsheet doc-visa${cls}"><div class="visa-frame"><div class="visa-side"><div class="vmark">KOR</div><span class="micro">${k === 'VISA' ? 'VISA RECORD · SIMULATION' : 'ENTRY BASIS SUMMARY · NOT A VISA'}</span><br><b>${esc(k === 'VISA' ? '사증' : '입국자격')}</b></div><div class="visa-body"><div class="visa-valid">${esc(documentDisplayStatus(d))}</div><span class="micro">REPUBLIC OF KOREA · SIMULATION</span><div class="visa-title">${esc(fm['체류자격'] || fm['사증'] || fm['구분'] || c.basis || d.t)}</div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div></div>`;
+  if (k === 'VISA' || k === 'ENTRY BASIS') return `<div class="docsheet doc-visa${cls}"><div class="visa-frame"><div class="visa-side"><div class="vmark">KOR</div><span class="micro">${k === 'VISA' ? 'VISA RECORD · SIMULATION' : 'ENTRY BASIS SUMMARY · NOT A VISA'}</span><br><b>${esc(k === 'VISA' ? '사증' : '입국자격')}</b></div><div class="visa-body"><div class="visa-valid">${esc(documentDisplayStatus(d))}</div><span class="micro">REPUBLIC OF KOREA · SIMULATION</span><div class="visa-title">${esc(k === 'VISA' ? (c.basis || fm['체류자격'] || d.t) : (fm['체류자격'] || fm['사증'] || fm['구분'] || c.basis || d.t))}</div><div class="doc-grid-fields">${docFieldRows(k === 'VISA' ? { ...d, fields: visaHolderRows(d, c) } : d)}</div></div></div></div>`;
   if (k === 'RESIDENCE CARD' || k === 'ABTC') return `<div class="docsheet doc-idcard${cls}"><div><img class="id-photo" src="${pp.portrait}" alt="신분증 사진"><div class="id-chip" aria-hidden="true"></div><span class="micro">SIMULATION ID</span></div><div><div class="id-head">${esc(d.t)}</div><div class="passport-name"><span class="field-label">서류상 성명</span><div class="field-value">${esc(documentNameOnRecord(d) || '성명란 미기재 · 별도 대조 필요')}</div></div><div class="doc-grid-fields">${docFieldRows(d)}</div></div></div>`;
   if (k === 'BIOMETRIC') {
     const result = biometricDisplay(d);

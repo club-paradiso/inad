@@ -347,7 +347,7 @@ test.describe('ATLAS Phase C & D: Three Vertical Slices & Branching Investigatio
 
     // Korean workstation active
     await expect(page.locator('body')).toHaveAttribute('data-country', 'KR');
-    await expect(page.locator('#brandTag')).toHaveText('v10.0');
+    await expect(page.locator('#brandTag')).toHaveText('v13.0');
     await expect(page.locator('#caseCount')).toBeVisible();
   });
 

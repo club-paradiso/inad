@@ -40,7 +40,7 @@ test.describe('디자인 불변식', () => {
     await H.setSeed(page, 271828);
     await H.chooseStartOption(page, '[data-guidance="expert"]');
     await page.locator('#startBtn').click();
-    const kpi = page.locator('#modalBody .briefkpi').filter({ hasText: '현재 게임상 대기' }).locator('b');
+    const kpi = page.locator('#modalBody .briefkpi').filter({ hasText: '입국심사장 전체 대기' }).locator('b');
     const briefed = (await kpi.textContent()).trim();
     await page.locator('#briefStart').click();
     await expect(page.locator('#queue')).toHaveText(briefed);

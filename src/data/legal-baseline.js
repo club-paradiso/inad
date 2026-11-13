@@ -1,6 +1,6 @@
 // Data extracted verbatim from the v6.1 baseline (legacy/v6.1) — release/legal baseline metadata and the statutory refusal reason catalogue
 // Legal/game content: do not edit without a documented review (docs/legal-baseline.md).
-export const RELEASE = {version:'10.0',label:'RELEASE',legalBaseline:'2026-09-07',dataVersion:'6.1',saveSchema:1,build:'2026.10.03',laws:[
+export const RELEASE = {version:'13.0',label:'RELEASE',legalBaseline:'2026-09-07',dataVersion:'6.1',saveSchema:1,build:'2026.11.13',laws:[
  {name:'출입국관리법',lawId:'001707',effective:'2026.01.23',note:'현행'},
  {name:'난민법',lawId:'011546',effective:'2016.12.20',note:'현행'},
  {name:'난민법 시행령',lawId:'011878',effective:'2025.09.19',note:'현행'},
@@ -20,3 +20,7 @@ export const REFUSAL_REASONS = [
 ['SIM-A11-SEC','대한민국의 이익 또는 공공안전 위해 우려','출입국관리법 제11조제1항제3호 + 제12조제3항제4호'],
 ['SIM-A11-ORD','경제·사회질서 또는 선량한 풍속 저해 우려','출입국관리법 제11조제1항제4호 + 제12조제3항제4호'],
 ['SIM-A11-DEPORT','강제퇴거 후 5년 미경과','출입국관리법 제11조제1항제6호 + 제12조제3항제4호']];
+// Grounds that may be cited alongside the decisive one (병기). 제11조제1항제5호 (verified against the statute text,
+// 2026-11-13): "국내체류비용을 부담할 능력이 없는 사람". It never replaces the decisive ground.
+export const ADDITIONAL_GROUNDS = [
+['SIM-A11-FUNDS','국내체류비용 부담능력 없음','출입국관리법 제11조제1항제5호 + 제12조제3항제4호','체재능력']];

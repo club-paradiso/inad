@@ -8,6 +8,7 @@ import { createMockLlm } from '../../scripts/mock-llm-server.js';
 import { createStaticServer } from '../../scripts/static-server.js';
 import { resetNpcState } from '../../api/npc.js';
 import { CASES } from '../../src/data/cases.js';
+import * as H from './helpers.js';
 
 const target = process.env.INAD_TARGET || 'dist';
 test.skip(target !== 'dist', 'needs the built app and a second local server');
@@ -36,7 +37,7 @@ async function start(page, { viewport } = {}) {
   const ready = page.waitForResponse((r) => r.url().endsWith('/api/npc') && r.request().method() === 'GET');
   await page.goto(`${origin}/`);
   expect((await (await ready).json()).available).toBe(true);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('#caseName')).toContainText('쩐 반 민');
   // stacked layouts show one task at a time: open the interview task first (no-op on desktop)
   const nav = page.locator('#taskNav button[data-task="interview"]');

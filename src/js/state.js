@@ -33,7 +33,7 @@ export const state = {
   difficulty: 'training', challengeId: 'none', challengeApplied: false,
   scenarioId: 'normal', scenarioApplied: false,
   campaignId: 'none', campaignDay: 0, campaignApplied: false, campaignCarryBacklog: 0, campaignCarryFatigue: 0, campaignResult: null,
-  guidance: oneOf(storeGet('inad-guidance', 'guided'), ['guided', 'expert'], 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false,
+  guidance: oneOf(storeGet('inad-guidance', 'guided'), ['guided', 'expert'], 'guided'), tutorialPrimaryShown: false, tutorialIndex: 0, guidedGuardUsed: false, caseRejected: 0, boothDepthNoted: false,
   stage: 'PRIMARY', asked: new Set(), questionCounts: new Map(), looked: new Set(), performed: [], logs: [], queries: [],
   selectedDoc: 0, documentReviews: {}, comparisonNotes: {}, qcat: '기본사항', ended: false, caseStart: Date.now(), caseWorkSeconds: 0, simSeconds: 0, totalCaseSeconds: 0,
   overSecondary: 0, repeatedLookups: 0, repeatedQuestions: 0, rushed: 0, pressurePeak: 37, fatigue: 0, peakFatigue: 0, breaksTaken: 0,

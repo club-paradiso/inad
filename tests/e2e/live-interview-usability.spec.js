@@ -5,7 +5,7 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'Live interview belongs to the m
 
 async function start(page) {
   await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('body')).toHaveClass(/mode-case/);
 }
 
@@ -98,7 +98,7 @@ test('on a phone, the passenger portrait exposes an immediate interview entry ac
   await start(page);
   const cta = page.locator('#boothInterviewCta');
   await expect(cta).toBeVisible();
-  await expect(cta).toContainText(/인터뷰 시작|Start interview/);
+  await expect(cta).toContainText(/질문하러 가기|Go to questions/);
   await cta.click();
   await expect(page.locator('body')).toHaveAttribute('data-task', 'interview');
   await expect(page.locator('#askInput')).toBeVisible();

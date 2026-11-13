@@ -173,7 +173,7 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
       else {
         const q = s.q; const comm = communicationReady(q);
         const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
-        const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
+        const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge" title="이 답변을 사실확인으로 기록하려면 정확한 이해가 필요합니다">답변 확인에 통역 필요</span>` : '';
         b.className = `qbtn suggest ${s.reason}${needsInterp ? ' needs-interp' : ''}`; b.dataset.qid = q.id;
         b.innerHTML = `${esc(q.q)}<em>${esc(q.cat)}${REASON[s.reason] ? ' · ' + REASON[s.reason] : ''}${langBadge}</em>`;
         b.onclick = () => onSuggest(q, false);
@@ -191,7 +191,7 @@ export function renderQuestions(onAsk, { onSuggest = onAsk, onAction = () => {} 
     const b = document.createElement('button'), wasAsked = state.asked.has(q.id);
     const comm = communicationReady(q);
     const needsInterp = !comm.ok && state.language && !state.language.interpreterActive;
-    const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge">[통역 필요 · L${comm.need}]</span>` : '';
+    const langBadge = needsInterp ? ` · <span class="qbtn-lang-badge" title="이 답변을 사실확인으로 기록하려면 정확한 이해가 필요합니다">답변 확인에 통역 필요</span>` : '';
     const unlockedByLock = state.performed.includes(`UNLOCK_Q_${q.id}`);
     b.type = 'button'; b.dataset.qid = q.id; b.className = 'qbtn ' + ((q.requires || []).length ? 'branch ' : '') + (wasAsked ? ' asked' : '') + (needsInterp ? ' needs-interp' : '') + (unlockedByLock ? ' lock-unlocked' : ''); b.disabled = state.ended;
     b.innerHTML = wasAsked

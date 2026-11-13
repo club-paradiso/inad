@@ -33,7 +33,9 @@ test('daily missions: one per group, deterministic per date', () => {
   const ids = dailyMissionIds('2026-09-11'); assert.equal(ids.length, 3);
   assert.deepEqual(ids.map((id) => DAILY_MISSION_DEFS[id].group), ['volume', 'quality', 'meta']);
   assert.deepEqual(ids, dailyMissionIds('2026-09-11'));
-  assert.equal(missionIncrement('secondary2', { reports: [{ label: '입국 허가', actions: ['SECONDARY'] }, { label: '입국 허가', actions: [] }] }), 1);
+  // only a referral the case needed counts, and only when the case closed without a mistake
+  assert.equal(missionIncrement('secondary2', { reports: [{ label: '입국 허가', actions: ['SECONDARY'], secondaryNeeded: true }, { label: '입국 허가', actions: ['SECONDARY'], secondaryNeeded: false }, { label: '입국 불허', actions: ['SECONDARY'], secondaryNeeded: true, mistakes: [{ msg: 'x' }] }, { label: '입국 허가', actions: [] }] }), 1);
+  assert.equal(missionIncrement('interpreter2', { reports: [{ interpreter: 1, interpreterNeeded: true }, { interpreter: 1, interpreterNeeded: false }] }), 1);
   assert.equal(missionIncrement('cleanShift', { mistakes: [] }), 1);
 });
 
