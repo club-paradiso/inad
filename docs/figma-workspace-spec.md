@@ -148,6 +148,7 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | Procedure/Action | Kind: primary · good · danger · neutral | `.proc-action` |
 | Feedback/Toast | Kind: toast · event | `src/js/ui/toast.js` |
 | Feedback/Inline | Tone: info · warn · danger · legal | `.inline-note`(대화상자) · `.proc-note`(절차 화면) |
+| Feedback/DecisionStamp | Kind: Admit · Refuse | `src/js/ui/views/reports.js showDoc({ stamp })` · `.decision-stamp` |
 | Overlay/Dialog | Size: default · wide / Breakpoint: desktop · mobile(sheet) | `src/js/ui/modals.js` |
 | Overlay/Callout | — | `src/js/ui/shell.js` `showCallout` |
 | Panel/Frame | Head: on·off | `.panel` `.ph` |
