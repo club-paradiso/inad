@@ -574,3 +574,19 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
 - **코드와 다른 점(컴포넌트)**: CSS는 `3px double` 테두리(Figma는 1px 선 두 겹), 제목 굵기 800 · 자간 .12em,
   영문 줄 10.5px 굵기 700 · 자간 .1em(Figma는 스타일 값 그대로). -7° 회전과 등장 효과는 화면에서만 적용되며
   컴포넌트 설명에 적어 두었다. `코드 매핑` 표(`39:131`)는 기존 노드라 건드리지 않았다.
+
+## 16. 서류 사진 · 증명사진 규격 — 코드 → Figma 동기화 (2026-11-13)
+
+코드가 먼저 바뀌었다(브랜치 `claude/inad-game-review-upgrade-vw9fjx`, PR #61). 표현 계층만 바뀌었고
+토큰 이름·값, 변수, 텍스트 스타일, 컴포넌트 세트는 그대로다.
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] 서류 사진 · 증명사진 규격 · 2026-11-13` (`300:2348`,
+  [링크](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=300-2348)). 자동화가 만든 노드만 들어 있다.
+- 실제 크기 프레임 5개, 이미지 채우기(파일 안에서 해시 조회·크기 일치 확인): 여권 1440×900 `300:2351` ·
+  생체정보 대조 쌍 1440×900 `300:2353` · 여권 1024×768 `300:2355` · 768×1024 `300:2357` · 390×844 `300:2359`.
+  원본: `docs/audit/document-photo-2026-11/*.png` (로컬 dist 빌드 · Playwright Chromium · 첫 심사 사건).
+- **코드 기준 값**: 확대 1.25~1.6배(눈 사이 간격을 프레임 폭의 0.33으로), 눈높이 프레임 높이의 0.42, 이동은 프레임이
+  항상 채워지도록 제한(`src/js/services/portraits.js documentPhotoFrame`). 인쇄 톤 `saturate(.3) contrast(1.1)`
+  (`src/styles/documents.css .doc-photo`). 프레임 크기는 기존 값 그대로(여권 96×118, 신분증 84×104, 대조 쌍 56×68, 감식 80×96).
+- **미완료**: `Document/*` 컴포넌트 세트에는 반영하지 않았다(기존 세트는 읽기 전용).
+

@@ -3,6 +3,7 @@ import { $, byId, esc, fmtClock } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
+import { docPhotoHTML } from './doc-photo.js';
 import { ACTION_NAMES, describeAction } from '../engines/legal-engine.js';
 import { disclosedEvidence, disclosureProgress, declaredPurpose, knownReturn } from '../engines/disclosure.js';
 import { clueStats } from '../engines/clue-engine.js';
@@ -23,7 +24,7 @@ export function renderEntry() {
   const earr = (c.docs || []).find((d) => d.k === 'E-ARRIVAL'); const fm = {}; (earr?.fields || []).forEach((r) => { fm[r[0]] = r[1]; });
   const stayPlace = fm['체류지'] || fm['체류예정지'] || fm['숙소'] || null, contact = fm['국내연락처'] || fm['연락처'] || null;
   const row = (k, v, cls = '') => `<div class="ec ${cls}"><label>${esc(k)}</label><b>${esc(v)}</b></div>`;
-  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport"><img src="${pp.portrait}" alt="여권 사진"><small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<small>게임상 대조 결과</small></div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
+  byId('entry').innerHTML = `<div class="bio-compare"><div class="bio-compare-head">생체정보 본인확인 · 출입국관리법 제12조의2</div><div class="bio-pair"><div class="bio-shot passport">${docPhotoHTML(pp, 'bio-frame', '여권 사진')}<small>여권 사진</small></div><div class="bio-score ${b.bad ? 'bad' : ''}">${b.bad ? '불일치' : '일치'}<small>게임상 대조 결과</small></div><div class="bio-shot"><img src="${t.portrait}" alt="실시간 촬영"><small>실시간 촬영</small></div></div></div>
 <div class="entry-section"><h3>신원 · 여권</h3><div class="entry-grid">${row('성명(로마자)', t.name.latin)}${row('국적', `${t.nationality.korean} · ${t.nationality.code}`)}${row('생년월일', t.passport.birthDate || c.dob || '—')}${row('여권번호', t.passport.number || c.passport)}${row('여권 만료', t.passport.expiry || '—')}${row('전자여권 칩', c.chip)}</div></div>
 <div class="entry-section"><h3>입국 근거 · 사전여행허가</h3><div class="entry-grid">${row('입국 근거 구분', `${basis.label} · ${basis.basis}`, 'wide')}${row('적용 내용', c.basisDetail, 'wide')}${row('사증', c.visa)}${row('K-ETA(사전여행허가)', keta.text, keta.status === 'PASS' ? '' : 'attention')}${row('전자입국신고', decl.text, 'wide')}</div></div>
 <div class="entry-section"><h3>여행 · 목적 · 체류</h3><div class="entry-grid">${row('입국편 · 운수업자', `${c.arrival} · ${c.carrier}`, 'wide')}${row('귀국·이동', knownReturn(c, state) || '미확인 · 항공 PNR·예약자료 확인 전')}${row('신고 입국목적', declaredPurpose(c, state))}${row('신청 체류기간', c.stay)}${row('체류예정지', stayPlace || '전자입국신고 자료 참조')}${contact ? row('국내 연락처', contact) : ''}${row('규제정보', c.watch, /확인 필요|규제/.test(c.watch || '') ? 'attention' : '')}</div></div>
