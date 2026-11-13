@@ -48,14 +48,14 @@ test.describe('라이브 인터뷰', () => {
     await say(page, '한국에서 30일 동안 뭐 할 거예요?');
     await expect(page.locator('#log')).toContainText('기록 질문 · 30일 동안 구체적으로 무엇을 할 예정입니까?');
     await expect(lastPassengerLine(page)).toContainText('쇼핑하고 관광합니다');
-    // asked before the occupation answer and the contact lookup: the passenger stays with the public record
+    // asked before the occupation answer and the contact lookup: the hidden follow-up is not answered; the
+    // examiner is offered the open question that establishes it (occupation) and confirms it
     await say(page, '한국에서 일자리 알아본 적 있어요?');
-    await expect(lastPassengerLine(page)).toContainText('관광하러 왔습니다');
-    await expect(page.locator('#log .msg.alien.off-record')).toHaveCount(1);
-    let st = await H.getState(page);
-    expect(st.asked).not.toContain('jobOffer');
-    await say(page, '베트남에서 무슨 일 하세요?');
     await expect(lastPassengerLine(page)).toContainText('일을 그만뒀습니다');
+    await expect(page.locator('#log')).not.toContainText('공장 일');
+    let st = await H.getState(page);
+    expect(st.asked).toContain('occupation');
+    expect(st.asked).not.toContain('jobOffer');
     await H.lookup(page, 'contact');
     await say(page, '한국에서 일자리 알아본 적 있어요?');
     await expect(lastPassengerLine(page)).toContainText('공장 일');
@@ -63,7 +63,7 @@ test.describe('라이브 인터뷰', () => {
     st = await H.getState(page);
     expect(st.asked).toEqual(expect.arrayContaining(['purpose', 'occupation', 'jobOffer']));
     const iv = await H.hook(page, (T) => T.interview());
-    expect(iv.counts.text).toBe(4); expect(iv.withheld).toBe(1);
+    expect(iv.counts.text).toBe(3); expect(iv.withheld).toBe(0);
     await H.expectNoErrors(errors);
   });
 
