@@ -182,16 +182,39 @@ test('cloudflare dist/_headers mirrors the vercel.json security and caching cont
   assert.ok(!('cache-control' in all.headers), 'wildcard rule must not set Cache-Control (it would stack with specific rules)');
 
   // Concrete files from the build, each matched by the rules, must resolve to exactly one Cache-Control rule.
-  const assets = fs.readdirSync(path.join(distDir, 'assets')).filter((f) => f !== 'portraits').map((f) => `/assets/${f}`);
+  const assets = fs.readdirSync(path.join(distDir, 'assets')).filter((f) => !['portraits', 'scenes', 'audio'].includes(f)).map((f) => `/assets/${f}`);
+  const atmosphere = ['scenes', 'audio'].flatMap((d) => fs.readdirSync(path.join(distDir, 'assets', d)).map((f) => `/assets/${d}/${f}`));
   const portrait = `/assets/portraits/${fs.readdirSync(path.join(distDir, 'assets/portraits'))[0]}`;
-  for (const url of [...assets, portrait, '/', '/index.html']) {
+  for (const url of [...assets, ...atmosphere, portrait, '/', '/index.html']) {
     const matching = rules.filter((r) => r.path !== '/*' && 'cache-control' in r.headers && globToRegExp(r.path).test(url));
     assert.ok(matching.length <= 1, `${url}: at most one Cache-Control rule matches (got ${matching.map((m) => m.path)})`);
     const cc = matching[0]?.headers['cache-control'] || 'public, max-age=0, must-revalidate'; // platform default for unlisted paths
     if (/\/assets\/(app|style|atlas-[a-z]+)\.[a-f0-9]+\.(js|css)$/.test(url)) assert.match(cc, /max-age=31536000, immutable/, `${url} hashed bundle is immutable`);
-    else if (url.startsWith('/assets/portraits/')) { assert.match(cc, /stale-while-revalidate/); assert.ok(!cc.includes('immutable'), 'unhashed portraits are not immutable'); }
+    else if (/^\/assets\/(portraits|scenes|audio)\//.test(url)) { assert.match(cc, /stale-while-revalidate/); assert.ok(!cc.includes('immutable'), 'unhashed portraits are not immutable'); }
     else assert.match(cc, /must-revalidate/, `${url} revalidates`);
   }
+});
+
+// Atmosphere assets (scene art, hall ambience): bundled same-origin files, loaded on demand, small, and never a
+// reason for the page to reach another origin.
+test('atmosphere assets: scenes and ambience are bundled, referenced and within budget', () => {
+  const scenes = fs.readdirSync(path.join(distDir, 'assets/scenes')).sort();
+  const audio = fs.readdirSync(path.join(distDir, 'assets/audio')).sort();
+  assert.deepEqual(scenes, ['hall.webp', 'lane.webp', 'room.webp']);
+  assert.deepEqual(audio, ['hall-ambience.m4a', 'hall-ambience.ogg']);
+  const size = (d, f) => fs.statSync(path.join(distDir, 'assets', d, f)).size;
+  for (const f of scenes) assert.ok(size('scenes', f) <= 100_000, `${f} exceeds 100 KB`);
+  for (const f of audio) assert.ok(size('audio', f) <= 130_000, `${f} exceeds 130 KB`);
+  const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(distDir, 'assets', fs.readdirSync(path.join(distDir, 'assets')).find((f) => /^style\..*\.css$/.test(f))), 'utf8');
+  const js = fs.readFileSync(path.join(distDir, 'assets', fs.readdirSync(path.join(distDir, 'assets')).find((f) => /^app\..*\.js$/.test(f))), 'utf8');
+  assert.match(html, /src="assets\/scenes\/hall\.webp"/, 'start screen references the hall scene');
+  assert.match(css, /url\(\.\.\/assets\/scenes\/lane\.webp\)/, 'booth backdrop resolves next to the stylesheet');
+  assert.match(css, /url\(\.\.\/assets\/scenes\/room\.webp\)/, 'secondary header resolves next to the stylesheet');
+  assert.match(js, /assets\/audio\/hall-ambience\./, 'ambience is a same-origin relative path');
+  const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+  const h = vercel.headers.find((x) => x.source.includes('scenes') && x.source.includes('audio'));
+  assert.ok(h && !h.headers[0].value.includes('immutable') && h.headers[0].value.includes('stale-while-revalidate'), 'unhashed atmosphere assets are cached like portraits');
 });
 
 test('wrangler.jsonc: assets from dist, only /api/* runs the Worker, Node compat enabled for the shared handlers', () => {

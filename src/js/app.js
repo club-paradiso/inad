@@ -5,7 +5,8 @@
 import './services/boot-watchdog.js';
 import { state, session, resetSessionState, preferences } from './state.js';
 import { bus, notify } from './services/bus.js';
-import { initAudio, ensureAudio, cues } from './services/audio.js';
+import { initAudio, ensureAudio, cues, syncAmbience, ambienceState } from './services/audio.js';
+import { stageArrive, endArrival } from './ui/passenger-stage.js';
 import { installErrorCollectors, runDiagnostics, diagnosticText } from './services/diagnostics.js';
 import { scheduleUiEnhancements } from './services/ui-enhancements.js';
 import { RELEASE } from '../data/legal-baseline.js';
@@ -95,11 +96,11 @@ function regenerate(seed = newSessionSeed()) {
   byId('sessionSeed').textContent = String(seed); renderEventBar(); renderChallengeHud(); renderCampaignHud(); renderDailyStart(showDailyMissions); syncOptionButtons(); renderQueue(); renderTop();
 }
 function beginCase(skipCall = false) {
-  resetLiveInterview(); const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages();
+  resetLiveInterview(); const r = caseEngine.initCase(skipCall); showWorkbenchTab('docs'); disarm(); showTask('passenger'); renderAll(); preloadQueueImages(); syncAmbience();
   // Every case starts after a dialog (briefing, case result, shift change): put focus on the new passenger, not on
   // <body> and never back on a decision button that would act on a traveler the examiner has not seen yet.
   const head = byId('caseName'); if (!isModalOpen() && head?.getClientRects().length) head.focus({ preventScroll: true });
-  if (r.callout) { showCallout(); cues.call(); showAnnouncement('승객 호출', `심사번호 ${screeningNo()}, 12번 심사대로 오십시오.`, 'CALL', 1850); notify.pulse('#queueStrip', 'call-pulse', 600); }
+  if (r.callout) { stageArrive(); showCallout(endArrival); cues.call(); showAnnouncement('승객 호출', `심사번호 ${screeningNo()}, 12번 심사대로 오십시오.`, 'CALL', 1850); notify.pulse('#queueStrip', 'call-pulse', 600); }
   if (r.tutorial) setTimeout(() => { if (!isModalOpen() && !isProcedureOpen() && !tutorial.isOpen()) tutorial.start(); }, 1350);
 }
 function startShiftFlow() {
@@ -127,8 +128,8 @@ function resumeFlow() {
 
 // ---- decisions -----------------------------------------------------------------------------
 function handleVerdict(r) { if (r.guard) { showGuidedGuard(r.guard); return false; } if (r.gameOver) { gameOverFlow(); return false; } return r.ok; }
-function decideClearFlow() { closeProcedureScreen(); const r = caseEngine.decideClear(); if (!handleVerdict(r)) return; showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => finishFlow(r.finish)); }
-function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code, extras) => { closeModal(); const r = caseEngine.decideRefusal(code, extras); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }, { continueLabel: '송환 절차 · 다음 심사로 계속' }); }, legal.additionalGrounds); }
+function decideClearFlow() { closeProcedureScreen(); const r = caseEngine.decideClear(); if (!handleVerdict(r)) return; showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => finishFlow(r.finish), { stamp: 'admit' }); }
+function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code, extras) => { closeModal(); const r = caseEngine.decideRefusal(code, extras); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }, { continueLabel: '송환 절차 · 다음 심사로 계속', stamp: 'refuse' }); }, legal.additionalGrounds); }
 function sjpFlow() { const r = caseEngine.sjpMenu(); if (!handleVerdict(r)) return; openProc('sjp'); }
 function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open) openProc(r.open); }
 function runProcedureAction(a, ctx = {}) {
@@ -243,7 +244,7 @@ function helpFlow() { showHelp({ onTutorial: () => { if (tutorial.start(true, by
 // ---- chrome bindings ---------------------------------------------------------------------------
 function bindChrome() {
   byId('helpBtn').onclick = helpFlow; byId('ruleBtn').onclick = openReference; byId('dailyBtn').onclick = showDailyMissions; byId('recordsBtn').onclick = recordsFlow; byId('profileBtn').onclick = showPlayerProfile; byId('settingsBtn').onclick = showSettings; byId('systemBtn').onclick = showSystemCenter; byId('sourcesBtn').onclick = showSourceRegistry;
-  byId('audioBtn').onclick = () => { state.audio = !state.audio; saveAudioPreference(state.audio); if (state.audio) { ensureAudio(); cues.toggle(true); showAnnouncement('음향 시스템', '효과음과 안내방송 차임을 사용합니다.', 'AUDIO', 1600); } else showAnnouncement('음향 시스템', '음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'MUTED', 1600); renderAudioButton(); };
+  byId('audioBtn').onclick = () => { state.audio = !state.audio; saveAudioPreference(state.audio); if (state.audio) { ensureAudio(); cues.toggle(true); showAnnouncement('음향 시스템', '효과음과 안내방송 차임을 사용합니다.', 'AUDIO', 1600); } else showAnnouncement('음향 시스템', '음향을 끕니다. 화면 자막은 계속 표시됩니다.', 'MUTED', 1600); renderAudioButton(); syncAmbience(); };
   byId('procClose').onclick = closeProcedureScreen;
   // Touch devices arm a decision on the first tap and execute on the second (decision-desk.js); pointer/keyboard flows are direct.
   byId('clearBtn').onclick = guardDecision(decideClearFlow); byId('secondaryBtn').onclick = guardDecision(() => { const r = caseEngine.secondary(); if (r.ok) openProc('secondary'); }); byId('refuseBtn').onclick = guardDecision(openRefusalFlow); byId('sjpBtn').onclick = guardDecision(sjpFlow);
@@ -325,6 +326,7 @@ function installHooks() {
   window.INADSystem = { analytics: analyticsSnapshot, release: RELEASE, makeBundle, validateBundle, applyBundle, runDiagnostics, diagnosticText, showSystemCenter, showDiagnostics, showSourceRegistry };
   window.INADTest = {
     seed: () => session.seed,
+    ambience: () => ambienceState(),
     regenerate: (s) => regenerate(s),
     queue: () => session.queue.map((q, i) => { const c = caseForQueueItem(q); return { index: i, shift: q.shift, travelerId: q.travelerId, caseId: q.caseId, normalId: q.normalId, id: c.id, special: c.special || null, resolution: c.resolution, required: c.required || [], sessionVariant: c.sessionVariant || null, basis: c.basis }; }),
     state: () => ({ caseWorkSeconds: state.caseWorkSeconds, repeatedLookups: state.repeatedLookups, countryId: state.countryId, atlas: JSON.parse(JSON.stringify(state.atlas)), caseIndex: state.caseIndex, stage: state.stage, strikes: state.strikes, score: state.score, started: state.started, ended: state.ended, stats: { ...state.stats }, performed: state.performed.slice(), asked: [...state.asked], looked: [...state.looked], documentReviews: { ...state.documentReviews }, comparisonNotes: { ...state.comparisonNotes }, refugeeStep: state.refugeeStep, repatriationStep: state.repatriationStep, forensic: state.forensic, investigation: state.investigation, arrestReview: state.arrestReview, reports: state.reports.map((r) => ({ label: r.label, caseId: r.caseId, procedure: r.procedure, interpreter: r.interpreter, actions: r.actions })), mistakes: state.mistakes.map((m) => m.msg), language: state.language ? { mode: state.language.mode, korean: state.language.korean, english: state.language.english, interpreterActive: state.language.interpreterActive, interpreterUsed: state.language.interpreterUsed } : null, behavior: state.behavior ? { stress: state.behavior.stress, rapport: state.behavior.rapport } : null, campaignId: state.campaignId, campaignDay: state.campaignDay, difficulty: state.difficulty, scenarioId: state.scenarioId }),

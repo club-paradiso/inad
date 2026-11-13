@@ -38,3 +38,17 @@ Do not replace the recovered artifact with a screenshot reconstruction, framewor
 - `legacy/v6.1/INAD_Article12_v6_1_KR.html` — canonical bytes (SHA-256 above), frozen; `INAD_TARGET=legacy npm run test:e2e` runs the 19-spec parity suite against it.
 - `docs/RELEASE_NOTES_v6.1.md`, `docs/QA_REPORT_v6.1.md` — the v6.1 baseline documents.
 - `src/` — modular v7 source of truth; `dist/index.html` and root `index.html` are generated (CI fails if the root mirror is stale).
+
+## Generated atmosphere assets (2026-11-13)
+
+Scene art and hall ambience were generated with Higgsfield and committed as static files; the game never loads them from another origin.
+
+| File | Model | Processing |
+|---|---|---|
+| `src/assets/scenes/hall.webp` | GPT Image 2.6 (medium, 1k, 16:9) | resized 1280×716, WebP q70 |
+| `src/assets/scenes/lane.webp` | GPT Image 2.6 (medium, 1k, 4:5) | resized 608×760, WebP q68 |
+| `src/assets/scenes/room.webp` | GPT Image 2.6 (medium, 1k, 16:9) | resized 960×537, WebP q68 |
+| `src/assets/audio/hall-ambience.ogg` / `.m4a` | Mirelo Text to Audio (10 s) | trimmed 0.15–9.9 s, mono, 60 Hz–5.5 kHz band, −5 dB, forward + reversed copy joined into a 19.5 s palindrome loop; Opus 32 kbps / AAC 40 kbps |
+
+Prompts asked for empty spaces with no readable text, logos, flags or emblems, and each image was checked by eye for that before commit. The ambience was checked by loudness envelope and spectrogram only (steady bed at about −29 dB before mastering, no isolated events); it has not been auditioned by ear. A generated stamp sound was rejected (no clean transient) and the synthesized cue is kept.
+

@@ -31,6 +31,16 @@
 .docmodal th, .docmodal td { padding: 7px 10px; border: 1px solid #d9d3c4; text-align: left; vertical-align: top; }
 .docmodal th { width: 130px; background: #f1ede2; font-weight: 600; color: var(--text-2); }
 .docmodal-foot { margin-top: 12px; font-size: var(--fs-compact); line-height: var(--lh-loose); }
+.doc-stamps { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 14px; }
+.doc-stamps .seal { margin: 0; }
+/* decision stamp: the one moment of impact in a case. Semantic colour = the legal status it records. */
+.decision-stamp { display: grid; justify-items: center; gap: 2px; padding: 6px 14px; border: 3px double currentColor; border-radius: var(--r-1); transform: rotate(-7deg); opacity: .9; animation: stampIn var(--t-base) var(--ease) 140ms both; }
+.decision-stamp b { font-size: var(--fs-title); font-weight: 800; letter-spacing: .12em; line-height: 1.2; }
+.decision-stamp span { font: 700 var(--fs-meta)/1.3 var(--mono); letter-spacing: .1em; }
+.decision-stamp.admit { color: var(--success-text); }
+.decision-stamp.refuse { color: var(--danger-text); }
+@keyframes stampIn { from { opacity: 0; transform: rotate(-7deg) scale(1.7); } to { opacity: .9; transform: rotate(-7deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .decision-stamp { animation: none; } }
 .seal { margin: 14px 0 0 auto; width: fit-content; padding: 6px 10px; border: 2px solid var(--danger); color: var(--danger); border-radius: var(--r-1); font: 700 var(--fs-meta)/1.4 var(--mono); text-align: center; transform: rotate(-4deg); opacity: .85; }
 
 /* case result / shift evaluation */

@@ -15,9 +15,12 @@ import { guardDecision } from '../decision-desk.js';
 import { ruleById } from '../../engines/decision-model.js';
 
 // Decision document (통지서 등) with a continue button.
-export function showDoc(title, rows, foot, onContinue, { continueLabel = '확인' } = {}) {
+// `stamp` marks the two primary-desk decisions with an inked decision stamp (fictional wording, no real seal).
+const DECISION_STAMPS = { admit: ['입국 허가', 'ADMITTED'], refuse: ['입국 불허', 'REFUSED'] };
+export function showDoc(title, rows, foot, onContinue, { continueLabel = '확인', stamp = '' } = {}) {
+  const ds = DECISION_STAMPS[stamp]; const stampHTML = ds ? `<div class="decision-stamp ${stamp}" aria-hidden="true"><b>${ds[0]}</b><span>${ds[1]} · SIM</span></div>` : '';
   const c = current(), t = getTraveler(c.travelerId);
-  showModal(title, `<div class="report-person"><img src="${t.portrait}" alt="신원확인용 게임 보조 초상"><div class="report-person-copy"><b>${esc(t.name.korean)}</b><br>${esc(t.name.latin)}<br>${esc(t.nationality.korean)} · ${esc(screeningNo())}<br><br>※ 왼쪽 사진은 게임상 신원확인 보조패널이며 법정서식 자체의 일부가 아닙니다.</div></div><div class="docmodal"><h2>${esc(title)}</h2><table><tbody>${rows.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table><p class="docmodal-foot">${esc(foot)}</p><div class="seal" aria-hidden="true">INAD 가상 문서<br>SIMULATION</div></div><button type="button" class="act primary block" id="docContinue" data-autofocus><strong>${esc(continueLabel)}</strong></button>`, { dismissible: false });
+  showModal(title, `<div class="report-person"><img src="${t.portrait}" alt="신원확인용 게임 보조 초상"><div class="report-person-copy"><b>${esc(t.name.korean)}</b><br>${esc(t.name.latin)}<br>${esc(t.nationality.korean)} · ${esc(screeningNo())}<br><br>※ 왼쪽 사진은 게임상 신원확인 보조패널이며 법정서식 자체의 일부가 아닙니다.</div></div><div class="docmodal"><h2>${esc(title)}</h2><table><tbody>${rows.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table><p class="docmodal-foot">${esc(foot)}</p><div class="doc-stamps">${stampHTML}<div class="seal" aria-hidden="true">INAD 가상 문서<br>SIMULATION</div></div></div><button type="button" class="act primary block" id="docContinue" data-autofocus><strong>${esc(continueLabel)}</strong></button>`, { dismissible: false });
   byId('docContinue').onclick = () => { closeModal(); onContinue && onContinue(); };
 }
 

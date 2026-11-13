@@ -1,8 +1,15 @@
 /* Start overlay (duty setup) and tutorial spotlight. Primary choice first, details by progressive disclosure. */
 .startover { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; overflow: auto; background: var(--canvas); }
 .startover.hide { display: none; }
-.startcard { width: min(960px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow: auto; display: grid; gap: 20px; padding: 28px 32px 24px; background: var(--elevated); border: 1px solid var(--border); border-top: 4px solid var(--chrome); border-radius: var(--r-3); box-shadow: var(--shadow-3); }
-.start-head { display: grid; gap: 4px; }
+.startcard { width: min(960px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow: auto; display: grid; gap: 20px; --start-px: 32px; --start-pt: 28px; padding: var(--start-pt) var(--start-px) 24px; background: var(--elevated); border: 1px solid var(--border); border-top: 4px solid var(--chrome); border-radius: var(--r-3); box-shadow: var(--shadow-3); }
+.start-head { position: relative; display: grid; align-content: end; min-height: 216px; margin: calc(-1 * var(--start-pt)) calc(-1 * var(--start-px)) 0; padding: var(--start-pt) var(--start-px) 18px; background: var(--chrome); color: var(--chrome-text); overflow: clip; }
+/* the hall before opening (generated scene, src/assets/scenes). The scrim keeps every line of copy above 4.5:1. */
+.start-scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; }
+.start-head::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(20, 35, 47, .95), rgba(20, 35, 47, .7)); }
+.start-head-copy { position: relative; z-index: 2; display: grid; gap: 4px; }
+.start-head :is(.startmark, .startlocation, .start-explain) { color: #dfe7ec; }
+.start-head .start-title { color: #fff; }
+body.pref-contrast .start-scene { display: none; }
 .startmark { font-size: var(--fs-meta); letter-spacing: .1em; color: var(--text-3); font-family: var(--mono); }
 .start-title { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; color: var(--chrome); }
 .startsub { display: flex; align-items: center; gap: 10px; font-size: var(--fs-section); font-weight: 600; }
@@ -106,7 +113,8 @@
 .tutorial-actions button:disabled { opacity: .4; }
 
 @media (max-height: 860px) {
-  .startcard { padding: 20px 24px 18px; gap: 14px; }
+  .startcard { --start-px: 24px; --start-pt: 20px; padding: var(--start-pt) var(--start-px) 18px; gap: 14px; }
+  .start-head { min-height: 168px; }
   .start-title { font-size: 26px; }
 }
 @media (max-width: 1023px) {
@@ -114,7 +122,7 @@
 }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .startover { padding: 0; place-items: start stretch; }
-  .startcard { width: 100%; max-height: none; min-height: 100%; border: 0; border-radius: 0; box-shadow: none; padding: calc(20px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); gap: 16px; }
+  .startcard { width: 100%; max-height: none; min-height: 100%; border: 0; border-radius: 0; box-shadow: none; --start-px: 16px; --start-pt: calc(20px + var(--safe-top)); padding: var(--start-pt) var(--start-px) calc(24px + var(--safe-bottom)); gap: 16px; }
   .start-title { font-size: 26px; }
   .start-body { grid-template-columns: 1fr; gap: 12px; }
   .setup-bar { flex-direction: column; align-items: stretch; }

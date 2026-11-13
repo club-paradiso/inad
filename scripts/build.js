@@ -37,6 +37,15 @@ export async function buildModularApp({ minify = true } = {}) {
     totalPortraitBytes += fs.statSync(destFile).size;
   }
 
+  // 2b. Copy scene art and ambience audio (generated assets, provenance in docs/SOURCE_PROVENANCE.md).
+  //     Loaded by the page on demand; not part of the initial HTML/CSS/JS transfer.
+  let totalAtmosphereBytes = 0; const atmosphereFiles = [];
+  for (const [dir, ext] of [['scenes', /\.webp$/], ['audio', /\.(m4a|ogg)$/]]) {
+    const from = path.join(src, 'assets', dir), to = path.join(assetsDir, dir);
+    fs.mkdirSync(to, { recursive: true });
+    for (const f of fs.readdirSync(from).filter((n) => ext.test(n)).sort()) { fs.copyFileSync(path.join(from, f), path.join(to, f)); totalAtmosphereBytes += fs.statSync(path.join(to, f)).size; atmosphereFiles.push(`${dir}/${f}`); }
+  }
+
   // 3. Bundle and minify CSS
   const htmlSrc = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
   const cssFiles = [...htmlSrc.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
@@ -124,6 +133,7 @@ export async function buildModularApp({ minify = true } = {}) {
   console.log(`  - dist/assets/${jsFileName}: ${(jsBytes / 1024).toFixed(1)} KB (ESM)`);
   for (const c of chunkFiles) console.log(`  - dist/assets/${c.name}: ${(c.bytes / 1024).toFixed(1)} KB / ${(c.gzip / 1024).toFixed(1)} KB gz (on demand)`);
   console.log(`  - dist/assets/portraits/: ${portraitFiles.length} files (${(totalPortraitBytes / 1024).toFixed(0)} KB)`);
+  console.log(`  - dist/assets/{scenes,audio}/: ${atmosphereFiles.length} files (${(totalAtmosphereBytes / 1024).toFixed(0)} KB, on demand)`);
   console.log(`  - Initial transfer: ${(totalInitialUncompressed / 1024).toFixed(1)} KB uncompressed / ${(totalInitialGzip / 1024).toFixed(1)} KB gzipped`);
 
   return {

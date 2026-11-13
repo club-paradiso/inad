@@ -1,5 +1,6 @@
-// Web Audio cue synthesis (no audio files). Every cue also has an on-screen caption via the PA
-// banner / logs, so muting loses no information.
+// Web Audio cue synthesis, plus one bundled room-tone loop for the arrivals hall (src/assets/audio, same-origin
+// static file played through an <audio> element — no network API, no external origin). Every cue also has an
+// on-screen caption via the PA banner / logs, and the ambience carries no information, so muting loses nothing.
 import { state } from '../state.js';
 import { bus } from './bus.js';
 
@@ -44,7 +45,42 @@ export const cues = {
   procedure(mode) { if (mode === 'secondary') return cues.secondary(); if (mode === 'sjp') { if (!ensureAudio()) return; soundCount(); toneNode(330, .09, 'triangle', .012); toneNode(220, .12, 'triangle', .013, .1); return; } if (mode === 'refugee') { if (!ensureAudio()) return; soundCount(); toneNode(523, .08, 'sine', .011); toneNode(587, .11, 'sine', .011, .1); return; } if (mode === 'repatriation') return cues.refuse(); }
 };
 
+// ---- hall ambience ---------------------------------------------------------------------------
+// Plays only while a duty is running, the tab is visible and 음향 is on. The file is a palindrome loop mastered
+// quiet (mean about -34 dB), so platforms that ignore element volume (iOS) still get a background level.
+const AMBIENCE_LEVEL = .55, FADE_MS = 900;
+let amb = null, ambFade = 0, ambRetry = false;
+function ambienceEl() {
+  if (amb || typeof Audio === 'undefined') return amb;
+  const el = new Audio(); const ogg = el.canPlayType('audio/ogg; codecs="opus"');
+  el.src = `assets/audio/hall-ambience.${ogg ? 'ogg' : 'm4a'}`; el.loop = true; el.preload = 'auto'; el.volume = 0;
+  amb = el; return amb;
+}
+function fadeAmbience(to, done) {
+  clearInterval(ambFade); const el = amb; if (!el) return; const from = el.volume, t0 = Date.now();
+  ambFade = setInterval(() => {
+    const k = Math.min(1, (Date.now() - t0) / FADE_MS);
+    try { el.volume = Math.max(0, Math.min(1, from + (to - from) * k)); } catch (e) { /* read-only volume */ }
+    if (k >= 1) { clearInterval(ambFade); done && done(); }
+  }, 60);
+}
+export function ambienceWanted() { return !!(state.audio && state.started && typeof document !== 'undefined' && !document.hidden); }
+export function syncAmbience() {
+  if (typeof document === 'undefined') return;
+  if (!ambienceWanted()) { if (amb && !amb.paused) fadeAmbience(0, () => { if (!ambienceWanted()) amb.pause(); }); return; }
+  const el = ambienceEl(); if (!el) return;
+  if (el.paused) {
+    const p = el.play();
+    // Autoplay can be refused until the first gesture, and a browser may not decode either format: stay silent.
+    if (p && p.catch) p.catch(() => { if (ambRetry) return; ambRetry = true; document.addEventListener('pointerdown', () => { ambRetry = false; syncAmbience(); }, { once: true }); });
+  }
+  fadeAmbience(AMBIENCE_LEVEL);
+}
+export function ambienceState() { return { wanted: ambienceWanted(), loaded: !!amb, paused: amb ? amb.paused : true, src: amb ? amb.getAttribute('src') : '' }; }
+
 export function initAudio() {
+  bus.on('changed', syncAmbience);
+  document.addEventListener('visibilitychange', syncAmbience);
   bus.on('sound', ({ cue, arg }) => { const fn = cues[cue]; if (fn) fn(arg); });
   document.addEventListener('pointerdown', () => { if (state.audio) ensureAudio(); }, { once: true });
   document.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.matches('#audioBtn') && state.audio) cues.click(); });

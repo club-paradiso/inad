@@ -6,7 +6,7 @@ import { createLivingPortrait } from './avatar/living-portrait.js';
 import { PORTRAIT_RIGS } from '../../data/portrait-rigs.js';
 import { MOTION } from '../../data/motion-grammar.js';
 
-let lp = null, idleTimer = 0, captionTimer = 0, currentId = null, actSeq = 0;
+let lp = null, idleTimer = 0, captionTimer = 0, arriveTimer = 0, currentId = null, actSeq = 0;
 const STATE_TEXT = { listening: '듣는 중', thinking: '생각하는 중', speaking: '말하는 중', hesitant: '머뭇거리는 중', confused: '되묻는 중', document: '서류를 보는 중', relieved: '', idle: '' };
 
 export function ensureStage() {
@@ -41,6 +41,10 @@ export async function actLine(text, { mood = 'plain', lead = '', lang = 'ko' } =
   idleTimer = setTimeout(() => s.setState('idle'), 600);
 }
 export function stopActing() { actSeq++; lp?.stopSpeaking(); }
+// Arrival beat: while the passenger is being called the booth window shows the empty lane (the stage backdrop),
+// then the person steps up. Presentation only; nothing waits on it and skipping the call ends it at once.
+export function stageArrive(ms = 950) { const el = byId('passengerStage'); if (!el) return; clearTimeout(arriveTimer); el.classList.add('arriving'); arriveTimer = setTimeout(endArrival, ms); }
+export function endArrival() { clearTimeout(arriveTimer); byId('passengerStage')?.classList.remove('arriving'); }
 // new case or retry of the same passenger: no leftover subtitle, timers or acting
 export function resetStage() { actSeq++; clearTimeout(idleTimer); clearCaption(); lp?.stopSpeaking(); lp?.setState('idle'); }
 export function refreshStageMotion() { lp?.refreshMotionPreference(); }
