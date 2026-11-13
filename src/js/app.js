@@ -190,7 +190,9 @@ function shiftCompleteFlow() {
 }
 function gameOverFlow() { if (state.sessionMode === 'shift') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 // Single-case live interview: reaches a real passenger in one click (first-run path) and never touches saves.
-function liveInterviewFlow(retry = false, caseId = LIVE_CASE.caseId) {
+let liveCaseId = LIVE_CASE.caseId; // the single case on screen, so 다시 하기 restarts the same passenger
+function liveInterviewFlow(retry = false, caseId = retry ? liveCaseId : LIVE_CASE.caseId) {
+  liveCaseId = caseId;
   if (state.started && !retry) return;
   Object.assign(state, { sessionMode: 'case', guidance: 'guided', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0 });
   regenerate(LIVE_CASE.seed); state.eventSchedule = [];
