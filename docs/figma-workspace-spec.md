@@ -590,3 +590,31 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
   (`src/styles/documents.css .doc-photo`). 프레임 크기는 기존 값 그대로(여권 96×118, 신분증 84×104, 대조 쌍 56×68, 감식 80×96).
 - **미완료**: `Document/*` 컴포넌트 세트에는 반영하지 않았다(기존 세트는 읽기 전용).
 
+## 17. 시작 화면 · 진행 순서 — 코드 → Figma 동기화 (2026-11-13)
+
+코드가 먼저 바뀌었다(브랜치 `claude/inad-game-review-upgrade-vw9fjx`). 토큰 이름·값, 변수, 텍스트 스타일, 컴포넌트 세트는 그대로다.
+
+- **완료 · 섹션(06 — Desktop)**: `[Implemented] 시작 화면 · 진행 순서 · 2026-11-13` (`301:2348`,
+  [링크](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=301-2348)). 자동화가 만든 노드만 들어 있다.
+- 실제 크기 프레임 7개, 이미지 채우기(파일 안에서 해시 조회·크기 일치 확인). 원본: `docs/audit/start-flow-2026-11/*.png`
+  (로컬 dist 빌드 · Playwright Chromium · 배치 번호 271828).
+
+| 프레임 | 노드 |
+|---|---|
+| 처음 온 플레이어 1440×900 · 1024×768 · 768×1024 · 390×844 | `301:2351` · `301:2353` · `301:2355` · `301:2357` |
+| 첫 심사 완료 뒤 390×844 · 1440×900 | `301:2359` · `301:2361` |
+| 더 보기 펼침 1440×900 | `301:2363` |
+
+- **코드 기준 값** (`src/styles/start.css`):
+
+| 요소 | 값 |
+|---|---|
+| 단계 `.start-step` | 2열(유동 · 176px), 간격 12px, 안쪽 여백 10px 14px, 테두리 `--border`, 반경 `--r-1`. 767px 이하 1열 |
+| 다음 단계 `[data-state="next"]` | 배경·테두리 `--booth`, 안쪽 여백 16px 20px, 제목 16px, 버튼 48px(767px 이하 56px) · 16px/800 · `--booth-text` 바탕 |
+| 그 밖의 단계 버튼 | 44px(767px 이하 52px), `--fs-compact`/700, 테두리 `--border-strong` |
+| 번호 `.start-step-no` | 24px 원, 모노 `--fs-label`/700 |
+| 처음 온 플레이어 카드 | 폭 최대 720px, 옆 열 숨김([더 보기]를 열면 960px · 옆 열 표시) |
+| 언어 버튼 `.start-lang` | 머리 오른쪽 위, 44px, 첫 줄(`.startmark`) 오른쪽 여백 112px |
+
+- **미완료**: `08 — Mobile`·`11 — Prototype`의 시작 프레임과 컴포넌트 세트에는 반영하지 않았다(기존 섹션은 읽기 전용).
+
