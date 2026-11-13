@@ -133,19 +133,21 @@ Figma에는 시스템 폰트가 없으므로 한글 본문은 `Noto Sans KR`, �
 | Interview/Message | Role: officer · alien · interpreter · system · alert | `src/js/ui/interview-panel.js` `renderLog` |
 | Interview/Question | State: default · asked · locked · branch | `renderQuestions` |
 | Interview/LanguageBar | Mode: ko · en · interpreter · none | `renderLanguage` |
-| Document/Selector | State: default · selected · alert | `src/js/ui/document-workbench.js` |
+| Document/Selector | State: default · selected · alert · strip-default · strip-selected · strip-alert (v13, ≥1280 자료 띠) | `src/js/ui/document-workbench.js` |
 | Document/Field | Width: half · wide | `docFieldRows` |
-| Document/Paper | Kind: passport · visa · earrival · pnr · hotel · idcard · biometric · watchlist · letter | `documentHTML` |
+| Document/Paper | Kind: passport · visa · earrival · pnr · hotel · idcard · biometric · watchlist · letter (세트 없음. v13: `Document/Paper · Passport (v13)` 단독 컴포넌트) | `documentHTML` |
 | Lookup/Action | State: default · done · alert(✓ / ! 접두) | `.lookup-tabs button` |
 | Lookup/Result | Tone: 정상 · 주의 · 경고 · 치명 | `src/js/ui/system-panel.js` `renderTerminal` |
 | Assessment/Readiness | Level: low · mid · ready | `renderMatrix` |
 | Assessment/Fact | Status: ok · warn · bad | `renderMatrix` `.ev` |
-| Assessment/Basis | Status: pass · review · fail · pending / Open: true·false | `src/js/ui/decision-basis.js` |
-| Assessment/Clue | Kind: confirm · unresolved · conflict · context | `renderClueBoard` |
+| Assessment/Basis | Status: pass · review · fail · pending · summary (v13, 패널 접기 요약) / Open: true·false | `src/js/ui/decision-basis.js` |
+| Assessment/Clue | Kind: confirm · unresolved · conflict · context · neutral (v13, 진행 중 화면은 neutral만) | `renderClueBoard` · `clueCardsHTML` |
 | Procedure/Header | Mode: secondary · refugee · sjp · repatriation | `src/js/ui/procedure-screen.js` |
 | Procedure/Step | State: done · active · pending | `.proc-step` |
 | Procedure/Row | State: default · done · warn | `.proc-row` |
 | Procedure/Action | Kind: primary · good · danger · neutral | `.proc-action` |
+| Procedure/Choice · Repatriation addressee (v13) | — | `procedure-screen.js repatAddresseeChoices()` · `.proc-choice` |
+| Overlay/Field · Additional ground (v13) | — | `reports.js showRefusalReasons(extras)` · `.reason-extra` |
 | Feedback/Toast | Kind: toast · event | `src/js/ui/toast.js` |
 | Feedback/Inline | Tone: info · warn · danger · legal | `.inline-note`(대화상자) · `.proc-note`(절차 화면) |
 | Overlay/Dialog | Size: default · wide / Breakpoint: desktop · mobile(sheet) | `src/js/ui/modals.js` |
@@ -523,12 +525,13 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
     `Modal / Additional ground (reason-extra)` ([288:2269](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2269)) ↔ `reports.js showRefusalReasons(extras)` · `.reason-extra`.
     사용 변수: `color/bg/surface`, `color/border/default`, `color/border/strong`, `color/text/primary`, `color/text/muted`, `radius/small`, `radius/medium`, `space/3`. 텍스트 스타일: `type/section`, `type/meta`.
 - **변경 없음**: 변수 이름·값(`tokens.css`), 텍스트 스타일, 기존 프레임·컴포넌트·`[Approved]`/`[Implemented]` 섹션.
-- **편집 가능한 v13 변형 4종**(같은 섹션 하단 `편집 가능 · v13 변형` 행, [291:2356](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2356)).
-  `04 — Components`의 기존 세트(Document/Field 17:68 · Document/Selector 17:61 · Assessment/Clue 18:179 · Assessment/Basis 18:160)는
-  자동화가 고칠 수 없는 노드라 그대로 두고, 바뀐 동작을 새 컴포넌트로 만들었다. 기존 세트에 합칠지는 사람이 결정한다.
-  - `Document/Passport (v13 · printed rows + MRZ)` [291:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2247) ↔ `documentHTML`(PASSPORT) · `passportPrintedRows()` · `engines/mrz.js`
-  - `Assessment/Clue · Neutral (v13)` [291:2309](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2309) ↔ `clueCardsHTML()` (진행 중 등급 색·핵심 배지 없음)
-  - `Assessment/Basis · Folded panel (v13)` (Open=false·true) [291:2331](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2331) ↔ `renderBasisPanel()` `details.basis-wrap`
-  - `Document/Strip item (v13)` (State=default·selected·alert) [291:2341](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2341) + 4장 예시 [291:2342](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2342) ↔ ≥1280 `.zone-evidence .doclist`
+- **컴포넌트 (사용자 지시로 기존 세트에 합침, 2026-11-13)**: 변형은 추가만 했고 기존 변형·프로퍼티·이름은 그대로다. 각 세트 description 끝에 v13 메모를 덧붙였다.
+  - `Assessment/Clue` (18:179) + `Kind=neutral` (291:2309) — 진행 중 단서 보드(`clueCardsHTML`)는 등급 색·핵심 배지 없이 neutral만 쓴다.
+  - `Assessment/Basis` (18:160) + `Status=summary, Open=false·true` (291:2312 · 291:2320) — 패널 전체 접기 요약(`details.basis-wrap`, 기본 접힘).
+  - `Document/Selector` (17:61) + `State=strip-default · strip-selected · strip-alert` (291:2332 · 291:2335 · 291:2338) — ≥1280 자료 구역 띠(아이콘 없음·같은 폭·줄바꿈).
+  - 세트가 없던 3종은 `04 — Components` 맨 아래 `v13 추가 · 2026-11-13` 줄로 옮겼다: `Document/Paper · Passport (v13)` (291:2247 · 생년월일·성별·만료일 행 + ICAO MRZ),
+    `Procedure/Choice · Repatriation addressee` (288:2262), `Overlay/Field · Additional ground` (288:2269).
+  - v13 섹션(286:2247) 하단에는 위 컴포넌트의 인스턴스만 남아 있다(메인 컴포넌트는 `04 — Components`).
   - 바인딩: Color·Space·Radius 변수, 텍스트 스타일 `type/label`·`type/meta`·`type/control`·`type/code`·`type/section`. 여권 종이 색(`#f6f3ea`·`#1d3752`·`#d5cfbf`)은 `documents.css`도 하드코딩이라 변수가 없다.
+  - 새 변형에는 기존 세트의 TEXT 프로퍼티(Title·Text 등)가 아직 연결돼 있지 않다. 인스턴스에서는 텍스트를 직접 바꾼다.
 - 이미지 업로드는 작업 환경 네트워크 허용 목록에 `mcp.figma.com`을 추가한 뒤 됐다(§10·§12의 미완료 원인과 같은 호스트).
