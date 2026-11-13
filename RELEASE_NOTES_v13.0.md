@@ -46,5 +46,6 @@ v11(해외 사건)·v12(공개 계층)·v13(생성 승객 사연)이 이미 들�
 - 입국 허가·입국 불허 결정 문서에 결정 도장(가상 문구, 실제 관인 아님).
 - 입국재심 화면 머리에 재심실 장면(1024px 이상).
 - 에셋 출처와 가공 내역: `docs/SOURCE_PROVENANCE.md`. 테스트: `tests/e2e/atmosphere.spec.js`, `tests/integration/dist-integrity.test.js`.
-- 남은 일: Figma `[Implemented]` 동기화, 현장음 실청취 확인.
+- Figma: `[Implemented] 현장감 레이어` 섹션(`290:2247`), 캡처 `docs/audit/atmosphere-2026-11/`, 값은 `docs/figma-workspace-spec.md` §14.
+- 남은 일: 현장음 실청취 확인.
 
