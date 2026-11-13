@@ -121,6 +121,7 @@ body.pref-contrast .procedure-screen[data-mode="secondary"] .proc-head { backgro
 .proc-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
 .proc-compare .photo { text-align: center; }
 .proc-compare .photo img { width: 80px; height: 96px; object-fit: cover; margin: 0 auto; border: 1px solid var(--border); border-radius: var(--r-1); }
+.proc-compare .photo .proc-photo-frame { width: 80px; height: 96px; margin: 0 auto; border: 1px solid var(--border); border-radius: var(--r-1); }
 .proc-compare .photo label { display: block; margin-top: 4px; font-size: var(--fs-meta); color: var(--text-3); }
 .proc-vs { font: 700 22px/1 var(--mono); color: var(--danger); }
 .arrest-check { display: grid; gap: 6px; margin-bottom: 8px; }
@@ -152,7 +153,7 @@ body.pref-contrast .procedure-screen[data-mode="secondary"] .proc-head { backgro
   .proc-actions { grid-template-columns: 1fr; }
   .proc-action { min-height: 52px; }
   .proc-row button { min-height: 40px; }
-  .proc-compare .photo img { width: 64px; height: 78px; }
+  .proc-compare .photo img, .proc-compare .photo .proc-photo-frame { width: 64px; height: 78px; }
 }
 
 /* touch: every procedure control is a 44px target (rows, close, interpreter, requirement ticks) */

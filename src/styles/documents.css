@@ -33,7 +33,11 @@
 .passport-kind b { display: block; font: 800 12px/1.2 var(--mono); letter-spacing: .12em; }
 .passport-main { display: grid; grid-template-columns: 96px 1fr; gap: 14px; padding: 14px; }
 .passport-photo-wrap { position: relative; width: 96px; height: 118px; border: 1px solid #c9c1ad; background: #e8e2d3; padding: 3px; }
-.passport-photo { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(1.05); }
+/* document photo (ui/doc-photo.js): the ID-framed, print-toned rendering of a portrait. The inline transform
+   comes from the portrait rig; the clip is the photo's printed edge. Same face as the booth, different picture. */
+.doc-photo-clip { display: block; overflow: hidden; }
+span.doc-photo-clip > img.doc-photo { display: block; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; object-fit: cover; filter: saturate(.3) contrast(1.1); }
+.passport-photo { width: 100%; height: 100%; }
 .passport-photo-wrap::after { content: "SIM"; position: absolute; right: 4px; bottom: 4px; font: 600 var(--fs-meta)/1 var(--mono); color: #fff; background: rgba(29, 55, 82, .75); padding: 2px 4px; }
 .passport-fields { min-width: 0; display: grid; gap: 8px; align-content: start; }
 .passport-name .field-value { font-size: 14px; letter-spacing: .04em; font-family: var(--mono); }
@@ -88,7 +92,7 @@
 
 /* id card */
 .doc-idcard { display: grid; grid-template-columns: 96px 1fr; gap: 14px; padding: 14px; background: #fdfdfb; }
-.id-photo { width: 84px; height: 104px; object-fit: cover; border: 1px solid #c9c1ad; }
+.id-photo { width: 84px; height: 104px; border: 1px solid #c9c1ad; }
 .id-chip { width: 26px; height: 20px; margin: 8px 0 4px; border-radius: 3px; background: #d8c48a; border: 1px solid #b9a25e; }
 .id-head { font-size: 13px; font-weight: 800; margin-bottom: 8px; }
 
