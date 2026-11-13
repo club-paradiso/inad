@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 
 test.skip(process.env.INAD_TARGET === 'legacy', 'Foreign passenger portraits belong to ATLAS.');
 
 async function enter(page, country) {
   await page.goto(ENTRY);
+  await revealStartMore(page);
   await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="' + country + '"]').check();
   await page.locator('#atlasEnter').click();

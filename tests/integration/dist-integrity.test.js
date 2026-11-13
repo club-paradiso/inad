@@ -195,6 +195,19 @@ test('cloudflare dist/_headers mirrors the vercel.json security and caching cont
   }
 });
 
+// Debrief-only field notes ship as their own hashed file so the commentary is not paid for on first load.
+test('field notes ship as an on-demand hashed file, not in the initial bundle', () => {
+  const html = fs.readFileSync(distPath, 'utf8');
+  const js = fs.readFileSync(path.join(distDir, html.match(/assets\/app\.[a-f0-9]+\.js/)[0]), 'utf8');
+  const file = fs.readdirSync(path.join(distDir, 'assets')).find((f) => /^field-notes\.[a-f0-9]{8}\.js$/.test(f));
+  assert.ok(file, 'hashed field-notes file present');
+  assert.ok(js.includes(`import("./${file}")`), 'app loads the notes on demand');
+  assert.ok(!html.includes(file), 'notes are not part of the initial HTML');
+  const chunk = fs.readFileSync(path.join(distDir, 'assets', file), 'utf8');
+  assert.match(chunk, /ICN-S1-001/, 'the notes are in the chunk');
+  assert.ok(!js.includes('확인이 끝난 사람을 계속 붙잡는 것도 오판입니다'), 'note text stays out of the entry bundle');
+});
+
 // Atmosphere assets (scene art, hall ambience): bundled same-origin files, loaded on demand, small, and never a
 // reason for the page to reach another origin.
 test('atmosphere assets: scenes and ambience are bundled, referenced and within budget', () => {
@@ -246,5 +259,6 @@ test('v11: international case libraries ship as on-demand hashed files, not in t
   // Authored overseas case text stays out of the entry bundle.
   assert.ok(!js.includes('Avery Morgan'), 'case content is not inlined into app bundle');
   const dynamicImports = [...js.matchAll(/import\("([^"]+)"\)/g)].map((m) => m[1]);
-  assert.ok(dynamicImports.every((p) => /^\.\/atlas-(ca|gb|nz)\.[a-f0-9]{8}\.js$/.test(p)), `only case libraries are dynamic: ${dynamicImports}`);
+  // the only other on-demand file is the debrief field notes (its own test above)
+  assert.ok(dynamicImports.every((p) => /^\.\/(atlas-(ca|gb|nz)|field-notes)\.[a-f0-9]{8}\.js$/.test(p)), `only case libraries and field notes are dynamic: ${dynamicImports}`);
 });

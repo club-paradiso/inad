@@ -1,7 +1,7 @@
 // v11 country desks: one DOM, three visual variants. Each desk has its own chrome and desk mark, its own system-focus
 // composition and its own way of showing the review checks, while action and status colours keep one meaning everywhere.
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 import { atlasScenarios, loadAtlasLibraries } from '../../src/data/atlas-scenarios.js';
 
 await loadAtlasLibraries();
@@ -10,7 +10,7 @@ test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to t
 const DESK = { CA: 'rgb(34, 113, 122)', GB: 'rgb(69, 83, 156)', NZ: 'rgb(92, 107, 47)' };
 async function openDesk(page, country, { system = true } = {}) {
   // The first desk is chosen on the start screen; later desks from the current desk's own country button.
-  if (page.url() === 'about:blank') { await page.goto(ENTRY); await page.locator('#atlasStartCountry').click(); }
+  if (page.url() === 'about:blank') { await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click(); }
   else await page.locator('#atlasCountry').click();
   await page.locator(`[name="atlas-country"][value="${country}"]`).check();
   await page.locator('#atlasEnter').click(); await page.locator('#atlasSwitch').click({ timeout: 2000 }).catch(() => {}); // confirm leaving a desk

@@ -73,15 +73,17 @@
 <footer class="statusbar" role="contentinfo"><span>가상 시스템 · 실제 법무부 내부전산 또는 비공개 심사기준을 재현한 것이 아님</span><span id="footerTag" class="footer-tag"></span><span id="clock" class="mono">00:00:00</span><span class="strikes" title="업무 지적: 잘못된 결정·절차 시도가 쌓인 횟수입니다. 한도에 이르면 근무가 끝납니다."><span class="strike-label">업무 지적</span><span class="strike-dots" aria-hidden="true"></span><b class="strike-count mono">0/4</b></span></footer>
 </div>
 <div class="startover" id="startOverlay"><div class="startcard">
-<div class="start-head"><img class="start-scene" src="assets/scenes/hall.webp" alt="" width="1280" height="716" decoding="async"><div class="start-head-copy"><div class="startmark">대한민국 공항 입국심사 · FICTIONAL SIMULATION</div><h1 class="start-title">INAD</h1><p class="start-explain">INAD는 입국이 허가되지 않은 승객(Inadmissible passenger)을 가리키는 항공 실무 약칭입니다.</p><div class="startsub">입국심사관 시뮬레이션 <span class="release-chip mono" id="startReleaseChip">v13.0 · RELEASE</span></div><div class="startlocation">인천공항출입국·외국인청<br>제2여객터미널 · 입국심사장</div></div></div>
+<div class="start-head"><img class="start-scene" src="assets/scenes/hall.webp" alt="" width="1280" height="716" decoding="async"><div class="start-head-copy"><div class="startmark">대한민국 공항 입국심사 · FICTIONAL SIMULATION</div><h1 class="start-title">INAD</h1><p class="start-explain">INAD는 입국이 허가되지 않은 승객(Inadmissible passenger)을 가리키는 항공 실무 약칭입니다.</p><div class="startsub">입국심사관 시뮬레이션 <span class="release-chip mono" id="startReleaseChip">v13.0 · RELEASE</span></div><div class="startlocation">인천공항출입국·외국인청<br>제2여객터미널 · 입국심사장</div></div><div class="start-lang" id="startLangMount"></div></div>
 <div class="start-body">
 <div class="start-main">
-<div class="start-primary" role="group" aria-labelledby="primaryTitle"><div class="start-primary-copy"><b id="primaryTitle">첫 심사 · 승객 1명</b><span>듣고, 확인하고, 결정하기 · 약 5분 · 시간에 쫓기지 않고 화면 익히기</span></div><button type="button" class="start-hero-btn" id="liveStartBtn">인터뷰 시작</button></div>
-<div class="start-ladder" role="group" aria-label="근무 선택">
-<div class="start-rung"><div class="start-rung-copy"><b>오늘의 사건</b><span>하루 한 건 · 모두 같은 사건 · 익숙해진 뒤 도전</span></div><button type="button" class="start-mode-btn" id="dailyCaseBtn">오늘의 사건</button></div>
-<div class="start-rung"><div class="start-rung-copy"><b>짧은 근무</b><span id="quickRungNote">승객 6명 · 약 15분 · 통상 입국과 확인이 필요한 입국이 섞여 있습니다</span></div><button type="button" class="start-mode-btn" id="quickStartBtn">짧은 근무 · 6명</button></div>
-<div class="start-rung start-tertiary"><div class="start-rung-copy"><b>정규 근무</b><span>승객 36명 · 근무조 3개 · 대기열 압박 · 자동저장</span></div><div class="start-actions-row"><button type="button" class="startbtn" id="startBtn">근무 시작</button><button type="button" class="start-settings resume-start" id="resumeBtn" hidden>이전 근무 이어하기</button></div></div>
-</div>
+<ol class="start-path" id="startPath" aria-label="진행 순서">
+<li class="start-step" data-step="first"><div class="start-step-copy"><span class="start-step-no" aria-hidden="true">1</span><b id="primaryTitle">첫 심사 · 승객 1명</b><span class="start-step-note">듣고, 확인하고, 결정하기 · 약 5분 · 시간에 쫓기지 않고 화면 익히기</span><em class="start-step-state" data-step-state></em></div><button type="button" class="start-step-btn" id="liveStartBtn">인터뷰 시작</button></li>
+<li class="start-step" data-step="quick"><div class="start-step-copy"><span class="start-step-no" aria-hidden="true">2</span><b>짧은 근무</b><span class="start-step-note" id="quickRungNote">승객 6명 · 약 15분 · 통상 입국과 확인이 필요한 입국이 섞여 있습니다</span><em class="start-step-state" data-step-state></em></div><button type="button" class="start-step-btn" id="quickStartBtn">짧은 근무 · 6명</button></li>
+<li class="start-step" data-step="shift"><div class="start-step-copy"><span class="start-step-no" aria-hidden="true">3</span><b>정규 근무</b><span class="start-step-note">승객 36명 · 근무조 3개 · 대기열 압박 · 자동저장</span><em class="start-step-state" data-step-state></em></div><div class="start-actions-row"><button type="button" class="start-step-btn startbtn" id="startBtn">근무 시작</button><button type="button" class="start-settings resume-start" id="resumeBtn" hidden>이전 근무 이어하기</button></div></li>
+</ol>
+<details class="start-more" id="startMore"><summary id="startMoreSummary">다른 방식·설정 더 보기</summary><div class="start-more-body">
+<div class="start-rung"><div class="start-rung-copy"><b>오늘의 사건</b><span>하루 한 건 · 모두 같은 사건 · 익숙해진 뒤 도전</span></div><button type="button" class="start-step-btn" id="dailyCaseBtn">오늘의 사건</button></div>
+<div id="startCountryMount"></div>
 <div class="start-shift-setup">
 <div class="save-status" id="saveStatus">자동저장 · 승객 처리 완료 시 체크포인트 생성</div>
 <details class="posting-box" id="postingDetails"><summary id="postingTitle">정규 근무 배치 바꾸기</summary><p class="option-note" id="postingNote"></p><div class="option-grid posting-grid" id="postingGrid" role="group" aria-labelledby="postingTitle"></div></details>
@@ -95,6 +97,7 @@
 </div>
 <div class="session-row"><span>정규 근무 배치 번호</span><b id="sessionSeed" class="mono">------</b><button type="button" id="rerollBtn">다른 배치 생성</button></div>
 </div>
+</div></details>
 </div>
 <aside class="start-side">
 <div class="daily-start" id="dailyStart"></div>

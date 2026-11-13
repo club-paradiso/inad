@@ -42,11 +42,6 @@ body.pref-contrast .procedure-screen[data-mode="secondary"] .proc-head { backgro
 .proc-behavior, .proc-language, .party-proc { padding: 8px 10px; border-top: 1px solid var(--border-subtle); font-size: var(--fs-label); display: grid; gap: 6px; }
 .proc-behavior-head, .proc-language-head, .party-proc-head { display: flex; justify-content: space-between; gap: 8px; color: var(--text-2); }
 .proc-behavior-head b, .proc-language-head b { color: var(--text); text-align: right; }
-.proc-behavior-bars { display: grid; gap: 5px; }
-.proc-behavior-item span { display: flex; justify-content: space-between; font-size: var(--fs-meta); color: var(--text-2); }
-.proc-behavior-item span em { font-style: normal; }
-.proc-behavior-item i { display: block; height: 4px; background: var(--border-subtle); position: relative; overflow: hidden; }
-.proc-behavior-item i::after { content: ""; position: absolute; inset: 0; width: var(--v); background: var(--text-3); }
 .proc-language-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .proc-language-grid span { display: block; font-size: var(--fs-meta); color: var(--text-3); }
 .proc-language-grid b { display: block; font-size: var(--fs-meta); }

@@ -45,6 +45,6 @@ body.pref-reduce-motion :is(*, *::before, *::after) { animation-duration: .001ms
   .iconbtn, .ops-toggle, .mclose, .doc-zoom, .challenge-hud, .campaign-hud, .event-details, .story-case-strip button,
   .lang-btn, .lookup-tabs button, .wb-tab, .qtab, .basis-registry-btn, .party-open, .record-mini-btn, .session-actions button,
   .records-footer button, .daily-open, .setup-actions button, .session-row button, .start-settings, .campaign-actions button,
-  .tasknav button, .skip-call, #skipCall, .tutorial-actions button, .segmented button, .setting-toggle { min-height: var(--size-touch); }
+  .tasknav button, #skipCall, .tutorial-actions button, .segmented button, .setting-toggle { min-height: var(--size-touch); }
   .option-grid button { min-height: var(--size-touch); }
 }

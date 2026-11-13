@@ -1,13 +1,13 @@
 // Hotfix (PR #27 Codex P1): changing the record search after selecting a record fact
 // must not lock overseas saving, and saves written in that state must recover on load.
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 
 test.skip(process.env.INAD_TARGET === 'legacy', 'Country packs are additive to the current app.');
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('inad-atlas-v1')));
 
 async function openCA02(page) {
-  await page.goto(ENTRY); await page.locator('#atlasStartCountry').click();
+  await page.goto(ENTRY); await revealStartMore(page); await page.locator('#atlasStartCountry').click();
   await page.locator('[name="atlas-country"][value="CA"]').check();
   await page.locator('#atlasEnter').click(); await expect(page.locator('body')).toHaveAttribute('data-country', 'CA');
   await page.locator('[data-case="SIM-CA-02"]').click();

@@ -4,7 +4,6 @@
 .subject { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 10px 12px; }
 .portrait { position: relative; width: 88px; height: 108px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-1); }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
-.portrait-tag { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 6px; font-size: var(--fs-meta); letter-spacing: .06em; color: #fff; background: rgba(20, 35, 47, .72); }
 .subject-body { min-width: 0; display: grid; align-content: start; gap: 2px; }
 .sname { font-size: 18px; font-weight: 700; letter-spacing: -.02em; line-height: var(--lh-tight); }
 .sroman { font-size: var(--fs-compact); font-weight: 500; color: var(--text-2); letter-spacing: .02em; }
@@ -21,9 +20,6 @@
 /* Demeanour, tension, cooperation and language ability are not decision grounds: neutral greys only, never the
    admit / secondary / refuse semantic colours (CLAUDE.md, design-system.md). The '판정근거 아님' label stays. */
 .attitude { color: var(--text); }
-.aux-bar { display: inline-flex; align-items: center; gap: 5px; }
-.aux-bar .track { display: inline-block; width: 36px; height: 4px; background: var(--border-subtle); overflow: hidden; }
-.aux-bar .track i { display: block; height: 100%; width: 0; background: var(--text-3); transition: width var(--t-slow) var(--ease); }
 .aux-note { margin-left: auto; font-size: var(--fs-meta); color: var(--text-3); }
 .aux-detail { display: none; padding: 6px 12px; font-size: var(--fs-meta); color: var(--text-3); line-height: 1.45; border-bottom: 1px solid var(--border-subtle); }
 .party-summary { display: none; }
@@ -220,15 +216,10 @@ summary.basis-head small { flex-basis: 100%; font-weight: 500; color: var(--text
 .clue { padding: 6px 12px 6px 9px; border-bottom: 1px solid var(--border-subtle); border-left: 3px solid var(--border-strong); }
 .clue strong { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: var(--fs-label); font-weight: 600; }
 .clue p { font-size: var(--fs-meta); color: var(--text-2); line-height: 1.45; }
-.cluekey { font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text); white-space: nowrap; }
 .clue.confirm { border-left-color: var(--success); }
 .clue.unresolved { border-left-color: var(--warning); }
 .clue.conflict, .clue.critical { border-left-color: var(--danger); }
 .clueempty { padding: 6px 12px; font-size: var(--fs-meta); color: var(--text-3); }
-.clue-summary { display: flex; gap: 10px; padding: 4px 12px 2px; font-size: var(--fs-meta); color: var(--text-3); }
-.clue-summary .legend::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 4px; vertical-align: -1px; background: var(--border-strong); }
-.clue-summary .conflict::before { background: var(--danger); }
-.clue-summary .unresolved::before { background: var(--warning); }
 .flowchips { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px; }
 .flowchip { padding: 1px 6px; border: 1px solid var(--border-subtle); border-radius: 2px; font-size: var(--fs-meta); color: var(--text-3); background: var(--elevated); }
 .flowchip.done { border-color: var(--success-soft); background: var(--success-soft); color: var(--success-text); }
@@ -334,7 +325,7 @@ summary.basis-head small { flex-basis: 100%; font-weight: 500; color: var(--text
   .jsec h3, .basis-head, .cluehead { padding: 12px 16px 4px; }
   .ev, .basis-node summary, .clue { padding-left: 13px; padding-right: 16px; }
   .ev p, .basis-summary { white-space: normal; }
-  .basis-legend, .clue-summary, .flowchips, .casenote, .basis-foot { padding-left: 16px; padding-right: 16px; }
+  .basis-legend, .flowchips, .casenote, .basis-foot { padding-left: 16px; padding-right: 16px; }
   .actions { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom)); }
   .act { min-height: 56px; }
 }

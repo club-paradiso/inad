@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { ENTRY } from './helpers.js';
+import { ENTRY, revealStartMore } from './helpers.js';
 
 test.skip(process.env.INAD_TARGET === 'legacy', 'Evidence graph and vertical slices are additive to the current app.');
 
 async function openAtlas(page, country = 'CA') {
   await page.goto(ENTRY);
+  await revealStartMore(page);
   await page.locator('#atlasStartCountry').click();
   await expect(page.locator('[name="atlas-country"]')).toHaveCount(4);
   await page.locator(`[name="atlas-country"][value="${country}"]`).check();
