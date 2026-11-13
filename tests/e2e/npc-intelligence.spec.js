@@ -121,8 +121,8 @@ test('keyboard-only and phone width: the confirmation is reachable and the page 
 test('reduced motion: no model acting request, no added pause; the answer still arrives', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const errors = await start(page);
-  await page.locator('#questions .qbtn[data-qid="return"]').click();
-  await expect(page.locator('#log .msg.pending')).toHaveCount(0);
+  // the return-ticket question is not a suggestion until the booking was read, so pick it from its category
+  await H.ask(page, 'return');
   await expect(lastLine(page)).toContainText(C.questions.find((q) => q.id === 'return').a);
   expect(mock.state.requests.filter((r) => JSON.parse(r.body.messages[1].content).options)).toHaveLength(0);
   expect(errors).toEqual([]);
