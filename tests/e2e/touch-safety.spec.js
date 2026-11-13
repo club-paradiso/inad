@@ -81,6 +81,7 @@ for (const device of DEVICES) {
       await expect(page.locator('#modalTitle')).toHaveText('입국 불허가 통지서');
       await page.locator('#docContinue').tap();
       await expect(page.locator('#procedureScreen')).toHaveAttribute('data-mode', 'repatriation');
+      await page.locator('#procBody .proc-repat-to[value="carrier"]').check();
       await armThenRun(page, proc(page, 'repat-order'), () => expect(page.locator('#modal')).not.toHaveClass(/on/));
       await page.locator('#docContinue').tap();
       await armThenRun(page, proc(page, 'waiting-room'));

@@ -50,7 +50,7 @@ test.describe('V11 Playtest Evaluation Suites (Cohorts A, B, C)', () => {
     const errors = await H.openGame(page);
 
     // 1. Launch introductory case (ICN-S2-005)
-    await page.locator('#liveStartBtn').click();
+    await H.startLiveCase(page); // ICN-S2-005 vertical slice
     await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
     await expect(page.locator('#stagePortrait')).toBeVisible({ timeout: 6000 });
 
@@ -94,7 +94,7 @@ test.describe('V11 Playtest Evaluation Suites (Cohorts A, B, C)', () => {
   test('Cohort C (Domain & Analytics): Ambiguity candidate resolution and system telemetry audit', async ({ page }) => {
     const errors = await H.openGame(page);
 
-    await page.locator('#liveStartBtn').click();
+    await H.startLiveCase(page); // ICN-S2-005 vertical slice
     await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
     await expect(page.locator('#stagePortrait')).toBeVisible({ timeout: 6000 });
 

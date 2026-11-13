@@ -18,7 +18,11 @@ const PAID_WORK = /(?:일을|근무|취업|알바|월급|급여|사례비|시급
 
 // Fingerprints taken from main @ 7a63609 (before v13) with the same projection: who is generated, in which shift,
 // how each case resolves, entry basis, stay, flights, biometric line, document order and question order.
-const ROSTER_FINGERPRINT = { 161803: ['e7e931ab', '4d56db33'], 271828: ['028a9a57', 'fe76f048'], 314159: ['6b3c3679', '7a15801d'] };
+// 2026-11-13: case fingerprints re-taken after the traveller pool re-pairing (20 generated travellers renamed so
+// name, nationality and portrait match; nationality feeds the entry basis). Taken with the v13 story layer
+// reverted to the old traveller file the values were unchanged, so the story invariant itself still holds;
+// queue orders and the outcome counts below are untouched.
+const ROSTER_FINGERPRINT = { 161803: ['d6d3e522', '4d56db33'], 271828: ['3c2ffe2d', 'fe76f048'], 314159: ['c914b69b', '7a15801d'] };
 const rosterSig = (cs) => fnv1a(cs.map((c) => [c.travelerId, c.shift, c.resolution.type, c.resolution.reason, c.sessionVariant, c.basis, c.stay, c.arrival, c.return, c.bio, c.docs.map((d) => d.k).join('/'), c.questions.filter((q) => ['purpose', 'stay', 'return', 'detail', 'residence'].includes(q.id)).map((q) => q.id).join('/')].join('|')).join('\n'));
 
 test('the roster is what it was before stories: same travellers, same outcomes, same requirements shape', () => {

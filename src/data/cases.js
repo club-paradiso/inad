@@ -1352,7 +1352,7 @@ export const CASES = [
   ],
   "lookups": {
    "history": [
-    "주의",
+    "정상",
     "첫 대한민국 입국. 직접적인 위반 이력은 없음."
    ],
    "visa": [
@@ -1980,7 +1980,7 @@ export const CASES = [
   ],
   "lookups": {
    "history": [
-    "주의",
+    "정상",
     "과거 한국 방문 없음."
    ],
    "visa": [

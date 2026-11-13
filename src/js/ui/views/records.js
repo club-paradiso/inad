@@ -38,8 +38,8 @@ export function showPlayerProfile() {
 }
 const DAILY_MISSION_EN = {
   clean20: '20 accurate inspections',
-  secondary2: '2 secondary clearances',
-  interpreter2: '2 interpreter-assisted inspections',
+  secondary2: '2 necessary secondary referrals',
+  interpreter2: '2 necessary interpreter cases',
   cleanShift: 'Clean shift',
   highOverall: 'Overall score 92+',
   efficient: 'Efficiency and due process',

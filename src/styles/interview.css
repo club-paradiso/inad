@@ -12,7 +12,11 @@
   .zone-assessment { grid-column: 4; grid-row: 1; }
   /* evidence column is narrower than in v9: the document list becomes a strip above the paper */
   .zone-evidence .casework { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .zone-evidence .doclist { grid-auto-flow: column; grid-auto-columns: minmax(96px, max-content); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border-subtle); scrollbar-width: none; }
+  /* every submitted document fits on the strip: equal columns, no icon, names wrap instead of clipping */
+  .zone-evidence .doclist { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border-subtle); scrollbar-width: none; }
+  .zone-evidence .docitem { grid-template-columns: minmax(0, 1fr); padding: 8px 6px; }
+  .zone-evidence .docitem .docico { display: none; }
+  .zone-evidence .doctext strong { white-space: normal; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.25; }
   .zone-evidence .doclist::-webkit-scrollbar { display: none; }
   .zone-evidence .lookup-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -36,6 +40,7 @@ body.pref-reduce-motion .lp canvas { animation: none; transition: none; }
 /* subtitle of the passenger's latest line, the way a camera feed would caption it */
 .stage-caption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 32px 16px 12px; font-size: var(--fs-body); line-height: 1.5; color: #fff; background: linear-gradient(to bottom, rgba(12, 20, 24, 0), rgba(12, 20, 24, .88) 44%); text-wrap: pretty; word-break: keep-all; min-height: 0; opacity: 0; transition: opacity var(--t-slow) var(--ease); }
 .stage-caption.on { opacity: 1; }
+.stage-caption { pointer-events: none; } /* subtitle overlay (aria-hidden): never takes a tap */
 .stage-caption .lead { color: var(--booth-muted); margin-right: 4px; }
 .stage-state::after { content: attr(data-label); } /* generated text: acting state is decoration, not page content */
 .stage-state { position: absolute; left: 12px; top: 10px; font-size: var(--fs-meta); color: var(--booth-muted); letter-spacing: .02em; }
@@ -328,15 +333,16 @@ body.statement-lock-mode #terminal .line[data-lookup-kind]:hover { outline: 1px 
 .booth-interview-cta[hidden] { display: none !important; }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .booth-interview-cta:not([hidden]) {
-    display: block; position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 16px; /* below the face, never over it */
+    /* In normal flow under the portrait: the face is the identity check, so nothing may cover it. */
+    display: block; position: static; width: calc(100% - 32px); margin: 12px 16px;
     max-width: none; min-height: 44px; padding: 9px 13px;
     color: #fff; background: #215778; border: 1px solid rgba(255,255,255,.75);
     border-radius: var(--r-2); box-shadow: 0 3px 12px rgba(0,0,0,.35);
     font: inherit; font-size: var(--fs-compact); font-weight: 700;
   }
   .booth-interview-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-  /* the subtitle sits above the button instead of under it */
-  .booth-stage:has(.booth-interview-cta:not([hidden])) .stage-caption { padding-bottom: 76px; }
+  /* the subtitle stays on the portrait, above the in-flow button under it */
+  .booth-stage:has(.booth-interview-cta:not([hidden])) .stage-caption { bottom: calc(var(--cta-block, 70px)); }
 }
 
 /* Five explicit grid tracks are required: the guidance card and scope explanation precede

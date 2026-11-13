@@ -166,7 +166,7 @@ test('memory: ids only, bounded, and reset on a new case or a retry', () => {
 });
 
 test('every v10 persona: no hidden fact in any passenger line across a full shuffled interview', () => {
-  const PREFIX = ['앞서 말씀드린 내용과 같습니다. ', '네, 다시 말씀드리면 ', '조금 긴장되지만 사실대로 말씀드리겠습니다. ', '…네. ', '네. ', '네, 알겠습니다. '];
+  const PREFIX = ['앞서 말씀드린 내용과 같습니다. ', '네, 다시 말씀드리면 ', '…잠시만요. ', '…네. ', '네. ', '네, 알겠습니다. '];
   for (const id of CORE) for (const seed of [1, 2, 3]) {
     const c = openCase(id); const order = [...c.questions].sort((a, b) => ((a.id.charCodeAt(0) * seed) % 7) - ((b.id.charCodeAt(0) * seed) % 7));
     const extra = ['오늘 날씨 좋네요', '방문 목적이랑 돈은 얼마 있어요?', '감사합니다', '그 사람은요?'];

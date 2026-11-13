@@ -2,8 +2,8 @@
 // Legal/game content: do not edit without a documented review (docs/legal-baseline.md).
 export const DAILY_MISSION_DEFS = {
  clean20:{id:'clean20',name:'정확한 심사 20건',desc:'오류 없이 종결한 승객을 오늘 누적 20명 이상 처리',target:20,reward:30,group:'volume'},
- secondary2:{id:'secondary2',name:'재심 후 정상입국 2건',desc:'재심을 거친 뒤 입국허가로 종결한 사건을 오늘 누적 2건 처리',target:2,reward:35,group:'volume'},
- interpreter2:{id:'interpreter2',name:'통역 지원 2건',desc:'통역을 실제 사용하여 종결한 사건을 오늘 누적 2건 처리',target:2,reward:30,group:'volume'},
+ secondary2:{id:'secondary2',name:'필요한 재심만 2건',desc:'재심이 필요한 사건을 재심을 거쳐 지적 없이 종결한 건을 오늘 누적 2건 (불필요한 재심은 세지 않음)',target:2,reward:35,group:'volume'},
+ interpreter2:{id:'interpreter2',name:'필요한 통역 2건',desc:'직접 소통이 어려운 승객을 통역 지원으로 종결한 사건을 오늘 누적 2건 (불필요한 통역 호출은 세지 않음)',target:2,reward:30,group:'volume'},
  cleanShift:{id:'cleanShift',name:'지적 없는 근무',desc:'지적 사항 없이 근무 1회를 완료',target:1,reward:35,group:'quality'},
  highOverall:{id:'highOverall',name:'종합평가 92+',desc:'종합평가 92 이상 근무를 오늘 1회 완료',target:1,reward:30,group:'quality'},
  efficient:{id:'efficient',name:'효율과 절차',desc:'처리효율 95 이상·절차 준수 95 이상 근무를 1회 완료',target:1,reward:30,group:'quality'},

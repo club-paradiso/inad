@@ -41,6 +41,7 @@ for (const vp of [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }]) 
       await expect(basisHeading).toBeVisible();
       await basisHeading.scrollIntoViewIfNeeded();
       await expect(basisHeading).toBeInViewport();
+      await basisHeading.click();
       await expect(page.locator('#basisBoard .basis-node').first()).toBeVisible();
       await expect(page.locator('#stepper li.on')).toHaveText('일반심사');
       await expect(page.locator('#caseId')).toContainText('심사번호');

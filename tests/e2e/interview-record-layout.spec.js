@@ -24,7 +24,7 @@ for (const vp of VIEWPORTS) {
 
     test('the passenger\'s statement is readable beside the coach banner, and the banner is only as tall as its text', async ({ page }) => {
       const errors = await H.openGame(page);
-      await page.locator('#liveStartBtn').click();
+      await H.startLiveCase(page); // ICN-S2-005 vertical slice
       await expect(page.locator('#caseName')).toContainText('쩐 반 민');
       const nav = page.locator('#taskNav [data-task="interview"]');
       if (await nav.isVisible()) await nav.click();
@@ -73,7 +73,7 @@ test.describe('one primary action, one voice of guidance', () => {
     await H.expectNoErrors(errors);
   });
 
-  test('390px: the interview button sits below the face, and the subtitle stays above the button', async ({ page }) => {
+  test('390px: the interview button sits under the portrait and never covers the face', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const errors = await H.openGame(page);
     await page.locator('#liveStartBtn').click();
@@ -81,12 +81,11 @@ test.describe('one primary action, one voice of guidance', () => {
     await expect(cta).toBeVisible();
     const m = await page.evaluate(() => {
       const r = (s) => document.querySelector(s).getBoundingClientRect();
-      const stage = r('#passengerStage'), cta = r('#boothInterviewCta'), cap = document.querySelector('#stageCaption');
-      const pad = parseFloat(getComputedStyle(cap).paddingBottom);
-      return { ctaTop: (cta.top - stage.top) / stage.height, capPad: pad, ctaFromBottom: stage.bottom - cta.top };
+      const portrait = r('#stagePortrait'), cta = r('#boothInterviewCta');
+      return { gap: cta.top - portrait.bottom, ctaH: cta.height };
     });
-    expect(m.ctaTop, 'button starts in the lower fifth of the portrait').toBeGreaterThan(0.75);
-    expect(m.capPad, 'subtitle clears the button').toBeGreaterThanOrEqual(m.ctaFromBottom);
+    expect(m.gap, 'button starts below the portrait image, not on it').toBeGreaterThanOrEqual(0);
+    expect(m.ctaH).toBeGreaterThanOrEqual(44);
     await H.expectNoErrors(errors);
   });
 });

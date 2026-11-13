@@ -30,7 +30,7 @@ test('generated traveler submits a distinct outbound e-ticket on request without
 
 test('one-way case cannot produce a fabricated return ticket or an automatic refusal', async ({ page }) => {
   const errors = await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('#caseName')).toContainText('쩐 반 민');
   await page.locator('#requestReturnDocument').click();
   await expect(page.locator('.return-proof-paper')).toHaveCount(0);

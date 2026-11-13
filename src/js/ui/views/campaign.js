@@ -20,7 +20,7 @@ export function renderCampaignStart() {
 }
 export function showCampaignDetail() {
   const c = currentCampaignSave(), id = c?.id || state.campaignId || 'none', cfg = campaignCfg(id);
-  if (id === 'none') { showModal('시나리오 캠페인', '<p class="modal-note">현재는 단일 근무입니다. 시작화면에서 3일 캠페인을 선택할 수 있습니다.</p>'); return; }
+  if (id === 'none') { showModal('시나리오 캠페인', '<p class="modal-note">현재는 캠페인 없이 한 근무만 진행합니다. 시작화면에서 3일 캠페인을 선택할 수 있습니다.</p>'); return; }
   const day = c?.day ?? state.campaignDay ?? 0, results = c?.results || [];
   showModal('시나리오 캠페인', `<div class="campaign-panel"><div class="campaign-hero"><div class="mark">3D</div><div><h3>${esc(cfg.name)}</h3><p>${esc(cfg.desc)}</p></div><div class="day">DAY ${day + 1}/3</div></div><div class="campaign-results">${cfg.days.map((d, i) => { const r = results[i]; return `<div class="campaign-result-day"><span>DAY ${i + 1} · ${esc(scenarioNameFor(d.scenario))}</span><b>${r ? `${esc(r.grade)} · ${r.overall}점` : i === day ? '현재 근무' : '대기'}</b><p>${r ? `운영 ${r.ops} · 최고대기 ${r.pressurePeak} · 피로 ${r.peakFatigue}` : esc(d.note)}</p></div>`; }).join('')}</div>${c ? `<div class="campaign-carry"><b>다음 근무 이월</b><br>대기 ${c.carryBacklog >= 0 ? '+' : ''}${c.carryBacklog}명 · 시작 피로 ${c.carryFatigue}. 이 값은 운영부담만 조정하고 법률상 정답에는 영향을 주지 않습니다.</div>` : ''}${campaignStorySummary()}</div>`);
 }

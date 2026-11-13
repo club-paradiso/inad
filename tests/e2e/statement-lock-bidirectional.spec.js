@@ -5,7 +5,7 @@ test.skip((process.env.INAD_TARGET || 'dist') === 'legacy', 'modern document com
 
 test('document-first comparison offers existing statements and explains the result inline', async ({ page }) => {
   const errors = await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await page.locator('#langInterp').click();
 
   await H.ask(page, 'purpose');
@@ -30,7 +30,7 @@ test('document-first comparison offers existing statements and explains the resu
 
 test('guidance highlights only eligible document evidence for a selected statement', async ({ page }) => {
   const errors = await H.openGame(page);
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await page.locator('#langInterp').click();
   await H.ask(page, 'purpose');
   await H.ask(page, 'occupation');

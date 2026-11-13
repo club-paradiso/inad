@@ -66,6 +66,8 @@ async function reachableLawBasis(page) {
   await expect(panel).toBeVisible();
   await heading.scrollIntoViewIfNeeded();
   await expect(heading).toBeInViewport();
+  // folded by default (it restates 확인 사항 in statutory terms); one tap opens it
+  await heading.click();
   await expect(panel.locator('.basis-node').first()).toBeVisible();
   // Restore the judgment scroller before the next workflow assertion.
   const readiness = page.locator('#readyHint');

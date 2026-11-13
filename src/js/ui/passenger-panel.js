@@ -21,8 +21,8 @@ export function renderPassenger() {
   if (entry) {
     entry.hidden = !state.started || state.ended || !['case', 'quick'].includes(state.sessionMode);
     entry.textContent = getLocale() === 'en'
-      ? (state.asked.size ? 'Back to interview' : 'Start interview')
-      : (state.asked.size ? '인터뷰로 돌아가기' : '인터뷰 시작');
+      ? (state.asked.size ? 'Back to questions' : 'Go to questions')
+      : (state.asked.size ? '질문으로 돌아가기' : '질문하러 가기');
     entry.onclick = () => {
       showTask('interview');
       byId('askInput')?.focus({ preventScroll: true });

@@ -16,7 +16,7 @@ test('statement lock: select transcript statement, compare with terminal lookup,
   const errors = await H.openGame(page);
 
   // 1. Enter Live Interview directly via the primary hero action
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await expect(page.locator('#startOverlay')).toHaveClass(/hide/);
   await expect(page.locator('#caseName')).toContainText('쩐 반 민');
 
@@ -76,7 +76,7 @@ test('statement lock: job offer statement compared with tourist visa doc creates
   const errors = await H.openGame(page);
 
   // Enter Live Interview
-  await page.locator('#liveStartBtn').click();
+  await H.startLiveCase(page); // ICN-S2-005 vertical slice
   await page.locator('#langInterp').click();
 
   // In ICN-S2-005, asking occupation and contact lookup unlocks jobOffer

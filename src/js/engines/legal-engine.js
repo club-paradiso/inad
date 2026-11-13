@@ -5,12 +5,21 @@
 // Distinct procedures are kept distinct on purpose: 입국심사 · 입국재심 · 입국불허 · 제11조 입국금지 ·
 // 난민 회부심사 · 불회부 · 출입국사범 조사 · 긴급체포 · 송환지시 · 출국대기실. There is no single "DEPORT".
 // Nationality only feeds entry-basis calculation; demeanour, language and party membership never feed a verdict.
-import { REFUSAL_REASONS } from '../../data/legal-baseline.js';
+import { REFUSAL_REASONS, ADDITIONAL_GROUNDS } from '../../data/legal-baseline.js';
 
 export const STAGES = { PRIMARY: '일반심사', SECONDARY: '입국재심', REFUGEE: '난민 회부심사', INVESTIGATION: '출입국사범 조사', ARREST_REVIEW: '긴급체포 요건 검토', ENTRY_REFUSED: '입국 불허', ADMITTED: '입국 허가', ARRESTED: '긴급체포' };
 export const ACTION_NAMES = { SECONDARY: '입국재심', INVESTIGATION: '사범조사', ARREST_REVIEW: '체포요건검토', REFUGEE_CLAIM: '난민신청접수', REFERRAL_SCREENING: '회부심사', NON_REFERRAL: '불회부', RETURN_TO_ENTRY: '입국심사복귀' };
 export const LOOKUP_NAMES = { history: '출입국기록', visa: '사증·입국자격', pnr: '항공 PNR', contact: '국내관계', party: '동행인 교차검증', public: '공개정보', forensic: '문서감식' };
 export const refusalReasons = REFUSAL_REASONS;
+export const additionalGrounds = ADDITIONAL_GROUNDS;
+// A cited additional ground stands only on a fact the examiner established: the matching evidence row must be
+// known (disclosed by the examiner's own questions or lookups) and not in order. `known` is knownEvidence().
+export function validateAdditionalGround(code, known) {
+  const g = ADDITIONAL_GROUNDS.find((x) => x[0] === code); if (!g) return { ok: false, msg: '알 수 없는 병기 사유입니다.' };
+  const row = known?.[g[3]];
+  if (row && row[0] !== 'ok') return { ok: true, ground: g };
+  return { ok: false, ground: g, msg: `병기 사유 「${g[1]}」를 뒷받침하는 확인된 사실이 없습니다.` };
+}
 export const refusalReason = (code) => REFUSAL_REASONS.find((r) => r[0] === code) || null;
 
 // Plain-language description of how an action / clue trigger is reached (shared across legal & debrief engines).

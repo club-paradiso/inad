@@ -20,8 +20,10 @@ export function languageProfileFor(c) {
   const initial = ko >= 2 ? 'ko' : en >= 2 ? 'en' : 'none';
   return { primary: meta[0], primaryEn: meta[1], korean: ko, english: en, mode: initial, interpreterActive: false, interpreterUsed: false, failedAttempts: 0, assistedTurns: 0, lastEvent: '언어 확인' };
 }
-export function languageLabel(v) { return `${LANG_LEVEL[Math.max(0, Math.min(4, v))]} · L${v}`; }
+export function languageLabel(v) { return LANG_LEVEL[Math.max(0, Math.min(4, v))]; }
 export function languageModeLabel(l = state.language) { if (!l) return '-'; if (l.interpreterActive) return `${l.primary} 통역`; if (l.mode === 'ko') return '한국어 직접'; if (l.mode === 'en') return '영어 직접'; return '직접 의사소통 곤란'; }
+// Finances, local ties, occupation and travel history need an answer precise enough to record as a
+// verified statement, so they need a higher working level than basic purpose or itinerary questions.
 export function questionLanguageThreshold(q) { return ['기본사항', '여행·체류'].includes(q.cat) ? 2 : ['재정', '국내관계', '직업', '과거입국'].includes(q.cat) ? 3 : 3; }
 export function currentLanguageLevel(l = state.language) { if (!l) return 0; if (l.interpreterActive) return 4; return l.mode === 'ko' ? l.korean : l.mode === 'en' ? l.english : 0; }
 export function communicationReady(q, l = state.language) { if (!l) return { ok: true }; if (l.interpreterActive) return { ok: true, via: 'interpreter' }; const need = questionLanguageThreshold(q), have = currentLanguageLevel(l); return { ok: have >= need, have, need, partial: have === need - 1 }; }

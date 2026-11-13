@@ -10,7 +10,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "USA",
    "korean": "미국",
-   "english": "미국"
+   "english": "United States"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -35,7 +35,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "JPN",
    "korean": "일본",
-   "english": "일본"
+   "english": "Japan"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -60,7 +60,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "CAN",
    "korean": "캐나다",
-   "english": "캐나다"
+   "english": "Canada"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -85,7 +85,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "DEU?",
    "korean": "독일 국적 주장",
-   "english": "독일 국적 주장"
+   "english": "Claims German nationality"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -110,7 +110,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "VNM",
    "korean": "베트남",
-   "english": "베트남"
+   "english": "Vietnam"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -135,7 +135,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "VNM",
    "korean": "베트남",
-   "english": "베트남"
+   "english": "Vietnam"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -160,7 +160,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "CHN",
    "korean": "중국",
-   "english": "중국"
+   "english": "China"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -185,7 +185,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "IDN",
    "korean": "인도네시아",
-   "english": "인도네시아"
+   "english": "Indonesia"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -210,7 +210,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "NPL",
    "korean": "네팔",
-   "english": "네팔"
+   "english": "Nepal"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -260,7 +260,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "PHL",
    "korean": "필리핀",
-   "english": "필리핀"
+   "english": "Philippines"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -285,7 +285,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "JPN",
    "korean": "일본",
-   "english": "일본"
+   "english": "Japan"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -310,7 +310,7 @@ export const TRAVELER_POOL = [
   "nationality": {
    "code": "EGY",
    "korean": "이집트",
-   "english": "이집트"
+   "english": "Egypt"
   },
   "visualRole": "핵심 심사대상",
   "passport": {
@@ -629,19 +629,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0026",
   "name": {
-   "latin": "PIMCHANOK SURIYA",
-   "korean": "핌차녹 수리야"
+   "latin": "NGOZI OKAFOR",
+   "korean": "응고지 오카포르"
   },
   "nationality": {
-   "code": "THA",
-   "korean": "태국",
-   "english": "Thailand"
+   "code": "NGA",
+   "korean": "나이지리아",
+   "english": "Nigeria"
   },
   "visualRole": "출장객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000026",
-   "nationalityCode": "THA",
+   "nationalityCode": "NGA",
    "birthDate": "1982-10-22",
    "sex": "F",
    "expiry": "2032-04-07"
@@ -704,19 +704,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0029",
   "name": {
-   "latin": "MIKA DELA CRUZ",
-   "korean": "미카 델라크루스"
+   "latin": "AKOSUA BOATENG",
+   "korean": "아코수아 보아텡"
   },
   "nationality": {
-   "code": "PHL",
-   "korean": "필리핀",
-   "english": "Philippines"
+   "code": "GHA",
+   "korean": "가나",
+   "english": "Ghana"
   },
   "visualRole": "배낭여행객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000029",
-   "nationalityCode": "PHL",
+   "nationalityCode": "GHA",
    "birthDate": "1988-09-01",
    "sex": "F",
    "expiry": "2034-04-07"
@@ -729,19 +729,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0030",
   "name": {
-   "latin": "ANA VILLANUEVA",
-   "korean": "아나 비야누에바"
+   "latin": "JASMINE CARTER",
+   "korean": "재스민 카터"
   },
   "nationality": {
-   "code": "PHL",
-   "korean": "필리핀",
-   "english": "Philippines"
+   "code": "USA",
+   "korean": "미국",
+   "english": "United States"
   },
   "visualRole": "친지방문객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000030",
-   "nationalityCode": "PHL",
+   "nationalityCode": "USA",
    "birthDate": "1964-03-27",
    "sex": "F",
    "expiry": "2035-10-15"
@@ -779,19 +779,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0032",
   "name": {
-   "latin": "NISHA RAO",
-   "korean": "니샤 라오"
+   "latin": "WANJIRU KAMAU",
+   "korean": "완지루 카마우"
   },
   "nationality": {
-   "code": "IND",
-   "korean": "인도",
-   "english": "India"
+   "code": "KEN",
+   "korean": "케냐",
+   "english": "Kenya"
   },
   "visualRole": "출장객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000032",
-   "nationalityCode": "IND",
+   "nationalityCode": "KEN",
    "birthDate": "1988-09-25",
    "sex": "F",
    "expiry": "2036-10-19"
@@ -854,19 +854,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0035",
   "name": {
-   "latin": "AYU LESTARI",
-   "korean": "아유 레스타리"
+   "latin": "CHLOE MENSAH",
+   "korean": "클로이 멘사"
   },
   "nationality": {
-   "code": "IDN",
-   "korean": "인도네시아",
-   "english": "Indonesia"
+   "code": "GBR",
+   "korean": "영국",
+   "english": "United Kingdom"
   },
   "visualRole": "배낭여행객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000035",
-   "nationalityCode": "IDN",
+   "nationalityCode": "GBR",
    "birthDate": "1999-03-26",
    "sex": "F",
    "expiry": "2031-06-05"
@@ -904,19 +904,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0037",
   "name": {
-   "latin": "BAT-ERDENE NARAN",
-   "korean": "바트에르데네 나란"
+   "latin": "SIONE TAUFA",
+   "korean": "시오네 타우파"
   },
   "nationality": {
-   "code": "MNG",
-   "korean": "몽골",
-   "english": "Mongolia"
+   "code": "AUS",
+   "korean": "호주",
+   "english": "Australia"
   },
   "visualRole": "관광객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000037",
-   "nationalityCode": "MNG",
+   "nationalityCode": "AUS",
    "birthDate": "1993-02-22",
    "sex": "M",
    "expiry": "2030-02-19"
@@ -929,19 +929,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0038",
   "name": {
-   "latin": "SOLONGO ENKH",
-   "korean": "솔롱고 엥흐"
+   "latin": "AISSATOU DIALLO",
+   "korean": "아이사투 디알로"
   },
   "nationality": {
-   "code": "MNG",
-   "korean": "몽골",
-   "english": "Mongolia"
+   "code": "FRA",
+   "korean": "프랑스",
+   "english": "France"
   },
   "visualRole": "출장객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000038",
-   "nationalityCode": "MNG",
+   "nationalityCode": "FRA",
    "birthDate": "1991-02-23",
    "sex": "F",
    "expiry": "2036-09-21"
@@ -954,19 +954,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0039",
   "name": {
-   "latin": "TEMUULEN BATSAIKHAN",
-   "korean": "테무울렌 바트사이한"
+   "latin": "JAVIER MORALES",
+   "korean": "하비에르 모랄레스"
   },
   "nationality": {
-   "code": "MNG",
-   "korean": "몽골",
-   "english": "Mongolia"
+   "code": "ESP",
+   "korean": "스페인",
+   "english": "Spain"
   },
   "visualRole": "학생",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000039",
-   "nationalityCode": "MNG",
+   "nationalityCode": "ESP",
    "birthDate": "1994-12-09",
    "sex": "M",
    "expiry": "2033-10-24"
@@ -1029,19 +1029,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0042",
   "name": {
-   "latin": "MEI LIN TAN",
-   "korean": "메이린 탄"
+   "latin": "TIANA BROWN",
+   "korean": "티아나 브라운"
   },
   "nationality": {
-   "code": "MYS",
-   "korean": "말레이시아",
-   "english": "Malaysia"
+   "code": "CAN",
+   "korean": "캐나다",
+   "english": "Canada"
   },
   "visualRole": "친지방문객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000042",
-   "nationalityCode": "MYS",
+   "nationalityCode": "CAN",
    "birthDate": "1989-02-01",
    "sex": "F",
    "expiry": "2035-06-11"
@@ -1054,8 +1054,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0043",
   "name": {
-   "latin": "MARCUS LIM",
-   "korean": "마커스 림"
+   "latin": "RAJESH NAIR",
+   "korean": "라제시 나이르"
   },
   "nationality": {
    "code": "SGP",
@@ -1079,19 +1079,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0044",
   "name": {
-   "latin": "CHERYL NG",
-   "korean": "셰릴 응"
+   "latin": "LERATO MOKOENA",
+   "korean": "레라토 모코에나"
   },
   "nationality": {
-   "code": "SGP",
-   "korean": "싱가포르",
-   "english": "Singapore"
+   "code": "ZAF",
+   "korean": "남아프리카공화국",
+   "english": "South Africa"
   },
   "visualRole": "출장객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000044",
-   "nationalityCode": "SGP",
+   "nationalityCode": "ZAF",
    "birthDate": "1999-10-26",
    "sex": "F",
    "expiry": "2032-03-17"
@@ -1104,19 +1104,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0045",
   "name": {
-   "latin": "ADRIAN KOH",
-   "korean": "에이드리언 코"
+   "latin": "MATEO RIVERA",
+   "korean": "마테오 리베라"
   },
   "nationality": {
-   "code": "SGP",
-   "korean": "싱가포르",
-   "english": "Singapore"
+   "code": "USA",
+   "korean": "미국",
+   "english": "United States"
   },
   "visualRole": "학생",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000045",
-   "nationalityCode": "SGP",
+   "nationalityCode": "USA",
    "birthDate": "1981-12-26",
    "sex": "M",
    "expiry": "2034-03-12"
@@ -1404,8 +1404,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0057",
   "name": {
-   "latin": "NATHAN REED",
-   "korean": "네이선 리드"
+   "latin": "YUSUF RAHMAN",
+   "korean": "유수프 라흐만"
   },
   "nationality": {
    "code": "GBR",
@@ -1904,19 +1904,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0077",
   "name": {
-   "latin": "SALMA IDRISSI",
-   "korean": "살마 이드리시"
+   "latin": "LAURA SCHMIDT",
+   "korean": "라우라 슈미트"
   },
   "nationality": {
-   "code": "MAR",
-   "korean": "모로코",
-   "english": "Morocco"
+   "code": "DEU",
+   "korean": "독일",
+   "english": "Germany"
   },
   "visualRole": "배낭여행객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000077",
-   "nationalityCode": "MAR",
+   "nationalityCode": "DEU",
    "birthDate": "1985-06-04",
    "sex": "F",
    "expiry": "2033-02-10"
@@ -1929,19 +1929,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0078",
   "name": {
-   "latin": "NADIA EL FASSI",
-   "korean": "나디아 엘파시"
+   "latin": "AYAKA MORI",
+   "korean": "모리 아야카"
   },
   "nationality": {
-   "code": "MAR",
-   "korean": "모로코",
-   "english": "Morocco"
+   "code": "JPN",
+   "korean": "일본",
+   "english": "Japan"
   },
   "visualRole": "친지방문객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000078",
-   "nationalityCode": "MAR",
+   "nationalityCode": "JPN",
    "birthDate": "1984-08-23",
    "sex": "F",
    "expiry": "2035-11-22"
@@ -2129,19 +2129,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0087",
   "name": {
-   "latin": "ANISHA KARKI",
-   "korean": "아니샤 카르키"
+   "latin": "ANNA KOWALCZYK",
+   "korean": "안나 코발치크"
   },
   "nationality": {
-   "code": "NPL",
-   "korean": "네팔",
-   "english": "Nepal"
+   "code": "POL",
+   "korean": "폴란드",
+   "english": "Poland"
   },
   "visualRole": "출장객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000087",
-   "nationalityCode": "NPL",
+   "nationalityCode": "POL",
    "birthDate": "1992-12-07",
    "sex": "F",
    "expiry": "2032-10-18"
@@ -2154,19 +2154,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0088",
   "name": {
-   "latin": "SITA RAI",
-   "korean": "시타 라이"
+   "latin": "FUNMI ADEBAYO",
+   "korean": "펀미 아데바요"
   },
   "nationality": {
-   "code": "NPL",
-   "korean": "네팔",
-   "english": "Nepal"
+   "code": "NGA",
+   "korean": "나이지리아",
+   "english": "Nigeria"
   },
   "visualRole": "학생",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000088",
-   "nationalityCode": "NPL",
+   "nationalityCode": "NGA",
    "birthDate": "1995-11-28",
    "sex": "F",
    "expiry": "2031-10-10"
@@ -2179,19 +2179,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0089",
   "name": {
-   "latin": "FARHAN RAHMAN",
-   "korean": "파르한 라흐만"
+   "latin": "TOMAS NOVOTNY",
+   "korean": "토마시 노보트니"
   },
   "nationality": {
-   "code": "BGD",
-   "korean": "방글라데시",
-   "english": "Bangladesh"
+   "code": "CZE",
+   "korean": "체코",
+   "english": "Czechia"
   },
   "visualRole": "가족방문객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000089",
-   "nationalityCode": "BGD",
+   "nationalityCode": "CZE",
    "birthDate": "1985-02-10",
    "sex": "M",
    "expiry": "2036-02-22"
@@ -2279,8 +2279,8 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0093",
   "name": {
-   "latin": "NALEDI KHUMALO",
-   "korean": "날레디 쿠말로"
+   "latin": "ANNELIE VAN WYK",
+   "korean": "아넬리 판바이크"
   },
   "nationality": {
    "code": "ZAF",
@@ -2379,19 +2379,19 @@ export const TRAVELER_POOL = [
  {
   "id": "TRV-0097",
   "name": {
-   "latin": "FAITH KIPTOO",
-   "korean": "페이스 킵투"
+   "latin": "FLEUR DE VRIES",
+   "korean": "플뢰르 더프리스"
   },
   "nationality": {
-   "code": "KEN",
-   "korean": "케냐",
-   "english": "Kenya"
+   "code": "NLD",
+   "korean": "네덜란드",
+   "english": "Netherlands"
   },
   "visualRole": "친지방문객",
   "passport": {
    "type": "일반여권",
    "number": "SIM0000097",
-   "nationalityCode": "KEN",
+   "nationalityCode": "NLD",
    "birthDate": "2003-12-16",
    "sex": "F",
    "expiry": "2034-10-27"

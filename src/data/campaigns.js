@@ -1,7 +1,7 @@
 // Data extracted verbatim from the v6.1 baseline (legacy/v6.1) — three-day campaigns and their branching narrative arcs
 // Legal/game content: do not edit without a documented review (docs/legal-baseline.md).
 export const CAMPAIGNS = {
- none:{id:'none',name:'단일 근무',desc:'캠페인 없이 한 근무만 플레이합니다.',bonus:0,perfectBonus:0,days:[]},
+ none:{id:'none',name:'캠페인 없음',desc:'캠페인 없이 한 근무만 플레이합니다.',bonus:0,perfectBonus:0,days:[]},
  holiday:{id:'holiday',name:'연휴 입국 러시',desc:'연휴 전후 도착편 집중과 누적 전산부하를 3일 연속 관리합니다.',bonus:180,perfectBonus:90,days:[
   {title:'DAY 1 · 연휴 전야',scenario:'arrival',note:'도착편 집중이 시작됩니다.'},
   {title:'DAY 2 · 입국 정점',scenario:'arrival',note:'대기열과 입국객 유입이 가장 높은 날입니다.'},

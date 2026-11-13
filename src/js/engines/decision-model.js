@@ -62,7 +62,7 @@ export function decisionBasis(c, st, opts = {}) {
   // 3 arrival declaration
   push('ARRIVAL_DECLARATION', decl.status, decl.text, ['R-DEC-15-DECL', 'R-DECL-EXEMPT']);
   // 4 biometrics
-  push('BIOMETRICS', bio.refused ? 'FAIL' : bio.bad ? 'FAIL' : 'PASS', bio.refused ? '생체정보 제공 거부 · 제12조의2제2항 불허가 사유 검토 대상' : `${c.bio}${bio.bad ? ' · 여권 명의와 중대한 불일치' : ''}`, ['R-12-2-BIO']);
+  push('BIOMETRICS', bio.refused ? 'FAIL' : bio.bad ? 'FAIL' : 'PASS', bio.refused ? '생체정보 제공 거부 · 제12조의2제2항 불허가 사유 검토 대상' : (bio.bad ? '얼굴 대조 불일치 · 여권 명의와 중대한 불일치' : '얼굴 대조 일치'), ['R-12-2-BIO']);
   // 5 purpose
   push('PURPOSE_COMPATIBILITY', e['입국목적'] ? toneOf(e['입국목적'][0]) : 'PENDING', e['입국목적'] ? `${e['입국목적'][1]} · ${e['입국목적'][2]} · 신고 목적 "${live && !(st.refugeeStep > 0) ? String(c.purpose || '').split('→')[0].trim() : c.purpose}"` : '목적 확인 필요', ['R-12-3-2-PURPOSE']);
   // 6 period of stay / plan

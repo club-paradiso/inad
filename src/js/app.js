@@ -50,7 +50,9 @@ import { renderCoachBanner } from './ui/coach.js';
 import { initAtlas, renderAtlas } from './ui/atlas-workstation.js';
 
 // v10 Live Interview vertical slice: one case, no setup, no checkpoint, no career effect (docs/v10-live-interview-spec.md).
-const LIVE_CASE = { caseId: 'ICN-S2-005', seed: 271828 };
+// The first case teaches the loop — listen, check, decide — on a passenger whose doubts are resolved by checking
+// (secondary referral, then admission). A refusal-first opening taught "doubt means refuse".
+const LIVE_CASE = { caseId: 'ICN-S2-006', seed: 271828 };
 // Quick Shift (first run): ordinary · ordinary · tourist pair · suspicious-but-explained · contradiction · biometric refusal.
 const QUICK_ROSTER = ['ICN-S1-001', 'normal', 'ICN-S1-002', 'ICN-S2-006', 'ICN-S2-005', 'ICN-S3-011'];
 
@@ -126,7 +128,7 @@ function resumeFlow() {
 // ---- decisions -----------------------------------------------------------------------------
 function handleVerdict(r) { if (r.guard) { showGuidedGuard(r.guard); return false; } if (r.gameOver) { gameOverFlow(); return false; } return r.ok; }
 function decideClearFlow() { closeProcedureScreen(); const r = caseEngine.decideClear(); if (!handleVerdict(r)) return; showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => finishFlow(r.finish)); }
-function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code) => { closeModal(); const r = caseEngine.decideRefusal(code); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }, { continueLabel: '송환 절차 · 다음 심사로 계속' }); }); }
+function openRefusalFlow() { showRefusalReasons(legal.refusalReasons, (code, extras) => { closeModal(); const r = caseEngine.decideRefusal(code, extras); if (!handleVerdict(r)) return; closeProcedureScreen(); showDoc(r.doc.title, r.doc.rows, r.doc.foot, () => { caseEngine.beginRepatriation(); openProc('repatriation'); }, { continueLabel: '송환 절차 · 다음 심사로 계속' }); }, legal.additionalGrounds); }
 function sjpFlow() { const r = caseEngine.sjpMenu(); if (!handleVerdict(r)) return; openProc('sjp'); }
 function refugeeFlow() { const r = caseEngine.refugeeFlow(); if (r.ok && r.open) openProc(r.open); }
 function runProcedureAction(a, ctx = {}) {
@@ -188,11 +190,13 @@ function shiftCompleteFlow() {
 }
 function gameOverFlow() { if (state.sessionMode === 'shift') caseEngine.gameOver(); showGameOver(() => location.reload(), caseEngine.penaltyPolicy().strikeLimit); }
 // Single-case live interview: reaches a real passenger in one click (first-run path) and never touches saves.
-function liveInterviewFlow(retry = false) {
+let liveCaseId = LIVE_CASE.caseId; // the single case on screen, so 다시 하기 restarts the same passenger
+function liveInterviewFlow(retry = false, caseId = retry ? liveCaseId : LIVE_CASE.caseId) {
+  liveCaseId = caseId;
   if (state.started && !retry) return;
   Object.assign(state, { sessionMode: 'case', guidance: 'guided', difficulty: 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0 });
   regenerate(LIVE_CASE.seed); state.eventSchedule = [];
-  if (!singleCaseSession(LIVE_CASE.caseId)) { toast('라이브 인터뷰 사건을 찾지 못했습니다.'); return; }
+  if (!singleCaseSession(caseId)) { toast('라이브 인터뷰 사건을 찾지 못했습니다.'); return; }
   // First passenger of the session: 안내 모드 coaching applies (no strikes, one guard), the v9 screen tour does not.
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
   hideStartOverlay(); ensureAudio(); bus.emit('analytics', { name: retry ? 'live_retry' : 'live_start' });
@@ -214,7 +218,7 @@ function quickShiftFlow(retry = false, fresh = false, afterLive = false) {
   Object.assign(state, { sessionMode: 'quick', difficulty: rotating ? 'standard' : 'training', challengeId: 'none', scenarioId: 'normal', campaignId: 'none', campaignDay: 0, guidance: rotating ? 'expert' : 'guided' });
   regenerate(seed); state.eventSchedule = [];
   // Coming straight from the first interview, the introductory roster does not bring the same passenger back.
-  const intro = afterLive || quickPlan?.afterLive ? QUICK_ROSTER.map((e) => (e === LIVE_CASE.caseId ? 'ICN-S2-007' : e)) : QUICK_ROSTER;
+  const intro = afterLive || quickPlan?.afterLive ? QUICK_ROSTER.map((e) => (e === LIVE_CASE.caseId ? 'ICN-S2-008' : e)) : QUICK_ROSTER;
   if (!rosterSession(rotating ? quickRosterFor(seed) : intro)) { toast('짧은 근무 명단을 만들지 못했습니다.'); return; }
   quickPlan = { seed, rotating, afterLive: afterLive || (!!quickPlan?.afterLive && retry && !fresh) };
   state.caseIndex = 0; state.tutorialPrimaryShown = true; state.started = true; document.body.classList.add('mode-case');
@@ -334,6 +338,8 @@ function installHooks() {
     say: (text, source = 'text') => submitTurn({ text, source }),
     interview: () => ({ ...interviewSummary(), lastKind: state.interview?.lastKind || null, mode: state.sessionMode }),
     live: () => liveInterviewFlow(),
+    // single-case interview on a named authored case (feature tests that are written against one case)
+    liveCase: (id) => liveInterviewFlow(false, id),
     quick: () => quickShiftFlow(), quickPlan: () => (quickPlan ? { ...quickPlan } : null),
     daily: () => ({ ...dailyCase(), results: loadDailyResults() }),
     startDaily: () => dailyFlow(),

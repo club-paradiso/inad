@@ -3,7 +3,7 @@ import { $, byId, esc, fmtClock } from './dom.js';
 import { state } from '../state.js';
 import { current } from '../engines/queue-engine.js';
 import { getTraveler } from '../engines/traveler-engine.js';
-import { ACTION_NAMES } from '../engines/legal-engine.js';
+import { ACTION_NAMES, describeAction } from '../engines/legal-engine.js';
 import { disclosedEvidence, disclosureProgress, declaredPurpose, knownReturn } from '../engines/disclosure.js';
 import { clueStats } from '../engines/clue-engine.js';
 import { lookupName, lookup } from '../engines/case-engine.js';
@@ -82,7 +82,9 @@ export function renderTerminal() {
 // screen's panel): same cards, same limit of four, so a clue looks identical wherever it appears.
 // The two surfaces keep their own heads — counts live in the board head, not repeated elsewhere.
 export function clueCardsHTML(st, emptyText) {
-  const cards = st.got.slice().reverse().slice(0, 4).map((x) => `<div class="clue ${esc(x.kind || 'context')}"><strong>${esc(x.title)}${x.key ? '<span class="cluekey">핵심</span>' : ''}</strong><p>${esc(x.text)}</p></div>`).join('');
+  // Neutral record of what was found: no severity colour and no "key" badge during play. Weight and
+  // relevance are the examiner's call; the debrief explains which findings mattered.
+  const cards = st.got.slice().reverse().slice(0, 4).map((x) => `<div class="clue"><strong>${esc(x.title)}</strong><p>${esc(x.text)}</p></div>`).join('');
   return cards || `<div class="clueempty">${esc(emptyText)}</div>`;
 }
 export function renderClueBoard() {
@@ -90,7 +92,7 @@ export function renderClueBoard() {
   // Every case gets the same board and the head counts only what was found: a board that appears for some
   // cases only, or a "0/6" total, tells the examiner in advance which arrivals hide something and how much.
   const st = c.clues ? clueStats(c) : { got: [], keyGot: [] };
-  el.innerHTML = `<div class="cluehead"><span>단서</span><b>확보 ${st.got.length}건</b></div><div class="cluecards">${clueCardsHTML(st, '질문·전산조회·서류 확인으로 단서가 이어집니다.')}</div><div class="clue-summary"><span class="legend conflict">모순·중대</span><span class="legend unresolved">미해결</span><span class="legend low">관련성 낮음</span></div>`;
+  el.innerHTML = `<div class="cluehead"><span>단서</span><b>확보 ${st.got.length}건</b></div><div class="cluecards">${clueCardsHTML(st, '질문·전산조회·서류 확인으로 단서가 이어집니다.')}</div>`;
 }
 export function renderMatrix() {
   const c = current(); const e = disclosedEvidence(c, state); const known = disclosureProgress(c, state);
@@ -118,7 +120,14 @@ export function renderMatrix() {
   if (state.stage === 'REFUGEE') hint = '난민 회부심사 절차 진행 중. 해당 절차를 먼저 완료하십시오.';
   byId('readyHint').textContent = hint;
   const ct = byId('caseTimer'); if (ct) ct.textContent = fmtClock(state.caseWorkSeconds || 0);
-  const done = state.performed.map((x) => ACTION_NAMES[x] || x.replace('QUESTION_', '문답:').replace('LOOKUP_', '조회:'));
+  const cq = current(); const clip = (v) => (v.length > 20 ? v.slice(0, 19) + '…' : v);
+  // Readable chips: never surface internal ids (QUESTION_purpose → the question the examiner asked).
+  const done = state.performed.map((x) => {
+    if (ACTION_NAMES[x]) return ACTION_NAMES[x];
+    if (x.startsWith('QUESTION_')) { const q = (cq?.questions || []).find((y) => y.id === x.slice(9)); return q ? `문답 · ${clip(q.q)}` : '문답'; }
+    if (x.startsWith('LOOKUP_')) return `조회 · ${lookupName(x.slice(7))}`;
+    return describeAction(x, cq);
+  });
   byId('flowchips').innerHTML = done.length ? done.map((x) => `<span class="flowchip done">${esc(x)}</span>`).join('') : '<span class="flowchip">아직 기록 없음</span>';
   byId('flowCount').textContent = `${done.length}개 완료`;
   const note = byId('caseNote');
