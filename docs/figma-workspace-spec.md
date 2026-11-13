@@ -523,5 +523,12 @@ Existing variables are not renamed. The CA, GB and NZ chrome values override the
     `Modal / Additional ground (reason-extra)` ([288:2269](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=288-2269)) ↔ `reports.js showRefusalReasons(extras)` · `.reason-extra`.
     사용 변수: `color/bg/surface`, `color/border/default`, `color/border/strong`, `color/text/primary`, `color/text/muted`, `radius/small`, `radius/medium`, `space/3`. 텍스트 스타일: `type/section`, `type/meta`.
 - **변경 없음**: 변수 이름·값(`tokens.css`), 텍스트 스타일, 기존 프레임·컴포넌트·`[Approved]`/`[Implemented]` 섹션.
-- **아직 컴포넌트가 아닌 것**: 여권 인쇄 항목(생년월일·성별·만료일) 행, 단서 카드(중립 표시), 법적 근거 접기 요약, 서류 탭 띠. 코드가 소스 오브 트루스이고 위 캡처가 시각 기준이다.
+- **편집 가능한 v13 변형 4종**(같은 섹션 하단 `편집 가능 · v13 변형` 행, [291:2356](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2356)).
+  `04 — Components`의 기존 세트(Document/Field 17:68 · Document/Selector 17:61 · Assessment/Clue 18:179 · Assessment/Basis 18:160)는
+  자동화가 고칠 수 없는 노드라 그대로 두고, 바뀐 동작을 새 컴포넌트로 만들었다. 기존 세트에 합칠지는 사람이 결정한다.
+  - `Document/Passport (v13 · printed rows + MRZ)` [291:2247](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2247) ↔ `documentHTML`(PASSPORT) · `passportPrintedRows()` · `engines/mrz.js`
+  - `Assessment/Clue · Neutral (v13)` [291:2309](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2309) ↔ `clueCardsHTML()` (진행 중 등급 색·핵심 배지 없음)
+  - `Assessment/Basis · Folded panel (v13)` (Open=false·true) [291:2331](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2331) ↔ `renderBasisPanel()` `details.basis-wrap`
+  - `Document/Strip item (v13)` (State=default·selected·alert) [291:2341](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2341) + 4장 예시 [291:2342](https://www.figma.com/design/l2pIaUKNdiFnzpDMsUnFy8?node-id=291-2342) ↔ ≥1280 `.zone-evidence .doclist`
+  - 바인딩: Color·Space·Radius 변수, 텍스트 스타일 `type/label`·`type/meta`·`type/control`·`type/code`·`type/section`. 여권 종이 색(`#f6f3ea`·`#1d3752`·`#d5cfbf`)은 `documents.css`도 하드코딩이라 변수가 없다.
 - 이미지 업로드는 작업 환경 네트워크 허용 목록에 `mcp.figma.com`을 추가한 뒤 됐다(§10·§12의 미완료 원인과 같은 호스트).
