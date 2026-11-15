@@ -1,20 +1,15 @@
 /* Start overlay (duty setup) and tutorial spotlight. Primary choice first, details by progressive disclosure. */
 .startover { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; overflow: auto; background: var(--canvas); }
 .startover.hide { display: none; }
-.startcard { width: min(960px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow: auto; display: grid; gap: 20px; --start-px: 32px; --start-pt: 28px; padding: var(--start-pt) var(--start-px) 24px; background: var(--elevated); border: 1px solid var(--border); border-top: 4px solid var(--chrome); border-radius: var(--r-3); box-shadow: var(--shadow-3); }
-.start-head { position: relative; display: grid; align-content: end; min-height: 216px; margin: calc(-1 * var(--start-pt)) calc(-1 * var(--start-px)) 0; padding: var(--start-pt) var(--start-px) 18px; background: var(--chrome); color: var(--chrome-text); overflow: clip; }
+.startcard { width: min(960px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow: auto; display: grid; align-content: start; gap: 20px; --start-px: 32px; --start-pt: 28px; padding: var(--start-pt) var(--start-px) 24px; background: var(--elevated); border: 1px solid var(--border); border-top: 4px solid var(--chrome); border-radius: var(--r-3); box-shadow: var(--shadow-3); }
+.start-head { position: relative; display: grid; align-content: space-between; gap: 16px; min-height: 184px; margin: calc(-1 * var(--start-pt)) calc(-1 * var(--start-px)) 0; padding: var(--start-pt) var(--start-px) 18px; background: var(--chrome); color: var(--chrome-text); overflow: clip; }
 /* the hall before opening (generated scene, src/assets/scenes). The scrim keeps every line of copy above 4.5:1. */
 .start-scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; }
 .start-head::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(20, 35, 47, .95), rgba(20, 35, 47, .7)); }
 .start-head-copy { position: relative; z-index: 2; display: grid; gap: 4px; }
-.start-head :is(.startmark, .startlocation, .start-explain) { color: #dfe7ec; }
-.start-head .start-title { color: #fff; }
 body.pref-contrast .start-scene { display: none; }
-.startmark { font-size: var(--fs-meta); letter-spacing: .1em; color: var(--text-3); font-family: var(--mono); }
-.start-title { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; color: var(--chrome); }
-.startsub { display: flex; align-items: center; gap: 10px; font-size: var(--fs-section); font-weight: 600; }
-.release-chip { padding: 2px 8px; border: 1px solid var(--border); border-radius: 2px; font-size: var(--fs-meta); letter-spacing: .04em; color: var(--accent-text); background: var(--accent-soft); font-weight: 600; }
-.startlocation { font-size: var(--fs-compact); color: var(--text-2); line-height: var(--lh-body); }
+.start-title { font-size: 36px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; color: inherit; }
+.start-explain { margin: 0; color: inherit; font-size: var(--fs-body); line-height: var(--lh-body); }
 .start-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
 .start-main { display: grid; gap: 12px; min-width: 0; }
 .start-side { display: grid; gap: 12px; min-width: 0; }
@@ -63,40 +58,22 @@ body.pref-contrast .start-scene { display: none; }
 .campaign-actions { display: flex; gap: 6px; }
 .campaign-actions button { height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-meta); font-weight: 600; }
 .campaign-actions button.danger { border-color: var(--danger); color: var(--danger-text); }
-.start-actions-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; }
-.start-actions-row:has(.resume-start[hidden]) { grid-template-columns: 1fr; }
-.startbtn { height: 48px; border-radius: var(--r-1); background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -.01em; transition: background var(--t-fast) var(--ease); }
-.startbtn:hover { background: var(--accent-hover); }
-/* v14 start path: the three duties are one ordered path (첫 심사 → 짧은 근무 → 정규 근무). Exactly one step is
-   "next" and carries the only dominant button on the screen; finished and later steps stay startable but quiet.
-   State comes from engines/start-flow.js via [data-state]; everything else sits behind one disclosure. */
+.start-actions-row { display: grid; gap: 8px; }
 .start-path { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.start-step { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
-.start-step-copy { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; row-gap: 2px; align-items: start; min-width: 0; }
-.start-step-no { grid-row: 1 / span 3; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-strong); border-radius: 50%; font: 700 var(--fs-label)/1 var(--mono); color: var(--text-2); }
-.start-step-copy b { grid-column: 2; font-size: var(--fs-compact); font-weight: 700; }
-.start-step-note { grid-column: 2; font-size: var(--fs-label); color: var(--text-2); line-height: 1.45; }
-.start-step-state { grid-column: 2; font-style: normal; font-size: var(--fs-meta); font-weight: 600; letter-spacing: .02em; color: var(--text-3); }
+.start-path:empty { display: none; }
+.start-step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(176px, auto); align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+.start-step-copy { display: grid; gap: 4px; min-width: 0; }
+.start-step-note { font-size: var(--fs-compact); color: var(--text-2); line-height: 1.45; }
+.start-step-state { font-style: normal; font-size: var(--fs-meta); font-weight: 600; color: var(--text-3); }
 .start-step-state:empty { display: none; }
-.start-step-btn { min-height: 44px; height: auto; padding: 8px 12px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--r-1); background: var(--elevated); color: var(--text); font-size: var(--fs-compact); font-weight: 700; letter-spacing: 0; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease); }
+.start-step-btn { min-height: 44px; padding: 8px 12px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--r-1); background: var(--elevated); color: var(--text); font-size: var(--fs-compact); font-weight: 700; cursor: pointer; transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
 .start-step-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
-.start-step-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.start-step .start-actions-row { grid-template-columns: 1fr; gap: 6px; }
-.start-step .start-settings.resume-start { height: 44px; }
-.start-step[data-state="done"] .start-step-no { border-color: var(--border); color: var(--text-3); }
-/* the next step: the booth-dark block the old hero used, so "what do I press" has one answer */
-.start-step[data-state="next"] { padding: 16px 20px; border-color: var(--booth); background: var(--booth); color: var(--booth-text); }
-.start-step[data-state="next"] .start-step-no { border-color: var(--booth-muted); color: var(--booth-text); }
-.start-step[data-state="next"] .start-step-copy b { font-size: 16px; letter-spacing: -.01em; color: var(--booth-text); }
-.start-step[data-state="next"] :is(.start-step-note, .start-step-state) { color: var(--booth-muted); }
-.start-step[data-state="next"] .start-step-btn { min-height: 48px; border: 0; background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
-.start-step[data-state="next"] .start-step-btn:hover { opacity: .9; }
-/* a duty waiting at a checkpoint: resuming is the dominant action, a fresh duty the quiet one */
-.start-step[data-state="next"][data-resume="true"] .start-settings.resume-start { height: 48px; border: 0; background: var(--booth-text); color: var(--booth); font-size: 16px; font-weight: 800; }
-.start-step[data-state="next"][data-resume="true"] .start-step-btn { min-height: 44px; border: 1px solid var(--booth-muted); background: transparent; color: var(--booth-text); font-size: var(--fs-compact); font-weight: 700; }
-/* everything that is not the path */
-.start-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--text-2); font-size: var(--fs-compact); font-weight: 600; }
+.start-step-btn.startbtn { min-height: 52px; border-color: var(--accent); background: var(--accent); color: #fff; font-size: 16px; font-weight: 800; }
+.start-step-btn.startbtn:hover { background: var(--accent-hover); }
+.start-more > summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; color: var(--text-2); font-size: var(--fs-compact); font-weight: 600; }
+.start-more > summary::after { content: ""; width: 8px; height: 8px; margin-inline-end: 4px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .start-more[open] > summary { border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px; color: var(--text); }
+.start-more[open] > summary::after { transform: rotate(225deg); }
 .start-more-body { display: grid; gap: 12px; }
 .start-more-body .start-settings { width: 100%; }
 .start-rung { display: grid; grid-template-columns: minmax(0, 1fr) 176px; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
@@ -104,23 +81,21 @@ body.pref-contrast .start-scene { display: none; }
 .start-rung-copy b { font-size: var(--fs-compact); font-weight: 700; }
 .start-rung-copy span { font-size: var(--fs-label); color: var(--text-2); line-height: 1.45; }
 .start-shift-setup { display: grid; gap: 10px; }
-/* a first-time player sees the path and nothing beside it until they ask for more */
-.startcard[data-newcomer="true"]:not([data-more="open"]) .start-side { display: none; }
-.startcard[data-newcomer="true"]:not([data-more="open"]) .start-body { grid-template-columns: minmax(0, 1fr); }
-.startcard[data-newcomer="true"]:not([data-more="open"]) { width: min(720px, 100%); }
-/* UI language sits on the hero: it must be reachable before anything is read */
-.start-lang { position: absolute; z-index: 2; top: var(--start-pt); right: var(--start-px); }
+.startcard[data-newcomer="true"] { width: min(704px, 100%); }
+.startcard[data-newcomer="true"] .start-body { grid-template-columns: minmax(0, 1fr); }
+.startcard[data-newcomer="true"] #startPath .start-step { grid-template-columns: 1fr; padding: 0; border: 0; background: transparent; text-align: center; }
+.startcard[data-newcomer="true"] #startPath .start-step-state { display: none; }
+.startcard[data-newcomer="true"] .startbtn { min-height: 56px; font-size: 18px; }
+.start-lang { position: relative; z-index: 2; justify-self: end; }
 .start-lang button { min-height: 44px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, .45); border-radius: var(--r-1); background: rgba(20, 35, 47, .6); color: #fff; font-size: var(--fs-compact); font-weight: 600; }
-/* keep the first hero line clear of the language button */
-.start-head .startmark { margin-right: 112px; }
 .start-lang button:hover { background: rgba(20, 35, 47, .85); }
 .start-settings { height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--elevated); font-size: var(--fs-compact); font-weight: 600; color: var(--text-2); }
-.start-settings.resume-start { height: 48px; border-color: var(--success); color: var(--success-text); }
 .start-links { display: grid; gap: 6px; }
 .save-status { font-size: var(--fs-meta); color: var(--text-3); }
 .start-notice { border-top: 1px solid var(--border-subtle); padding-top: 10px; font-size: var(--fs-label); color: var(--text-2); }
-.start-notice summary { cursor: pointer; font-weight: 600; }
+.start-notice summary { min-height: 44px; padding-block: 12px; cursor: pointer; font-weight: 600; }
 .start-notice p { margin-top: 8px; line-height: 1.6; }
+.start-release { color: var(--text-3); font-size: var(--fs-meta); }
 
 /* tutorial spotlight */
 .tutorial-layer { position: fixed; inset: 0; z-index: 240; display: none; pointer-events: none; }
@@ -139,8 +114,7 @@ body.pref-contrast .start-scene { display: none; }
 
 @media (max-height: 860px) {
   .startcard { --start-px: 24px; --start-pt: 20px; padding: var(--start-pt) var(--start-px) 18px; gap: 14px; }
-  .start-head { min-height: 168px; }
-  .start-title { font-size: 26px; }
+  .start-head { min-height: 160px; }
 }
 @media (max-width: 1023px) {
   .start-body { grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; }
@@ -148,7 +122,9 @@ body.pref-contrast .start-scene { display: none; }
 @media (max-width: 767px), (max-height: 500px) and (max-width: 1023px) {
   .startover { padding: 0; place-items: start stretch; }
   .startcard { width: 100%; max-height: none; min-height: 100%; border: 0; border-radius: 0; box-shadow: none; --start-px: 16px; --start-pt: calc(20px + var(--safe-top)); padding: var(--start-pt) var(--start-px) calc(24px + var(--safe-bottom)); gap: 16px; }
-  .start-title { font-size: 26px; }
+  .startover:has(.startcard[data-newcomer="true"]) { align-items: safe center; padding: max(12px, var(--safe-top)) 12px max(12px, var(--safe-bottom)); }
+  .startcard[data-newcomer="true"] { min-height: 0; --start-pt: 16px; padding-bottom: 16px; border: 1px solid var(--border); border-radius: var(--r-3); }
+  .start-title { font-size: 32px; }
   .start-body { grid-template-columns: 1fr; gap: 12px; }
   .setup-bar { flex-direction: column; align-items: stretch; }
   .setup-actions { justify-content: flex-start; }
@@ -157,7 +133,6 @@ body.pref-contrast .start-scene { display: none; }
   .option-grid button { min-height: 52px; }
   .start-rung, .start-step { grid-template-columns: 1fr; gap: 8px; }
   .session-row b { font-size: 14px; }
-  .start-step[data-state="next"] .start-step-btn { min-height: 56px; font-size: 17px; }
   .start-step-btn { min-height: 52px; }
   .tutorial-card { left: 14px !important; right: 14px; width: auto; }
 }
@@ -174,5 +149,3 @@ body.pref-contrast .start-scene { display: none; }
 /* Regular duty stays available in one click; six presets do not precede the first interview. */
 .posting-box > summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--text); font-size: var(--fs-body); font-weight: 600; }
 .posting-box[open] > summary { border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px; }
-
-.start-explain { margin: 4px 0 0; color: var(--text-3); font-size: var(--fs-compact); }

@@ -11,7 +11,7 @@ test.describe('V11 Playtest Evaluation Suites (Cohorts A, B, C)', () => {
     // 1. Dominant primary start button is immediately visible without configuration
     const liveStartBtn = page.locator('#liveStartBtn');
     await expect(liveStartBtn).toBeVisible();
-    await expect(liveStartBtn).toHaveText(/인터뷰 시작/);
+    await expect(liveStartBtn).toHaveText('첫 심사 시작하기');
 
     // 2. Click takes player straight into the live interview booth
     await liveStartBtn.click();

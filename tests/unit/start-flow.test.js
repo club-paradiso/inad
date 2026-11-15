@@ -25,6 +25,16 @@ test('an unfinished regular duty is the next step whatever else is open', () => 
   assert.deepEqual(states(f), { first: 'later', quick: 'later', shift: 'next' });
 });
 
+test('saved career and active campaign data each opt out of the first-visit layout', () => {
+  const career = startFlow({ hasCareer: true });
+  assert.equal(career.newcomer, false);
+  assert.equal(career.next, 'quick');
+  const campaign = startFlow({ hasActiveCampaign: true });
+  assert.equal(campaign.newcomer, false);
+  assert.equal(campaign.next, 'shift');
+  assert.equal(campaign.resume, false);
+});
+
 test('there is always exactly one next step and malformed saves do not throw', () => {
   for (const input of [undefined, {}, { sessions: null }, { sessions: [null, {}, 'x'] }, { completedShifts: NaN }, { firstCaseDone: 1, sessions: [{ mode: 'quick' }], completedShifts: 9, hasCheckpoint: true }]) {
     const f = startFlow(input);

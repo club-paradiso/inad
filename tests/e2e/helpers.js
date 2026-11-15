@@ -22,8 +22,8 @@ const LEGACY_SHIM = `Object.defineProperty(window,'INADTest',{configurable:true,
   version:()=>'6.1'
 }}});`;
 
-// v14 start screen: everything that is not the three-step path sits behind one disclosure (#startMore). Flows that
-// are about those controls open it first; the collapsed first view has its own spec (start-flow.spec.js).
+// The first visit keeps alternate duty modes and settings behind #startMore.
+// start-flow.spec.js covers the collapsed screen without this helper.
 export async function revealStartMore(page) {
   await page.evaluate(() => { const m = document.getElementById('startMore'); if (m && !m.open) m.open = true; });
 }
@@ -34,8 +34,8 @@ export async function openGame(page) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console.error: ' + m.text()); });
   if (TARGET === 'legacy') await page.addInitScript(LEGACY_SHIM);
   await page.goto(ENTRY);
-  await expect(page.locator('#startBtn')).toBeVisible();
   await revealStartMore(page);
+  await expect(page.locator('#startBtn')).toBeVisible();
   return errors;
 }
 
