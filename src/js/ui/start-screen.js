@@ -6,7 +6,7 @@ import { storageWritable } from '../services/storage.js';
 import { setAirport, airportCfg, setDifficulty, setScenario, difficultyCfg, scenarioCfg, refreshAirportLiveLoad, appliedLiveLoad, simulatedBacklog } from '../engines/operation-engine.js';
 import { classifyLiveLoad } from '../engines/airport-load-balance.js';
 import { setChallenge, challengeCfg } from '../engines/achievement-engine.js';
-import { setCampaign } from '../engines/campaign-engine.js';
+import { currentCampaignSave, setCampaign } from '../engines/campaign-engine.js';
 import { loadProgressSave, saveGuidance, loadMeta, firstCaseDone } from '../engines/save-engine.js';
 import { startFlow } from '../engines/start-flow.js';
 import { POSTINGS, postingFor, suggestedPosting } from '../../data/postings.js';
@@ -81,8 +81,6 @@ function renderAirportChrome() {
   const ap = airportCfg();
   const brand = document.querySelector('.brand-copy p');
   if (brand) brand.textContent = `${isEn() ? ap.nameEn : ap.nameKo} · ${t('입국심사 시뮬레이션', 'Immigration Inspection Simulation')}`;
-  const loc = document.querySelector('.startlocation');
-  if (loc) loc.innerHTML = `${esc(isEn() ? ap.nameEn : ap.nameKo)}<br>${esc(isEn() ? ap.locationEn : ap.locationKo)}`;
   const meta = document.querySelector('.meta-status');
   if (meta && !byId('airportHudWrap')) meta.insertAdjacentHTML('afterbegin', '<span id="airportHudWrap"><span id="airportHudLabel"></span> <b id="airportLabel"></b></span>');
   if (byId('airportHudLabel')) byId('airportHudLabel').textContent = t('공항', 'Airport');
@@ -97,24 +95,46 @@ export function renderPersistenceStatus() {
   st.classList.toggle('warn', !writable);
   st.textContent = !writable ? '저장소 사용 불가 · 이 브라우저에서는 진행이 저장되지 않습니다' : p ? `자동저장 있음 · SESSION ${p.seed} · ${Math.min(p.nextIndex, 36)}/36 처리` : '자동저장 · 승객 처리 완료 시 체크포인트 생성';
 }
-// Start path: one step is next (the only dominant button), the rest are done or later. Reads saved progress only.
+// Move the existing controls when the saved visit state changes so focus order matches the layout.
 export function renderStartFlow() {
   const card = document.querySelector('.startcard'); if (!card) return;
-  let meta = {}; try { meta = loadMeta() || {}; } catch (e) { meta = {}; }
-  const flow = startFlow({ firstCaseDone: firstCaseDone(), sessions: meta.sessions, completedShifts: meta.career?.completedShifts || 0, hasCheckpoint: !!loadProgressSave() });
-  card.dataset.newcomer = String(flow.newcomer); card.dataset.next = flow.next;
-  for (const st of flow.steps) {
-    const li = card.querySelector(`.start-step[data-step="${st.id}"]`); if (!li) continue;
-    li.dataset.state = st.state; li.dataset.resume = String(st.id === 'shift' && flow.resume);
-    if (st.state === 'next') li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
-    const label = li.querySelector('[data-step-state]');
-    if (label) label.textContent = st.state === 'done' ? t('완료 · 다시 할 수 있습니다', 'Done · can be replayed') : st.state === 'next' ? (li.dataset.resume === 'true' ? t('이어할 근무가 있습니다', 'A duty is waiting for you') : t('다음 순서', 'Next step')) : '';
+  const meta = loadMeta(), career = meta.career;
+  const flow = startFlow({
+    firstCaseDone: firstCaseDone(),
+    sessions: meta.sessions,
+    completedShifts: career.completedShifts,
+    hasCareer: career.xp > 0 || career.totalPassengers > 0 || meta.campaignHistory.length > 0,
+    hasActiveCampaign: !!currentCampaignSave(),
+    hasCheckpoint: !!loadProgressSave()
+  });
+  const newcomer = String(flow.newcomer);
+  const path = byId('startPath');
+  const steps = new Map(flow.steps.map(({ id }) => [id, card.querySelector(`.start-step[data-step="${id}"]`)]));
+  if (card.dataset.newcomer !== newcomer) {
+    const side = card.querySelector('.start-side');
+    if (flow.newcomer) {
+      byId('startOtherSteps').append(steps.get('quick'), steps.get('shift'));
+      card.querySelector('.start-notice').before(side);
+    } else {
+      card.querySelector('.start-body').append(side);
+    }
   }
-}
-function bindStartMore() {
-  const more = byId('startMore'), card = document.querySelector('.startcard'); if (!more || !card) return;
-  const sync = () => { card.dataset.more = more.open ? 'open' : 'closed'; };
-  more.addEventListener('toggle', sync); sync();
+  if (!flow.newcomer && (card.dataset.newcomer !== newcomer || card.dataset.next !== flow.next)) {
+    const order = [flow.next, ...flow.steps.map(({ id }) => id).filter((id) => id !== flow.next)];
+    path.append(...order.map((id) => steps.get(id)));
+  }
+  card.dataset.newcomer = newcomer;
+  card.dataset.next = flow.next;
+  const primaryId = flow.resume ? 'resumeBtn' : { first: 'liveStartBtn', quick: 'quickStartBtn', shift: 'startBtn' }[flow.next];
+  for (const button of card.querySelectorAll('.start-path button')) button.classList.toggle('startbtn', button.id === primaryId);
+  for (const step of flow.steps) {
+    const item = steps.get(step.id);
+    item.dataset.state = step.state;
+    if (step.state === 'next') item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
+    item.querySelector('[data-step-state]').textContent = step.state === 'done'
+      ? t('완료 · 다시 할 수 있습니다', 'Done · can be replayed')
+      : step.state === 'next' && !flow.newcomer && !flow.resume ? t('다음 순서', 'Next step') : '';
+  }
 }
 export function renderSetupSummary() { const ap = airportCfg(); const parts = [`${ap.code} ${isEn() ? ap.nameEn : ap.nameKo}`, txt('.diff-btn.on b', t('훈련', 'Training')), txt('.scenario-btn.on b', t('기본 근무', 'Normal duty')), txt('.campaign-btn.on b', t('캠페인 없음', 'No campaign')), txt('.guide-btn.on b', t('처음 근무', 'Guided')), txt('.challenge-btn.on b', t('일반 근무', 'No challenge'))]; const el = byId('setupSummary'); if (el) el.textContent = parts.join(' · '); }
 export function setAdvanced(on) { const adv = byId('setupAdvancedPanel'), el = byId('setupAdvancedToggle'); if (!adv) return; adv.hidden = !on; if (el) { el.setAttribute('aria-expanded', String(on)); el.textContent = on ? t('세부 설정 접기', 'Hide advanced settings') : t('세부 설정', 'Advanced settings'); } }
@@ -161,7 +181,6 @@ export function bindStartScreen({ onStart, onResume, onRecords, onProfile, onSet
   };
   byId('resumeBtn').onclick = onResume; byId('recordsStartBtn').onclick = onRecords; byId('profileStartBtn').onclick = onProfile; byId('startSettingsBtn').onclick = onSettings; byId('startSystemBtn').onclick = onSystem; byId('rerollBtn').onclick = onReroll;
   byId('campaignArchiveBtn').onclick = onCampaignArchive; byId('campaignAbandonBtn').onclick = onCampaignAbandon;
-  bindStartMore();
   bus.on('persistence', renderPersistenceStatus); bus.on('persistence', renderStartFlow); bus.on('campaign', syncOptionButtons); bus.on('airportLive', syncOptionButtons);
   document.addEventListener('inad:localechange', syncOptionButtons);
   syncOptionButtons(); renderPersistenceStatus(); syncBackgroundInert();

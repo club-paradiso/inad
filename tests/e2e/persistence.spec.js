@@ -25,8 +25,18 @@ test.describe('저장·캠페인', () => {
     expect(save.version).toBe(1);
     expect(save.seed).toBe(SEED);
     expect(save.nextIndex).toBe(idx + 1);
+    const modular = process.env.INAD_TARGET !== 'legacy';
+    const viewport = page.viewportSize();
+    if (modular) await page.setViewportSize({ width: 390, height: 640 });
     await page.reload();
     await expect(page.locator('#resumeBtn')).toBeVisible();
+    if (modular) {
+      await expect(page.locator('#startOverlay .startbtn')).toHaveCount(1);
+      await expect(page.locator('#startPath > li:first-child button').first()).toHaveAttribute('id', 'resumeBtn');
+      await expect(page.locator('#resumeBtn')).toHaveClass(/\bstartbtn\b/);
+      await expect(page.locator('#resumeBtn')).toBeInViewport({ ratio: 1 });
+      await page.setViewportSize(viewport);
+    }
     await expect(page.locator('#resumeBtn')).toContainText(`${idx + 1}/36`);
     await page.locator('#resumeBtn').click();
     await expect(page.locator('#startOverlay')).toHaveClass(/hide/);

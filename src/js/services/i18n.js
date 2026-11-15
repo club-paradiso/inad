@@ -13,8 +13,12 @@ let initialized = false;
 
 const EXACT = new Map([
   ['정규 근무 배치 바꾸기', 'Change regular-duty posting'],
-  ['다른 방식·설정 더 보기', 'More ways to play and settings'], ['진행 순서', 'Order of play'],
-  ['듣고, 확인하고, 결정하기 · 약 5분 · 시간에 쫓기지 않고 화면 익히기', 'Listen, check and decide · about 5 minutes · learn at your own pace'],
+  ['다른 모드 · 설정 보기', 'Other modes and settings'], ['진행 순서', 'Order of play'],
+  ['다른 근무 모드', 'Other duty modes'],
+  ['인천공항 입국심사관이 되어 승객과 대화하고, 서류를 대조해 입국 허가·불허를 결정하세요.', 'As an Incheon Airport immigration officer, interview travelers, check their documents and decide whether to admit them.'],
+  ['승객 1명 · 약 5분', '1 traveler · about 5 minutes'],
+  ['첫 심사 시작하기', 'Start first inspection'],
+  ['정규 근무 시작', 'Start regular duty'],
   ['하루 한 건 · 모두 같은 사건 · 익숙해진 뒤 도전', 'One shared case each day · try it when you know the desk'],
   ['재심 이후 필요한 별도 절차', 'Separate procedure after secondary review'],
   ['추가 대조', 'Cross-check needed'],
@@ -139,10 +143,7 @@ const EXACT = new Map([
   ['가상 시스템 · 실제 법무부 내부전산 또는 비공개 심사기준을 재현한 것이 아님', 'Fictional system · does not reproduce Ministry of Justice internal systems or non-public screening criteria'],
   ['업무 지적', 'Supervisor notes'],
   ['지적', 'Warnings'],
-  ['대한민국 공항 입국심사 · FICTIONAL SIMULATION', 'REPUBLIC OF KOREA AIRPORT IMMIGRATION · FICTIONAL SIMULATION'],
-  ['입국심사관 시뮬레이션', 'Immigration Officer Simulation'],
   ['인천공항출입국·외국인청', 'Incheon Airport Immigration Office'],
-  ['제2여객터미널 · 입국심사장', 'Terminal 2 · Immigration Hall'],
   ['가상 시뮬레이션', 'Fictional simulation'],
   ['다른 배치 생성', 'Generate another roster'],
   ['표준 · 기본 근무 · 캠페인 없음 · 처음 근무 · 일반 근무', 'Standard · Normal duty · No campaign · Guided · No challenge'],
@@ -443,7 +444,6 @@ const EXACT = new Map([
   ['말하기', 'Speak'],
   ['라이브 인터뷰', 'Live interview'],
   // v12 start ladder, disclosure and field notes
-  ['첫 심사 · 승객 1명', 'First inspection · one traveler'],
   
   ['승객 6명 · 약 15분 · 통상 입국과 확인이 필요한 입국이 섞여 있습니다', 'Six travelers · about 15 minutes · routine arrivals mixed with ones that need checking'],
   ['정규 근무', 'Full duty'],
@@ -479,7 +479,7 @@ const EXACT = new Map([
   ['바로잡힌 시도', 'Corrected attempts'],
   ['라이브 인터뷰 사건을 찾지 못했습니다.', 'The live interview case could not be found.'],
   // v11 start screen tiers
-  ['인터뷰 시작', 'Start interview'], ['얼굴 대조 일치', 'Face match'], ['얼굴 대조 불일치 · 여권 명의와 중대한 불일치', 'Face mismatch · serious mismatch with the passport holder'], ['후속 질문을 1차 심사대에서 이어 가면 뒤 대기열이 그만큼 멈춥니다. 깊은 확인은 입국재심에서도 할 수 있습니다.', 'Follow-up questioning at the primary booth holds the line behind this passenger. Deeper checks can also be done in secondary.'], ['INAD는 입국이 허가되지 않은 승객(Inadmissible passenger)을 가리키는 항공 실무 약칭입니다.', 'INAD is the airline term for an inadmissible passenger: someone refused entry.'], ['송환을 누구에게 지시할지 정한 뒤 송환지시서를 발급합니다. 송환기한은 운항 계획과 승객예약 상황을 고려해 정할 수 있습니다(제76조제2항).', 'Decide who receives the repatriation order, then issue it. The deadline may be set considering the flight schedule and bookings (Art. 76(2)).'], ['송환지시 대상', 'Repatriation order goes to'], ['피심사인 본인', 'The passenger'], ['본인이 귀국 항공권을 직접 구매해 출국', 'Buys their own ticket home'], ['가장 빠른 출발편 항공사', 'Earliest departing airline'], ['입국 항공사와 관계없이 다음 출발편 운수업자', 'Next departure, regardless of the arriving airline'], ['피심사인이 타고 온 항공편의 운수업자', 'The carrier the passenger arrived with'], ['송환지시 대상을 먼저 선택하십시오.', 'Choose who receives the repatriation order first.'], ['송환기한', 'Repatriation deadline'], ['병기 사유 (선택)', 'Additional ground (optional)'], ['국내체류비용 부담능력 없음', 'Unable to bear the cost of stay in Korea'], ['결정 사유와 함께 적을 수 있습니다. 직접 확인한 사실이 없으면 감점됩니다.', 'May be cited with the decisive ground. Citing it without a fact you established costs points.'], ['병기 사유', 'Additional ground'], ['생년월일', 'Date of birth'], ['결정 일시', 'Decided at'], ['고지 방법', 'Notified via'], ['성별', 'Sex'], ['만료일', 'Expiry'], ['답변 확인에 통역 필요', 'Interpreter needed to verify the answer'], ['태도 · 판정근거 아님', 'Demeanour · not a basis for decisions'], ['진술 대조', 'Statement check'], ['심사관이 직접 비교', 'Compared by the examiner'], ['이후 확보한 답변', 'Answers obtained since'], ['아직 확보한 답변 없음', 'No answers obtained yet'], ['정밀 면담', 'Detailed interview'], ['지금 물을 수 있는 질문 없음', 'No questions available right now'], ['질문하러 가기', 'Go to questions'], ['질문으로 돌아가기', 'Back to questions'],
+  ['얼굴 대조 일치', 'Face match'], ['얼굴 대조 불일치 · 여권 명의와 중대한 불일치', 'Face mismatch · serious mismatch with the passport holder'], ['후속 질문을 1차 심사대에서 이어 가면 뒤 대기열이 그만큼 멈춥니다. 깊은 확인은 입국재심에서도 할 수 있습니다.', 'Follow-up questioning at the primary booth holds the line behind this passenger. Deeper checks can also be done in secondary.'], ['INAD는 입국이 허가되지 않은 승객(Inadmissible passenger)을 가리키는 항공 실무 약칭입니다.', 'INAD is the airline term for an inadmissible passenger: someone refused entry.'], ['송환을 누구에게 지시할지 정한 뒤 송환지시서를 발급합니다. 송환기한은 운항 계획과 승객예약 상황을 고려해 정할 수 있습니다(제76조제2항).', 'Decide who receives the repatriation order, then issue it. The deadline may be set considering the flight schedule and bookings (Art. 76(2)).'], ['송환지시 대상', 'Repatriation order goes to'], ['피심사인 본인', 'The passenger'], ['본인이 귀국 항공권을 직접 구매해 출국', 'Buys their own ticket home'], ['가장 빠른 출발편 항공사', 'Earliest departing airline'], ['입국 항공사와 관계없이 다음 출발편 운수업자', 'Next departure, regardless of the arriving airline'], ['피심사인이 타고 온 항공편의 운수업자', 'The carrier the passenger arrived with'], ['송환지시 대상을 먼저 선택하십시오.', 'Choose who receives the repatriation order first.'], ['송환기한', 'Repatriation deadline'], ['병기 사유 (선택)', 'Additional ground (optional)'], ['국내체류비용 부담능력 없음', 'Unable to bear the cost of stay in Korea'], ['결정 사유와 함께 적을 수 있습니다. 직접 확인한 사실이 없으면 감점됩니다.', 'May be cited with the decisive ground. Citing it without a fact you established costs points.'], ['병기 사유', 'Additional ground'], ['생년월일', 'Date of birth'], ['결정 일시', 'Decided at'], ['고지 방법', 'Notified via'], ['성별', 'Sex'], ['만료일', 'Expiry'], ['답변 확인에 통역 필요', 'Interpreter needed to verify the answer'], ['태도 · 판정근거 아님', 'Demeanour · not a basis for decisions'], ['진술 대조', 'Statement check'], ['심사관이 직접 비교', 'Compared by the examiner'], ['이후 확보한 답변', 'Answers obtained since'], ['아직 확보한 답변 없음', 'No answers obtained yet'], ['정밀 면담', 'Detailed interview'], ['지금 물을 수 있는 질문 없음', 'No questions available right now'], ['질문하러 가기', 'Go to questions'], ['질문으로 돌아가기', 'Back to questions'],
   ['통역 지원', 'Interpreter support'],
   ['답변을 준비하고 있습니다', 'Preparing a reply'],
   ['제안', 'Suggested'],

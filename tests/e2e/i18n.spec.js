@@ -16,7 +16,7 @@ test.describe('UI 언어 전환', () => {
     const startKo = await textOf(page, '#startOverlay');
     await page.locator('#startLanguageBtn').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('#startBtn')).toHaveText('Start duty');
+    await expect(page.locator('#startBtn')).toHaveText('Start regular duty');
     await page.locator('#startLanguageBtn').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
     expect(await textOf(page, '#startOverlay')).toBe(startKo);
